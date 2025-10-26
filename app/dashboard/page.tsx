@@ -66,7 +66,7 @@ export default async function DashboardPage() {
           </Link>
 
           <Link
-            href="/settings/api-keys"
+            href="/settings"
             className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
           >
             <h3 className="text-lg font-semibold text-gray-900">

@@ -126,26 +126,26 @@ This document provides an ordered list of implementation tasks for building the 
 **Parallel Work**: Can work on UI while building backend
 
 ### 3.2 AI Provider System
-- [ ] Create AIProvider interface
-- [ ] Implement OpenAIProvider class
-- [ ] Create AIProviderRegistry class
-- [ ] Implement provider factory function
-- [ ] Add provider configuration (models, capabilities)
-- [ ] Create utility to get active API key for user
-- [ ] **Validation**: Can instantiate OpenAI client with user's key
+- [x] Create AIProvider interface
+- [x] Implement OpenAIProvider class
+- [x] Create AIProviderRegistry class
+- [x] Implement provider factory function
+- [x] Add provider configuration (models, capabilities)
+- [x] Create utility to get active API key for user
+- [x] **Validation**: Can instantiate OpenAI client with user's key
 
 **Dependencies**: 3.1 (API Key Backend)
 **Parallel Work**: None
 
 ### 3.3 API Key Management UI
-- [ ] Create settings page (`/app/settings/page.tsx`)
-- [ ] Build APIKeyForm component
-- [ ] Add provider selection dropdown (OpenAI for MVP)
-- [ ] Implement API key input with show/hide toggle
-- [ ] Add key validation button with feedback
-- [ ] Display list of saved keys (masked)
-- [ ] Add delete key functionality with confirmation
-- [ ] **Validation**: User can add, validate, and manage API keys
+- [x] Create settings page (`/app/settings/page.tsx`)
+- [x] Build APIKeyForm component
+- [x] Add provider selection dropdown (OpenAI for MVP)
+- [x] Implement API key input with show/hide toggle
+- [x] Add key validation button with feedback
+- [x] Display list of saved keys (masked)
+- [x] Add delete key functionality with confirmation
+- [x] **Validation**: User can add, validate, and manage API keys
 
 **Dependencies**: 3.2 (Provider System)
 **Parallel Work**: Can work on AI agent design
