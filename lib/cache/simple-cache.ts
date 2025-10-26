@@ -1,0 +1,100 @@
+/**
+ * Simple in-memory cache for frequently accessed data
+ * Useful for caching user profiles and other read-heavy data
+ */
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  expiresAt: number;
+}
+
+class SimpleCache<T> {
+  private cache = new Map<string, CacheEntry<T>>();
+  private defaultTTL: number;
+
+  constructor(defaultTTLSeconds: number = 300) {
+    // Default 5 minutes
+    this.defaultTTL = defaultTTLSeconds * 1000;
+  }
+
+  /**
+   * Get value from cache
+   */
+  get(key: string): T | null {
+    const entry = this.cache.get(key);
+    
+    if (!entry) {
+      return null;
+    }
+
+    // Check if expired
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return entry.data;
+  }
+
+  /**
+   * Set value in cache
+   */
+  set(key: string, data: T, ttlSeconds?: number): void {
+    const ttl = ttlSeconds ? ttlSeconds * 1000 : this.defaultTTL;
+    const entry: CacheEntry<T> = {
+      data,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + ttl,
+    };
+    
+    this.cache.set(key, entry);
+  }
+
+  /**
+   * Delete value from cache
+   */
+  delete(key: string): void {
+    this.cache.delete(key);
+  }
+
+  /**
+   * Clear all cache entries
+   */
+  clear(): void {
+    this.cache.clear();
+  }
+
+  /**
+   * Get cache size
+   */
+  size(): number {
+    return this.cache.size;
+  }
+
+  /**
+   * Clean up expired entries
+   */
+  cleanup(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now > entry.expiresAt) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
+
+// Create cache instances for different data types
+export const profileCache = new SimpleCache<unknown>(300); // 5 minutes
+export const apiKeyCache = new SimpleCache<unknown>(600); // 10 minutes
+
+// Clean up expired entries every minute
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    profileCache.cleanup();
+    apiKeyCache.cleanup();
+  }, 60000);
+}
+
+export { SimpleCache };

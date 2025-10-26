@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Card, Button } from '@/components/ui';
 import APIKeyForm from '@/components/settings/APIKeyForm';
 import APIKeyList from '@/components/settings/APIKeyList';
@@ -59,15 +60,19 @@ export default function SettingsPage() {
 
       if (response.ok) {
         showMessage('success', 'API key added successfully');
+        toast.success('API key added successfully');
         setShowAddForm(false);
         await fetchAPIKeys();
       } else {
         const data = await response.json();
-        showMessage('error', data.error || 'Failed to add API key');
+        const errorMsg = data.error || 'Failed to add API key';
+        showMessage('error', errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error('Error adding API key:', error);
       showMessage('error', 'Failed to add API key');
+      toast.error('Failed to add API key');
     }
   };
 
@@ -83,14 +88,18 @@ export default function SettingsPage() {
 
       if (response.ok) {
         showMessage('success', 'API key deleted successfully');
+        toast.success('API key deleted successfully');
         await fetchAPIKeys();
       } else {
         const data = await response.json();
-        showMessage('error', data.error || 'Failed to delete API key');
+        const errorMsg = data.error || 'Failed to delete API key';
+        showMessage('error', errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error('Error deleting API key:', error);
       showMessage('error', 'Failed to delete API key');
+      toast.error('Failed to delete API key');
     }
   };
 
@@ -102,13 +111,17 @@ export default function SettingsPage() {
 
       if (response.ok) {
         showMessage('success', 'API key is valid');
+        toast.success('API key is valid');
       } else {
         const data = await response.json();
-        showMessage('error', data.error || 'API key validation failed');
+        const errorMsg = data.error || 'API key validation failed';
+        showMessage('error', errorMsg);
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error('Error validating API key:', error);
       showMessage('error', 'Failed to validate API key');
+      toast.error('Failed to validate API key');
     }
   };
 

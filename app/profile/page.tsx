@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { PersonalInfoForm } from "@/components/profile/PersonalInfoForm";
 import { SummaryForm } from "@/components/profile/SummaryForm";
 import { ExperienceForm } from "@/components/profile/ExperienceForm";
@@ -82,9 +83,11 @@ export default function ProfilePage() {
       const updatedProfile = await response.json();
       setProfile(updatedProfile);
       showMessage("success", "Personal information saved successfully!");
+      toast.success("Personal information saved successfully!");
     } catch (error) {
       console.error("Error saving profile:", error);
       showMessage("error", "Failed to save personal information");
+      toast.error("Failed to save personal information");
     }
   };
 
@@ -103,10 +106,13 @@ export default function ProfilePage() {
 
       const updatedProfile = await response.json();
       setProfile(updatedProfile);
-      showMessage("success", `${section.charAt(0).toUpperCase() + section.slice(1)} saved successfully!`);
+      const sectionName = section.charAt(0).toUpperCase() + section.slice(1);
+      showMessage("success", `${sectionName} saved successfully!`);
+      toast.success(`${sectionName} saved successfully!`);
     } catch (error) {
       console.error(`Error saving ${section}:`, error);
       showMessage("error", `Failed to save ${section}`);
+      toast.error(`Failed to save ${section}`);
     } finally {
       setSaving(false);
     }

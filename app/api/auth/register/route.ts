@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
+import { checkRateLimit, RateLimitConfigs } from "@/lib/middleware/rate-limit-helpers";
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -11,6 +12,12 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting (5 requests per 15 minutes)
+    const rateLimitCheck = await checkRateLimit(request, RateLimitConfigs.auth);
+    if (rateLimitCheck.limited) {
+      return rateLimitCheck.response!;
+    }
+
     const body = await request.json();
     const validated = registerSchema.parse(body);
 
@@ -44,13 +51,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       { 
         message: "User created successfully",
         user 
       },
       { status: 201 }
     );
+
+    return rateLimitCheck.addHeaders(response);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

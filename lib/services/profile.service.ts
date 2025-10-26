@@ -1,11 +1,30 @@
 import { profileRepository } from "@/lib/repositories/profile.repository";
 import { profileSchema, profileUpdateSchema } from "@/lib/validations/profile";
+import { profileCache } from "@/lib/cache/simple-cache";
 import { ZodError } from "zod";
 
 export class ProfileService {
+  private getCacheKey(userId: string): string {
+    return `profile:${userId}`;
+  }
+
   async getProfile(userId: string) {
     try {
+      // Check cache first
+      const cacheKey = this.getCacheKey(userId);
+      const cached = profileCache.get(cacheKey);
+      if (cached) {
+        return { success: true, data: cached };
+      }
+
+      // Fetch from database
       const profile = await profileRepository.findByUserId(userId);
+      
+      // Cache the result if found
+      if (profile) {
+        profileCache.set(cacheKey, profile);
+      }
+      
       return { success: true, data: profile };
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -32,6 +51,10 @@ export class ProfileService {
 
       // Create profile
       const profile = await profileRepository.create(userId, validatedData);
+
+      // Invalidate cache
+      const cacheKey = this.getCacheKey(userId);
+      profileCache.delete(cacheKey);
 
       return { success: true, data: profile };
     } catch (error) {
@@ -68,6 +91,10 @@ export class ProfileService {
       // Update profile
       const profile = await profileRepository.update(userId, validatedData);
 
+      // Invalidate cache
+      const cacheKey = this.getCacheKey(userId);
+      profileCache.delete(cacheKey);
+
       return { success: true, data: profile };
     } catch (error) {
       if (error instanceof ZodError) {
@@ -94,6 +121,10 @@ export class ProfileService {
       // Upsert profile
       const profile = await profileRepository.upsert(userId, validatedData);
 
+      // Invalidate cache
+      const cacheKey = this.getCacheKey(userId);
+      profileCache.delete(cacheKey);
+
       return { success: true, data: profile };
     } catch (error) {
       if (error instanceof ZodError) {
@@ -115,6 +146,11 @@ export class ProfileService {
   async deleteProfile(userId: string) {
     try {
       await profileRepository.delete(userId);
+      
+      // Invalidate cache
+      const cacheKey = this.getCacheKey(userId);
+      profileCache.delete(cacheKey);
+      
       return { success: true };
     } catch (error) {
       console.error("Error deleting profile:", error);

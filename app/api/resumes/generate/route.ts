@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
 import { z } from 'zod';
+import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-helpers';
 
 // Request validation schema
 const generateResumeSchema = z.object({
@@ -15,6 +16,12 @@ const generateResumeSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting (5 requests per minute)
+    const rateLimitCheck = await checkRateLimit(request, RateLimitConfigs.resumeGeneration);
+    if (rateLimitCheck.limited) {
+      return rateLimitCheck.response!;
+    }
+
     // Check authentication
     const session = await auth();
     if (!session?.user?.id) {
@@ -67,11 +74,13 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ API: Resume generated successfully (ID: ${result.resumeId})`);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       resumeId: result.resumeId,
       resume: result.resume
     }, { status: 201 });
+
+    return rateLimitCheck.addHeaders(response);
 
   } catch (error) {
     console.error('❌ API: Unexpected error:', error);

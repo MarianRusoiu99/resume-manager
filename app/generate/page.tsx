@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
@@ -58,6 +59,7 @@ export default function GeneratePage() {
   const handleGenerate = async () => {
     if (jobDescription.length < 50) {
       setError('Job description must be at least 50 characters long');
+      toast.error('Job description must be at least 50 characters long');
       return;
     }
 
@@ -86,8 +88,11 @@ export default function GeneratePage() {
       }
 
       setGeneratedResume(data.resume);
+      toast.success('Resume generated successfully!');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsGenerating(false);
     }

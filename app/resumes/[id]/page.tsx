@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
@@ -113,10 +114,13 @@ export default function ResumeDetailPage() {
         throw new Error('Failed to delete resume');
       }
 
+      toast.success('Resume deleted successfully');
       // Redirect to resumes list
       router.push('/resumes');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete resume');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete resume';
+      setError(errorMsg);
+      toast.error(errorMsg);
       setIsDeleting(false);
     }
   };
@@ -146,8 +150,12 @@ export default function ResumeDetailPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      
+      toast.success('PDF exported successfully');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to export PDF');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to export PDF';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsExportingPDF(false);
     }

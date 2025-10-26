@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { apiKeyService, AIProvider } from '@/lib/services/apikey.service';
+import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-helpers';
 
 /**
  * GET /api/settings/api-keys - List all API keys (masked)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Apply rate limiting (10 requests per minute)
+    const rateLimitCheck = await checkRateLimit(request, RateLimitConfigs.apiKeys);
+    if (rateLimitCheck.limited) {
+      return rateLimitCheck.response!;
+    }
+
     const session = await auth();
 
     if (!session?.user?.id) {
@@ -18,7 +25,8 @@ export async function GET() {
 
     const keys = await apiKeyService.getUserAPIKeys(session.user.id);
 
-    return NextResponse.json(keys);
+    const response = NextResponse.json(keys);
+    return rateLimitCheck.addHeaders(response);
   } catch (error) {
     console.error('Error fetching API keys:', error);
     return NextResponse.json(
@@ -33,6 +41,12 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Apply rate limiting (10 requests per minute)
+    const rateLimitCheck = await checkRateLimit(request, RateLimitConfigs.apiKeys);
+    if (rateLimitCheck.limited) {
+      return rateLimitCheck.response!;
+    }
+
     const session = await auth();
 
     if (!session?.user?.id) {
@@ -64,7 +78,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(result.key, { status: 201 });
+    const response = NextResponse.json(result.key, { status: 201 });
+    return rateLimitCheck.addHeaders(response);
   } catch (error) {
     console.error('Error adding API key:', error);
     return NextResponse.json(

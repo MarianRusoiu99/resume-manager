@@ -49,6 +49,15 @@ export class ResumeService {
       }
 
       const profile = profileResult.data;
+      
+      // Type guard to ensure profile has required properties
+      if (!profile || typeof profile !== 'object' || !('personalInfo' in profile)) {
+        return {
+          success: false,
+          errors: ['Invalid profile data. Please update your profile.']
+        };
+      }
+
       const personalInfo = profile.personalInfo as {
         name: string;
         email: string;
