@@ -108,6 +108,15 @@ export function createResumeWorkflowGraph() {
   });
 
   /**
+   * Cover letter generation node (conditional)
+   */
+  workflow.addNode('generate_cover_letter', async (state: ResumeGenerationState) => {
+    console.log('✉️ Generating cover letter...');
+    // Will be implemented in Phase 7.2
+    return setCurrentStep(state, 'generate_cover_letter');
+  });
+
+  /**
    * Error handling node
    */
   workflow.addNode('handle_error', async (state: ResumeGenerationState) => {
@@ -141,8 +150,17 @@ export function createResumeWorkflowGraph() {
   (workflow as any).addEdge('optimize_content', 'validate_format');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (workflow as any).addEdge('validate_format', 'generate_output');
+  
+  // Conditional edge: generate cover letter if requested
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+  (workflow as any).addConditionalEdges('generate_output', (_state: typeof ResumeStateAnnotation.State) => {
+    // Check if cover letter was requested in options
+    // For now, we'll skip cover letter by default (can be enabled later)
+    return END;
+  }, [END, 'generate_cover_letter']);
+  
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (workflow as any).addEdge('generate_output', END);
+  (workflow as any).addEdge('generate_cover_letter', END);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (workflow as any).addEdge('handle_error', END);
 

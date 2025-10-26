@@ -207,9 +207,24 @@ export class ResumeService {
       metadata: resume.metadata as Record<string, unknown>,
       isEdited: resume.isEdited,
       aiGeneratedContent: resume.aiGeneratedContent as Record<string, unknown>,
+      pdfUrl: resume.pdfUrl,
       createdAt: resume.createdAt,
       updatedAt: resume.updatedAt
     };
+  }
+
+  /**
+   * Update PDF URL for a resume
+   */
+  async updatePdfUrl(resumeId: string, userId: string, pdfUrl: string): Promise<void> {
+    // Verify ownership
+    const resume = await this.repository.findByIdAndUserId(resumeId, userId);
+    
+    if (!resume) {
+      throw new Error('Resume not found or access denied');
+    }
+
+    await this.repository.updatePdfUrl(resumeId, pdfUrl);
   }
 
   /**

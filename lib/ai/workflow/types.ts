@@ -131,6 +131,18 @@ export interface ResumeGenerationState {
     };
   };
 
+  // Cover letter (optional)
+  coverLetter?: {
+    content: string;
+    structure: {
+      opening: string;
+      body: string[];
+      closing: string;
+    };
+    tone: string;
+    wordCount: number;
+  };
+
   // Workflow metadata
   messages: BaseMessage[];
   currentStep?: string;
@@ -154,6 +166,7 @@ export interface ResumeGenerationOptions {
 export interface ResumeGenerationResult {
   success: boolean;
   resume?: ResumeGenerationState['generatedResume'];
+  coverLetter?: ResumeGenerationState['coverLetter'];
   errors?: string[];
   tokensUsed: number;
   duration: number;
