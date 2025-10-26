@@ -113,14 +113,14 @@ This document provides an ordered list of implementation tasks for building the 
 ## Phase 3: AI Provider Configuration (Week 5)
 
 ### 3.1 API Key Management Backend
-- [ ] Create encryption utility functions (encrypt/decrypt API keys)
-- [ ] Create APIKeyRepository with CRUD operations
-- [ ] Create APIKeyService with validation logic
-- [ ] Create API route: `POST /api/settings/api-keys` (add key)
-- [ ] Create API route: `GET /api/settings/api-keys` (list keys, masked)
-- [ ] Create API route: `DELETE /api/settings/api-keys/:id` (remove key)
-- [ ] Create API route: `POST /api/settings/api-keys/:id/validate` (test key)
-- [ ] **Validation**: API keys stored encrypted, can be validated
+- [x] Create encryption utility functions (encrypt/decrypt API keys)
+- [x] Create APIKeyRepository with CRUD operations
+- [x] Create APIKeyService with validation logic
+- [x] Create API route: `POST /api/settings/api-keys` (add key)
+- [x] Create API route: `GET /api/settings/api-keys` (list keys, masked)
+- [x] Create API route: `DELETE /api/settings/api-keys/:id` (remove key)
+- [x] Create API route: `POST /api/settings/api-keys/:id/validate` (test key)
+- [x] **Validation**: API keys stored encrypted, can be validated
 
 **Dependencies**: 1.2 (Database Setup)
 **Parallel Work**: Can work on UI while building backend
