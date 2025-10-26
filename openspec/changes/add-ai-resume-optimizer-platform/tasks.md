@@ -5,53 +5,55 @@ This document provides an ordered list of implementation tasks for building the 
 ## Phase 1: Foundation & Authentication (Weeks 1-2)
 
 ### 1.1 Project Setup & Dependencies
-- [ ] Install and configure Prisma ORM
-- [ ] Install NextAuth.js v5 (Auth.js)
-- [ ] Install encryption library (@noble/ciphers or similar)
-- [ ] Install Zod for schema validation
-- [ ] Install LangGraph (@langchain/langgraph)
-- [ ] Install LangChain core and OpenAI integration
-- [ ] Install react-pdf for PDF generation
-- [ ] Configure TypeScript paths and aliases
-- [ ] **Validation**: All dependencies install without errors, `npm run build` succeeds
+- [x] Install and configure Prisma ORM
+- [x] Install NextAuth.js v5 (Auth.js)
+- [x] Install encryption library (bcryptjs for passwords)
+- [x] Install Zod for schema validation
+- [x] Install LangGraph (@langchain/langgraph)
+- [x] Install LangChain core and OpenAI integration
+- [x] Install react-pdf for PDF generation
+- [x] Configure TypeScript paths and aliases
+- [x] **Validation**: All dependencies install without errors, `npm run build` succeeds
 
 ### 1.2 Database Setup
-- [ ] Create Prisma schema with User model
-- [ ] Create Prisma schema with Session model
-- [ ] Create Prisma schema with UserProfile model
-- [ ] Create Prisma schema with APIKey model
-- [ ] Create Prisma schema with GeneratedResume model
-- [ ] Set up PostgreSQL database (local dev environment)
-- [ ] Run initial Prisma migration
+- [x] Create Prisma schema with User model
+- [x] Create Prisma schema with Session model
+- [x] Create Prisma schema with UserProfile model
+- [x] Create Prisma schema with APIKey model
+- [x] Create Prisma schema with GeneratedResume model
+- [x] Create Prisma schema with ResumeTemplate model
+- [x] Set up PostgreSQL database (Docker container on port 15432)
+- [x] Run initial Prisma migration
 - [ ] Create database seed script with test user
-- [ ] **Validation**: `npx prisma studio` opens and shows all tables
+- [x] **Validation**: `npx prisma studio` opens and shows all tables
 
 **Dependencies**: None
 **Parallel Work**: Can work on UI components while database setup progresses
 
 ### 1.3 Authentication System
-- [ ] Configure NextAuth.js with credentials provider
-- [ ] Create `/api/auth/[...nextauth]/route.ts`
-- [ ] Implement password hashing utility (bcrypt)
-- [ ] Create user registration API route (`/api/auth/register`)
-- [ ] Create login page UI (`/app/login/page.tsx`)
-- [ ] Create registration page UI (`/app/register/page.tsx`)
-- [ ] Implement session middleware for protected routes
-- [ ] Create auth utility functions (`getServerSession`, `requireAuth`)
-- [ ] Add logout functionality
-- [ ] **Validation**: User can register, login, and access protected routes
+- [x] Configure NextAuth.js with credentials provider
+- [x] Create `/api/auth/[...nextauth]/route.ts`
+- [x] Implement password hashing utility (bcrypt)
+- [x] Create user registration API route (`/api/auth/register`)
+- [x] Create login page UI (`/app/login/page.tsx`)
+- [x] Create registration page UI (`/app/register/page.tsx`)
+- [x] Implement session middleware for protected routes
+- [x] Create auth utility functions (`auth`, session handling)
+- [x] Add logout functionality
+- [x] **Validation**: User can register, login, and access protected routes
 
 **Dependencies**: 1.2 (Database Setup)
 **Parallel Work**: Can design UI layouts while implementing backend
 
 ### 1.4 Base Layout & Navigation
-- [ ] Create app layout with navigation header
-- [ ] Add user menu with logout option
-- [ ] Create dashboard landing page (`/app/dashboard/page.tsx`)
+- [x] Create app layout with navigation header
+- [x] Add user menu with logout option
+- [x] Create dashboard landing page (`/app/dashboard/page.tsx`)
+- [x] Create home/landing page with features and CTA
 - [ ] Add loading states and error boundaries
-- [ ] Implement responsive design with Tailwind CSS
-- [ ] Create reusable UI components (Button, Input, Card)
-- [ ] **Validation**: User can navigate between pages with consistent layout
+- [x] Implement responsive design with Tailwind CSS
+- [x] Create reusable UI components (Button, Input, Card)
+- [x] **Validation**: User can navigate between pages with consistent layout
 
 **Dependencies**: 1.3 (Authentication)
 **Parallel Work**: None
@@ -59,49 +61,51 @@ This document provides an ordered list of implementation tasks for building the 
 ## Phase 2: Profile Management (Weeks 3-4)
 
 ### 2.1 Profile Data Layer
-- [ ] Create ProfileRepository class with CRUD operations
-- [ ] Create ProfileService with business logic
-- [ ] Implement profile validation schemas (Zod)
-- [ ] Create API route: `GET /api/profile` (fetch user profile)
-- [ ] Create API route: `POST /api/profile` (create profile)
-- [ ] Create API route: `PATCH /api/profile` (update profile)
+- [x] Create ProfileRepository class with CRUD operations
+- [x] Create ProfileService with business logic
+- [x] Implement profile validation schemas (Zod)
+- [x] Create API route: `GET /api/profile` (fetch user profile)
+- [x] Create API route: `POST /api/profile` (create profile)
+- [x] Create API route: `PATCH /api/profile` (update profile)
+- [x] Create API route: `PUT /api/profile` (upsert profile)
+- [x] Create API route: `DELETE /api/profile` (delete profile)
 - [ ] Add error handling and logging
-- [ ] **Validation**: API routes tested with Postman/curl, return correct data
+- [x] **Validation**: API routes tested with Postman/curl, return correct data
 
 **Dependencies**: 1.2 (Database Setup)
 **Parallel Work**: Can work on UI while building API
 
 ### 2.2 Profile UI - Personal Information
-- [ ] Create profile form page (`/app/profile/page.tsx`)
-- [ ] Build PersonalInfoForm component (name, email, phone, location, links)
-- [ ] Add form validation with client-side feedback
+- [x] Create profile form page (`/app/profile/page.tsx`)
+- [x] Build PersonalInfoForm component (name, email, phone, location, links)
+- [x] Add form validation with client-side feedback
 - [ ] Implement auto-save functionality (debounced)
-- [ ] Add loading states and success/error messages
-- [ ] **Validation**: User can enter and save personal information
+- [x] Add loading states and success/error messages
+- [x] **Validation**: User can enter and save personal information
 
 **Dependencies**: 2.1 (Profile Data Layer)
 **Parallel Work**: None
 
 ### 2.3 Profile UI - Experience & Education
-- [ ] Create ExperienceForm component (dynamic list)
-- [ ] Add experience entry fields (company, title, dates, description)
-- [ ] Create EducationForm component (dynamic list)
-- [ ] Add education entry fields (school, degree, dates)
-- [ ] Implement add/remove entry functionality
-- [ ] Add rich text editor for descriptions (optional: simple textarea for MVP)
-- [ ] **Validation**: User can add multiple experiences and education entries
+- [x] Create ExperienceForm component (dynamic list)
+- [x] Add experience entry fields (company, title, dates, description)
+- [x] Create EducationForm component (dynamic list)
+- [x] Add education entry fields (school, degree, dates)
+- [x] Implement add/remove entry functionality
+- [x] Add rich text editor for descriptions (optional: simple textarea for MVP)
+- [x] **Validation**: User can add multiple experiences and education entries
 
 **Dependencies**: 2.2 (Personal Info UI)
 **Parallel Work**: None
 
 ### 2.4 Profile UI - Skills & Additional Info
-- [ ] Create SkillsForm component with tag input
-- [ ] Add skill categories (technical, soft skills, languages)
+- [x] Create SkillsForm component with tag input
+- [x] Add skill categories (technical, soft skills, languages)
 - [ ] Create CertificationsForm component (optional)
 - [ ] Create LanguagesForm component (optional)
-- [ ] Add profile summary/objective text area
-- [ ] Implement profile completion indicator
-- [ ] **Validation**: User can add skills and complete full profile
+- [x] Add profile summary/objective text area
+- [x] Implement profile completion indicator
+- [x] **Validation**: User can add skills and complete full profile
 
 **Dependencies**: 2.3 (Experience & Education UI)
 **Parallel Work**: Can start AI integration planning
