@@ -1,0 +1,118 @@
+// This is your Prisma schema file for AI Resume Optimizer Platform
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User authentication and account management
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  profile       UserProfile?
+  apiKeys       APIKey[]
+  resumes       GeneratedResume[]
+  sessions      Session[]
+}
+
+// User professional profile and experience
+model UserProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  personalInfo    Json     // {name, email, phone, location, linkedin, github, website}
+  summary         String   @db.Text
+  experience      Json     // [{company, title, startDate, endDate, description, achievements}]
+  education       Json     // [{school, degree, field, startDate, endDate, gpa}]
+  skills          Json     // {technical: [], soft: [], languages: []}
+  certifications  Json?    // [{name, issuer, date, url}]
+  languages       Json?    // [{language, proficiency}]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Encrypted API keys for AI providers (BYOK model)
+model APIKey {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  provider      String    // 'openai', 'anthropic', etc.
+  encryptedKey  String    // AES-256-GCM encrypted
+  keyHash       String    // For validation without decryption
+  isActive      Boolean   @default(true)
+  lastUsedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  
+  @@index([userId, provider])
+}
+
+// Generated resumes with AI and user edits
+model GeneratedResume {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  jobDescription  String   @db.Text
+  jobMetadata     Json?    // {company, title, url, postedDate}
+  resumeContent   Json     // Structured resume data
+  templateId      String?
+  template        ResumeTemplate? @relation(fields: [templateId], references: [id])
+  templateCustomization Json? // User's template overrides
+  pdfUrl          String?  // URL if stored externally
+  coverLetter     String?  @db.Text
+  
+  isEdited        Boolean  @default(false)
+  aiGeneratedContent Json? // Original AI version for revert
+  
+  metadata        Json     // {model, tokens, score, generationTime}
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId, createdAt])
+}
+
+// Resume templates (professional layouts)
+model ResumeTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  category    String   // 'professional', 'modern', 'creative', 'ats-optimized', 'minimal'
+  description String
+  definition  Json     // Template configuration JSON
+  previewUrl  String?
+  isPublic    Boolean  @default(true)
+  version     String   @default("1.0.0")
+  atsScore    Int      @default(8) // 1-10 ATS compatibility rating
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  resumes     GeneratedResume[]
+  
+  @@index([category])
+  @@index([isPublic])
+}
+
+// Authentication sessions
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionToken String   @unique
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  
+  @@index([userId])
+}
