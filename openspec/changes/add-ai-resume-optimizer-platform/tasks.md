@@ -434,14 +434,14 @@ This document provides an ordered list of implementation tasks for building the 
 - [x] Write example unit tests for validation utilities (4 tests passing)
 - [x] Write unit tests for service layer (ProfileService - 19 tests passing)
 - [x] Write unit tests for AI agents (cover letter, job analysis agents)
-- [ ] Write integration tests for API routes (deferred for v2 - optional enhancement)
+- [x] Write integration tests for API routes (section-order endpoint - 5 tests passing)
 - [ ] Write E2E tests for critical flows (deferred for v2 - optional enhancement)
-- [ ] Test error scenarios and edge cases (deferred for v2 - optional enhancement)
-- [ ] Test with different API key states (deferred for v2 - optional enhancement)
+- [x] Test error scenarios and edge cases (resume generation API - 17 error scenario tests passing)
+- [x] Test with different API key states (19 API key state tests passing - valid, missing, invalid, inactive, decryption failures, provider validation, multiple keys, error messages)
 - [ ] Load test resume generation (deferred for v2 - optional enhancement)
-- [x] **Validation**: 32 tests passing (profile service + AI agent tests), expanded coverage
+- [x] **Validation**: 73 tests passing (unit tests + integration tests + error scenarios + API key states), comprehensive coverage
 
-**Status**: ✅ Complete - Testing framework operational, core unit tests passing, integration/E2E tests deferred for v2
+**Status**: ✅ Complete - Testing framework operational with comprehensive test coverage across all layers
 
 **Dependencies**: All previous phases
 **Parallel Work**: Can work on documentation
@@ -503,12 +503,12 @@ This document provides an ordered list of implementation tasks for building the 
 - [x] Document environment variables
 - [x] Add security considerations
 - [x] Document deployment options
-- [ ] Generate API documentation (OpenAPI/Swagger) (deferred for v2 - optional enhancement)
+- [x] Generate API documentation (OpenAPI/Swagger) (OpenAPI 3.0 spec with all 37 endpoints, interactive Swagger UI at /api-docs, comprehensive schemas for User, Profile, Resume, Template, APIKey with request/response examples from test suites)
 - [x] Add inline code comments for complex functions (enhanced JSDoc in services, agents already well-documented)
-- [ ] Create architecture diagrams (deferred for v2 - optional enhancement)
-- [x] **Validation**: README allows new developer to set up and use the project
+- [x] Create architecture diagrams (8 comprehensive Mermaid diagrams in docs/ARCHITECTURE.md: system architecture, database schema, AI workflow, components, API routes, authentication flow, resume generation flow, deployment architecture - plus security, caching, design decisions, scalability, monitoring, and future roadmap)
+- [x] **Validation**: README allows new developer to set up and use the project, API documentation provides complete endpoint reference
 
-**Status**: ✅ Complete - Comprehensive README with all essential documentation, API docs/diagrams deferred for v2
+**Status**: ✅ Complete - Comprehensive documentation suite: README, 8 architecture diagrams, OpenAPI/Swagger API docs
 
 **Dependencies**: None (ongoing throughout)
 **Parallel Work**: Can be done throughout development
