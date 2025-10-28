@@ -65,6 +65,12 @@ export default function GeneratePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
+  
+  // Progress streaming state
+  const [useStreaming, setUseStreaming] = useState(true);
+  const [progressStep, setProgressStep] = useState('');
+  const [progressMessage, setProgressMessage] = useState('');
+  const [progressPercent, setProgressPercent] = useState(0);
 
   // Load templates on mount
   useEffect(() => {
@@ -124,6 +130,111 @@ export default function GeneratePage() {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setError(errorMessage);
       toast.error(errorMessage);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateWithStreaming = async () => {
+    if (jobDescription.length < 50) {
+      setError('Job description must be at least 50 characters long');
+      toast.error('Job description must be at least 50 characters long');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+    setGeneratedResume(null);
+    setProgressStep('');
+    setProgressMessage('');
+    setProgressPercent(0);
+
+    try {
+      const response = await fetch('/api/resumes/generate-stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobDescription,
+          jobTitle: jobTitle || undefined,
+          companyName: companyName || undefined,
+          generateCoverLetter,
+          templateId: selectedTemplateId || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to generate resume');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('Stream not available');
+      }
+
+      let buffer = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+        
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          
+          const eventMatch = line.match(/^event: (.+)$/m);
+          const dataMatch = line.match(/^data: (.+)$/m);
+          
+          if (eventMatch && dataMatch) {
+            const eventType = eventMatch[1];
+            const eventData = JSON.parse(dataMatch[1]);
+            
+            switch (eventType) {
+              case 'connected':
+                console.log('Connected to stream');
+                break;
+              
+              case 'start':
+                setProgressStep('init');
+                setProgressMessage('Starting generation...');
+                setProgressPercent(0);
+                break;
+              
+              case 'progress':
+                setProgressStep(eventData.step);
+                setProgressMessage(eventData.message);
+                setProgressPercent(eventData.progress);
+                break;
+              
+              case 'complete':
+                setProgressStep('complete');
+                setProgressMessage('Resume generated successfully!');
+                setProgressPercent(100);
+                setGeneratedResume(eventData.resume);
+                toast.success('Resume generated successfully!');
+                break;
+              
+              case 'error':
+                throw new Error(eventData.message || 'Generation failed');
+            }
+          }
+        }
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      setProgressStep('');
+      setProgressMessage('');
+      setProgressPercent(0);
     } finally {
       setIsGenerating(false);
     }
@@ -245,8 +356,25 @@ export default function GeneratePage() {
                 </div>
               )}
 
+              {/* Progress Bar */}
+              {isGenerating && useStreaming && progressPercent > 0 && (
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-blue-900">{progressStep}</span>
+                    <span className="text-blue-700">{progressPercent}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className="bg-blue-600 h-full transition-all duration-300 ease-out"
+                      style={{ width: `${progressPercent}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-blue-700">{progressMessage}</p>
+                </div>
+              )}
+
               <Button
-                onClick={handleGenerate}
+                onClick={useStreaming ? handleGenerateWithStreaming : handleGenerate}
                 disabled={isGenerating || jobDescription.length < 50}
                 className="w-full"
               >

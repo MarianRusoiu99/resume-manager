@@ -11,6 +11,7 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../types';
+import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
 
 /**
  * Content Optimization Agent
@@ -56,10 +57,18 @@ export async function contentOptimizationAgent(
 
     // Execute the chain
     console.log('Optimizing content with AI...');
-    const result = await chain.invoke({
-      jobTitle: state.jobTitle || 'the position',
-      companyName: state.companyName || 'the company',
-    });
+    const result = await retryWithBackoff(
+      () => chain.invoke({
+        jobTitle: state.jobTitle || 'the position',
+        companyName: state.companyName || 'the company',
+      }),
+      {
+        ...AI_RETRY_CONFIG,
+        onRetry: (error, attempt, delay) => {
+          console.warn(`[contentOptimizationAgent] Retry attempt ${attempt} after ${delay}ms due to: ${error.message}`);
+        },
+      }
+    );
 
     // Parse the JSON response
     const optimizedContent = JSON.parse(result);

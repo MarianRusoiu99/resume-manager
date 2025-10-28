@@ -83,6 +83,7 @@ model GeneratedResume {
   
   isEdited        Boolean  @default(false)
   aiGeneratedContent Json? // Original AI version for revert
+  sectionOrder    Json?    // Custom section order: ['summary', 'experience', 'education', 'skills', ...]
   
   metadata        Json     // {model, tokens, score, generationTime}
   createdAt       DateTime @default(now())

@@ -11,6 +11,7 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../types';
+import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
 
 /**
  * Format Validation Agent
@@ -46,10 +47,18 @@ export async function formatValidationAgent(
 
     // Execute the chain
     console.log('Validating format with AI...');
-    const result = await chain.invoke({
-      jobTitle: jobTitle || 'the position',
-      companyName: companyName || 'the company',
-    });
+    const result = await retryWithBackoff(
+      () => chain.invoke({
+        jobTitle: jobTitle || 'the position',
+        companyName: companyName || 'the company',
+      }),
+      {
+        ...AI_RETRY_CONFIG,
+        onRetry: (error, attempt, delay) => {
+          console.warn(`[formatValidationAgent] Retry attempt ${attempt} after ${delay}ms due to: ${error.message}`);
+        },
+      }
+    );
 
     // Parse the JSON response
     const validation = JSON.parse(result);

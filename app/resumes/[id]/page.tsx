@@ -9,6 +9,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TemplateSelector } from '@/components/templates/TemplateSelector';
 import { ResumeEditor } from '@/components/resume/ResumeEditor';
 import { VersionHistory } from '@/components/resume/VersionHistory';
+import { SectionOrderManager } from '@/components/resume/SectionOrderManager';
 
 interface Resume {
   id: string;
@@ -52,6 +53,7 @@ interface Resume {
   coverLetter: string | null;
   isEdited: boolean;
   aiGeneratedContent?: Resume['content'];
+  sectionOrder?: string[] | null;
   metadata: {
     generatedAt: string;
     model: string;
@@ -78,6 +80,7 @@ export default function ResumeDetailPage() {
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
   const [isExportingCoverLetter, setIsExportingCoverLetter] = useState(false);
   const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [isSectionOrderOpen, setIsSectionOrderOpen] = useState(false);
 
   const fetchResume = async () => {
     try {
@@ -337,6 +340,12 @@ export default function ResumeDetailPage() {
               variant="secondary"
             >
               Edit Content
+            </Button>
+            <Button
+              onClick={() => setIsSectionOrderOpen(true)}
+              variant="secondary"
+            >
+              Reorder Sections
             </Button>
             <Button
               onClick={() => setIsVersionHistoryOpen(true)}
@@ -641,6 +650,16 @@ export default function ResumeDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Section Order Manager */}
+      {isSectionOrderOpen && (
+        <SectionOrderManager
+          resumeId={resumeId}
+          initialOrder={resume.sectionOrder as string[] | undefined}
+          onClose={() => setIsSectionOrderOpen(false)}
+          onSave={fetchResume}
+        />
       )}
     </div>
   );

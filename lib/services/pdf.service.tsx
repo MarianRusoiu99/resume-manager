@@ -60,13 +60,15 @@ class PDFService {
    * @param content - The resume content
    * @param templateId - Optional template ID to apply styling
    * @param templateCustomization - Optional customization overrides
+   * @param sectionOrder - Optional custom section order
    * @returns The URL path to the generated PDF
    */
   async generatePDF(
     resumeId: string,
     content: ResumeContent,
     templateId?: string,
-    templateCustomization?: Record<string, unknown>
+    templateCustomization?: Record<string, unknown>,
+    sectionOrder?: string[]
   ): Promise<string> {
     try {
       // Ensure directory exists
@@ -90,8 +92,14 @@ class PDFService {
         }
       }
 
-      // Generate PDF buffer with template
-      const pdfBuffer = await renderToBuffer(<ResumePDF content={content} template={template} />);
+      // Generate PDF buffer with template and section order
+      const pdfBuffer = await renderToBuffer(
+        <ResumePDF 
+          content={content} 
+          template={template} 
+          sectionOrder={sectionOrder}
+        />
+      );
 
       // Create filename
       const filename = `resume-${resumeId}-${Date.now()}.pdf`;
@@ -113,12 +121,14 @@ class PDFService {
    * @param content - The resume content
    * @param templateId - Optional template ID to apply styling
    * @param templateCustomization - Optional customization overrides
+   * @param sectionOrder - Optional custom section order
    * @returns PDF buffer
    */
   async generatePDFBuffer(
     content: ResumeContent,
     templateId?: string,
-    templateCustomization?: Record<string, unknown>
+    templateCustomization?: Record<string, unknown>,
+    sectionOrder?: string[]
   ): Promise<Buffer> {
     try {
       // Fetch template if provided
@@ -139,8 +149,14 @@ class PDFService {
         }
       }
 
-      // Generate PDF buffer with template
-      const pdfBuffer = await renderToBuffer(<ResumePDF content={content} template={template} />);
+      // Generate PDF buffer with template and section order
+      const pdfBuffer = await renderToBuffer(
+        <ResumePDF 
+          content={content} 
+          template={template} 
+          sectionOrder={sectionOrder}
+        />
+      );
       return pdfBuffer;
     } catch (error) {
       console.error('Error generating PDF buffer:', error);

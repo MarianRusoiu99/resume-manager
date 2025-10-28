@@ -56,11 +56,12 @@ export async function GET(
       return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
     }
 
-    // Generate PDF buffer with template and customization if available
+    // Generate PDF buffer with template, customization, and section order if available
     const pdfBuffer = await pdfService.generatePDFBuffer(
       resume.content as unknown as ResumeContent,
       resume.templateId || undefined,
-      resume.templateCustomization as Record<string, unknown> | undefined
+      resume.templateCustomization as Record<string, unknown> | undefined,
+      resume.sectionOrder as string[] | undefined
     );
 
     // Return PDF for inline display

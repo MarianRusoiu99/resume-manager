@@ -64,11 +64,12 @@ export async function POST(
       );
     }
 
-    // Generate PDF buffer with template and customization if available
+    // Generate PDF buffer with template, customization, and section order if available
     const pdfBuffer = await pdfService.generatePDFBuffer(
       resume.content as unknown as ResumeContent,
       resume.templateId || undefined,
-      resume.templateCustomization as Record<string, unknown> | undefined
+      resume.templateCustomization as Record<string, unknown> | undefined,
+      resume.sectionOrder as string[] | undefined
     );
 
     // Set headers for PDF download
@@ -131,12 +132,13 @@ export async function GET(
       });
     }
 
-    // Generate new PDF and save URL with template and customization if available
+    // Generate new PDF and save URL with template, customization, and section order if available
     const pdfUrl = await pdfService.generatePDF(
       id,
       resume.content as unknown as ResumeContent,
       resume.templateId || undefined,
-      resume.templateCustomization as Record<string, unknown> | undefined
+      resume.templateCustomization as Record<string, unknown> | undefined,
+      resume.sectionOrder as string[] | undefined
     );
 
     // Update resume with PDF URL

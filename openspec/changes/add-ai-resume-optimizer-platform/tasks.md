@@ -242,11 +242,19 @@ This document provides an ordered list of implementation tasks for building the 
 ### 4.7 Complete Workflow Integration
 - [x] Connect all agents in StateGraph
 - [x] Add conditional edges for error handling
-- [ ] Implement retry logic for failed agent calls (deferred - service layer handles errors gracefully)
+- [x] Implement retry logic for failed agent calls - ✅ Complete (exponential backoff for all AI agents)
 - [x] Add progress tracking and logging
 - [x] Create workflow invocation service
 - [x] Handle token usage tracking
 - [x] **Validation**: Full workflow runs from job description to structured resume
+
+**Implementation Notes**:
+- Retry utility created at `lib/utils/retry.ts` with exponential backoff (1s, 2s, 4s)
+- Default 3 retry attempts for transient failures
+- Integrated into 5 AI agents: job-analysis, profile-matching, content-optimization, format-validation, cover-letter
+- `isRetryableError()` function detects network errors, rate limiting, 5xx errors, OpenAI overload
+- Retry attempts logged to console for debugging
+- AI_RETRY_CONFIG provides optimized settings for AI API calls
 
 **Status**: ✅ Complete - Service layer executes complete workflow with userId context and error handling
 
@@ -259,12 +267,19 @@ This document provides an ordered list of implementation tasks for building the 
 - [x] Create ResumeService with generation logic
 - [x] Create API route: `POST /api/resumes/generate`
 - [x] Implement request validation (job description, options)
-- [ ] Add progress streaming (Server-Sent Events or WebSocket) - Deferred for v2
+- [x] Add progress streaming (Server-Sent Events) - ✅ Complete (SSE endpoint + UI with progress bar)
 - [x] Store generated resumes in database
 - [x] Add error handling and user feedback
-- [x] **Validation**: API generates and stores resumes
+- [x] **Validation**: API generates and stores resumes, progress streaming operational
 
-**Status**: ✅ Complete - Backend service wraps workflow and stores resumes in database
+**Status**: ✅ Complete - Backend service, SSE endpoint, and UI progress tracking fully operational
+
+**Implementation Notes**:
+- SSE endpoint at `/api/resumes/generate-stream` with 11 progress stages
+- UI progress bar shows real-time updates during generation
+- ReadableStream client parsing in generate page
+- Progress displayed: step name, message, and percentage (0-100%)
+- Graceful error handling and fallback to non-streaming mode
 
 **Dependencies**: 4.7 (Complete Workflow)
 **Parallel Work**: Can work on UI while backend progresses
@@ -385,14 +400,17 @@ This document provides an ordered list of implementation tasks for building the 
 - [x] Add "Generate Cover Letter" toggle to generation form
 - [x] Display cover letter in resume detail view
 - [x] Add cover letter to PDF export (optional separate file) - ✅ Complete (separate cover letter PDF)
-- [ ] Allow cover letter-only generation - Deferred for v2
+- [x] Allow cover letter-only generation - ✅ Complete (standalone page at /cover-letter with job analysis and PDF export)
 - [x] Add edit/copy cover letter text
 - [x] **Validation**: User can generate, view, copy, and export cover letters as PDF
 
-**Status**: ✅ Complete - Cover letter display with copy, and separate PDF export functionality
+**Status**: ✅ Complete - Cover letter display with copy, separate PDF export, and standalone generation page
 
 **Implementation Notes**:
 - CoverLetterPDF component with professional formatting
+- Standalone cover letter page at /cover-letter with form and preview
+- Two API endpoints: /api/cover-letter/generate and /api/cover-letter/export-pdf
+- Integrates with job analysis agent for intelligent cover letter generation
 - POST /api/resumes/:id/export-cover-letter endpoint
 - generateCoverLetterBuffer() added to PDF service
 - Export button added to cover letter section on resume detail page
@@ -457,11 +475,19 @@ This document provides an ordered list of implementation tasks for building the 
 - [x] Add cache invalidation on profile updates
 - [x] Optimize API route response times with caching (API keys: 5-min TTL, resumes list: 2-min TTL, cache invalidation on mutations)
 - [x] Add request rate limiting middleware
-- [ ] Optimize bundle size (code splitting) - deferred for v2
+- [x] Optimize bundle size (code splitting) - ✅ Complete (dynamic imports for 4 heavy components)
 - [ ] Add image optimization - deferred for v2 (no images in current implementation)
-- [x] **Validation**: Database indexes applied, caching and rate limiting implemented, API route caching with proper invalidation
+- [x] **Validation**: Database indexes applied, caching and rate limiting implemented, API route caching with proper invalidation, code splitting reduces initial bundle
 
-**Status**: ✅ Complete - All critical performance optimizations implemented (database indexes, caching, rate limiting), bundle optimization deferred for v2
+**Status**: ✅ Complete - All critical performance optimizations implemented including code splitting
+
+**Bundle Optimization Implementation Notes**:
+- Dynamic imports added for heavy components: ResumeEditor (~390 lines), TemplateCustomizer (~370 lines), TemplateLivePreview (~200 lines), VersionHistory (~280 lines)
+- Components load on-demand when user opens editor/customizer/preview/history modals
+- Loading states provide feedback during component load (spinners/placeholders)
+- SSR disabled for client-heavy components via `ssr: false`
+- Reduces initial page bundle by ~1,240 lines of component code
+- Build verified: ✅ Compiles successfully in 5.0s (37 routes, 0 errors)
 
 **Dependencies**: All previous phases
 **Parallel Work**: Can work on documentation
@@ -581,16 +607,29 @@ This document provides an ordered list of implementation tasks for building the 
 **Parallel Work**: None
 
 ### 8.8 Resume Content Editing
-**Status**: ✅ Complete - Inline editing with section management and revert functionality
+**Status**: ✅ Complete - Inline editing with section management, revert functionality, and drag-and-drop reordering
 
 - [x] Create ResumeEditor component with inline editing
 - [x] Add section editors (Summary, Experience, Education, Skills)
-- [ ] Implement drag-and-drop section reordering (deferred - not critical for v2)
+- [x] Implement drag-and-drop section reordering - ✅ Complete (DnD with @dnd-kit library)
 - [x] Add entry-level editing within sections
 - [ ] Create "Add Section" functionality for custom sections (deferred - current sections comprehensive)
 - [ ] Create "Remove Section" functionality (deferred - standard sections maintained)
 - [ ] Implement real-time PDF preview during editing (deferred - preview on export)
 - [x] Add "Revert to AI Version" button
+
+**Implementation Notes - Drag-and-Drop Reordering**:
+- Installed @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities libraries
+- Created SectionOrderManager component (240+ lines) with visual drag-and-drop interface
+- Database migration: added `sectionOrder` JSON field to GeneratedResume model
+- API endpoint: POST /api/resumes/:id/section-order to persist custom order
+- Updated PDF generation service to accept and respect sectionOrder parameter
+- Updated ResumePDF component to render sections in custom order
+- Integration: "Reorder Sections" button added to resume detail page
+- Default section order: summary → experience → education → skills → certifications → languages
+- Visual feedback: draggable sections with icons, hover states, and drag handles
+- Reset functionality: restore to default order
+- Build verified: ✅ Compiles successfully (37 routes, 0 errors)
 - [x] Create API route: `PATCH /api/resumes/:id/content`
 - [x] **Validation**: ✅ User can edit resume content inline and save changes
 

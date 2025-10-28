@@ -219,6 +219,7 @@ interface ResumeData {
     };
   };
   template?: ResumeTemplate | null;
+  sectionOrder?: string[];
 }
 
 // Helper function to format dates
@@ -355,24 +356,37 @@ const ResumeSkills: React.FC<{ skills: ResumeData['content']['skills']; styles: 
 );
 
 // Main PDF Document Component
-export const ResumePDF: React.FC<ResumeData> = ({ content, template }) => {
+export const ResumePDF: React.FC<ResumeData> = ({ content, template, sectionOrder }) => {
   // Generate styles based on template
   const styles = createStyles(template || null);
+  
+  // Default section order if not provided
+  const defaultOrder = ['summary', 'experience', 'education', 'skills'];
+  const order = sectionOrder && sectionOrder.length > 0 ? sectionOrder : defaultOrder;
+  
+  // Create section map
+  const sections: Record<string, React.ReactNode> = {
+    summary: content.summary ? <ResumeSummary summary={content.summary} styles={styles} /> : null,
+    experience: content.experience && content.experience.length > 0 ? (
+      <ResumeExperience experience={content.experience} styles={styles} />
+    ) : null,
+    education: content.education && content.education.length > 0 ? (
+      <ResumeEducation education={content.education} styles={styles} />
+    ) : null,
+    skills: content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0) ? (
+      <ResumeSkills skills={content.skills} styles={styles} />
+    ) : null,
+  };
   
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <ResumeHeader personalInfo={content.personalInfo} styles={styles} />
-        {content.summary && <ResumeSummary summary={content.summary} styles={styles} />}
-        {content.experience && content.experience.length > 0 && (
-          <ResumeExperience experience={content.experience} styles={styles} />
-        )}
-        {content.education && content.education.length > 0 && (
-          <ResumeEducation education={content.education} styles={styles} />
-        )}
-        {content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0) && (
-          <ResumeSkills skills={content.skills} styles={styles} />
-        )}
+        {/* Render sections in custom order */}
+        {order.map((sectionId) => {
+          const section = sections[sectionId];
+          return section ? <React.Fragment key={sectionId}>{section}</React.Fragment> : null;
+        })}
       </Page>
     </Document>
   );

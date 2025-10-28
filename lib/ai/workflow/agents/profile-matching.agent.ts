@@ -18,6 +18,7 @@ import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../types';
 import { addMessage, addError, addTokens, createSystemMessage, createAIMessage, parseAgentJSON } from '../utils';
+import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
 
 /**
  * Prompt template for profile matching
@@ -195,17 +196,25 @@ export async function profileMatchingAgent(
     console.log('[profileMatchingAgent] Calling OpenAI for profile matching...');
     const startTime = Date.now();
     
-    const result = await chain.invoke({
-      requiredSkills: jobAnalysis.requirements.required.join(', '),
-      preferredSkills: jobAnalysis.requirements.preferred.join(', '),
-      keyResponsibilities: jobAnalysis.keyResponsibilities.join('; '),
-      jobSummary: jobAnalysis.jobSummary,
-      candidateName: profile.personalInfo.name,
-      candidateSummary: profile.summary || 'No summary provided',
-      experience: formatExperience(profile.experience),
-      education: formatEducation(profile.education),
-      skills: formatSkills(profile.skills),
-    });
+    const result = await retryWithBackoff(
+      () => chain.invoke({
+        requiredSkills: jobAnalysis.requirements.required.join(', '),
+        preferredSkills: jobAnalysis.requirements.preferred.join(', '),
+        keyResponsibilities: jobAnalysis.keyResponsibilities.join('; '),
+        jobSummary: jobAnalysis.jobSummary,
+        candidateName: profile.personalInfo.name,
+        candidateSummary: profile.summary || 'No summary provided',
+        experience: formatExperience(profile.experience),
+        education: formatEducation(profile.education),
+        skills: formatSkills(profile.skills),
+      }),
+      {
+        ...AI_RETRY_CONFIG,
+        onRetry: (error, attempt, delay) => {
+          console.warn(`[profileMatchingAgent] Retry attempt ${attempt} after ${delay}ms due to: ${error.message}`);
+        },
+      }
+    );
 
     const duration = Date.now() - startTime;
     console.log(`[profileMatchingAgent] Matching completed in ${duration}ms`);

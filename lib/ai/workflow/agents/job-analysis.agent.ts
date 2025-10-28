@@ -17,6 +17,7 @@ import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../types';
 import { addMessage, addError, addTokens, createSystemMessage, createAIMessage, parseAgentJSON } from '../utils';
+import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
 
 /**
  * Prompt template for job analysis
@@ -115,11 +116,19 @@ export async function analyzeJobAgent(
     console.log('[analyzeJobAgent] Calling OpenAI for job analysis...');
     const startTime = Date.now();
     
-    const result = await chain.invoke({
-      jobTitle: state.jobTitle || 'Not specified',
-      companyName: state.companyName || 'Not specified',
-      jobDescription: state.jobDescription,
-    });
+    const result = await retryWithBackoff(
+      () => chain.invoke({
+        jobTitle: state.jobTitle || 'Not specified',
+        companyName: state.companyName || 'Not specified',
+        jobDescription: state.jobDescription,
+      }),
+      {
+        ...AI_RETRY_CONFIG,
+        onRetry: (error, attempt, delay) => {
+          console.warn(`[analyzeJobAgent] Retry attempt ${attempt} after ${delay}ms due to: ${error.message}`);
+        },
+      }
+    );
 
     const duration = Date.now() - startTime;
     console.log(`[analyzeJobAgent] Analysis completed in ${duration}ms`);
