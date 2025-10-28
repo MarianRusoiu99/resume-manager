@@ -6,15 +6,18 @@
  */
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { ResumeTemplate } from '@/types/template';
 import { TemplatePreviewModal } from './TemplatePreviewModal';
 
 interface TemplateCardProps {
   template: ResumeTemplate;
+  showAdminActions?: boolean;
 }
 
-export function TemplateCard({ template }: TemplateCardProps) {
+export function TemplateCard({ template, showAdminActions = false }: TemplateCardProps) {
   const [showPreview, setShowPreview] = useState(false);
+  const router = useRouter();
 
   // ATS Score badge color
   const getScoreBadgeColor = (score: number) => {
@@ -70,12 +73,22 @@ export function TemplateCard({ template }: TemplateCardProps) {
               {template.category}
             </span>
 
-            <button
-              onClick={() => setShowPreview(true)}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
-              Preview →
-            </button>
+            <div className="flex gap-2">
+              {showAdminActions && (
+                <button
+                  onClick={() => router.push(`/admin/templates/${template.id}/edit`)}
+                  className="text-sm text-gray-600 hover:text-gray-800 font-medium"
+                >
+                  Edit
+                </button>
+              )}
+              <button
+                onClick={() => setShowPreview(true)}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Preview →
+              </button>
+            </div>
           </div>
         </div>
       </div>

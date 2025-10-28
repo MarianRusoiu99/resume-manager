@@ -1,26 +1,71 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import type { ResumeTemplate } from '@/types/template';
 
-// PDF Styles - ATS-friendly formatting
-const styles = StyleSheet.create({
-  page: {
-    padding: 40,
+// Helper function to create dynamic styles from template
+const createTemplateStyles = (template: ResumeTemplate | null) => {
+  // Default ATS-friendly formatting
+  const defaults = {
     fontSize: 11,
     fontFamily: 'Helvetica',
     lineHeight: 1.4,
+    primaryColor: '#000',
+    secondaryColor: '#333',
+    accentColor: '#0066cc',
+    borderColor: '#333',
+  };
+
+  // Apply template overrides if provided
+  if (template?.definition) {
+    const { typography, colors } = template.definition;
+    return {
+      fontSize: typography?.fontSize?.body || defaults.fontSize,
+      fontFamily: typography?.bodyFont || defaults.fontFamily,
+      lineHeight: typography?.lineHeight || defaults.lineHeight,
+      primaryColor: colors?.primary || defaults.primaryColor,
+      secondaryColor: colors?.secondary || defaults.secondaryColor,
+      accentColor: colors?.accent || defaults.accentColor,
+      borderColor: colors?.border || defaults.borderColor,
+      headingFontSize: typography?.fontSize?.heading || 14,
+      nameFontSize: typography?.fontSize?.name || 24,
+      subheadingFontSize: typography?.fontSize?.subheading || 12,
+      smallFontSize: typography?.fontSize?.small || 10,
+    };
+  }
+
+  return {
+    ...defaults,
+    headingFontSize: 14,
+    nameFontSize: 24,
+    subheadingFontSize: 12,
+    smallFontSize: 10,
+  };
+};
+
+// PDF Styles factory - accepts template for dynamic styling
+const createStyles = (template: ResumeTemplate | null) => {
+  const theme = createTemplateStyles(template);
+
+  return StyleSheet.create({
+  page: {
+    padding: 40,
+    fontSize: theme.fontSize,
+    fontFamily: theme.fontFamily,
+    lineHeight: theme.lineHeight,
   },
   // Header Section
   header: {
     marginBottom: 20,
   },
   name: {
-    fontSize: 24,
+    fontSize: theme.nameFontSize,
     fontWeight: 'bold',
     marginBottom: 8,
+    color: theme.primaryColor,
   },
   contactInfo: {
-    fontSize: 10,
-    color: '#333',
+    fontSize: theme.smallFontSize,
+    color: theme.secondaryColor,
     marginBottom: 4,
     flexDirection: 'row',
     gap: 12,
@@ -29,24 +74,26 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   links: {
-    fontSize: 10,
-    color: '#0066cc',
+    fontSize: theme.smallFontSize,
+    color: theme.accentColor,
     marginTop: 4,
   },
   // Section Headers
   sectionTitle: {
-    fontSize: 14,
+    fontSize: theme.headingFontSize,
     fontWeight: 'bold',
     marginTop: 16,
     marginBottom: 8,
-    borderBottom: '2 solid #333',
+    borderBottom: `2 solid ${theme.borderColor}`,
     paddingBottom: 4,
+    color: theme.primaryColor,
   },
   // Summary Section
   summary: {
-    fontSize: 11,
+    fontSize: theme.fontSize,
     lineHeight: 1.5,
     marginBottom: 12,
+    color: theme.primaryColor,
   },
   // Experience Section
   experienceItem: {
@@ -58,20 +105,21 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   jobTitle: {
-    fontSize: 12,
+    fontSize: theme.subheadingFontSize,
     fontWeight: 'bold',
+    color: theme.primaryColor,
   },
   company: {
-    fontSize: 11,
-    color: '#333',
+    fontSize: theme.fontSize,
+    color: theme.secondaryColor,
     marginBottom: 4,
   },
   dates: {
-    fontSize: 10,
+    fontSize: theme.smallFontSize,
     color: '#666',
   },
   description: {
-    fontSize: 10,
+    fontSize: theme.smallFontSize,
     marginBottom: 4,
     color: '#444',
   },
@@ -79,7 +127,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   bulletPoint: {
-    fontSize: 10,
+    fontSize: theme.smallFontSize,
     marginBottom: 3,
     flexDirection: 'row',
   },
@@ -100,16 +148,17 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   degree: {
-    fontSize: 11,
+    fontSize: theme.fontSize,
     fontWeight: 'bold',
+    color: theme.primaryColor,
   },
   institution: {
-    fontSize: 10,
-    color: '#333',
+    fontSize: theme.smallFontSize,
+    color: theme.secondaryColor,
     marginBottom: 2,
   },
   gpa: {
-    fontSize: 10,
+    fontSize: theme.smallFontSize,
     color: '#666',
   },
   // Skills Section
@@ -117,12 +166,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   skillCategory: {
-    fontSize: 10,
+    fontSize: theme.smallFontSize,
     fontWeight: 'bold',
     marginBottom: 4,
+    color: theme.primaryColor,
   },
   skillsList: {
-    fontSize: 10,
+    fontSize: theme.smallFontSize,
     marginBottom: 6,
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -132,6 +182,10 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
 });
+};
+
+// Type for PDF styles (derived from the function return type)
+type PDFStyles = ReturnType<typeof createStyles>;
 
 interface ResumeData {
   content: {
@@ -164,6 +218,7 @@ interface ResumeData {
       soft: string[];
     };
   };
+  template?: ResumeTemplate | null;
 }
 
 // Helper function to format dates
@@ -177,8 +232,9 @@ const formatDate = (dateString: string | null): string => {
 };
 
 // Resume Header Component
-const ResumeHeader: React.FC<{ personalInfo: ResumeData['content']['personalInfo'] }> = ({
+const ResumeHeader: React.FC<{ personalInfo: ResumeData['content']['personalInfo']; styles: PDFStyles }> = ({
   personalInfo,
+  styles,
 }) => (
   <View style={styles.header}>
     <Text style={styles.name}>{personalInfo.name}</Text>
@@ -198,7 +254,7 @@ const ResumeHeader: React.FC<{ personalInfo: ResumeData['content']['personalInfo
 );
 
 // Summary Section Component
-const ResumeSummary: React.FC<{ summary: string }> = ({ summary }) => (
+const ResumeSummary: React.FC<{ summary: string; styles: PDFStyles }> = ({ summary, styles }) => (
   <View>
     <Text style={styles.sectionTitle}>PROFESSIONAL SUMMARY</Text>
     <Text style={styles.summary}>{summary}</Text>
@@ -206,8 +262,9 @@ const ResumeSummary: React.FC<{ summary: string }> = ({ summary }) => (
 );
 
 // Experience Section Component
-const ResumeExperience: React.FC<{ experience: ResumeData['content']['experience'] }> = ({
+const ResumeExperience: React.FC<{ experience: ResumeData['content']['experience']; styles: PDFStyles }> = ({
   experience,
+  styles,
 }) => (
   <View>
     <Text style={styles.sectionTitle}>PROFESSIONAL EXPERIENCE</Text>
@@ -239,8 +296,9 @@ const ResumeExperience: React.FC<{ experience: ResumeData['content']['experience
 );
 
 // Education Section Component
-const ResumeEducation: React.FC<{ education: ResumeData['content']['education'] }> = ({
+const ResumeEducation: React.FC<{ education: ResumeData['content']['education']; styles: PDFStyles }> = ({
   education,
+  styles,
 }) => (
   <View>
     <Text style={styles.sectionTitle}>EDUCATION</Text>
@@ -264,7 +322,7 @@ const ResumeEducation: React.FC<{ education: ResumeData['content']['education'] 
 );
 
 // Skills Section Component
-const ResumeSkills: React.FC<{ skills: ResumeData['content']['skills'] }> = ({ skills }) => (
+const ResumeSkills: React.FC<{ skills: ResumeData['content']['skills']; styles: PDFStyles }> = ({ skills, styles }) => (
   <View>
     <Text style={styles.sectionTitle}>SKILLS</Text>
     {skills.technical && skills.technical.length > 0 && (
@@ -297,22 +355,27 @@ const ResumeSkills: React.FC<{ skills: ResumeData['content']['skills'] }> = ({ s
 );
 
 // Main PDF Document Component
-export const ResumePDF: React.FC<ResumeData> = ({ content }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <ResumeHeader personalInfo={content.personalInfo} />
-      {content.summary && <ResumeSummary summary={content.summary} />}
-      {content.experience && content.experience.length > 0 && (
-        <ResumeExperience experience={content.experience} />
-      )}
-      {content.education && content.education.length > 0 && (
-        <ResumeEducation education={content.education} />
-      )}
-      {content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0) && (
-        <ResumeSkills skills={content.skills} />
-      )}
-    </Page>
-  </Document>
-);
+export const ResumePDF: React.FC<ResumeData> = ({ content, template }) => {
+  // Generate styles based on template
+  const styles = createStyles(template || null);
+  
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <ResumeHeader personalInfo={content.personalInfo} styles={styles} />
+        {content.summary && <ResumeSummary summary={content.summary} styles={styles} />}
+        {content.experience && content.experience.length > 0 && (
+          <ResumeExperience experience={content.experience} styles={styles} />
+        )}
+        {content.education && content.education.length > 0 && (
+          <ResumeEducation education={content.education} styles={styles} />
+        )}
+        {content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0) && (
+          <ResumeSkills skills={content.skills} styles={styles} />
+        )}
+      </Page>
+    </Document>
+  );
+};
 
 export default ResumePDF;

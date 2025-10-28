@@ -2,22 +2,38 @@ import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repo
 import { generateResume, type GenerateResumeInput } from '@/lib/ai/workflow';
 import { profileService } from '@/lib/services/profile.service';
 
+/**
+ * Input parameters for resume generation
+ */
 export interface GenerateResumeServiceInput {
+  /** User ID who is generating the resume */
   userId: string;
+  /** Job description text to analyze */
   jobDescription: string;
+  /** Optional job title */
   jobTitle?: string;
+  /** Optional company name */
   companyName?: string;
+  /** Optional template ID to apply */
+  templateId?: string;
 }
 
+/**
+ * Result of resume generation operation
+ */
 export interface GenerateResumeServiceResult {
+  /** Whether the generation was successful */
   success: boolean;
+  /** Generated resume ID (if successful) */
   resumeId?: string;
+  /** Full resume object with content and metadata */
   resume?: {
     id: string;
     content: Record<string, unknown>;
     metadata: Record<string, unknown>;
     createdAt: Date;
   };
+  /** Array of error messages (if failed) */
   errors?: string[];
 }
 
@@ -153,6 +169,7 @@ export class ResumeService {
           jobTitle: input.jobTitle,
           companyName: input.companyName
         },
+  templateId: input.templateId ?? undefined,
         resumeContent: workflowResult.resume as unknown as Record<string, unknown>,
         metadata: {
           model: workflowResult.resume.metadata.modelUsed,
@@ -208,15 +225,25 @@ export class ResumeService {
       return null;
     }
 
+    // Parse jobMetadata to extract jobTitle and companyName
+    const jobMetadata = resume.jobMetadata as Record<string, unknown> | null;
+    const jobTitle = (jobMetadata?.jobTitle as string) || 'Position';
+    const companyName = (jobMetadata?.companyName as string) || null;
+
     return {
       id: resume.id,
       jobDescription: resume.jobDescription,
       jobMetadata: resume.jobMetadata as Record<string, unknown>,
+      jobTitle,
+      companyName,
       content: resume.resumeContent as Record<string, unknown>,
       metadata: resume.metadata as Record<string, unknown>,
       isEdited: resume.isEdited,
       aiGeneratedContent: resume.aiGeneratedContent as Record<string, unknown>,
+      coverLetter: resume.coverLetter,
       pdfUrl: resume.pdfUrl,
+      templateId: resume.templateId,
+      templateCustomization: resume.templateCustomization as Record<string, unknown> | null,
       createdAt: resume.createdAt,
       updatedAt: resume.updatedAt
     };

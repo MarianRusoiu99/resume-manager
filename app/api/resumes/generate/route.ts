@@ -20,7 +20,8 @@ const resumesCache = new SimpleCache<Array<{
 const generateResumeSchema = z.object({
   jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
   jobTitle: z.string().optional(),
-  companyName: z.string().optional()
+  companyName: z.string().optional(),
+  templateId: z.string().optional(),
 });
 
 /**
@@ -60,17 +61,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { jobDescription, jobTitle, companyName } = validation.data;
+  const { jobDescription, jobTitle, companyName, templateId } = validation.data;
 
     console.log(`\n📝 API: Resume generation request from user ${session.user.id}`);
     console.log(`   Job: ${jobTitle || 'Not specified'} at ${companyName || 'Not specified'}`);
 
-    // Generate resume
+    // Generate resume (pass templateId through if provided)
     const result = await resumeService.generateResume({
       userId: session.user.id,
       jobDescription,
       jobTitle,
-      companyName
+      companyName,
+      templateId
     });
 
     if (!result.success) {

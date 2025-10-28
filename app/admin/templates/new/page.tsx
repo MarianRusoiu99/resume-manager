@@ -1,0 +1,406 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { TemplateLivePreview } from '@/components/templates/TemplateLivePreview';
+import type { TemplateDefinition } from '@/types/template';
+
+interface TemplateFormData {
+  name: string;
+  category: string;
+  description: string;
+  isPublic: boolean;
+  version: string;
+  atsScore: number;
+  definition: TemplateDefinition;
+}
+
+const DEFAULT_TEMPLATE_DEFINITION: TemplateDefinition = {
+  layout: {
+    paperSize: 'letter' as const,
+    margins: {
+      top: 50,
+      right: 50,
+      bottom: 50,
+      left: 50,
+    },
+    columns: 1,
+  },
+  typography: {
+    bodyFont: 'Helvetica',
+    headingFont: 'Helvetica',
+    fontSize: {
+      name: 24,
+      heading: 14,
+      subheading: 12,
+      body: 11,
+      small: 9,
+    },
+    lineHeight: 1.3,
+  },
+  colors: {
+    primary: '#2563eb',
+    secondary: '#64748b',
+    accent: '#3b82f6',
+    background: '#ffffff',
+    border: '#e2e8f0',
+  },
+  sections: {
+    showDividers: true,
+    dividerThickness: 1,
+    spacing: 20,
+    order: ['summary', 'experience', 'education', 'skills', 'certifications'],
+  },
+  contact: {
+    layout: 'horizontal' as const,
+    showIcons: false,
+  },
+  experience: {
+    dateFormat: 'month-year' as const,
+    showCompanyLogo: false,
+    bulletStyle: 'disc' as const,
+  },
+  skills: {
+    format: 'list' as const,
+    groupByCategory: true,
+  },
+};
+
+const DEFAULT_TEMPLATE: TemplateFormData = {
+  name: 'New Template',
+  category: 'professional',
+  description: 'A custom template',
+  isPublic: true,
+  version: '1.0.0',
+  atsScore: 8,
+  definition: DEFAULT_TEMPLATE_DEFINITION,
+};
+
+export default function NewTemplatePage() {
+  const router = useRouter();
+  const [template, setTemplate] = useState<TemplateFormData>(DEFAULT_TEMPLATE);
+  const [jsonInput, setJsonInput] = useState(JSON.stringify(DEFAULT_TEMPLATE.definition, null, 2));
+  const [jsonError, setJsonError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'json' | 'visual'>('json');
+
+  const handleJsonChange = (value: string) => {
+    setJsonInput(value);
+    try {
+      const parsed = JSON.parse(value);
+      setTemplate({ ...template, definition: parsed });
+      setJsonError(null);
+    } catch (error) {
+      setJsonError(error instanceof Error ? error.message : 'Invalid JSON');
+    }
+  };
+
+  const handleMetadataChange = (field: keyof TemplateFormData, value: string | boolean | number) => {
+    setTemplate({ ...template, [field]: value });
+  };
+
+  const validateTemplate = (): string[] => {
+    const errors: string[] = [];
+    
+    if (!template.name || template.name.trim().length === 0) {
+      errors.push('Template name is required');
+    }
+    
+    if (!template.category) {
+      errors.push('Template category is required');
+    }
+    
+    if (!template.definition) {
+      errors.push('Template definition is required');
+    } else {
+      // Validate required fields in definition
+      if (!template.definition.colors) {
+        errors.push('Colors configuration is required');
+      }
+      if (!template.definition.typography) {
+        errors.push('Typography configuration is required');
+      }
+      if (!template.definition.sections) {
+        errors.push('Sections configuration is required');
+      }
+    }
+    
+    if (jsonError) {
+      errors.push(`JSON Error: ${jsonError}`);
+    }
+    
+    return errors;
+  };
+
+  const handleSave = async () => {
+    const errors = validateTemplate();
+    
+    if (errors.length > 0) {
+      toast.error(`Validation failed:\n${errors.join('\n')}`);
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      
+      const response = await fetch('/api/admin/templates', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(template),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create template');
+      }
+      
+      await response.json(); // Template created
+      toast.success('Template created successfully!');
+      
+      // Redirect to templates gallery
+      router.push('/templates');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to create template');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="mb-8">
+        <Button
+          variant="ghost"
+          onClick={() => router.push('/templates')}
+          className="mb-4"
+        >
+          ← Back to Templates
+        </Button>
+        
+        <h1 className="text-3xl font-bold mb-2">Create New Template</h1>
+        <p className="text-gray-600">
+          Design a custom resume template with JSON configuration
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Template Configuration */}
+        <div className="space-y-6">
+          {/* Metadata Section */}
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Template Metadata</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Template Name *
+                </label>
+                <Input
+                  value={template.name || ''}
+                  onChange={(e) => handleMetadataChange('name', e.target.value)}
+                  placeholder="Professional Resume"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category *
+                </label>
+                <select
+                  value={template.category || 'professional'}
+                  onChange={(e) => handleMetadataChange('category', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="professional">Professional</option>
+                  <option value="modern">Modern</option>
+                  <option value="creative">Creative</option>
+                  <option value="minimal">Minimal</option>
+                  <option value="ats">ATS-Optimized</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <Textarea
+                  value={template.description || ''}
+                  onChange={(e) => handleMetadataChange('description', e.target.value)}
+                  placeholder="A clean, professional template suitable for corporate roles"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Version
+                  </label>
+                  <Input
+                    value={template.version}
+                    onChange={(e) => handleMetadataChange('version', e.target.value)}
+                    placeholder="1.0.0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    ATS Score (1-10)
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={template.atsScore}
+                    onChange={(e) => handleMetadataChange('atsScore', parseInt(e.target.value) || 8)}
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={template.isPublic}
+                    onChange={(e) => handleMetadataChange('isPublic', e.target.checked)}
+                    className="w-4 h-4 text-blue-600 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Public Template</span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Public templates are visible to all users in the gallery
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* JSON Editor Section */}
+          <Card className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Template Definition (JSON)</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setJsonInput(JSON.stringify(template.definition, null, 2))}
+              >
+                Format
+              </Button>
+            </div>
+            
+            {jsonError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-800">{jsonError}</p>
+              </div>
+            )}
+            
+            <Textarea
+              value={jsonInput}
+              onChange={(e) => handleJsonChange(e.target.value)}
+              rows={20}
+              className="font-mono text-sm"
+              placeholder="Enter JSON template definition..."
+            />
+            
+            <p className="mt-2 text-xs text-gray-500">
+              Must include: colors, typography, layout, and sections configuration
+            </p>
+          </Card>
+        </div>
+
+        {/* Right Column: Live Preview */}
+        <div className="space-y-6">
+          <Card className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Live Preview</h2>
+              <div className="flex gap-2">
+                <Button
+                  variant={previewMode === 'json' ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setPreviewMode('json')}
+                >
+                  JSON
+                </Button>
+                <Button
+                  variant={previewMode === 'visual' ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setPreviewMode('visual')}
+                >
+                  Visual
+                </Button>
+              </div>
+            </div>
+            
+            {previewMode === 'json' ? (
+              <div className="bg-gray-50 rounded-lg p-4 overflow-auto max-h-[600px]">
+                <pre className="text-xs font-mono">
+                  {JSON.stringify(template, null, 2)}
+                </pre>
+              </div>
+            ) : (
+              <div className="border border-gray-200 rounded-lg overflow-auto max-h-[600px]">
+                {template.definition && !jsonError ? (
+                  <TemplateLivePreview
+                    template={{
+                      id: 'preview',
+                      name: template.name,
+                      category: template.category as 'professional' | 'modern' | 'creative' | 'ats-optimized' | 'minimal',
+                      description: template.description,
+                      definition: template.definition,
+                      version: template.version,
+                      atsScore: template.atsScore,
+                      isPublic: template.isPublic,
+                      previewUrl: undefined,
+                      createdAt: new Date(),
+                      updatedAt: new Date(),
+                    }}
+                  />
+                ) : (
+                  <div className="p-8 text-center text-gray-500">
+                    <p>Fix JSON errors to see live preview</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+          
+          {/* ATS Compatibility Warning */}
+          <Card className="p-4 bg-yellow-50 border-yellow-200">
+            <h3 className="text-sm font-semibold text-yellow-900 mb-2">
+              ⚠️ ATS Compatibility Guidelines
+            </h3>
+            <ul className="text-xs text-yellow-800 space-y-1">
+              <li>• Use standard fonts (Helvetica, Arial, Times-Roman)</li>
+              <li>• Avoid text sizes below 10pt</li>
+              <li>• Maintain sufficient margin (40-60pt recommended)</li>
+              <li>• Use simple bullet styles (disc, square)</li>
+              <li>• Avoid complex layouts or tables</li>
+            </ul>
+          </Card>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="mt-8 flex justify-end gap-4">
+        <Button
+          variant="secondary"
+          onClick={() => router.push('/templates')}
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={isSaving || !!jsonError}
+        >
+          {isSaving ? 'Creating...' : 'Create Template'}
+        </Button>
+      </div>
+    </div>
+  );
+}

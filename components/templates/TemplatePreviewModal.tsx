@@ -7,6 +7,7 @@
 
 import { useEffect } from 'react';
 import type { ResumeTemplate } from '@/types/template';
+import { TemplateLivePreview } from './TemplateLivePreview';
 
 interface TemplatePreviewModalProps {
   template: ResumeTemplate;
@@ -114,19 +115,9 @@ export function TemplatePreviewModal({
             </div>
           </div>
 
-          {/* Preview Placeholder */}
+          {/* Live Preview */}
           <div className="border rounded-lg p-8 bg-gray-50">
-            <div className="aspect-[8.5/11] bg-white shadow-lg rounded flex items-center justify-center">
-              <div className="text-center p-8">
-                <div className="text-6xl mb-4">📄</div>
-                <p className="text-gray-600 mb-2">
-                  Live preview coming in v2
-                </p>
-                <p className="text-sm text-gray-500">
-                  Generate a resume to see this template in action
-                </p>
-              </div>
-            </div>
+            <TemplateLivePreview template={template} />
           </div>
 
           {/* Action Buttons */}

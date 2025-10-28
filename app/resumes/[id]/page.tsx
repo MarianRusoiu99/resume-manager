@@ -6,6 +6,9 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { TemplateSelector } from '@/components/templates/TemplateSelector';
+import { ResumeEditor } from '@/components/resume/ResumeEditor';
+import { VersionHistory } from '@/components/resume/VersionHistory';
 
 interface Resume {
   id: string;
@@ -48,6 +51,7 @@ interface Resume {
   pdfUrl: string | null;
   coverLetter: string | null;
   isEdited: boolean;
+  aiGeneratedContent?: Resume['content'];
   metadata: {
     generatedAt: string;
     model: string;
@@ -69,6 +73,11 @@ export default function ResumeDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+  const [isExportingCoverLetter, setIsExportingCoverLetter] = useState(false);
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
 
   const fetchResume = async () => {
     try {
@@ -130,6 +139,52 @@ export default function ResumeDetailPage() {
     setDeleteDialogOpen(false);
   };
 
+  const handleDuplicate = async () => {
+    try {
+      setIsDuplicating(true);
+      
+      const response = await fetch(`/api/resumes/${resumeId}/duplicate`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to duplicate resume');
+      }
+
+      const data = await response.json();
+      toast.success('Resume duplicated successfully');
+      
+      // Redirect to the duplicated resume
+      router.push(`/resumes/${data.resume.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to duplicate resume');
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
+  const handleRestoreVersion = async () => {
+    try {
+      const response = await fetch(`/api/resumes/${resumeId}/content`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(resume?.aiGeneratedContent || resume?.content),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to restore version');
+      }
+
+      toast.success('AI-generated version restored successfully');
+      setIsVersionHistoryOpen(false);
+      fetchResume();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to restore version');
+    }
+  };
+
   const handleExportPDF = async () => {
     try {
       setIsExportingPDF(true);
@@ -163,6 +218,43 @@ export default function ResumeDetailPage() {
       toast.error(errorMsg);
     } finally {
       setIsExportingPDF(false);
+    }
+  };
+
+  const handleExportCoverLetter = async () => {
+    try {
+      setIsExportingCoverLetter(true);
+      setError(null);
+
+      const response = await fetch(`/api/resumes/${resumeId}/export-cover-letter`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to export cover letter PDF');
+      }
+
+      // Get PDF blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cover-letter-${resumeId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('Cover letter PDF exported successfully');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to export cover letter PDF';
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setIsExportingCoverLetter(false);
     }
   };
 
@@ -218,9 +310,9 @@ export default function ResumeDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
+    <div className="container mx-auto px-4 py-8 max-w-5xl resume-content">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8 no-print">
         <Button
           variant="ghost"
           onClick={() => router.push('/resumes')}
@@ -241,6 +333,31 @@ export default function ResumeDetailPage() {
           
           <div className="flex gap-2">
             <Button
+              onClick={() => setIsEditorOpen(true)}
+              variant="secondary"
+            >
+              Edit Content
+            </Button>
+            <Button
+              onClick={() => setIsVersionHistoryOpen(true)}
+              variant="secondary"
+            >
+              View History
+            </Button>
+            <Button
+              onClick={handleDuplicate}
+              variant="secondary"
+              disabled={isDuplicating}
+            >
+              {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+            </Button>
+            <Button
+              onClick={() => setShowPdfPreview(true)}
+              variant="secondary"
+            >
+              Preview PDF
+            </Button>
+            <Button
               onClick={handleExportPDF}
               disabled={isExportingPDF}
             >
@@ -258,26 +375,45 @@ export default function ResumeDetailPage() {
       </div>
 
       {/* Job Description */}
-      <Card className="p-6 mb-6">
+      <Card className="p-6 mb-6 no-print">
         <h2 className="text-lg font-semibold mb-3">Job Description</h2>
         <p className="text-gray-700 whitespace-pre-wrap">{resume.jobDescription}</p>
       </Card>
 
+      {/* Template Selector */}
+      <div className="mb-6 no-print">
+        <TemplateSelector
+          currentTemplateId={resume.templateId}
+          resumeId={resumeId}
+          onTemplateChange={fetchResume}
+        />
+      </div>
+
       {/* Cover Letter (if generated) */}
       {resume.coverLetter && (
-        <Card className="p-6 mb-6">
+        <Card className="p-6 mb-6 no-print">
           <div className="flex justify-between items-start mb-3">
             <h2 className="text-lg font-semibold">Cover Letter</h2>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                navigator.clipboard.writeText(resume.coverLetter || '');
-                alert('Cover letter copied to clipboard!');
-              }}
-              size="sm"
-            >
-              Copy
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                onClick={handleExportCoverLetter}
+                disabled={isExportingCoverLetter}
+                size="sm"
+              >
+                {isExportingCoverLetter ? 'Exporting...' : 'Export PDF'}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  navigator.clipboard.writeText(resume.coverLetter || '');
+                  toast.success('Cover letter copied to clipboard!');
+                }}
+                size="sm"
+              >
+                Copy
+              </Button>
+            </div>
           </div>
           <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
             {resume.coverLetter}
@@ -286,9 +422,9 @@ export default function ResumeDetailPage() {
       )}
 
       {/* Resume Content */}
-      <Card className="p-8">
+      <Card className="p-8 print-card print-no-break">
         {/* Personal Info */}
-        <div className="mb-8">
+        <div className="mb-8 print-no-break">
           <h1 className="text-3xl font-bold mb-2">{resume.content.personalInfo.name}</h1>
           <div className="flex flex-wrap gap-4 text-sm text-gray-600">
             {resume.content.personalInfo.email && (
@@ -320,7 +456,7 @@ export default function ResumeDetailPage() {
 
         {/* Professional Summary */}
         {resume.content.summary && (
-          <div className="mb-8">
+          <div className="mb-8 print-no-break">
             <h2 className="text-xl font-bold mb-3 border-b-2 border-gray-200 pb-2">
               Professional Summary
             </h2>
@@ -335,7 +471,7 @@ export default function ResumeDetailPage() {
               Professional Experience
             </h2>
             {resume.content.experience.map((exp, idx) => (
-              <div key={idx} className="mb-6 last:mb-0">
+              <div key={idx} className="mb-6 last:mb-0 print-no-break">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <h3 className="font-semibold text-lg">{exp.position}</h3>
@@ -367,7 +503,7 @@ export default function ResumeDetailPage() {
               Education
             </h2>
             {resume.content.education.map((edu, idx) => (
-              <div key={idx} className="mb-4 last:mb-0">
+              <div key={idx} className="mb-4 last:mb-0 print-no-break">
                 <div className="flex justify-between items-start mb-1">
                   <div>
                     <h3 className="font-semibold">{edu.degree} in {edu.field}</h3>
@@ -387,7 +523,7 @@ export default function ResumeDetailPage() {
 
         {/* Skills */}
         {resume.content.skills && (
-          <div>
+          <div className="print-no-break">
             <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-200 pb-2">
               Skills
             </h2>
@@ -425,7 +561,7 @@ export default function ResumeDetailPage() {
         )}
 
         {/* Metadata Footer */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
+        <div className="mt-8 pt-6 border-t border-gray-200 no-print">
           <div className="text-xs text-gray-500 space-y-1">
             <div className="flex justify-between">
               <span>Generated: {new Date(resume.metadata.generatedAt).toLocaleString()}</span>
@@ -455,6 +591,57 @@ export default function ResumeDetailPage() {
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />
+
+      {/* Resume Editor */}
+      {isEditorOpen && resume.content && (
+        <ResumeEditor
+          resumeId={resumeId}
+          initialContent={resume.content}
+          aiGeneratedContent={
+            (resume.metadata as unknown as { aiGeneratedContent?: typeof resume.content })
+              ?.aiGeneratedContent || resume.content
+          }
+          onSave={() => {
+            fetchResume();
+            setIsEditorOpen(false);
+          }}
+          onClose={() => setIsEditorOpen(false)}
+        />
+      )}
+
+      {/* Version History */}
+      {isVersionHistoryOpen && resume.content && (
+        <VersionHistory
+          currentContent={resume.content}
+          aiGeneratedContent={resume.aiGeneratedContent || resume.content}
+          onClose={() => setIsVersionHistoryOpen(false)}
+          onRestore={handleRestoreVersion}
+        />
+      )}
+
+      {/* PDF Preview Modal */}
+      {showPdfPreview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-semibold">PDF Preview</h2>
+              <Button
+                variant="ghost"
+                onClick={() => setShowPdfPreview(false)}
+              >
+                ✕
+              </Button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <iframe
+                src={`/api/resumes/${resumeId}/preview`}
+                className="w-full h-full border-0"
+                title="Resume PDF Preview"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

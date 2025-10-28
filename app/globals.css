@@ -24,3 +24,103 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Print Styles for Resume Pages */
+@media print {
+  /* Hide navigation and UI elements */
+  header,
+  nav,
+  .no-print,
+  button:not(.print-allow),
+  [role="navigation"],
+  [aria-label*="menu"],
+  .toast-container {
+    display: none !important;
+  }
+
+  /* Optimize page layout */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  /* Remove shadows and backgrounds for cleaner print */
+  * {
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+
+  /* Ensure resume content uses full width */
+  main,
+  .resume-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0.5in !important;
+  }
+
+  /* Card backgrounds to white for readability */
+  .print-card {
+    background-color: white !important;
+    border: 1px solid #ccc !important;
+    page-break-inside: avoid;
+    margin-bottom: 0.25in;
+  }
+
+  /* Prevent page breaks in critical sections */
+  .print-no-break {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure links show URLs when printed */
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 90%;
+    color: #666;
+  }
+
+  /* Don't show URLs for internal navigation */
+  a[href^="#"]:after,
+  a[href^="/"]:after {
+    content: "";
+  }
+
+  /* Headings */
+  h1, h2, h3, h4, h5, h6 {
+    color: black !important;
+    page-break-after: avoid;
+    font-weight: bold;
+  }
+
+  h1 { font-size: 18pt; }
+  h2 { font-size: 16pt; }
+  h3 { font-size: 14pt; }
+
+  /* Lists */
+  ul, ol {
+    page-break-inside: avoid;
+  }
+
+  /* Tables */
+  table {
+    page-break-inside: avoid;
+    border-collapse: collapse;
+  }
+
+  /* Prevent orphan lines */
+  p, li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Force page breaks before major sections if needed */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+}

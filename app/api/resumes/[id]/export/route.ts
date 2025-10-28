@@ -64,8 +64,12 @@ export async function POST(
       );
     }
 
-    // Generate PDF buffer
-    const pdfBuffer = await pdfService.generatePDFBuffer(resume.content as unknown as ResumeContent);
+    // Generate PDF buffer with template and customization if available
+    const pdfBuffer = await pdfService.generatePDFBuffer(
+      resume.content as unknown as ResumeContent,
+      resume.templateId || undefined,
+      resume.templateCustomization as Record<string, unknown> | undefined
+    );
 
     // Set headers for PDF download
     const headers = new Headers();
@@ -127,8 +131,13 @@ export async function GET(
       });
     }
 
-    // Generate new PDF and save URL
-    const pdfUrl = await pdfService.generatePDF(id, resume.content as unknown as ResumeContent);
+    // Generate new PDF and save URL with template and customization if available
+    const pdfUrl = await pdfService.generatePDF(
+      id,
+      resume.content as unknown as ResumeContent,
+      resume.templateId || undefined,
+      resume.templateCustomization as Record<string, unknown> | undefined
+    );
 
     // Update resume with PDF URL
     await resumeService.updatePdfUrl(id, session.user.id, pdfUrl);

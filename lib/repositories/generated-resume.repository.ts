@@ -100,6 +100,24 @@ export class GeneratedResumeRepository {
       data: {
         templateId: templateId || null,
         templateCustomization: templateCustomization as never,
+        pdfUrl: null, // Clear PDF URL when template changes
+        updatedAt: new Date()
+      }
+    });
+  }
+
+  /**
+   * Update template customization only (keeps existing templateId)
+   */
+  async updateCustomization(
+    id: string,
+    templateCustomization: Record<string, unknown>
+  ): Promise<GeneratedResume> {
+    return this.db.generatedResume.update({
+      where: { id },
+      data: {
+        templateCustomization: templateCustomization as never,
+        pdfUrl: null, // Clear PDF URL to force regeneration with new customization
         updatedAt: new Date()
       }
     });
