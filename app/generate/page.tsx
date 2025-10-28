@@ -1,10 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+
+interface Template {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  atsScore: number;
+}
 
 interface GeneratedResume {
   id: string;
@@ -52,9 +60,31 @@ export default function GeneratePage() {
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [generateCoverLetter, setGenerateCoverLetter] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
+
+  // Load templates on mount
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        const response = await fetch('/api/templates');
+        if (response.ok) {
+          const data = await response.json();
+          setTemplates(data.templates || []);
+          // Select first template by default
+          if (data.templates && data.templates.length > 0) {
+            setSelectedTemplateId(data.templates[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load templates:', err);
+      }
+    };
+    loadTemplates();
+  }, []);
 
   const handleGenerate = async () => {
     if (jobDescription.length < 50) {
@@ -78,6 +108,7 @@ export default function GeneratePage() {
           jobTitle: jobTitle || undefined,
           companyName: companyName || undefined,
           generateCoverLetter,
+          templateId: selectedTemplateId || undefined,
         }),
       });
 
@@ -182,6 +213,31 @@ export default function GeneratePage() {
                   Generate cover letter (optional)
                 </label>
               </div>
+
+              {/* Template Selection */}
+              {templates.length > 0 && (
+                <div>
+                  <label htmlFor="template" className="block text-sm font-medium mb-2">
+                    Resume Template
+                  </label>
+                  <select
+                    id="template"
+                    value={selectedTemplateId}
+                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isGenerating}
+                  >
+                    {templates.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name} - ATS Score: {template.atsScore}/10
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {templates.find(t => t.id === selectedTemplateId)?.description}
+                  </p>
+                </div>
+              )}
 
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-md">

@@ -1,6 +1,7 @@
 import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
 import { ResumeGenerationState } from './types';
 import { setCurrentStep, addError, logState } from './utils';
+import { createMemoryCheckpointer } from './checkpointing';
 
 // Define the state annotation for LangGraph
 const ResumeStateAnnotation = Annotation.Root({
@@ -169,9 +170,25 @@ export function createResumeWorkflowGraph() {
 
 /**
  * Compile the workflow into an executable runnable
+ * 
+ * @param options - Optional configuration
+ * @param options.withCheckpointing - Enable checkpointing for workflow persistence (default: true)
+ * @returns Compiled workflow graph
  */
-export function compileResumeWorkflow() {
+export function compileResumeWorkflow(options?: { withCheckpointing?: boolean }) {
   const graph = createResumeWorkflowGraph();
+  
+  // Enable checkpointing by default
+  const enableCheckpointing = options?.withCheckpointing !== false;
+  
+  if (enableCheckpointing) {
+    // Compile with memory-based checkpointing
+    // This allows workflow state to be persisted and resumed
+    const checkpointer = createMemoryCheckpointer();
+    return graph.compile({ checkpointer });
+  }
+  
+  // Compile without checkpointing (stateless execution)
   return graph.compile();
 }
 

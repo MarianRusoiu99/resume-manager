@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
-import { apiKeyService, AIProvider } from '@/lib/services/apikey.service';
+import { apiKeyService, AIProvider, APIKeyDto } from '@/lib/services/apikey.service';
 import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-helpers';
+import { SimpleCache } from '@/lib/cache/simple-cache';
+
+// Cache for API keys list (5 minute TTL)
+const apiKeysCache = new SimpleCache<APIKeyDto[]>(300);
 
 /**
  * GET /api/settings/api-keys - List all API keys (masked)
@@ -23,7 +27,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const keys = await apiKeyService.getUserAPIKeys(session.user.id);
+    const cacheKey = `api-keys:${session.user.id}`;
+    
+    // Try to get from cache first
+    let keys = apiKeysCache.get(cacheKey);
+    
+    if (!keys) {
+      // Cache miss - fetch from database
+      keys = await apiKeyService.getUserAPIKeys(session.user.id);
+      // Store in cache
+      apiKeysCache.set(cacheKey, keys);
+    }
 
     const response = NextResponse.json(keys);
     return rateLimitCheck.addHeaders(response);
@@ -77,6 +91,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Invalidate cache after adding a new key
+    const cacheKey = `api-keys:${session.user.id}`;
+    apiKeysCache.delete(cacheKey);
 
     const response = NextResponse.json(result.key, { status: 201 });
     return rateLimitCheck.addHeaders(response);

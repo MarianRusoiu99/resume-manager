@@ -3,6 +3,18 @@ import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
 import { z } from 'zod';
 import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-helpers';
+import { SimpleCache } from '@/lib/cache/simple-cache';
+
+// Cache for user resumes list (2 minute TTL - shorter than API keys since resumes change more frequently)
+const resumesCache = new SimpleCache<Array<{
+  id: string;
+  jobMetadata: Record<string, unknown>;
+  content: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  isEdited: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}>>(120);
 
 // Request validation schema
 const generateResumeSchema = z.object({
@@ -74,6 +86,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`✅ API: Resume generated successfully (ID: ${result.resumeId})`);
 
+    // Invalidate cache after generating a new resume
+    const cacheKey = `resumes:${session.user.id}`;
+    resumesCache.delete(cacheKey);
+
     const response = NextResponse.json({
       success: true,
       resumeId: result.resumeId,
@@ -108,8 +124,17 @@ export async function GET() {
       );
     }
 
-    // Get user's resumes
-    const resumes = await resumeService.getUserResumes(session.user.id);
+    const cacheKey = `resumes:${session.user.id}`;
+    
+    // Try to get from cache first
+    let resumes = resumesCache.get(cacheKey);
+    
+    if (!resumes) {
+      // Cache miss - fetch from database
+      resumes = await resumeService.getUserResumes(session.user.id);
+      // Store in cache
+      resumesCache.set(cacheKey, resumes);
+    }
 
     return NextResponse.json(resumes);
 

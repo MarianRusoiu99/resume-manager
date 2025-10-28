@@ -12,6 +12,24 @@ export {
   testEmptyWorkflow
 } from './graph';
 
+// Checkpointing and memory
+export {
+  createMemoryCheckpointer,
+  createThreadId,
+  parseThreadId,
+  createCheckpointConfig,
+  createCheckpointConfigWithThreadId,
+  extractCheckpointMetadata,
+  canResumeWorkflow,
+  getNextStep,
+  WorkflowCheckpointStore
+} from './checkpointing';
+
+export type {
+  CheckpointConfig,
+  CheckpointMetadata
+} from './checkpointing';
+
 // Workflow service (high-level API)
 export {
   ResumeWorkflowService,

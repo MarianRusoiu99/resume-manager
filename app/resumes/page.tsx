@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface Resume {
   id: string;
@@ -62,6 +63,8 @@ export default function ResumesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [resumeToDelete, setResumeToDelete] = useState<string | null>(null);
 
   // Fetch resumes on mount
   useEffect(() => {
@@ -89,14 +92,17 @@ export default function ResumesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this resume? This action cannot be undone.')) {
-      return;
-    }
+    setResumeToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!resumeToDelete) return;
 
     try {
-      setDeletingId(id);
+      setDeletingId(resumeToDelete);
       
-      const response = await fetch(`/api/resumes/${id}`, {
+      const response = await fetch(`/api/resumes/${resumeToDelete}`, {
         method: 'DELETE',
       });
 
@@ -105,12 +111,19 @@ export default function ResumesPage() {
       }
 
       // Remove from local state
-      setResumes(resumes.filter(r => r.id !== id));
+      setResumes(resumes.filter(r => r.id !== resumeToDelete));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete resume');
     } finally {
       setDeletingId(null);
+      setDeleteDialogOpen(false);
+      setResumeToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setResumeToDelete(null);
   };
 
   const formatDate = (dateString: string) => {
@@ -277,6 +290,18 @@ export default function ResumesPage() {
           Showing {filteredResumes.length} of {resumes.length} resume{resumes.length !== 1 ? 's' : ''}
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialogOpen}
+        title="Delete Resume"
+        message="Are you sure you want to delete this resume? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

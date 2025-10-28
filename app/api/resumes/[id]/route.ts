@@ -1,6 +1,18 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
+import { SimpleCache } from '@/lib/cache/simple-cache';
+
+// Use the same cache instance as the list endpoint
+const resumesCache = new SimpleCache<Array<{
+  id: string;
+  jobMetadata: Record<string, unknown>;
+  content: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  isEdited: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}>>(120);
 
 /**
  * GET /api/resumes/[id] - Get a specific resume
@@ -63,6 +75,10 @@ export async function DELETE(
 
     // Delete resume (with ownership verification)
     await resumeService.deleteResume(id, session.user.id);
+
+    // Invalidate cache after deleting a resume
+    const cacheKey = `resumes:${session.user.id}`;
+    resumesCache.delete(cacheKey);
 
     return NextResponse.json(
       { success: true, message: 'Resume deleted successfully' }

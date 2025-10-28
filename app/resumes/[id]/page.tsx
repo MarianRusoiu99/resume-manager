@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface Resume {
   id: string;
@@ -67,6 +68,7 @@ export default function ResumeDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const fetchResume = async () => {
     try {
@@ -99,10 +101,10 @@ export default function ResumeDetailPage() {
   }, [resumeId]);
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this resume? This action cannot be undone.')) {
-      return;
-    }
+    setDeleteDialogOpen(true);
+  };
 
+  const confirmDelete = async () => {
     try {
       setIsDeleting(true);
       
@@ -118,11 +120,14 @@ export default function ResumeDetailPage() {
       // Redirect to resumes list
       router.push('/resumes');
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to delete resume';
-      setError(errorMsg);
-      toast.error(errorMsg);
+      toast.error(err instanceof Error ? err.message : 'Failed to delete resume');
       setIsDeleting(false);
+      setDeleteDialogOpen(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialogOpen(false);
   };
 
   const handleExportPDF = async () => {
@@ -438,6 +443,18 @@ export default function ResumeDetailPage() {
           </div>
         </div>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialogOpen}
+        title="Delete Resume"
+        message="Are you sure you want to delete this resume? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+      />
     </div>
   );
 }

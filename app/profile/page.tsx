@@ -8,6 +8,8 @@ import { SummaryForm } from "@/components/profile/SummaryForm";
 import { ExperienceForm } from "@/components/profile/ExperienceForm";
 import { EducationForm } from "@/components/profile/EducationForm";
 import SkillsForm from "@/components/profile/SkillsForm";
+import CertificationsForm, { Certification } from "@/components/profile/CertificationsForm";
+import LanguagesForm, { Language } from "@/components/profile/LanguagesForm";
 import { Card, Button } from "@/components/ui";
 import { PersonalInfo, Experience, Education } from "@/lib/validations/profile";
 
@@ -21,6 +23,8 @@ interface ProfileData {
     soft: string[];
     languages: string[];
   };
+  certifications?: Certification[];
+  languages?: Language[];
 }
 
 export default function ProfilePage() {
@@ -91,7 +95,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSaveSection = async (section: string, data: Experience[] | Education[] | string | { technical: string[]; soft: string[]; languages: string[] }) => {
+  const handleSaveSection = async (section: string, data: Experience[] | Education[] | string | { technical: string[]; soft: string[]; languages: string[] } | Certification[] | Language[]) => {
     setSaving(true);
     try {
       const response = await fetch("/api/profile", {
@@ -238,6 +242,32 @@ export default function ProfilePage() {
               </Button>
             </div>
           </Card>
+
+          {/* Certifications Section */}
+          <Card title="Certifications" description="Your professional certifications and licenses">
+            <CertificationsForm
+              certifications={profile?.certifications || []}
+              onChange={(certifications) => setProfile(prev => prev ? { ...prev, certifications } : null)}
+            />
+            <div className="mt-4 flex justify-end">
+              <Button onClick={() => handleSaveSection("certifications", profile?.certifications || [])}>
+                Save Certifications
+              </Button>
+            </div>
+          </Card>
+
+          {/* Languages Section */}
+          <Card title="Languages" description="Languages you speak and your proficiency levels">
+            <LanguagesForm
+              languages={profile?.languages || []}
+              onChange={(languages) => setProfile(prev => prev ? { ...prev, languages } : null)}
+            />
+            <div className="mt-4 flex justify-end">
+              <Button onClick={() => handleSaveSection("languages", profile?.languages || [])}>
+                Save Languages
+              </Button>
+            </div>
+          </Card>
         </div>
 
         {/* Profile Completion Indicator */}
@@ -250,28 +280,41 @@ export default function ProfilePage() {
               <div
                 className="bg-blue-600 h-2 rounded-full"
                 style={{ 
-                  width: `${
+                  width: `${Math.min(100,
                     (profile?.personalInfo ? 25 : 0) +
                     (profile?.summary ? 15 : 0) +
                     ((profile?.experience && profile.experience.length > 0) ? 30 : 0) +
                     ((profile?.education && profile.education.length > 0) ? 20 : 0) +
-                    ((profile?.skills && profile.skills.technical.length > 0) ? 10 : 0)
-                  }%`
+                    ((profile?.skills && profile.skills.technical.length > 0) ? 10 : 0) +
+                    ((profile?.certifications && profile.certifications.length > 0) ? 5 : 0) +
+                    ((profile?.languages && profile.languages.length > 0) ? 5 : 0)
+                  )}%`
                 }}
               ></div>
             </div>
             <span className="text-sm font-medium text-blue-900">
-              {
+              {Math.min(100,
                 (profile?.personalInfo ? 25 : 0) +
                 (profile?.summary ? 15 : 0) +
                 ((profile?.experience && profile.experience.length > 0) ? 30 : 0) +
                 ((profile?.education && profile.education.length > 0) ? 20 : 0) +
-                ((profile?.skills && profile.skills.technical.length > 0) ? 10 : 0)
-              }%
+                ((profile?.skills && profile.skills.technical.length > 0) ? 10 : 0) +
+                ((profile?.certifications && profile.certifications.length > 0) ? 5 : 0) +
+                ((profile?.languages && profile.languages.length > 0) ? 5 : 0)
+              )}%
             </span>
           </div>
           <p className="mt-2 text-sm text-blue-800">
-            Complete all sections to generate optimized resumes
+            Complete all sections to generate optimized resumes. Core sections: {
+              (profile?.personalInfo ? 25 : 0) +
+              ((profile?.experience && profile.experience.length > 0) ? 30 : 0) +
+              ((profile?.education && profile.education.length > 0) ? 20 : 0)
+            }% | Optional: {
+              (profile?.summary ? 15 : 0) +
+              ((profile?.skills && profile.skills.technical.length > 0) ? 10 : 0) +
+              ((profile?.certifications && profile.certifications.length > 0) ? 5 : 0) +
+              ((profile?.languages && profile.languages.length > 0) ? 5 : 0)
+            }%
           </p>
         </div>
       </main>
