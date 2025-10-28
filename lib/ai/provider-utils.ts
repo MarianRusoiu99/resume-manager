@@ -5,6 +5,8 @@ import { apiKeyService, AIProvider as AIProviderType } from '@/lib/services/apik
 /**
  * Get an AI provider instance for a user
  * Retrieves the active API key from the database and creates a provider
+ * 
+ * In development mode, falls back to process.env.OPENAI_API_KEY if no user key exists
  */
 export async function getProviderForUser(
   userId: string,
@@ -17,7 +19,15 @@ export async function getProviderForUser(
 ): Promise<AIProvider | null> {
   try {
     // Get the decrypted API key from the database
-    const apiKey = await apiKeyService.getDecryptedKey(userId, providerType);
+    let apiKey = await apiKeyService.getDecryptedKey(userId, providerType);
+
+    // Dev mode fallback: use environment variable if no user key exists
+    if (!apiKey && process.env.NODE_ENV === 'development') {
+      if (providerType === 'openai' && process.env.OPENAI_API_KEY) {
+        apiKey = process.env.OPENAI_API_KEY;
+        console.log(`🔧 Dev mode: Using OPENAI_API_KEY from environment for user ${userId}`);
+      }
+    }
 
     if (!apiKey) {
       console.error(`No active API key found for user ${userId} and provider ${providerType}`);
@@ -47,6 +57,8 @@ export async function getProviderForUser(
 
 /**
  * Validate that a user has an active API key for a provider
+ * 
+ * In development mode, returns true if process.env.OPENAI_API_KEY is set
  */
 export async function hasActiveProvider(
   userId: string,
@@ -54,7 +66,18 @@ export async function hasActiveProvider(
 ): Promise<boolean> {
   try {
     const apiKey = await apiKeyService.getDecryptedKey(userId, providerType);
-    return apiKey !== null;
+    
+    // Check user's API key first
+    if (apiKey !== null) {
+      return true;
+    }
+    
+    // Dev mode fallback: check environment variable
+    if (process.env.NODE_ENV === 'development' && providerType === 'openai') {
+      return !!process.env.OPENAI_API_KEY;
+    }
+    
+    return false;
   } catch (error) {
     console.error('Error checking for active provider:', error);
     return false;

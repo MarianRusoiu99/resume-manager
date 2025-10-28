@@ -10,7 +10,17 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "load-test:generate": "node scripts/load-test-resume-generation.js",
+    "load-test:api": "node scripts/load-test-api-endpoints.js",
+    "load-test:all": "npm run load-test:generate && npm run load-test:api",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:headed": "playwright test --headed",
+    "e2e:chromium": "playwright test --project=chromium",
+    "e2e:firefox": "playwright test --project=firefox",
+    "e2e:webkit": "playwright test --project=webkit",
+    "e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -36,6 +46,7 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.0.0",
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -48,6 +59,7 @@
     "@types/swagger-ui-react": "^5.18.0",
     "@vitejs/plugin-react": "^5.1.0",
     "@vitest/ui": "^4.0.3",
+    "autocannon": "^8.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
     "jsdom": "^27.0.1",
