@@ -421,15 +421,37 @@ export class ResumeService {
    */
   async getUserResumes(userId: string) {
     const resumes = await this.repository.findByUserId(userId);
-    return resumes.map(resume => ({
-      id: resume.id,
-      jobMetadata: resume.jobMetadata as Record<string, unknown>,
-      content: resume.resumeContent as Record<string, unknown>,
-      metadata: resume.metadata as Record<string, unknown>,
-      isEdited: resume.isEdited,
-      createdAt: resume.createdAt,
-      updatedAt: resume.updatedAt
-    }));
+    return resumes.map(resume => {
+      // Parse jobMetadata to extract jobTitle and companyName
+      const jobMetadata = resume.jobMetadata as Record<string, unknown> | null;
+      const jobTitle = (jobMetadata?.jobTitle as string) || null;
+      const companyName = (jobMetadata?.companyName as string) || null;
+      
+      // Parse and normalize metadata to match frontend expectations
+      const storedMetadata = resume.metadata as Record<string, unknown>;
+      const normalizedMetadata = {
+        generatedAt: storedMetadata.generatedAt || new Date().toISOString(),
+        model: storedMetadata.model || 'unknown',
+        totalTokens: (storedMetadata.tokens as number) || (storedMetadata.totalTokens as number) || 0,
+        processingTime: (storedMetadata.processingTime as number) || 0
+      };
+      
+      return {
+        id: resume.id,
+        userId: resume.userId,
+        jobTitle,
+        companyName,
+        jobDescription: resume.jobDescription,
+        content: resume.resumeContent as Record<string, unknown>,
+        templateId: resume.templateId,
+        customization: resume.templateCustomization as Record<string, unknown> | null,
+        pdfUrl: resume.pdfUrl,
+        isEdited: resume.isEdited,
+        metadata: normalizedMetadata,
+        createdAt: resume.createdAt,
+        updatedAt: resume.updatedAt
+      };
+    });
   }
 
   /**
@@ -447,6 +469,15 @@ export class ResumeService {
     const jobTitle = (jobMetadata?.jobTitle as string) || 'Position';
     const companyName = (jobMetadata?.companyName as string) || null;
 
+    // Parse and normalize metadata to match frontend expectations
+    const storedMetadata = resume.metadata as Record<string, unknown>;
+    const normalizedMetadata = {
+      generatedAt: storedMetadata.generatedAt || new Date().toISOString(),
+      model: storedMetadata.model || 'unknown',
+      totalTokens: (storedMetadata.tokens as number) || (storedMetadata.totalTokens as number) || 0,
+      processingTime: (storedMetadata.processingTime as number) || 0
+    };
+
     return {
       id: resume.id,
       jobDescription: resume.jobDescription,
@@ -454,7 +485,7 @@ export class ResumeService {
       jobTitle,
       companyName,
       content: resume.resumeContent as Record<string, unknown>,
-      metadata: resume.metadata as Record<string, unknown>,
+      metadata: normalizedMetadata,
       isEdited: resume.isEdited,
       aiGeneratedContent: resume.aiGeneratedContent as Record<string, unknown>,
       coverLetter: resume.coverLetter,

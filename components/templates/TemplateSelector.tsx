@@ -72,6 +72,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
 
       toast.success('Template updated successfully');
       setIsOpen(false);
+      console.log('Calling onTemplateChange callback');
       onTemplateChange();
     } catch (error) {
       console.error('Error updating template:', error);

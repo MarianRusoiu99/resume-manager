@@ -12,6 +12,7 @@ import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../types';
 import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
+import { parseAgentJSON } from '../utils';
 
 /**
  * Content Optimization Agent
@@ -70,8 +71,24 @@ export async function contentOptimizationAgent(
       }
     );
 
-    // Parse the JSON response
-    const optimizedContent = JSON.parse(result);
+    // Parse the JSON response - handles both markdown-wrapped and plain JSON
+    const optimizedContent = parseAgentJSON<{
+      summary: string;
+      experience: Array<{
+        company: string;
+        title: string;
+        startDate: string;
+        endDate?: string;
+        current: boolean;
+        description: string;
+        bulletPoints: string[];
+      }>;
+      prioritizedSkills: string[];
+    }>(result);
+
+    if (!optimizedContent) {
+      throw new Error('Failed to parse content optimization response from AI');
+    }
 
     console.log('✅ Content optimization complete');
     console.log(`- Generated optimized summary (${optimizedContent.summary.length} chars)`);

@@ -79,7 +79,7 @@ export default function ResumeDetailPage() {
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
   const [isExportingCoverLetter, setIsExportingCoverLetter] = useState(false);
-  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [pdfPreviewKey, setPdfPreviewKey] = useState(Date.now());
   const [isSectionOrderOpen, setIsSectionOrderOpen] = useState(false);
 
   const fetchResume = async () => {
@@ -97,12 +97,21 @@ export default function ResumeDetailPage() {
       }
 
       const data = await response.json();
+      console.log('Fetched resume data:', { templateId: data.templateId, pdfUrl: data.pdfUrl });
       setResume(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load resume');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTemplateChange = async () => {
+    console.log('Template change triggered');
+    await fetchResume();
+    const newKey = Date.now();
+    console.log('Setting new PDF preview key:', newKey);
+    setPdfPreviewKey(newKey);
   };
 
   useEffect(() => {
@@ -361,12 +370,6 @@ export default function ResumeDetailPage() {
               {isDuplicating ? 'Duplicating...' : 'Duplicate'}
             </Button>
             <Button
-              onClick={() => setShowPdfPreview(true)}
-              variant="secondary"
-            >
-              Preview PDF
-            </Button>
-            <Button
               onClick={handleExportPDF}
               disabled={isExportingPDF}
             >
@@ -383,6 +386,32 @@ export default function ResumeDetailPage() {
         </div>
       </div>
 
+      {/* PDF Preview - Always Visible */}
+      <Card className="p-4 mb-6 no-print">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Resume Preview</h2>
+          <div className="flex items-center gap-4">
+            <div className="text-sm text-gray-500">
+              Template: {resume.templateId || 'Default'}
+            </div>
+            <Button
+              onClick={() => setPdfPreviewKey(Date.now())}
+              variant="secondary"
+              size="sm"
+            >
+              Refresh Preview
+            </Button>
+          </div>
+        </div>
+        <div className="w-full h-96 border rounded-lg overflow-hidden">
+          <iframe
+            src={`/api/resumes/${resumeId}/preview?v=${pdfPreviewKey}`}
+            className="w-full h-full border-0"
+            title="Resume PDF Preview"
+          />
+        </div>
+      </Card>
+
       {/* Job Description */}
       <Card className="p-6 mb-6 no-print">
         <h2 className="text-lg font-semibold mb-3">Job Description</h2>
@@ -394,7 +423,7 @@ export default function ResumeDetailPage() {
         <TemplateSelector
           currentTemplateId={resume.templateId}
           resumeId={resumeId}
-          onTemplateChange={fetchResume}
+          onTemplateChange={handleTemplateChange}
         />
       </div>
 
@@ -626,30 +655,6 @@ export default function ResumeDetailPage() {
           onClose={() => setIsVersionHistoryOpen(false)}
           onRestore={handleRestoreVersion}
         />
-      )}
-
-      {/* PDF Preview Modal */}
-      {showPdfPreview && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl h-[90vh] flex flex-col">
-            <div className="flex justify-between items-center p-4 border-b">
-              <h2 className="text-xl font-semibold">PDF Preview</h2>
-              <Button
-                variant="ghost"
-                onClick={() => setShowPdfPreview(false)}
-              >
-                ✕
-              </Button>
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <iframe
-                src={`/api/resumes/${resumeId}/preview`}
-                className="w-full h-full border-0"
-                title="Resume PDF Preview"
-              />
-            </div>
-          </div>
-        </div>
       )}
 
       {/* Section Order Manager */}

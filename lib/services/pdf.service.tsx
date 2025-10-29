@@ -134,7 +134,9 @@ class PDFService {
       // Fetch template if provided
       let template: ResumeTemplate | null = null;
       if (templateId) {
+        console.log('PDF Service: Fetching template with ID:', templateId);
         const baseTemplate = await templateRepository.findById(templateId);
+        console.log('PDF Service: Found template:', baseTemplate?.name);
         if (baseTemplate && templateCustomization) {
           // Merge template with customization
           template = {
@@ -147,7 +149,11 @@ class PDFService {
         } else {
           template = baseTemplate;
         }
+      } else {
+        console.log('PDF Service: No templateId provided, using null template');
       }
+
+      console.log('PDF Service: Using template:', template?.name || 'null');
 
       // Generate PDF buffer with template and section order
       const pdfBuffer = await renderToBuffer(

@@ -11,7 +11,7 @@ interface Resume {
   userId: string;
   jobTitle: string | null;
   companyName: string | null;
-  jobDescription: string;
+  jobDescription: string | null;
   content: {
     personalInfo: {
       name: string;
@@ -141,7 +141,7 @@ export default function ResumesPage() {
     return (
       (resume.jobTitle?.toLowerCase().includes(searchLower)) ||
       (resume.companyName?.toLowerCase().includes(searchLower)) ||
-      resume.jobDescription.toLowerCase().includes(searchLower)
+      (resume.jobDescription?.toLowerCase().includes(searchLower))
     );
   });
 

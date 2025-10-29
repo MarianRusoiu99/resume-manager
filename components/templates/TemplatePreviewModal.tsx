@@ -95,7 +95,7 @@ export function TemplatePreviewModal({
               <div>
                 <span className="font-medium text-gray-700">Font:</span>
                 <span className="ml-2">
-                  {template.definition.typography.bodyFont}
+                  {template.definition.typography?.bodyFont || 'Default'}
                 </span>
               </div>
               <div>

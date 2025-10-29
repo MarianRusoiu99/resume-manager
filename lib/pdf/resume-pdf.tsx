@@ -213,9 +213,9 @@ interface ResumeData {
       endDate: string | null;
       gpa?: string;
     }>;
-    skills: {
-      technical: string[];
-      soft: string[];
+    skills?: {
+      technical?: string[];
+      soft?: string[];
     };
   };
   template?: ResumeTemplate | null;
@@ -323,42 +323,62 @@ const ResumeEducation: React.FC<{ education: ResumeData['content']['education'];
 );
 
 // Skills Section Component
-const ResumeSkills: React.FC<{ skills: ResumeData['content']['skills']; styles: PDFStyles }> = ({ skills, styles }) => (
-  <View>
-    <Text style={styles.sectionTitle}>SKILLS</Text>
-    {skills.technical && skills.technical.length > 0 && (
-      <View style={styles.skillsContainer}>
-        <Text style={styles.skillCategory}>Technical Skills:</Text>
-        <View style={styles.skillsList}>
-          {skills.technical.map((skill, idx) => (
-            <Text key={idx} style={styles.skillItem}>
-              {skill}
-              {idx < skills.technical.length - 1 ? ',' : ''}
-            </Text>
-          ))}
+const ResumeSkills: React.FC<{ skills: ResumeData['content']['skills']; styles: PDFStyles }> = ({ skills, styles }) => {
+  const technical = skills?.technical || [];
+  const soft = skills?.soft || [];
+  
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>SKILLS</Text>
+      {technical.length > 0 && (
+        <View style={styles.skillsContainer}>
+          <Text style={styles.skillCategory}>Technical Skills:</Text>
+          <View style={styles.skillsList}>
+            {technical.map((skill, idx) => (
+              <Text key={idx} style={styles.skillItem}>
+                {skill}
+                {idx < technical.length - 1 ? ',' : ''}
+              </Text>
+            ))}
+          </View>
         </View>
-      </View>
-    )}
-    {skills.soft && skills.soft.length > 0 && (
-      <View style={styles.skillsContainer}>
-        <Text style={styles.skillCategory}>Soft Skills:</Text>
-        <View style={styles.skillsList}>
-          {skills.soft.map((skill, idx) => (
-            <Text key={idx} style={styles.skillItem}>
-              {skill}
-              {idx < skills.soft.length - 1 ? ',' : ''}
-            </Text>
-          ))}
+      )}
+      {soft.length > 0 && (
+        <View style={styles.skillsContainer}>
+          <Text style={styles.skillCategory}>Soft Skills:</Text>
+          <View style={styles.skillsList}>
+            {soft.map((skill, idx) => (
+              <Text key={idx} style={styles.skillItem}>
+                {skill}
+                {idx < soft.length - 1 ? ',' : ''}
+              </Text>
+            ))}
+          </View>
         </View>
-      </View>
-    )}
-  </View>
-);
+      )}
+    </View>
+  );
+};
 
 // Main PDF Document Component
 export const ResumePDF: React.FC<ResumeData> = ({ content, template, sectionOrder }) => {
   // Generate styles based on template
+  console.log('ResumePDF: Received template:', template?.name || 'null');
   const styles = createStyles(template || null);
+  
+  // Add template name as a visible debug element
+  const debugStyle = StyleSheet.create({
+    debugText: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      fontSize: 8,
+      color: '#ff0000',
+      backgroundColor: '#ffffff',
+      padding: 2,
+      border: '1 solid #ff0000',
+    }
+  });
   
   // Default section order if not provided
   const defaultOrder = ['summary', 'experience', 'education', 'skills'];
@@ -373,7 +393,7 @@ export const ResumePDF: React.FC<ResumeData> = ({ content, template, sectionOrde
     education: content.education && content.education.length > 0 ? (
       <ResumeEducation education={content.education} styles={styles} />
     ) : null,
-    skills: content.skills && (content.skills.technical.length > 0 || content.skills.soft.length > 0) ? (
+    skills: content.skills && ((content.skills.technical?.length || 0) > 0 || (content.skills.soft?.length || 0) > 0) ? (
       <ResumeSkills skills={content.skills} styles={styles} />
     ) : null,
   };
@@ -381,6 +401,10 @@ export const ResumePDF: React.FC<ResumeData> = ({ content, template, sectionOrde
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        {/* Debug text to show current template */}
+        <Text style={debugStyle.debugText}>
+          Template: {template?.name || 'Default'}
+        </Text>
         <ResumeHeader personalInfo={content.personalInfo} styles={styles} />
         {/* Render sections in custom order */}
         {order.map((sectionId) => {

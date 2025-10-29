@@ -34,9 +34,9 @@ interface ResumeContent {
     endDate: string | null;
     gpa?: string;
   }>;
-  skills: {
-    technical: string[];
-    soft: string[];
+  skills?: {
+    technical?: string[];
+    soft?: string[];
   };
   certifications?: Array<{
     name: string;
@@ -177,37 +177,43 @@ export function VersionHistory({
             </Card>
 
             {/* Skills */}
-            <Card className="p-4">
-              <h3 className="text-lg font-semibold mb-4">Skills</h3>
-              <div className="space-y-3">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Technical Skills</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {displayContent.skills.technical.map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
+            {displayContent.skills && (displayContent.skills.technical?.length || displayContent.skills.soft?.length) && (
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-4">Skills</h3>
+                <div className="space-y-3">
+                  {displayContent.skills.technical && displayContent.skills.technical.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Technical Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {displayContent.skills.technical.map((skill, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {displayContent.skills.soft && displayContent.skills.soft.length > 0 && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Soft Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {displayContent.skills.soft.map((skill, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">Soft Skills</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {displayContent.skills.soft.map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            )}
 
             {/* Certifications (if any) */}
             {displayContent.certifications && displayContent.certifications.length > 0 && (

@@ -38,9 +38,9 @@ interface ResumeContent {
     endDate: string | null;
     gpa?: string;
   }>;
-  skills: {
-    technical: string[];
-    soft: string[];
+  skills?: {
+    technical?: string[];
+    soft?: string[];
   };
   certifications?: Array<{
     name: string;
@@ -69,7 +69,22 @@ export function ResumeEditor({
   onSave,
   onClose,
 }: ResumeEditorProps) {
-  const [content, setContent] = useState<ResumeContent>(initialContent);
+  // Normalize content to ensure all required fields exist
+  const normalizeContent = (content: ResumeContent): ResumeContent => {
+    return {
+      ...content,
+      skills: {
+        technical: content.skills?.technical || [],
+        soft: content.skills?.soft || [],
+      },
+      personalInfo: {
+        ...content.personalInfo,
+        links: content.personalInfo?.links || [],
+      },
+    };
+  };
+
+  const [content, setContent] = useState<ResumeContent>(normalizeContent(initialContent));
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -129,7 +144,11 @@ export function ResumeEditor({
     const skills = value.split(',').map((s) => s.trim()).filter(Boolean);
     setContent({
       ...content,
-      skills: { ...content.skills, [category]: skills },
+      skills: { 
+        technical: content.skills?.technical || [],
+        soft: content.skills?.soft || [],
+        [category]: skills 
+      },
     });
     setHasChanges(true);
   };
@@ -346,7 +365,7 @@ export function ResumeEditor({
                   Technical Skills
                 </label>
                 <Input
-                  value={content.skills.technical.join(', ')}
+                  value={(content.skills?.technical || []).join(', ')}
                   onChange={(e) => updateSkills('technical', e.target.value)}
                   placeholder="Comma-separated skills..."
                 />
@@ -356,7 +375,7 @@ export function ResumeEditor({
                   Soft Skills
                 </label>
                 <Input
-                  value={content.skills.soft.join(', ')}
+                  value={(content.skills?.soft || []).join(', ')}
                   onChange={(e) => updateSkills('soft', e.target.value)}
                   placeholder="Comma-separated skills..."
                 />

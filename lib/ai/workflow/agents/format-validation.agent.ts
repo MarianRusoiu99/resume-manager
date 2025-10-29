@@ -12,6 +12,7 @@ import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../types';
 import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
+import { parseAgentJSON } from '../utils';
 
 /**
  * Format Validation Agent
@@ -60,8 +61,20 @@ export async function formatValidationAgent(
       }
     );
 
-    // Parse the JSON response
-    const validation = JSON.parse(result);
+    // Parse the JSON response - handles both markdown-wrapped and plain JSON
+    const validation = parseAgentJSON<{
+      atsCompliant: boolean;
+      issues: Array<{
+        severity: 'error' | 'warning' | 'info';
+        message: string;
+        location?: string;
+      }>;
+      recommendations: string[];
+    }>(result);
+
+    if (!validation) {
+      throw new Error('Failed to parse format validation response from AI');
+    }
 
     // Count issues by severity
     type Issue = { severity: 'error' | 'warning' | 'info'; message: string; location?: string };
