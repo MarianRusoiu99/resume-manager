@@ -1,11 +1,14 @@
 @import "tailwindcss";
+@import "../components/ui/theme.css";
 
 :root {
+  /* Fallback tokens (will be overridden by theme.css) */
   --background: #ffffff;
   --foreground: #171717;
 }
 
-@theme inline {
+/* Map root tokens to the semantic tokens Tailwind reads */
+:root {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);

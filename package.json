@@ -63,6 +63,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
     "jsdom": "^27.0.1",
+    "shadcn": "^3.5.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.0.3"

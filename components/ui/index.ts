@@ -5,3 +5,4 @@ export { Card } from "./Card";
 export { ErrorBoundary } from "./ErrorBoundary";
 export { ConfirmDialog } from "./ConfirmDialog";
 export type { ConfirmDialogProps } from "./ConfirmDialog";
+export { ThemeToggle } from "./ThemeToggle";
