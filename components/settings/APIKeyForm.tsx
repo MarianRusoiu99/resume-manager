@@ -1,7 +1,37 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+
+const apiKeySchema = z.object({
+  provider: z.string().min(1, 'Provider is required'),
+  apiKey: z
+    .string()
+    .min(1, 'API key is required')
+    .refine((val) => val.trim().length > 0, 'API key cannot be empty'),
+});
+
+type APIKeyFormData = z.infer<typeof apiKeySchema>;
 
 interface APIKeyFormProps {
   onSubmit: (provider: string, apiKey: string) => void;
@@ -9,102 +39,121 @@ interface APIKeyFormProps {
 }
 
 export default function APIKeyForm({ onSubmit, onCancel }: APIKeyFormProps) {
-  const [provider, setProvider] = useState<string>('openai');
-  const [apiKey, setApiKey] = useState<string>('');
   const [showKey, setShowKey] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!apiKey.trim()) {
-      alert('Please enter an API key');
-      return;
-    }
+  const form = useForm<APIKeyFormData>({
+    resolver: zodResolver(apiKeySchema),
+    defaultValues: {
+      provider: 'openai',
+      apiKey: '',
+    },
+  });
 
+  const handleFormSubmit = async (data: APIKeyFormData) => {
     setSubmitting(true);
     try {
-      await onSubmit(provider, apiKey);
-      // Reset form on success
-      setApiKey('');
-      setProvider('openai');
+      await onSubmit(data.provider, data.apiKey);
+      form.reset();
     } finally {
       setSubmitting(false);
     }
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Provider Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          AI Provider
-        </label>
-        <select
-          value={provider}
-          onChange={(e) => setProvider(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={submitting}
-        >
-          <option value="openai">OpenAI</option>
-          <option value="anthropic" disabled>
-            Anthropic (Coming Soon)
-          </option>
-          <option value="google" disabled>
-            Google (Coming Soon)
-          </option>
-        </select>
-      </div>
+  const currentProvider = form.watch('provider');
 
-      {/* API Key Input */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          API Key
-        </label>
-        <div className="relative">
-          <input
-            type={showKey ? 'text' : 'password'}
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder={
-              provider === 'openai'
-                ? 'sk-...'
-                : 'Enter your API key'
-            }
-            className="w-full px-3 py-2 pr-20 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={submitting}
-            required
-          />
-          <button
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+        {/* Provider Selection */}
+        <FormField
+          control={form.control}
+          name="provider"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>AI Provider</FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                disabled={submitting}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select provider" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="anthropic" disabled>
+                    Anthropic (Coming Soon)
+                  </SelectItem>
+                  <SelectItem value="google" disabled>
+                    Google (Coming Soon)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* API Key Input */}
+        <FormField
+          control={form.control}
+          name="apiKey"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>API Key</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Input
+                    {...field}
+                    type={showKey ? 'text' : 'password'}
+                    placeholder={
+                      currentProvider === 'openai'
+                        ? 'sk-...'
+                        : 'Enter your API key'
+                    }
+                    disabled={submitting}
+                    className="pr-20"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowKey(!showKey)}
+                    disabled={submitting}
+                    className="absolute right-0 top-0 h-full px-3"
+                  >
+                    {showKey ? 'Hide' : 'Show'}
+                  </Button>
+                </div>
+              </FormControl>
+              {currentProvider === 'openai' && (
+                <FormDescription>
+                  OpenAI API keys start with &ldquo;sk-&rdquo;
+                </FormDescription>
+              )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Action Buttons */}
+        <div className="flex space-x-3">
+          <Button type="submit" disabled={submitting}>
+            {submitting ? 'Adding...' : 'Add Key'}
+          </Button>
+          <Button
             type="button"
-            onClick={() => setShowKey(!showKey)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-sm text-gray-600 hover:text-gray-900"
+            variant="secondary"
+            onClick={onCancel}
             disabled={submitting}
           >
-            {showKey ? 'Hide' : 'Show'}
-          </button>
+            Cancel
+          </Button>
         </div>
-        {provider === 'openai' && (
-          <p className="mt-1 text-xs text-gray-500">
-            OpenAI API keys start with &ldquo;sk-&rdquo;
-          </p>
-        )}
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex space-x-3">
-        <Button type="submit" disabled={submitting}>
-          {submitting ? 'Adding...' : 'Add Key'}
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          disabled={submitting}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+      </form>
+    </Form>
   );
 }

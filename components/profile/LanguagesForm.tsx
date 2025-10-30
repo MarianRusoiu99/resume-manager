@@ -1,7 +1,27 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Input, Button, Card } from '@/components/ui';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 
 export interface Language {
   id: string;
@@ -23,6 +43,13 @@ const PROFICIENCY_LEVELS = [
   { value: 'basic', label: 'Basic' },
 ];
 
+const languageFormSchema = z.object({
+  language: z.string().min(1, 'Language is required'),
+  proficiency: z.string().min(1, 'Proficiency level is required'),
+});
+
+type LanguageFormData = z.infer<typeof languageFormSchema>;
+
 export default function LanguagesForm({
   languages,
   onChange,
@@ -31,34 +58,31 @@ export default function LanguagesForm({
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const emptyEntry: Omit<Language, 'id'> = {
-    language: '',
-    proficiency: 'intermediate',
-  };
+  const form = useForm<LanguageFormData>({
+    resolver: zodResolver(languageFormSchema),
+    defaultValues: {
+      language: '',
+      proficiency: 'intermediate',
+    },
+  });
 
-  const [newEntry, setNewEntry] = useState(emptyEntry);
-
-  const handleAdd = () => {
-    if (!newEntry.language.trim()) {
-      return;
-    }
-
+  const handleAdd = (data: LanguageFormData) => {
     const language: Language = {
       id: Date.now().toString(),
-      ...newEntry,
+      ...data,
     };
 
     onChange([...languages, language]);
-    setNewEntry(emptyEntry);
+    form.reset();
     setIsAdding(false);
   };
 
-  const handleUpdate = (id: string) => {
+  const handleUpdate = (id: string, data: LanguageFormData) => {
     const updated = languages.map((lang) =>
-      lang.id === id ? { ...lang, ...newEntry } : lang
+      lang.id === id ? { ...lang, ...data } : lang
     );
     onChange(updated);
-    setNewEntry(emptyEntry);
+    form.reset();
     setEditingId(null);
   };
 
@@ -67,7 +91,7 @@ export default function LanguagesForm({
   };
 
   const startEdit = (lang: Language) => {
-    setNewEntry({
+    form.reset({
       language: lang.language,
       proficiency: lang.proficiency,
     });
@@ -76,7 +100,7 @@ export default function LanguagesForm({
   };
 
   const cancelEdit = () => {
-    setNewEntry(emptyEntry);
+    form.reset();
     setEditingId(null);
     setIsAdding(false);
   };
@@ -88,17 +112,17 @@ export default function LanguagesForm({
   const getProficiencyColor = (value: string) => {
     switch (value) {
       case 'native':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
       case 'fluent':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
       case 'advanced':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
       case 'intermediate':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
       case 'basic':
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
     }
   };
 
@@ -125,59 +149,80 @@ export default function LanguagesForm({
       {/* List of existing languages */}
       <div className="space-y-3">
         {languages.map((lang) => (
-          <Card key={lang.id} className="p-4">
+          <Card key={lang.id}>
             {editingId === lang.id ? (
-              <div className="space-y-3">
-                <Input
-                  label="Language"
-                  value={newEntry.language}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setNewEntry({ ...newEntry, language: e.target.value })
-                  }
-                  placeholder="e.g., Spanish, Mandarin, French"
-                  required
-                />
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Proficiency Level
-                  </label>
-                  <select
-                    value={newEntry.proficiency}
-                    onChange={(e) =>
-                      setNewEntry({ ...newEntry, proficiency: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <CardContent className="pt-6">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit((data) =>
+                      handleUpdate(lang.id, data)
+                    )}
+                    className="space-y-4"
                   >
-                    {PROFICIENCY_LEVELS.map((level) => (
-                      <option key={level.value} value={level.value}>
-                        {level.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex space-x-2">
-                  <Button
-                    type="button"
-                    onClick={() => handleUpdate(lang.id)}
-                    disabled={!newEntry.language.trim()}
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={cancelEdit}
-                    variant="secondary"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
+                    <FormField
+                      control={form.control}
+                      name="language"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Language</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="e.g., Spanish, Mandarin, French"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="proficiency"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Proficiency Level</FormLabel>
+                          <Select
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select proficiency level" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {PROFICIENCY_LEVELS.map((level) => (
+                                <SelectItem key={level.value} value={level.value}>
+                                  {level.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex space-x-2">
+                      <Button type="submit">Save</Button>
+                      <Button
+                        type="button"
+                        onClick={cancelEdit}
+                        variant="secondary"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
             ) : (
-              <div>
+              <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
-                      <h4 className="font-medium text-gray-900">{lang.language}</h4>
+                      <h4 className="font-medium">{lang.language}</h4>
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${getProficiencyColor(
                           lang.proficiency
@@ -199,14 +244,14 @@ export default function LanguagesForm({
                     <Button
                       type="button"
                       onClick={() => handleDelete(lang.id)}
-                      variant="danger"
+                      variant="destructive"
                       size="sm"
                     >
                       Delete
                     </Button>
                   </div>
                 </div>
-              </div>
+              </CardContent>
             )}
           </Card>
         ))}
@@ -214,67 +259,90 @@ export default function LanguagesForm({
 
       {/* Add new language form */}
       {isAdding && (
-        <Card className="p-4">
-          <h4 className="font-medium text-gray-900 mb-4">New Language</h4>
-          <div className="space-y-3">
-            <Input
-              label="Language"
-              value={newEntry.language}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setNewEntry({ ...newEntry, language: e.target.value })
-              }
-              placeholder="e.g., Spanish, Mandarin, French"
-              required
-            />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Proficiency Level
-              </label>
-              <select
-                value={newEntry.proficiency}
-                onChange={(e) =>
-                  setNewEntry({ ...newEntry, proficiency: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        <Card>
+          <CardHeader>
+            <h4 className="font-medium">New Language</h4>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(handleAdd)}
+                className="space-y-4"
               >
-                {PROFICIENCY_LEVELS.map((level) => (
-                  <option key={level.value} value={level.value}>
-                    {level.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex space-x-2">
-              <Button
-                type="button"
-                onClick={handleAdd}
-                disabled={!newEntry.language.trim()}
-              >
-                Add Language
-              </Button>
-              <Button
-                type="button"
-                onClick={cancelEdit}
-                variant="secondary"
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
+                <FormField
+                  control={form.control}
+                  name="language"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Language</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="e.g., Spanish, Mandarin, French"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="proficiency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Proficiency Level</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select proficiency level" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {PROFICIENCY_LEVELS.map((level) => (
+                            <SelectItem key={level.value} value={level.value}>
+                              {level.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex space-x-2">
+                  <Button type="submit">Add Language</Button>
+                  <Button
+                    type="button"
+                    onClick={cancelEdit}
+                    variant="secondary"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
         </Card>
       )}
 
       {languages.length === 0 && !isAdding && (
-        <Card className="p-6 text-center">
-          <p className="text-gray-500 mb-3">No languages added yet</p>
-          <Button
-            type="button"
-            onClick={() => setIsAdding(true)}
-            variant="secondary"
-            size="sm"
-          >
-            Add Your First Language
-          </Button>
+        <Card>
+          <CardContent className="p-6 text-center">
+            <p className="text-muted-foreground mb-3">No languages added yet</p>
+            <Button
+              type="button"
+              onClick={() => setIsAdding(true)}
+              variant="secondary"
+              size="sm"
+            >
+              Add Your First Language
+            </Button>
+          </CardContent>
         </Card>
       )}
     </div>
