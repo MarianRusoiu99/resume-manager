@@ -8,10 +8,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
+import { Button, Card, Input, Textarea } from '@/components/ui';
 
 export default function GenerateCoverLetterPage() {
   const router = useRouter();

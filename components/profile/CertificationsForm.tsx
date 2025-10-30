@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { Input, Button, Card } from '@/components/ui';
 
 export interface Certification {
   id: string;

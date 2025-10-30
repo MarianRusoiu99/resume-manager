@@ -7,9 +7,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
+import { Button, Input, Textarea } from '@/components/ui';
 import { toast } from 'sonner';
 import { useSaveShortcut, useEscapeKey } from '@/lib/hooks/useKeyboardShortcut';
 

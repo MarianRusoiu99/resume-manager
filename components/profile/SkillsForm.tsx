@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, KeyboardEvent } from 'react';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
+import { Input, Button } from '@/components/ui';
 
 export interface SkillsData {
   technical: string[];
