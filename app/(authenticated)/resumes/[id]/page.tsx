@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TemplateSelector } from '@/components/templates/TemplateSelector';
@@ -321,28 +323,19 @@ export default function ResumeDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl resume-content">
-      {/* Header */}
-      <div className="mb-8 no-print">
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/resumes')}
-          className="mb-4"
-        >
-          ← Back to Resumes
-        </Button>
-        
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">
-              {resume.jobTitle || 'Untitled Resume'}
-            </h1>
-            {resume.companyName && (
-              <p className="text-lg text-gray-600">{resume.companyName}</p>
-            )}
-          </div>
-          
-          <div className="flex gap-2">
+    <>
+      <PageHeader
+        title={resume.jobTitle || 'Untitled Resume'}
+        description={resume.companyName || undefined}
+        breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Resumes", href: "/resumes" },
+          { label: resume.jobTitle || 'Resume' },
+        ]}
+      />
+      <PageContainer className="resume-content max-w-5xl">
+        <div className="no-print">
+          <div className="flex justify-end gap-2 mb-6">
             <Button
               onClick={() => setIsEditorOpen(true)}
               variant="secondary"
@@ -383,9 +376,8 @@ export default function ResumeDetailPage() {
             </Button>
           </div>
         </div>
-      </div>
 
-      {/* PDF Preview - Always Visible */}
+        {/* PDF Preview - Always Visible */}
       <Card className="p-4 mb-6 no-print">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Resume Preview</h2>
@@ -665,6 +657,7 @@ export default function ResumeDetailPage() {
           onSave={fetchResume}
         />
       )}
-    </div>
+      </PageContainer>
+    </>
   );
 }

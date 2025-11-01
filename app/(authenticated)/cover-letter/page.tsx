@@ -6,12 +6,12 @@
  */
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card, Input, Label, Textarea } from '@/components/ui';
 
 export default function GenerateCoverLetterPage() {
-  const router = useRouter();
   const [jobDescription, setJobDescription] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -125,24 +125,17 @@ export default function GenerateCoverLetterPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
-      {/* Header */}
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/dashboard')}
-          className="mb-4"
-        >
-          ← Back to Dashboard
-        </Button>
-        
-        <h1 className="text-3xl font-bold mb-2">Generate Cover Letter</h1>
-        <p className="text-gray-600">
-          Create a professional, tailored cover letter for your job application
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <>
+      <PageHeader
+        title="Generate Cover Letter"
+        description="Create a professional, tailored cover letter for your job application"
+        breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Cover Letter" },
+        ]}
+      />
+      <PageContainer maxWidth="xl">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input Form */}
         <div>
           <Card className="p-6">
@@ -295,6 +288,7 @@ export default function GenerateCoverLetterPage() {
           </Card>
         </div>
       </div>
-    </div>
+      </PageContainer>
+    </>
   );
 }

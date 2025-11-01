@@ -68,7 +68,7 @@ export default function LanguagesForm({
 
   const handleAdd = (data: LanguageFormData) => {
     const language: Language = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       ...data,
     };
 

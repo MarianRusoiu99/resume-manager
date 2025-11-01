@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { PageContainer } from "@/components/layout/PageContainer";
 import { PersonalInfoForm } from "@/components/profile/PersonalInfoForm";
 import { SummaryForm } from "@/components/profile/SummaryForm";
 import { ExperienceForm } from "@/components/profile/ExperienceForm";
@@ -29,7 +30,6 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
-  const router = useRouter();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -137,39 +137,23 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <button
-                onClick={() => router.push("/dashboard")}
-                className="text-gray-600 hover:text-gray-900"
-              >
-                ← Back to Dashboard
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Professional Profile</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Build your professional profile to generate optimized resumes
-          </p>
-        </div>
-
+    <>
+      <PageHeader
+        title="Professional Profile"
+        description="Build your professional profile to generate optimized resumes"
+        breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Profile" },
+        ]}
+      />
+      <PageContainer>
         {/* Success/Error Message */}
         {message && (
           <div
             className={`mb-6 p-4 rounded-md ${
               message.type === "success"
-                ? "bg-green-50 text-green-800"
-                : "bg-red-50 text-red-800"
+                ? "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+                : "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400"
             }`}
           >
             {message.text}
@@ -177,7 +161,7 @@ export default function ProfilePage() {
         )}
 
         {/* Profile Sections */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           {/* Personal Information */}
           <Card>
             <CardHeader>
@@ -354,7 +338,7 @@ export default function ProfilePage() {
             }%
           </p>
         </div>
-      </main>
-    </div>
+      </PageContainer>
+    </>
   );
 }

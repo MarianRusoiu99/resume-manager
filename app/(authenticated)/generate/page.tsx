@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
 
 interface Template {
@@ -66,7 +68,7 @@ export default function GeneratePage() {
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
   
   // Progress streaming state
-  const [useStreaming, setUseStreaming] = useState(true);
+  const [useStreaming] = useState(true);
   const [progressStep, setProgressStep] = useState('');
   const [progressMessage, setProgressMessage] = useState('');
   const [progressPercent, setProgressPercent] = useState(0);
@@ -246,15 +248,17 @@ export default function GeneratePage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Generate Resume</h1>
-        <p className="text-gray-600">
-          Paste a job description and let AI create a tailored resume for you
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <>
+      <PageHeader
+        title="Generate Resume"
+        description="Paste a job description and let AI create a tailored resume for you"
+        breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Generate" },
+        ]}
+      />
+      <PageContainer>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input Section */}
         <div>
           <Card className="p-6">
@@ -540,6 +544,7 @@ export default function GeneratePage() {
           )}
         </div>
       </div>
-    </div>
+      </PageContainer>
+    </>
   );
 }

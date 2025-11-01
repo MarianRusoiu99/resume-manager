@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button } from '@/components/ui';
 import APIKeyForm from '@/components/settings/APIKeyForm';
 import APIKeyList from '@/components/settings/APIKeyList';
@@ -17,7 +18,6 @@ export interface APIKeyItem {
 }
 
 export default function SettingsPage() {
-  const router = useRouter();
   const [apiKeys, setApiKeys] = useState<APIKeyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -31,7 +31,7 @@ export default function SettingsPage() {
         const data = await response.json();
         setApiKeys(data);
       } else if (response.status === 401) {
-        router.push('/login');
+        window.location.href = '/login';
       }
     } catch (error) {
       console.error('Error fetching API keys:', error);
@@ -39,7 +39,7 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     fetchAPIKeys();
@@ -134,30 +134,23 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-4xl mx-auto py-8 px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/dashboard')}
-            className="mb-4"
-          >
-            ← Back to Dashboard
-          </Button>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-2">
-            Manage your AI provider API keys
-          </p>
-        </div>
-
+    <>
+      <PageHeader
+        title="Settings"
+        description="Manage your AI provider API keys"
+        breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Settings" },
+        ]}
+      />
+      <PageContainer maxWidth="lg">
         {/* Message Banner */}
         {message && (
           <div
             className={`mb-6 p-4 rounded-lg ${
               message.type === 'success'
-                ? 'bg-green-50 text-green-800 border border-green-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
+                ? 'bg-green-50 text-green-800 border border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
+                : 'bg-red-50 text-red-800 border border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
             }`}
           >
             {message.text}
@@ -208,8 +201,33 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Information Section */}
+        {/* Keyboard Shortcuts Section */}
         <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Keyboard Shortcuts</CardTitle>
+            <CardDescription>
+              Speed up your workflow with these shortcuts
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-2 border-b border-border">
+                <div className="flex-1">
+                  <div className="font-medium">Toggle Sidebar</div>
+                  <div className="text-sm text-muted-foreground">
+                    Show or hide the navigation sidebar
+                  </div>
+                </div>
+                <kbd className="px-2 py-1 text-sm font-semibold text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
+                  {typeof navigator !== 'undefined' && navigator.platform.includes('Mac') ? '⌘' : 'Ctrl'} + B
+                </kbd>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Information Section */}
+        <Card className="mt-6">{" "}
           <CardHeader>
             <CardTitle>About API Keys</CardTitle>
             <CardDescription>
@@ -270,7 +288,7 @@ export default function SettingsPage() {
           </div>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </PageContainer>
+    </>
   );
 }

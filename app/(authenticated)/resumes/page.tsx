@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
@@ -158,32 +160,34 @@ export default function ResumesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">My Resumes</h1>
-          <p className="text-gray-600">
-            Manage your AI-generated resumes
-          </p>
+    <>
+      <PageHeader
+        title="My Resumes"
+        description="Manage your AI-generated resumes"
+        breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Resumes" },
+        ]}
+      />
+      <PageContainer>
+        <div className="flex justify-end mb-6">
+          <Button onClick={() => router.push('/generate')}>
+            Generate New Resume
+          </Button>
         </div>
-        <Button onClick={() => router.push('/generate')}>
-          Generate New Resume
-        </Button>
-      </div>
 
-      {/* Search Bar */}
-      {resumes.length > 0 && (
-        <div className="mb-6">
-          <input
-            type="text"
-            placeholder="Search by job title, company, or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-      )}
+        {/* Search Bar */}
+        {resumes.length > 0 && (
+          <div className="mb-6">
+            <input
+              type="text"
+              placeholder="Search by job title, company, or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-background dark:border-border"
+            />
+          </div>
+        )}
 
       {/* Error Message */}
       {error && (
@@ -301,6 +305,7 @@ export default function ResumesPage() {
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
       />
-    </div>
+      </PageContainer>
+    </>
   );
 }
