@@ -375,7 +375,7 @@ export default function ResumeDetailPage() {
               {isExportingPDF ? 'Exporting...' : 'Export PDF'}
             </Button>
             <Button
-              variant="danger"
+              variant="destructive"
               onClick={handleDelete}
               disabled={isDeleting}
             >

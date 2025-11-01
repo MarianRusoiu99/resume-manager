@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Button, Card, Input, Textarea } from '@/components/ui';
+import { Button, Card, Input, Label, Textarea } from '@/components/ui';
 
 export default function GenerateCoverLetterPage() {
   const router = useRouter();
@@ -149,21 +149,27 @@ export default function GenerateCoverLetterPage() {
             <h2 className="text-xl font-semibold mb-4">Job Details</h2>
             
             <div className="space-y-4">
-              <Input
-                label="Job Title *"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                placeholder="e.g., Senior Software Engineer"
-                required
-              />
+              <div className="space-y-2">
+                <Label htmlFor="jobTitle">Job Title *</Label>
+                <Input
+                  id="jobTitle"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  placeholder="e.g., Senior Software Engineer"
+                  required
+                />
+              </div>
 
-              <Input
-                label="Company Name *"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="e.g., Google"
-                required
-              />
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Company Name *</Label>
+                <Input
+                  id="companyName"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="e.g., Google"
+                  required
+                />
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">

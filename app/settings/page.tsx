@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Card, Button } from '@/components/ui';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, Button } from '@/components/ui';
 import APIKeyForm from '@/components/settings/APIKeyForm';
 import APIKeyList from '@/components/settings/APIKeyList';
 
@@ -165,17 +165,21 @@ export default function SettingsPage() {
         )}
 
         {/* API Keys Section */}
-        <Card
-          title="API Keys"
-          description="Add and manage your AI provider API keys. Keys are encrypted and stored securely."
-        >
-          {!showAddForm && (
-            <div className="mb-6">
-              <Button onClick={() => setShowAddForm(true)}>
-                + Add API Key
-              </Button>
-            </div>
-          )}
+        <Card>
+          <CardHeader>
+            <CardTitle>API Keys</CardTitle>
+            <CardDescription>
+              Add and manage your AI provider API keys. Keys are encrypted and stored securely.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!showAddForm && (
+              <div className="mb-6">
+                <Button onClick={() => setShowAddForm(true)}>
+                  + Add API Key
+                </Button>
+              </div>
+            )}
 
           {showAddForm && (
             <div className="mb-6 p-6 bg-gray-50 rounded-lg border border-gray-200">
@@ -201,15 +205,19 @@ export default function SettingsPage() {
               </p>
             </div>
           )}
+          </CardContent>
         </Card>
 
         {/* Information Section */}
-        <Card
-          title="About API Keys"
-          description="Learn how API keys are used and kept secure"
-          className="mt-6"
-        >
-          <div className="space-y-4 text-sm text-gray-700">
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>About API Keys</CardTitle>
+            <CardDescription>
+              Learn how API keys are used and kept secure
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 text-sm text-gray-700">
             <div>
               <h4 className="font-semibold mb-2">What are API keys used for?</h4>
               <p>
@@ -260,6 +268,7 @@ export default function SettingsPage() {
               </ul>
             </div>
           </div>
+          </CardContent>
         </Card>
       </main>
     </div>

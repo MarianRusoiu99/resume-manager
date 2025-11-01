@@ -7,7 +7,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Input, Textarea } from '@/components/ui';
+import { Button, Input, Label, Textarea } from '@/components/ui';
 import { toast } from 'sonner';
 import { useSaveShortcut, useEscapeKey } from '@/lib/hooks/useKeyboardShortcut';
 
@@ -239,40 +239,52 @@ export function ResumeEditor({
               {content.experience.map((exp, expIndex) => (
                 <div key={expIndex} className="border rounded-lg p-4 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      label="Position"
-                      value={exp.position}
-                      onChange={(e) =>
-                        updateExperience(expIndex, 'position', e.target.value)
-                      }
-                    />
-                    <Input
-                      label="Company"
-                      value={exp.company}
-                      onChange={(e) =>
-                        updateExperience(expIndex, 'company', e.target.value)
-                      }
-                    />
-                    <Input
-                      label="Start Date"
-                      value={exp.startDate}
-                      onChange={(e) =>
-                        updateExperience(expIndex, 'startDate', e.target.value)
-                      }
-                      placeholder="MM/YYYY"
-                    />
-                    <Input
-                      label="End Date"
-                      value={exp.endDate || 'Present'}
-                      onChange={(e) =>
-                        updateExperience(
-                          expIndex,
-                          'endDate',
-                          e.target.value === 'Present' ? null : e.target.value
-                        )
-                      }
-                      placeholder="MM/YYYY or Present"
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor={`exp-position-${expIndex}`}>Position</Label>
+                      <Input
+                        id={`exp-position-${expIndex}`}
+                        value={exp.position}
+                        onChange={(e) =>
+                          updateExperience(expIndex, 'position', e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`exp-company-${expIndex}`}>Company</Label>
+                      <Input
+                        id={`exp-company-${expIndex}`}
+                        value={exp.company}
+                        onChange={(e) =>
+                          updateExperience(expIndex, 'company', e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`exp-startDate-${expIndex}`}>Start Date</Label>
+                      <Input
+                        id={`exp-startDate-${expIndex}`}
+                        value={exp.startDate}
+                        onChange={(e) =>
+                          updateExperience(expIndex, 'startDate', e.target.value)
+                        }
+                        placeholder="MM/YYYY"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`exp-endDate-${expIndex}`}>End Date</Label>
+                      <Input
+                        id={`exp-endDate-${expIndex}`}
+                        value={exp.endDate || 'Present'}
+                        onChange={(e) =>
+                          updateExperience(
+                            expIndex,
+                            'endDate',
+                            e.target.value === 'Present' ? null : e.target.value
+                          )
+                        }
+                        placeholder="MM/YYYY or Present"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -319,35 +331,47 @@ export function ResumeEditor({
               {content.education.map((edu, eduIndex) => (
                 <div key={eduIndex} className="border rounded-lg p-4 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      label="Institution"
-                      value={edu.institution}
-                      onChange={(e) =>
-                        updateEducation(eduIndex, 'institution', e.target.value)
-                      }
-                    />
-                    <Input
-                      label="Degree"
-                      value={edu.degree}
-                      onChange={(e) =>
-                        updateEducation(eduIndex, 'degree', e.target.value)
-                      }
-                    />
-                    <Input
-                      label="Field of Study"
-                      value={edu.field}
-                      onChange={(e) =>
-                        updateEducation(eduIndex, 'field', e.target.value)
-                      }
-                    />
-                    <Input
-                      label="GPA (optional)"
-                      value={edu.gpa || ''}
-                      onChange={(e) =>
-                        updateEducation(eduIndex, 'gpa', e.target.value)
-                      }
-                      placeholder="e.g., 3.8/4.0"
-                    />
+                    <div className="space-y-2">
+                      <Label htmlFor={`edu-institution-${eduIndex}`}>Institution</Label>
+                      <Input
+                        id={`edu-institution-${eduIndex}`}
+                        value={edu.institution}
+                        onChange={(e) =>
+                          updateEducation(eduIndex, 'institution', e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`edu-degree-${eduIndex}`}>Degree</Label>
+                      <Input
+                        id={`edu-degree-${eduIndex}`}
+                        value={edu.degree}
+                        onChange={(e) =>
+                          updateEducation(eduIndex, 'degree', e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`edu-field-${eduIndex}`}>Field of Study</Label>
+                      <Input
+                        id={`edu-field-${eduIndex}`}
+                        value={edu.field}
+                        onChange={(e) =>
+                          updateEducation(eduIndex, 'field', e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`edu-gpa-${eduIndex}`}>GPA (optional)</Label>
+                      <Input
+                        id={`edu-gpa-${eduIndex}`}
+                        value={edu.gpa || ''}
+                        onChange={(e) =>
+                          updateEducation(eduIndex, 'gpa', e.target.value)
+                        }
+                        placeholder="e.g., 3.8/4.0"
+                      />
+                    </div>
                   </div>
                 </div>
               ))}

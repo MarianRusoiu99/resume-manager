@@ -186,7 +186,7 @@ export function ConfirmDialog({
                 </Button>
                 <Button
                   ref={confirmButtonRef}
-                  variant={variant === 'info' ? 'primary' : 'danger'}
+                  variant={variant === 'info' ? 'default' : 'destructive'}
                   onClick={onConfirm}
                 >
                   {confirmText}

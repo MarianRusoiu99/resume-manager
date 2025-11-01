@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Input, Textarea, Button } from "@/components/ui";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Experience } from "@/lib/validations/profile";
 
 interface ExperienceFormProps {
@@ -65,38 +68,50 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Input
-              label="Company *"
-              value={experience.company}
-              onChange={(e) => updateExperience(index, "company", e.target.value)}
-              required
-            />
+            <div className="space-y-2">
+              <Label htmlFor={`company-${index}`}>Company *</Label>
+              <Input
+                id={`company-${index}`}
+                value={experience.company}
+                onChange={(e) => updateExperience(index, "company", e.target.value)}
+                required
+              />
+            </div>
 
-            <Input
-              label="Job Title *"
-              value={experience.title}
-              onChange={(e) => updateExperience(index, "title", e.target.value)}
-              required
-            />
+            <div className="space-y-2">
+              <Label htmlFor={`title-${index}`}>Job Title *</Label>
+              <Input
+                id={`title-${index}`}
+                value={experience.title}
+                onChange={(e) => updateExperience(index, "title", e.target.value)}
+                required
+              />
+            </div>
 
-            <Input
-              label="Start Date *"
-              type="month"
-              value={experience.startDate}
-              onChange={(e) => updateExperience(index, "startDate", e.target.value)}
-              required
-            />
+            <div className="space-y-2">
+              <Label htmlFor={`start-${index}`}>Start Date *</Label>
+              <Input
+                id={`start-${index}`}
+                type="month"
+                value={experience.startDate}
+                onChange={(e) => updateExperience(index, "startDate", e.target.value)}
+                required
+              />
+            </div>
 
-            <Input
-              label="End Date"
-              type="month"
-              value={experience.endDate}
-              onChange={(e) => updateExperience(index, "endDate", e.target.value)}
-              disabled={experience.current}
-            />
+            <div className="space-y-2">
+              <Label htmlFor={`end-${index}`}>End Date</Label>
+              <Input
+                id={`end-${index}`}
+                type="month"
+                value={experience.endDate}
+                onChange={(e) => updateExperience(index, "endDate", e.target.value)}
+                disabled={experience.current}
+              />
+            </div>
 
             <div className="sm:col-span-2">
-              <label className="flex items-center space-x-2">
+              <Label className="flex items-center space-x-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={experience.current}
@@ -106,34 +121,35 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
                       updateExperience(index, "endDate", "");
                     }
                   }}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="rounded border-input text-primary focus:ring-ring"
                 />
-                <span className="text-sm text-gray-700">
+                <span className="text-sm font-normal">
                   I currently work here
                 </span>
-              </label>
+              </Label>
             </div>
 
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 space-y-2">
+              <Label htmlFor={`description-${index}`}>Description</Label>
               <Textarea
-                label="Description"
+                id={`description-${index}`}
                 value={experience.description}
                 onChange={(e) => updateExperience(index, "description", e.target.value)}
                 rows={4}
                 placeholder="Describe your role and responsibilities..."
-                helperText="Describe your key responsibilities and achievements"
               />
+              <p className="text-sm text-muted-foreground">Describe your key responsibilities and achievements</p>
             </div>
           </div>
         </div>
       ))}
 
-      <Button type="button" variant="secondary" onClick={addExperience}>
+      <Button type="button" variant="outline" onClick={addExperience}>
         + Add Experience
       </Button>
 
       {localExperiences.length === 0 && (
-        <p className="text-sm text-gray-500 text-center py-8">
+        <p className="text-sm text-muted-foreground text-center py-8">
           No experience entries yet. Click &ldquo;Add Experience&rdquo; to get started.
         </p>
       )}

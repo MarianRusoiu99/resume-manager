@@ -98,7 +98,7 @@ export default function APIKeyList({ apiKeys, onDelete, onValidate }: APIKeyList
               </Button>
               <Button
                 size="sm"
-                variant="danger"
+                variant="destructive"
                 onClick={() => onDelete(key.id)}
               >
                 Delete

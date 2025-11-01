@@ -263,7 +263,7 @@ export default function ResumesPage() {
                   View
                 </Button>
                 <Button
-                  variant="danger"
+                  variant="destructive"
                   onClick={() => handleDelete(resume.id)}
                   disabled={deletingId === resume.id}
                   size="sm"

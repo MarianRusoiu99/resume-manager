@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Input, Button, Card } from '@/components/ui';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 
 export interface Certification {
   id: string;
@@ -105,41 +108,53 @@ export default function CertificationsForm({
           <Card key={cert.id} className="p-4">
             {editingId === cert.id ? (
               <div className="space-y-3">
-                <Input
-                  label="Certification Name"
-                  value={newEntry.name}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setNewEntry({ ...newEntry, name: e.target.value })
-                  }
-                  placeholder="e.g., AWS Solutions Architect"
-                  required
-                />
-                <Input
-                  label="Issuing Organization"
-                  value={newEntry.issuer}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setNewEntry({ ...newEntry, issuer: e.target.value })
-                  }
-                  placeholder="e.g., Amazon Web Services"
-                  required
-                />
-                <Input
-                  label="Issue Date"
-                  type="month"
-                  value={newEntry.date}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setNewEntry({ ...newEntry, date: e.target.value })
-                  }
-                />
-                <Input
-                  label="Credential URL (optional)"
-                  type="url"
-                  value={newEntry.url}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setNewEntry({ ...newEntry, url: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="cert-name-edit">Certification Name</Label>
+                  <Input
+                    id="cert-name-edit"
+                    value={newEntry.name}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNewEntry({ ...newEntry, name: e.target.value })
+                    }
+                    placeholder="e.g., AWS Solutions Architect"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cert-issuer-edit">Issuing Organization</Label>
+                  <Input
+                    id="cert-issuer-edit"
+                    value={newEntry.issuer}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNewEntry({ ...newEntry, issuer: e.target.value })
+                    }
+                    placeholder="e.g., Amazon Web Services"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cert-date-edit">Issue Date</Label>
+                  <Input
+                    id="cert-date-edit"
+                    type="month"
+                    value={newEntry.date}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNewEntry({ ...newEntry, date: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cert-url-edit">Credential URL (optional)</Label>
+                  <Input
+                    id="cert-url-edit"
+                    type="url"
+                    value={newEntry.url}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNewEntry({ ...newEntry, url: e.target.value })
+                    }
+                    placeholder="https://..."
+                  />
+                </div>
                 <div className="flex space-x-2">
                   <Button
                     type="button"
@@ -151,7 +166,7 @@ export default function CertificationsForm({
                   <Button
                     type="button"
                     onClick={cancelEdit}
-                    variant="secondary"
+                    variant="outline"
                   >
                     Cancel
                   </Button>
@@ -194,7 +209,7 @@ export default function CertificationsForm({
                     <Button
                       type="button"
                       onClick={() => handleDelete(cert.id)}
-                      variant="danger"
+                      variant="destructive"
                       size="sm"
                     >
                       Delete
@@ -210,43 +225,55 @@ export default function CertificationsForm({
       {/* Add new certification form */}
       {isAdding && (
         <Card className="p-4">
-          <h4 className="font-medium text-gray-900 mb-4">New Certification</h4>
+          <h4 className="font-medium mb-4">New Certification</h4>
           <div className="space-y-3">
-            <Input
-              label="Certification Name"
-              value={newEntry.name}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setNewEntry({ ...newEntry, name: e.target.value })
-              }
-              placeholder="e.g., AWS Solutions Architect"
-              required
-            />
-            <Input
-              label="Issuing Organization"
-              value={newEntry.issuer}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setNewEntry({ ...newEntry, issuer: e.target.value })
-              }
-              placeholder="e.g., Amazon Web Services"
-              required
-            />
-            <Input
-              label="Issue Date"
-              type="month"
-              value={newEntry.date}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setNewEntry({ ...newEntry, date: e.target.value })
-              }
-            />
-            <Input
-              label="Credential URL (optional)"
-              type="url"
-              value={newEntry.url}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setNewEntry({ ...newEntry, url: e.target.value })
-              }
-              placeholder="https://..."
-            />
+            <div className="space-y-2">
+              <Label htmlFor="cert-name-new">Certification Name</Label>
+              <Input
+                id="cert-name-new"
+                value={newEntry.name}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setNewEntry({ ...newEntry, name: e.target.value })
+                }
+                placeholder="e.g., AWS Solutions Architect"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cert-issuer-new">Issuing Organization</Label>
+              <Input
+                id="cert-issuer-new"
+                value={newEntry.issuer}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setNewEntry({ ...newEntry, issuer: e.target.value })
+                }
+                placeholder="e.g., Amazon Web Services"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cert-date-new">Issue Date</Label>
+              <Input
+                id="cert-date-new"
+                type="month"
+                value={newEntry.date}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setNewEntry({ ...newEntry, date: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cert-url-new">Credential URL (optional)</Label>
+              <Input
+                id="cert-url-new"
+                type="url"
+                value={newEntry.url}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setNewEntry({ ...newEntry, url: e.target.value })
+                }
+                placeholder="https://..."
+              />
+            </div>
             <div className="flex space-x-2">
               <Button
                 type="button"
@@ -258,7 +285,7 @@ export default function CertificationsForm({
               <Button
                 type="button"
                 onClick={cancelEdit}
-                variant="secondary"
+                variant="outline"
               >
                 Cancel
               </Button>

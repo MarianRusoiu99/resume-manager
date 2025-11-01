@@ -10,7 +10,8 @@ import { EducationForm } from "@/components/profile/EducationForm";
 import SkillsForm from "@/components/profile/SkillsForm";
 import CertificationsForm, { Certification } from "@/components/profile/CertificationsForm";
 import LanguagesForm, { Language } from "@/components/profile/LanguagesForm";
-import { Card, Button } from "@/components/ui";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PersonalInfo, Experience, Education } from "@/lib/validations/profile";
 
 interface ProfileData {
@@ -178,95 +179,131 @@ export default function ProfilePage() {
         {/* Profile Sections */}
         <div className="space-y-8">
           {/* Personal Information */}
-          <Card title="Personal Information" description="Your contact details and links">
-            <PersonalInfoForm
-              initialData={profile?.personalInfo}
-              onSave={handleSavePersonalInfo}
-            />
+          <Card>
+            <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+              <CardDescription>Your contact details and links</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PersonalInfoForm
+                initialData={profile?.personalInfo}
+                onSave={handleSavePersonalInfo}
+              />
+            </CardContent>
           </Card>
 
           {/* Summary Section */}
-          <Card
-            title="Professional Summary"
-            description="A brief overview of your experience and goals"
-          >
-            <SummaryForm
-              summary={profile?.summary || ""}
-              onChange={(summary) => setProfile(prev => prev ? { ...prev, summary } : null)}
-            />
-            <div className="mt-4 flex justify-end">
-              <Button onClick={() => handleSaveSection("summary", profile?.summary || "")}>
-                Save Summary
-              </Button>
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Professional Summary</CardTitle>
+              <CardDescription>A brief overview of your experience and goals</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SummaryForm
+                summary={profile?.summary || ""}
+                onChange={(summary) => setProfile(prev => prev ? { ...prev, summary } : null)}
+              />
+              <div className="mt-4 flex justify-end">
+                <Button onClick={() => handleSaveSection("summary", profile?.summary || "")}>
+                  Save Summary
+                </Button>
+              </div>
+            </CardContent>
           </Card>
 
           {/* Experience Section */}
-          <Card
-            title="Work Experience"
-            description="Your professional work history"
-          >
-            <ExperienceForm
-              experiences={profile?.experience || []}
-              onChange={(experience) => setProfile(prev => prev ? { ...prev, experience } : null)}
-            />
-            <div className="mt-4 flex justify-end">
-              <Button onClick={() => handleSaveSection("experience", profile?.experience || [])}>
-                Save Experience
-              </Button>
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Work Experience</CardTitle>
+              <CardDescription>Your professional work history</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ExperienceForm
+                experiences={profile?.experience || []}
+                onChange={(experience) => setProfile(prev => prev ? { ...prev, experience } : null)}
+              />
+              <div className="mt-4 flex justify-end">
+                <Button onClick={() => handleSaveSection("experience", profile?.experience || [])}>
+                  Save Experience
+                </Button>
+              </div>
+            </CardContent>
           </Card>
 
           {/* Education Section */}
-          <Card title="Education" description="Your educational background">
-            <EducationForm
-              education={profile?.education || []}
-              onChange={(education) => setProfile(prev => prev ? { ...prev, education } : null)}
-            />
-            <div className="mt-4 flex justify-end">
-              <Button onClick={() => handleSaveSection("education", profile?.education || [])}>
-                Save Education
-              </Button>
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Education</CardTitle>
+              <CardDescription>Your educational background</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EducationForm
+                education={profile?.education || []}
+                onChange={(education) => setProfile(prev => prev ? { ...prev, education } : null)}
+              />
+              <div className="mt-4 flex justify-end">
+                <Button onClick={() => handleSaveSection("education", profile?.education || [])}>
+                  Save Education
+                </Button>
+              </div>
+            </CardContent>
           </Card>
 
           {/* Skills Section */}
-          <Card title="Skills" description="Your technical and soft skills">
-            <SkillsForm
-              skills={profile?.skills || { technical: [], soft: [], languages: [] }}
-              onChange={(skills) => setProfile(prev => prev ? { ...prev, skills } : null)}
-            />
-            <div className="mt-4 flex justify-end">
-              <Button onClick={() => handleSaveSection("skills", profile?.skills || { technical: [], soft: [], languages: [] })}>
-                Save Skills
-              </Button>
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Skills</CardTitle>
+              <CardDescription>Your technical and soft skills</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SkillsForm
+                skills={profile?.skills || { technical: [], soft: [], languages: [] }}
+                onChange={(skills) => setProfile(prev => prev ? { ...prev, skills } : null)}
+              />
+              <div className="mt-4 flex justify-end">
+                <Button onClick={() => handleSaveSection("skills", profile?.skills || { technical: [], soft: [], languages: [] })}>
+                  Save Skills
+                </Button>
+              </div>
+            </CardContent>
           </Card>
 
           {/* Certifications Section */}
-          <Card title="Certifications" description="Your professional certifications and licenses">
-            <CertificationsForm
-              certifications={profile?.certifications || []}
-              onChange={(certifications) => setProfile(prev => prev ? { ...prev, certifications } : null)}
-            />
-            <div className="mt-4 flex justify-end">
-              <Button onClick={() => handleSaveSection("certifications", profile?.certifications || [])}>
-                Save Certifications
-              </Button>
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Certifications</CardTitle>
+              <CardDescription>Your professional certifications and licenses</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CertificationsForm
+                certifications={profile?.certifications || []}
+                onChange={(certifications) => setProfile(prev => prev ? { ...prev, certifications } : null)}
+              />
+              <div className="mt-4 flex justify-end">
+                <Button onClick={() => handleSaveSection("certifications", profile?.certifications || [])}>
+                  Save Certifications
+                </Button>
+              </div>
+            </CardContent>
           </Card>
 
           {/* Languages Section */}
-          <Card title="Languages" description="Languages you speak and your proficiency levels">
-            <LanguagesForm
-              languages={profile?.languages || []}
-              onChange={(languages) => setProfile(prev => prev ? { ...prev, languages } : null)}
-            />
-            <div className="mt-4 flex justify-end">
-              <Button onClick={() => handleSaveSection("languages", profile?.languages || [])}>
-                Save Languages
-              </Button>
-            </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Languages</CardTitle>
+              <CardDescription>Languages you speak and your proficiency levels</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LanguagesForm
+                languages={profile?.languages || []}
+                onChange={(languages) => setProfile(prev => prev ? { ...prev, languages } : null)}
+              />
+              <div className="mt-4 flex justify-end">
+                <Button onClick={() => handleSaveSection("languages", profile?.languages || [])}>
+                  Save Languages
+                </Button>
+              </div>
+            </CardContent>
           </Card>
         </div>
 

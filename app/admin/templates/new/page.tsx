@@ -318,14 +318,14 @@ export default function NewTemplatePage() {
               <h2 className="text-xl font-semibold">Live Preview</h2>
               <div className="flex gap-2">
                 <Button
-                  variant={previewMode === 'json' ? 'primary' : 'ghost'}
+                  variant={previewMode === 'json' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setPreviewMode('json')}
                 >
                   JSON
                 </Button>
                 <Button
-                  variant={previewMode === 'visual' ? 'primary' : 'ghost'}
+                  variant={previewMode === 'visual' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setPreviewMode('visual')}
                 >
