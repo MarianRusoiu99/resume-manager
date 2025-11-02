@@ -36,45 +36,49 @@ async function main() {
       const resume = finalState.generatedResume;
       
       console.log('📋 Personal Information:');
-      console.log(`   Name: ${resume.personalInfo.name}`);
-      console.log(`   Email: ${resume.personalInfo.email}`);
-      console.log(`   Phone: ${resume.personalInfo.phone || 'N/A'}`);
-      console.log(`   Location: ${resume.personalInfo.location || 'N/A'}`);
-      if (resume.personalInfo.linkedin) console.log(`   LinkedIn: ${resume.personalInfo.linkedin}`);
-      if (resume.personalInfo.github) console.log(`   GitHub: ${resume.personalInfo.github}`);
+      console.log(`   Name: ${resume.basics?.name || 'N/A'}`);
+      console.log(`   Email: ${resume.basics?.email || 'N/A'}`);
+      console.log(`   Phone: ${resume.basics?.phone || 'N/A'}`);
+      console.log(`   Location: ${resume.basics?.location?.city || 'N/A'}`);
+      const linkedIn = resume.basics?.profiles?.find(p => p.network === 'LinkedIn');
+      const github = resume.basics?.profiles?.find(p => p.network === 'GitHub');
+      if (linkedIn) console.log(`   LinkedIn: ${linkedIn.url}`);
+      if (github) console.log(`   GitHub: ${github.url}`);
       
       console.log('\n📝 Summary:');
-      console.log(`   ${resume.summary}`);
+      console.log(`   ${resume.basics?.summary || 'N/A'}`);
       
       console.log('\n💼 Experience:');
-      resume.experience.forEach((exp, i) => {
-        const dates = exp.current ? `${exp.startDate} - Present` : `${exp.startDate} - ${exp.endDate}`;
-        console.log(`   ${i + 1}. ${exp.title} at ${exp.company} (${dates})`);
-        console.log(`      ${exp.description}`);
-        console.log(`      Achievements:`);
-        exp.bulletPoints.forEach((bullet: string) => {
-          console.log(`      • ${bullet}`);
-        });
+      resume.work?.forEach((exp, i) => {
+        const dates = exp.endDate ? `${exp.startDate} - ${exp.endDate}` : `${exp.startDate} - Present`;
+        console.log(`   ${i + 1}. ${exp.position} at ${exp.name} (${dates})`);
+        console.log(`      ${exp.summary || ''}`);
+        if (exp.highlights && exp.highlights.length > 0) {
+          console.log(`      Achievements:`);
+          exp.highlights.forEach((bullet: string) => {
+            console.log(`      • ${bullet}`);
+          });
+        }
       });
       
       console.log('\n🎓 Education:');
-      resume.education.forEach((edu, i) => {
+      resume.education?.forEach((edu, i) => {
         const dates = edu.endDate ? `${edu.startDate} - ${edu.endDate}` : edu.startDate;
-        console.log(`   ${i + 1}. ${edu.degree} in ${edu.field} - ${edu.school}`);
-        if (edu.gpa) console.log(`      GPA: ${edu.gpa}`);
+        console.log(`   ${i + 1}. ${edu.studyType} in ${edu.area} - ${edu.institution}`);
+        if (edu.score) console.log(`      GPA: ${edu.score}`);
         console.log(`      ${dates}`);
       });
       
-      console.log('\n🔧 Skills (Prioritized):');
-      resume.skills.forEach((skill, i) => {
-        console.log(`   ${i + 1}. ${skill}`);
+      console.log('\n🔧 Skills:');
+      resume.skills?.forEach((skill, i) => {
+        console.log(`   ${i + 1}. ${skill.name}: ${skill.keywords?.join(', ') || ''}`);
       });
       
       console.log('\n📊 Metadata:');
-      console.log(`   Generated: ${resume.metadata.generatedAt}`);
-      console.log(`   Model: ${resume.metadata.modelUsed}`);
-      console.log(`   Tokens: ${resume.metadata.tokensUsed}`);
-      console.log(`   Target: ${resume.metadata.jobTitle} at ${resume.metadata.companyName}`);
+      console.log(`   Generated: ${resume.meta?.version || 'N/A'}`);
+      if (resume.work && resume.work.length > 0) {
+        console.log(`   Latest Position: ${resume.work[0].position} at ${resume.work[0].name}`);
+      }
     } else {
       console.log('❌ No resume generated');
     }

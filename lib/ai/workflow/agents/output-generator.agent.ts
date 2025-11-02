@@ -1,18 +1,19 @@
 /**
  * Output Generator Agent
  * 
- * This agent assembles the final structured resume from all previous agent outputs.
- * It combines optimized content with user profile data and adds generation metadata.
+ * This agent finalizes the resume with metadata and ensures it's ready for storage/export.
+ * With JSON Resume format, this agent primarily adds generation metadata.
  * 
  * This is the final step before the resume is ready for PDF export or storage.
  */
 
 import type { ResumeGenerationState } from '../types';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Output Generator Agent
  * 
- * Generates the final structured resume JSON from all agent outputs.
+ * Generates the final resume with metadata from all agent outputs.
  * No AI calls needed - this is pure data assembly.
  * 
  * @param state - Current workflow state with all agent outputs
@@ -24,64 +25,35 @@ export async function outputGeneratorAgent(
   console.log('📄 Starting output generator agent...');
 
   // Validate prerequisites
-  if (!state.optimizedContent) {
-    throw new Error('Optimized content is required for output generation');
+  if (!state.optimizedResume) {
+    throw new Error('Optimized resume is required for output generation');
   }
 
-  if (!state.userProfile) {
-    throw new Error('User profile is required for output generation');
-  }
-
-  const { optimizedContent, userProfile, jobTitle, companyName, tokensUsed } = state;
+  const { optimizedResume, jobTitle, companyName, tokensUsed } = state;
 
   try {
-    // Assemble the final resume structure
-    const generatedResume = {
-      personalInfo: {
-        name: userProfile.personalInfo.name,
-        email: userProfile.personalInfo.email,
-        phone: userProfile.personalInfo.phone,
-        location: userProfile.personalInfo.location,
-        linkedin: userProfile.personalInfo.linkedin,
-        github: userProfile.personalInfo.github,
-        website: userProfile.personalInfo.website,
-      },
-      summary: optimizedContent.summary,
-      experience: optimizedContent.experience.map(exp => ({
-        company: exp.company,
-        title: exp.title,
-        startDate: exp.startDate,
-        endDate: exp.endDate,
-        current: exp.current,
-        description: exp.description,
-        bulletPoints: exp.bulletPoints,
-      })),
-      education: userProfile.education.map(edu => ({
-        school: edu.school,
-        degree: edu.degree,
-        field: edu.field,
-        gpa: edu.gpa,
-        startDate: edu.startDate,
-        endDate: edu.endDate,
-        description: edu.description,
-      })),
-      skills: optimizedContent.prioritizedSkills,
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        modelUsed: 'gpt-4-turbo-preview', // Could be made dynamic
-        tokensUsed: tokensUsed || 0,
-        jobTitle: jobTitle,
-        companyName: companyName,
+    // Add generation metadata to the resume
+    const generatedResume: Resume = {
+      ...optimizedResume,
+      meta: {
+        ...optimizedResume.meta,
+        canonical: optimizedResume.meta?.canonical,
+        version: optimizedResume.meta?.version || 'v1.0.0',
+        lastModified: new Date().toISOString(),
+        // Add custom metadata about generation
+        ...(jobTitle && { targetJobTitle: jobTitle }),
+        ...(companyName && { targetCompany: companyName }),
+        ...(tokensUsed && { tokensUsed: tokensUsed.toString() }),
       },
     };
 
     console.log('✅ Output generation complete');
-    console.log(`- Personal info: ${generatedResume.personalInfo.name}`);
-    console.log(`- Summary: ${generatedResume.summary.substring(0, 50)}...`);
-    console.log(`- Experience entries: ${generatedResume.experience.length}`);
-    console.log(`- Education entries: ${generatedResume.education.length}`);
-    console.log(`- Skills: ${generatedResume.skills.length}`);
-    console.log(`- Total tokens used: ${generatedResume.metadata.tokensUsed}`);
+    console.log(`- Candidate: ${generatedResume.basics?.name || 'Unknown'}`);
+    console.log(`- Summary: ${(generatedResume.basics?.summary || '').substring(0, 50)}${generatedResume.basics?.summary && generatedResume.basics.summary.length > 50 ? '...' : ''}`);
+    console.log(`- Work entries: ${generatedResume.work?.length || 0}`);
+    console.log(`- Education entries: ${generatedResume.education?.length || 0}`);
+    console.log(`- Skills: ${generatedResume.skills?.length || 0}`);
+    console.log(`- Total tokens used: ${tokensUsed || 0}`);
 
     return {
       ...state,
@@ -125,12 +97,15 @@ export async function testOutputGeneratorAgent() {
   const mockProfile = createMockUserProfile();
   const mockJob = createMockJobDescription();
 
+  // mockProfile is already a Resume - no conversion needed
+  const mockResume: Resume = mockProfile;
+
   // Initial state
   let state: ResumeGenerationState = {
     jobDescription: mockJob,
     jobTitle: 'Senior Software Engineer',
     companyName: 'Tech Corp',
-    userProfile: mockProfile,
+    userResume: mockResume,
     currentStep: 'validate_input',
     messages: [],
     errors: [],
@@ -157,7 +132,7 @@ export async function testOutputGeneratorAgent() {
   const optimizeResult = await contentOptimizationAgent(state, apiKey, model);
   state = { ...state, ...optimizeResult };
 
-  if (!state.optimizedContent) {
+  if (!state.optimizedResume) {
     throw new Error('Content optimization failed');
   }
 
@@ -179,57 +154,61 @@ export async function testOutputGeneratorAgent() {
 
   // Display results
   console.log('\n' + '='.repeat(50));
-  console.log('FINAL RESUME OUTPUT');
+  console.log('FINAL RESUME OUTPUT (JSON Resume v1.0.0)');
   console.log('='.repeat(50));
 
-  console.log('\n👤 PERSONAL INFO:');
-  console.log(`Name: ${state.generatedResume.personalInfo.name}`);
-  console.log(`Email: ${state.generatedResume.personalInfo.email}`);
-  if (state.generatedResume.personalInfo.phone) {
-    console.log(`Phone: ${state.generatedResume.personalInfo.phone}`);
+  console.log('\n👤 BASICS:');
+  console.log(`Name: ${state.generatedResume?.basics?.name || 'N/A'}`);
+  console.log(`Email: ${state.generatedResume?.basics?.email || 'N/A'}`);
+  if (state.generatedResume?.basics?.phone) {
+    console.log(`Phone: ${state.generatedResume.basics.phone}`);
   }
-  if (state.generatedResume.personalInfo.location) {
-    console.log(`Location: ${state.generatedResume.personalInfo.location}`);
-  }
-  if (state.generatedResume.personalInfo.linkedin) {
-    console.log(`LinkedIn: ${state.generatedResume.personalInfo.linkedin}`);
+  if (state.generatedResume?.basics?.location?.city) {
+    console.log(`Location: ${state.generatedResume.basics.location.city}`);
   }
 
   console.log('\n📝 SUMMARY:');
-  console.log(state.generatedResume.summary);
+  console.log(state.generatedResume?.basics?.summary || 'No summary');
 
-  console.log('\n💼 EXPERIENCE:');
-  state.generatedResume.experience.forEach((exp, index) => {
-    console.log(`\n${index + 1}. ${exp.title} at ${exp.company}`);
-    console.log(`   ${exp.startDate} - ${exp.endDate || 'Present'}`);
-    console.log(`   ${exp.description}`);
-    console.log('   Achievements:');
-    exp.bulletPoints.forEach(bullet => {
-      console.log(`   • ${bullet}`);
-    });
+  console.log('\n💼 WORK EXPERIENCE:');
+  (state.generatedResume?.work || []).forEach((job, index) => {
+    console.log(`\n${index + 1}. ${job.position || 'Position'} at ${job.name || 'Company'}`);
+    console.log(`   ${job.startDate || 'N/A'} - ${job.endDate || 'Present'}`);
+    if (job.summary) {
+      console.log(`   ${job.summary}`);
+    }
+    if (job.highlights && job.highlights.length > 0) {
+      console.log('   Highlights:');
+      job.highlights.forEach((highlight: string) => {
+        console.log(`   • ${highlight}`);
+      });
+    }
   });
 
   console.log('\n🎓 EDUCATION:');
-  state.generatedResume.education.forEach((edu, index) => {
-    console.log(`\n${index + 1}. ${edu.degree} in ${edu.field}`);
-    console.log(`   ${edu.school}`);
-    console.log(`   ${edu.startDate} - ${edu.endDate || 'Present'}`);
-    if (edu.gpa) {
-      console.log(`   GPA: ${edu.gpa}`);
+  (state.generatedResume?.education || []).forEach((edu, index) => {
+    console.log(`\n${index + 1}. ${edu.studyType || 'Degree'} in ${edu.area || 'Field'}`);
+    console.log(`   ${edu.institution || 'Institution'}`);
+    if (edu.startDate || edu.endDate) {
+      console.log(`   ${edu.startDate || 'N/A'} - ${edu.endDate || 'Present'}`);
+    }
+    if (edu.score) {
+      console.log(`   Score: ${edu.score}`);
     }
   });
 
   console.log('\n🎯 SKILLS:');
-  console.log(state.generatedResume.skills.slice(0, 15).join(', '));
-  if (state.generatedResume.skills.length > 15) {
-    console.log(`... and ${state.generatedResume.skills.length - 15} more`);
+  const skillNames = (state.generatedResume?.skills || []).map((s) => s.name).slice(0, 15).join(', ');
+  console.log(skillNames || 'No skills');
+  if ((state.generatedResume?.skills?.length || 0) > 15) {
+    console.log(`... and ${(state.generatedResume?.skills?.length || 0) - 15} more`);
   }
 
   console.log('\n📊 METADATA:');
-  console.log(`Generated: ${new Date(state.generatedResume.metadata.generatedAt).toLocaleString()}`);
-  console.log(`Model: ${state.generatedResume.metadata.modelUsed}`);
-  console.log(`Tokens Used: ${state.generatedResume.metadata.tokensUsed}`);
-  console.log(`Target Job: ${state.generatedResume.metadata.jobTitle} at ${state.generatedResume.metadata.companyName}`);
+  if (state.generatedResume?.meta?.lastModified) {
+    console.log(`Generated: ${new Date(state.generatedResume.meta.lastModified).toLocaleString()}`);
+  }
+  console.log(`Total Tokens Used: ${state.tokensUsed || 0}`);
 
   console.log('\n✅ Output generator test complete!');
   console.log('\nResume is ready for PDF export or database storage.');

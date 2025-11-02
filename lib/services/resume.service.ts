@@ -1,6 +1,8 @@
 import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
-import { generateResume, type GenerateResumeInput } from '@/lib/ai/workflow';
+import { generateResume } from '@/lib/ai/workflow';
 import { profileService } from '@/lib/services/profile.service';
+import type { Resume } from '@/lib/validations/jsonresume';
+import { resumeSchema } from '@/lib/validations/jsonresume';
 
 /**
  * Input parameters for resume generation
@@ -77,90 +79,46 @@ export class ResumeService {
         };
       }
 
-      const profile = profileResult.data;
+      const profileData = profileResult.data;
       
-      // Type guard to ensure profile has required properties
-      if (!profile || typeof profile !== 'object' || !('personalInfo' in profile)) {
+      // Type guard to ensure we have a profile with resume field
+      if (!profileData || typeof profileData !== 'object' || !('resume' in profileData)) {
         return {
           success: false,
-          errors: ['Invalid profile data. Please update your profile.']
+          errors: ['Profile structure is invalid. Please update your profile.']
         };
       }
 
-      const personalInfo = profile.personalInfo as {
-        name: string;
-        email: string;
-        phone?: string;
-        location?: string;
-        linkedin?: string;
-        github?: string;
-        website?: string;
-      };
-      const experience = profile.experience as Array<{
-        company: string;
-        title: string;
-        startDate: string;
-        endDate: string | null;
-        current: boolean;
-        description: string;
-      }>;
-      const education = profile.education as Array<{
-        school: string;
-        degree: string;
-        field: string;
-        gpa: string | null;
-        startDate: string;
-        endDate: string | null;
-        description: string | null;
-      }>;
-      const skills = profile.skills as {
-        technical: string[];
-        soft: string[];
-        languages: string[];
-      };
+      // Extract and validate Resume from profile
+      if (!profileData.resume) {
+        return {
+          success: false,
+          errors: ['Profile does not contain resume data. Please complete your profile.']
+        };
+      }
 
-      // Convert profile to workflow format
-      const userProfile: GenerateResumeInput['userProfile'] = {
-        personalInfo: {
-          name: personalInfo.name,
-          email: personalInfo.email,
-          phone: personalInfo.phone,
-          location: personalInfo.location,
-          linkedin: personalInfo.linkedin,
-          github: personalInfo.github,
-          website: personalInfo.website
-        },
-        summary: profile.summary || undefined,
-        experience: experience.map(exp => ({
-          company: exp.company,
-          title: exp.title,
-          startDate: exp.startDate,
-          endDate: exp.endDate || undefined,
-          current: exp.current,
-          description: exp.description
-        })),
-        education: education.map(edu => ({
-          school: edu.school,
-          degree: edu.degree,
-          field: edu.field,
-          gpa: edu.gpa || undefined,
-          startDate: edu.startDate,
-          endDate: edu.endDate || undefined,
-          description: edu.description || undefined
-        })),
-        skills
-      };
+      // Validate the resume data against JSON Resume schema
+      let userResume: Resume;
+      try {
+        userResume = resumeSchema.parse(profileData.resume);
+      } catch (error) {
+        console.error('Profile resume validation failed:', error);
+        return {
+          success: false,
+          errors: ['Invalid profile data format. Please update your profile.']
+        };
+      }
 
       console.log(`\n🚀 ResumeService: Starting resume generation for user ${input.userId}`);
       console.log(`   Job: ${input.jobTitle || 'Not specified'} at ${input.companyName || 'Not specified'}`);
 
-      // Call workflow service
+      // Call workflow service with Resume
       const workflowResult = await generateResume({
         userId: input.userId,
         jobDescription: input.jobDescription,
         jobTitle: input.jobTitle,
         companyName: input.companyName,
-        userProfile
+        userResume
       });
 
       if (!workflowResult.success || !workflowResult.resume) {
@@ -174,6 +132,9 @@ export class ResumeService {
       console.log('✅ ResumeService: Workflow completed successfully');
       console.log(`   Tokens used: ${workflowResult.tokensUsed || 0}`);
 
+      // Validate generated resume
+      const validatedResume = resumeSchema.parse(workflowResult.resume);
+
       // Store in database
       const generatedResume = await this.repository.create({
         userId: input.userId,
@@ -182,12 +143,12 @@ export class ResumeService {
           jobTitle: input.jobTitle,
           companyName: input.companyName
         },
-  templateId: input.templateId ?? undefined,
-        resumeContent: workflowResult.resume as unknown as Record<string, unknown>,
+        templateId: input.templateId ?? undefined,
+        resume: validatedResume,
         metadata: {
-          model: workflowResult.resume.metadata.modelUsed,
+          model: validatedResume.meta?.model || 'unknown',
           tokens: workflowResult.tokensUsed || 0,
-          generatedAt: workflowResult.resume.metadata.generatedAt
+          generatedAt: validatedResume.meta?.lastModified || new Date().toISOString()
         }
       });
 
@@ -198,7 +159,7 @@ export class ResumeService {
         resumeId: generatedResume.id,
         resume: {
           id: generatedResume.id,
-          content: generatedResume.resumeContent as Record<string, unknown>,
+          content: generatedResume.resume as unknown as Record<string, unknown>,
           metadata: generatedResume.metadata as Record<string, unknown>,
           createdAt: generatedResume.createdAt
         }
@@ -236,81 +197,37 @@ export class ResumeService {
         };
       }
 
-      const profile = profileResult.data;
+      const profileData = profileResult.data;
       
-      // Type guard to ensure profile has required properties
-      if (!profile || typeof profile !== 'object' || !('personalInfo' in profile)) {
+      // Type guard to ensure we have a profile with resume field
+      if (!profileData || typeof profileData !== 'object' || !('resume' in profileData)) {
         return {
           success: false,
-          errors: ['Invalid profile data. Please update your profile.']
+          errors: ['Profile structure is invalid. Please update your profile.']
+        };
+      }
+
+      // Extract and validate Resume from profile
+      if (!profileData.resume) {
+        return {
+          success: false,
+          errors: ['Profile does not contain resume data. Please complete your profile.']
         };
       }
 
       onProgress('profile', 'Profile loaded successfully', 10);
 
-      const personalInfo = profile.personalInfo as {
-        name: string;
-        email: string;
-        phone?: string;
-        location?: string;
-        linkedin?: string;
-        github?: string;
-        website?: string;
-      };
-      const experience = profile.experience as Array<{
-        company: string;
-        title: string;
-        startDate: string;
-        endDate: string | null;
-        current: boolean;
-        description: string;
-      }>;
-      const education = profile.education as Array<{
-        school: string;
-        degree: string;
-        field: string;
-        gpa: string | null;
-        startDate: string;
-        endDate: string | null;
-        description: string | null;
-      }>;
-      const skills = profile.skills as {
-        technical: string[];
-        soft: string[];
-        languages: string[];
-      };
-
-      // Convert profile to workflow format
-      const userProfile: GenerateResumeInput['userProfile'] = {
-        personalInfo: {
-          name: personalInfo.name,
-          email: personalInfo.email,
-          phone: personalInfo.phone,
-          location: personalInfo.location,
-          linkedin: personalInfo.linkedin,
-          github: personalInfo.github,
-          website: personalInfo.website
-        },
-        summary: profile.summary || undefined,
-        experience: experience.map(exp => ({
-          company: exp.company,
-          title: exp.title,
-          startDate: exp.startDate,
-          endDate: exp.endDate || undefined,
-          current: exp.current,
-          description: exp.description
-        })),
-        education: education.map(edu => ({
-          school: edu.school,
-          degree: edu.degree,
-          field: edu.field,
-          gpa: edu.gpa || undefined,
-          startDate: edu.startDate,
-          endDate: edu.endDate || undefined,
-          description: edu.description || undefined
-        })),
-        skills
-      };
+      // Validate the resume data against JSON Resume schema
+      let userResume: Resume;
+      try {
+        userResume = resumeSchema.parse(profileData.resume);
+      } catch (error) {
+        console.error('Profile resume validation failed:', error);
+        return {
+          success: false,
+          errors: ['Invalid profile data format. Please update your profile.']
+        };
+      }
 
       console.log(`\n🚀 ResumeService: Starting resume generation with progress for user ${baseInput.userId}`);
       console.log(`   Job: ${baseInput.jobTitle || 'Not specified'} at ${baseInput.companyName || 'Not specified'}`);
@@ -353,13 +270,13 @@ export class ResumeService {
         }
       }, 18000);
 
-      // Call workflow service
+      // Call workflow service with Resume
       const workflowResult = await generateResume({
         userId: baseInput.userId,
         jobDescription: baseInput.jobDescription,
         jobTitle: baseInput.jobTitle,
         companyName: baseInput.companyName,
-        userProfile
+        userResume
       });
 
       if (!workflowResult.success || !workflowResult.resume) {
@@ -375,6 +292,9 @@ export class ResumeService {
 
       onProgress('save', 'Saving resume to database...', 95);
 
+      // Validate generated resume
+      const validatedResume = resumeSchema.parse(workflowResult.resume);
+
       // Store in database
       const generatedResume = await this.repository.create({
         userId: baseInput.userId,
@@ -384,11 +304,11 @@ export class ResumeService {
           companyName: baseInput.companyName
         },
         templateId: baseInput.templateId ?? undefined,
-        resumeContent: workflowResult.resume as unknown as Record<string, unknown>,
+        resume: validatedResume,
         metadata: {
-          model: workflowResult.resume.metadata.modelUsed,
+          model: validatedResume.meta?.model || 'unknown',
           tokens: workflowResult.tokensUsed || 0,
-          generatedAt: workflowResult.resume.metadata.generatedAt
+          generatedAt: validatedResume.meta?.lastModified || new Date().toISOString()
         }
       });
 
@@ -401,7 +321,7 @@ export class ResumeService {
         resumeId: generatedResume.id,
         resume: {
           id: generatedResume.id,
-          content: generatedResume.resumeContent as Record<string, unknown>,
+          content: generatedResume.resume as unknown as Record<string, unknown>,
           metadata: generatedResume.metadata as Record<string, unknown>,
           createdAt: generatedResume.createdAt
         }
@@ -416,11 +336,12 @@ export class ResumeService {
     }
   }
 
-  /**
-   * Get all resumes for a user
+    /**
+   * List all resumes for a user
    */
-  async getUserResumes(userId: string) {
+  async listResumes(userId: string) {
     const resumes = await this.repository.findByUserId(userId);
+    
     return resumes.map(resume => {
       // Parse jobMetadata to extract jobTitle and companyName
       const jobMetadata = resume.jobMetadata as Record<string, unknown> | null;
@@ -442,16 +363,22 @@ export class ResumeService {
         jobTitle,
         companyName,
         jobDescription: resume.jobDescription,
-        content: resume.resumeContent as Record<string, unknown>,
+        content: resume.resume as Record<string, unknown>,
         templateId: resume.templateId,
         customization: resume.templateCustomization as Record<string, unknown> | null,
         pdfUrl: resume.pdfUrl,
-        isEdited: resume.isEdited,
         metadata: normalizedMetadata,
         createdAt: resume.createdAt,
         updatedAt: resume.updatedAt
       };
     });
+  }
+
+  /**
+   * Alias for listResumes (for API backward compatibility)
+   */
+  async getUserResumes(userId: string) {
+    return this.listResumes(userId);
   }
 
   /**
@@ -484,15 +411,12 @@ export class ResumeService {
       jobMetadata: resume.jobMetadata as Record<string, unknown>,
       jobTitle,
       companyName,
-      content: resume.resumeContent as Record<string, unknown>,
+      content: resume.resume as Record<string, unknown>,
       metadata: normalizedMetadata,
-      isEdited: resume.isEdited,
-      aiGeneratedContent: resume.aiGeneratedContent as Record<string, unknown>,
       coverLetter: resume.coverLetter,
       pdfUrl: resume.pdfUrl,
       templateId: resume.templateId,
       templateCustomization: resume.templateCustomization as Record<string, unknown> | null,
-      sectionOrder: resume.sectionOrder as string[] | null,
       createdAt: resume.createdAt,
       updatedAt: resume.updatedAt
     };

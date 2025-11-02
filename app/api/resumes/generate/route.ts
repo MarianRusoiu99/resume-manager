@@ -16,7 +16,6 @@ const resumesCache = new SimpleCache<Array<{
   templateId: string | null;
   customization: Record<string, unknown> | null;
   pdfUrl: string | null;
-  isEdited: boolean;
   metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;

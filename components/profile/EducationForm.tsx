@@ -19,13 +19,13 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
 
   const addEducation = () => {
     const newEducation: Education = {
-      school: "",
-      degree: "",
-      field: "",
+      institution: "",
+      studyType: "",
+      area: "",
       startDate: "",
       endDate: "",
-      gpa: "",
-      description: "",
+      score: "",
+      courses: [],
     };
     const updated = [...localEducation, newEducation];
     setLocalEducation(updated);
@@ -38,7 +38,7 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
     onChange(updated);
   };
 
-  const updateEducation = (index: number, field: keyof Education, value: string) => {
+  const updateEducation = (index: number, field: keyof Education, value: string | string[]) => {
     const updated = localEducation.map((edu, i) => {
       if (i === index) {
         return { ...edu, [field]: value };
@@ -69,42 +69,42 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor={`school-${index}`}>School/University *</Label>
+              <Label htmlFor={`institution-${index}`}>School/University *</Label>
               <Input
-                id={`school-${index}`}
-                value={edu.school}
-                onChange={(e) => updateEducation(index, "school", e.target.value)}
+                id={`institution-${index}`}
+                value={edu.institution || ""}
+                onChange={(e) => updateEducation(index, "institution", e.target.value)}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`degree-${index}`}>Degree *</Label>
+              <Label htmlFor={`studyType-${index}`}>Degree *</Label>
               <Input
-                id={`degree-${index}`}
-                value={edu.degree}
-                onChange={(e) => updateEducation(index, "degree", e.target.value)}
+                id={`studyType-${index}`}
+                value={edu.studyType || ""}
+                onChange={(e) => updateEducation(index, "studyType", e.target.value)}
                 placeholder="e.g., Bachelor of Science"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`field-${index}`}>Field of Study</Label>
+              <Label htmlFor={`area-${index}`}>Field of Study</Label>
               <Input
-                id={`field-${index}`}
-                value={edu.field}
-                onChange={(e) => updateEducation(index, "field", e.target.value)}
+                id={`area-${index}`}
+                value={edu.area || ""}
+                onChange={(e) => updateEducation(index, "area", e.target.value)}
                 placeholder="e.g., Computer Science"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`gpa-${index}`}>GPA</Label>
+              <Label htmlFor={`score-${index}`}>GPA</Label>
               <Input
-                id={`gpa-${index}`}
-                value={edu.gpa}
-                onChange={(e) => updateEducation(index, "gpa", e.target.value)}
+                id={`score-${index}`}
+                value={edu.score || ""}
+                onChange={(e) => updateEducation(index, "score", e.target.value)}
                 placeholder="e.g., 3.8/4.0"
               />
             </div>
@@ -114,7 +114,7 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
               <Input
                 id={`start-date-${index}`}
                 type="month"
-                value={edu.startDate}
+                value={edu.startDate || ""}
                 onChange={(e) => updateEducation(index, "startDate", e.target.value)}
               />
             </div>
@@ -124,21 +124,24 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
               <Input
                 id={`end-date-${index}`}
                 type="month"
-                value={edu.endDate}
+                value={edu.endDate || ""}
                 onChange={(e) => updateEducation(index, "endDate", e.target.value)}
               />
             </div>
 
             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor={`description-${index}`}>Description</Label>
+              <Label htmlFor={`courses-${index}`}>Relevant Courses</Label>
               <Textarea
-                id={`description-${index}`}
-                value={edu.description}
-                onChange={(e) => updateEducation(index, "description", e.target.value)}
+                id={`courses-${index}`}
+                value={edu.courses?.join(", ") || ""}
+                onChange={(e) => {
+                  const coursesArray = e.target.value.split(",").map(c => c.trim()).filter(c => c);
+                  updateEducation(index, "courses", coursesArray);
+                }}
                 rows={3}
-                placeholder="Honors, relevant coursework, activities..."
+                placeholder="Comma-separated list of courses..."
               />
-              <p className="text-sm text-muted-foreground">Optional: Add relevant details about your education</p>
+              <p className="text-sm text-muted-foreground">Optional: Add relevant coursework</p>
             </div>
           </div>
         </div>

@@ -11,15 +11,17 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../types';
+import type { Resume } from '@/lib/validations/jsonresume';
+import { resumeSchema } from '@/lib/validations/jsonresume';
 import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
 import { parseAgentJSON } from '../utils';
 
 /**
  * Format Validation Agent
  * 
- * Validates optimized content for ATS compliance and formatting issues.
+ * Validates optimized resume for ATS compliance and formatting issues.
  * 
- * @param state - Current workflow state with optimizedContent
+ * @param state - Current workflow state with optimizedResume
  * @param apiKey - OpenAI API key (from user's settings)
  * @param model - OpenAI model to use (default: gpt-4-turbo-preview)
  * @returns Updated state with formatValidation results
@@ -32,18 +34,37 @@ export async function formatValidationAgent(
   console.log('✅ Starting format validation agent...');
 
   // Validate prerequisites
-  if (!state.optimizedContent) {
-    throw new Error('Optimized content is required for format validation');
+  if (!state.optimizedResume) {
+    throw new Error('Optimized resume is required for format validation');
   }
 
-  const { optimizedContent, jobTitle, companyName } = state;
+  const { optimizedResume, jobTitle, companyName } = state;
 
   try {
+    // First, validate against JSON Resume schema
+    const schemaValidation = resumeSchema.safeParse(optimizedResume);
+    if (!schemaValidation.success) {
+      console.error('❌ Resume failed JSON Resume schema validation:', schemaValidation.error);
+      return {
+        formatValidation: {
+          atsCompliant: false,
+          issues: schemaValidation.error.issues.map((err) => ({
+            severity: 'error' as const,
+            message: `${err.path.join('.')}: ${err.message}`,
+            location: err.path.join('.'),
+          })),
+          recommendations: ['Fix JSON Resume schema validation errors before proceeding'],
+        },
+      };
+    }
+
+    console.log('✅ Resume passed JSON Resume schema validation');
+
     // Create the validation chain
     const chain = createFormatValidationChain(
       apiKey,
       model,
-      optimizedContent
+      optimizedResume
     );
 
     // Execute the chain
@@ -115,27 +136,32 @@ export async function formatValidationAgent(
 function createFormatValidationChain(
   apiKey: string,
   model: string = 'gpt-4-turbo-preview',
-  optimizedContent: NonNullable<ResumeGenerationState['optimizedContent']>
+  resume: Resume
 ) {
   // Format the content for validation
-  const formattedExperience = optimizedContent.experience
-    .map((exp, index) => {
-      const dates = exp.current
-        ? `${exp.startDate} - Present`
-        : `${exp.startDate} - ${exp.endDate || 'Present'}`;
+  const formattedWork = (resume.work || [])
+    .map((job, index) => {
+      const dates = job.endDate
+        ? `${job.startDate || 'N/A'} - ${job.endDate}`
+        : `${job.startDate || 'N/A'} - Present`;
       
-      let formatted = `\n${index + 1}. ${exp.title} at ${exp.company}`;
+      let formatted = `\n${index + 1}. ${job.position || 'Position'} at ${job.name || 'Company'}`;
       formatted += `\n   Dates: ${dates}`;
-      formatted += `\n   Description: ${exp.description}`;
-      formatted += `\n   Bullet Points:`;
-      exp.bulletPoints.forEach(bullet => {
-        formatted += `\n   • ${bullet}`;
-      });
+      if (job.summary) {
+        formatted += `\n   Summary: ${job.summary}`;
+      }
+      if (job.highlights && job.highlights.length > 0) {
+        formatted += `\n   Highlights:`;
+        job.highlights.forEach((highlight: string) => {
+          formatted += `\n   • ${highlight}`;
+        });
+      }
       return formatted;
     })
     .join('\n');
 
-  const formattedSkills = optimizedContent.prioritizedSkills.join(', ');
+  const formattedSkills = (resume.skills || []).map(s => s.name).join(', ');
+  const summary = resume.basics?.summary || 'No summary provided';
 
   const prompt = PromptTemplate.fromTemplate(`You are an ATS (Applicant Tracking System) expert and resume formatting specialist. Your task is to validate resume formatting for optimal ATS parsing and readability.
 
@@ -143,13 +169,13 @@ JOB CONTEXT:
 Title: {jobTitle}
 Company: {companyName}
 
-RESUME CONTENT TO VALIDATE:
+RESUME CONTENT TO VALIDATE (JSON Resume v1.0.0 format):
 
 PROFESSIONAL SUMMARY:
-${optimizedContent.summary}
+${summary}
 
 WORK EXPERIENCE:
-${formattedExperience}
+${formattedWork}
 
 SKILLS:
 ${formattedSkills}
@@ -265,12 +291,15 @@ export async function testFormatValidationAgent(
   const mockProfile = createMockUserProfile();
   const mockJob = createMockJobDescription();
 
+  // mockProfile is already a Resume - no conversion needed
+  const mockResume: Resume = mockProfile;
+
   // Initial state
   let state: ResumeGenerationState = {
     jobDescription: mockJob,
     jobTitle: 'Senior Software Engineer',
     companyName: 'Tech Corp',
-    userProfile: mockProfile,
+    userResume: mockResume,
     currentStep: 'validate_input',
     messages: [],
     errors: [],
@@ -297,7 +326,7 @@ export async function testFormatValidationAgent(
   const optimizeResult = await contentOptimizationAgent(state, apiKey, model);
   state = { ...state, ...optimizeResult };
 
-  if (!state.optimizedContent) {
+  if (!state.optimizedResume) {
     throw new Error('Content optimization failed');
   }
 

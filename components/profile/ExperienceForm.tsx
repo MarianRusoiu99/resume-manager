@@ -19,13 +19,12 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
 
   const addExperience = () => {
     const newExperience: Experience = {
-      company: "",
-      title: "",
+      name: "",
+      position: "",
       startDate: "",
       endDate: "",
-      current: false,
-      description: "",
-      achievements: [],
+      summary: "",
+      highlights: [],
     };
     const updated = [...localExperiences, newExperience];
     setLocalExperiences(updated);
@@ -69,21 +68,21 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor={`company-${index}`}>Company *</Label>
+              <Label htmlFor={`name-${index}`}>Company *</Label>
               <Input
-                id={`company-${index}`}
-                value={experience.company}
-                onChange={(e) => updateExperience(index, "company", e.target.value)}
+                id={`name-${index}`}
+                value={experience.name || ""}
+                onChange={(e) => updateExperience(index, "name", e.target.value)}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor={`title-${index}`}>Job Title *</Label>
+              <Label htmlFor={`position-${index}`}>Job Title *</Label>
               <Input
-                id={`title-${index}`}
-                value={experience.title}
-                onChange={(e) => updateExperience(index, "title", e.target.value)}
+                id={`position-${index}`}
+                value={experience.position || ""}
+                onChange={(e) => updateExperience(index, "position", e.target.value)}
                 required
               />
             </div>
@@ -93,7 +92,7 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
               <Input
                 id={`start-${index}`}
                 type="month"
-                value={experience.startDate}
+                value={experience.startDate || ""}
                 onChange={(e) => updateExperience(index, "startDate", e.target.value)}
                 required
               />
@@ -104,41 +103,37 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
               <Input
                 id={`end-${index}`}
                 type="month"
-                value={experience.endDate}
+                value={experience.endDate || ""}
                 onChange={(e) => updateExperience(index, "endDate", e.target.value)}
-                disabled={experience.current}
+                placeholder="Leave empty if current"
               />
-            </div>
-
-            <div className="sm:col-span-2">
-              <Label className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={experience.current}
-                  onChange={(e) => {
-                    updateExperience(index, "current", e.target.checked);
-                    if (e.target.checked) {
-                      updateExperience(index, "endDate", "");
-                    }
-                  }}
-                  className="rounded border-input text-primary focus:ring-ring"
-                />
-                <span className="text-sm font-normal">
-                  I currently work here
-                </span>
-              </Label>
             </div>
 
             <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor={`description-${index}`}>Description</Label>
+              <Label htmlFor={`summary-${index}`}>Summary</Label>
               <Textarea
-                id={`description-${index}`}
-                value={experience.description}
-                onChange={(e) => updateExperience(index, "description", e.target.value)}
-                rows={4}
-                placeholder="Describe your role and responsibilities..."
+                id={`summary-${index}`}
+                value={experience.summary || ""}
+                onChange={(e) => updateExperience(index, "summary", e.target.value)}
+                rows={3}
+                placeholder="Brief description of your role..."
               />
-              <p className="text-sm text-muted-foreground">Describe your key responsibilities and achievements</p>
+              <p className="text-sm text-muted-foreground">Describe your key responsibilities</p>
+            </div>
+
+            <div className="sm:col-span-2 space-y-2">
+              <Label htmlFor={`highlights-${index}`}>Key Achievements</Label>
+              <Textarea
+                id={`highlights-${index}`}
+                value={experience.highlights?.join("\n") || ""}
+                onChange={(e) => {
+                  const highlightsArray = e.target.value.split("\n").filter(h => h.trim());
+                  updateExperience(index, "highlights", highlightsArray);
+                }}
+                rows={4}
+                placeholder="• Achievement 1&#10;• Achievement 2&#10;• Achievement 3"
+              />
+              <p className="text-sm text-muted-foreground">One achievement per line</p>
             </div>
           </div>
         </div>

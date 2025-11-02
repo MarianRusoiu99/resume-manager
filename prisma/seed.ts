@@ -44,132 +44,48 @@ async function main() {
   console.log(`   Password: ${testUserPassword}`);
   console.log(`   User ID: ${user.id}`);
 
-  // Create sample profile
+  // Create sample profile with JSON Resume format
   const profile = await prisma.userProfile.create({
     data: {
       userId: user.id,
-      personalInfo: {
-        name: 'John Doe',
-        email: 'john.doe@email.com',
-        phone: '+1 (555) 123-4567',
-        location: 'San Francisco, CA',
-        linkedin: 'https://linkedin.com/in/johndoe',
-        github: 'https://github.com/johndoe',
-        website: 'https://johndoe.dev',
-      },
-      summary: 'Experienced Full Stack Developer with 5+ years building scalable web applications. Proficient in React, Node.js, and cloud technologies. Passionate about creating elegant solutions to complex problems.',
-      experience: [
-        {
-          company: 'Tech Innovations Inc.',
-          title: 'Senior Full Stack Developer',
-          startDate: '2021-03',
-          endDate: null,
-          current: true,
-          description: 'Lead development of cloud-based SaaS platform serving 10K+ users.',
-          achievements: [
-            'Architected microservices backend handling 1M+ API requests daily',
-            'Reduced page load time by 40% through code splitting and lazy loading',
-            'Mentored team of 4 junior developers',
-            'Implemented CI/CD pipeline reducing deployment time by 60%',
-          ],
+      resume: {
+        basics: {
+          name: 'John Doe',
+          email: 'john.doe@email.com',
+          phone: '+1 (555) 123-4567',
+          summary: 'Experienced Full Stack Developer with 5+ years building scalable web applications.',
         },
-        {
-          company: 'StartupCo',
-          title: 'Full Stack Developer',
-          startDate: '2019-01',
-          endDate: '2021-02',
-          current: false,
-          description: 'Built and maintained e-commerce platform from ground up.',
-          achievements: [
-            'Developed React-based storefront with 99.9% uptime',
-            'Integrated payment processing (Stripe, PayPal)',
-            'Built REST API with Node.js and PostgreSQL',
-            'Collaborated with design team on UI/UX improvements',
-          ],
-        },
-        {
-          company: 'Digital Solutions Agency',
-          title: 'Junior Web Developer',
-          startDate: '2018-06',
-          endDate: '2018-12',
-          current: false,
-          description: 'Developed client websites and maintained existing projects.',
-          achievements: [
-            'Built 10+ responsive websites using HTML, CSS, JavaScript',
-            'Implemented CMS integrations (WordPress, Contentful)',
-            'Optimized website performance and SEO',
-          ],
-        },
-      ],
-      education: [
-        {
-          school: 'University of California',
-          degree: 'Bachelor of Science',
-          field: 'Computer Science',
-          startDate: '2014-09',
-          endDate: '2018-05',
-          gpa: '3.7',
-          achievements: [
-            'Dean\'s List (3 semesters)',
-            'CS Club President',
-            'Capstone Project: AI-powered chatbot',
-          ],
-        },
-      ],
-      skills: {
-        technical: [
-          'JavaScript',
-          'TypeScript',
-          'React',
-          'Next.js',
-          'Node.js',
-          'Express',
-          'PostgreSQL',
-          'MongoDB',
-          'Docker',
-          'AWS',
-          'Git',
-          'REST APIs',
-          'GraphQL',
-          'CI/CD',
-          'Jest',
-          'Prisma',
+        work: [
+          {
+            name: 'Tech Innovations Inc.',
+            position: 'Senior Full Stack Developer',
+            startDate: '2021-03',
+            highlights: [
+              'Architected microservices backend',
+              'Reduced page load time by 40%',
+            ],
+          },
         ],
-        soft: [
-          'Team Leadership',
-          'Problem Solving',
-          'Communication',
-          'Agile/Scrum',
-          'Code Review',
-          'Mentoring',
+        education: [
+          {
+            institution: 'University of California',
+            studyType: 'Bachelor of Science',
+            area: 'Computer Science',
+            startDate: '2014-09',
+            endDate: '2018-05',
+          },
         ],
-        languages: [
-          'English (Native)',
-          'Spanish (Intermediate)',
+        skills: [
+          {
+            name: 'Programming Languages',
+            keywords: ['JavaScript', 'TypeScript', 'Python'],
+          },
         ],
       },
-      certifications: [
-        {
-          name: 'AWS Certified Solutions Architect',
-          issuer: 'Amazon Web Services',
-          date: '2022-08',
-          url: 'https://aws.amazon.com/certification/',
-        },
-      ],
-      languages: [
-        {
-          language: 'English',
-          proficiency: 'Native',
-        },
-        {
-          language: 'Spanish',
-          proficiency: 'Intermediate',
-        },
-      ],
     },
   });
 
-  console.log(`✅ Created sample profile with experience, education, skills, certifications, and languages`);
+  console.log(`✅ Created sample profile for ${profile.userId}`);
 
   // Create default resume templates
   console.log('\n📄 Creating default resume templates...');

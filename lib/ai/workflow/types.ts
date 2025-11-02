@@ -1,4 +1,5 @@
 import { BaseMessage } from '@langchain/core/messages';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * State interface for resume generation workflow
@@ -9,40 +10,7 @@ export interface ResumeGenerationState {
   jobDescription: string;
   jobTitle?: string;
   companyName?: string;
-  userProfile: {
-    personalInfo: {
-      name: string;
-      email: string;
-      phone?: string;
-      location?: string;
-      linkedin?: string;
-      github?: string;
-      website?: string;
-    };
-    summary?: string;
-    experience: Array<{
-      company: string;
-      title: string;
-      startDate: string;
-      endDate?: string;
-      current: boolean;
-      description: string;
-    }>;
-    education: Array<{
-      school: string;
-      degree: string;
-      field: string;
-      gpa?: string;
-      startDate: string;
-      endDate?: string;
-      description?: string;
-    }>;
-    skills: {
-      technical: string[];
-      soft: string[];
-      languages: string[];
-    };
-  };
+  userResume: Resume;
 
   // Job analysis results
   jobAnalysis?: {
@@ -65,20 +33,8 @@ export interface ResumeGenerationState {
     recommendations: string[];
   };
 
-  // Optimized content
-  optimizedContent?: {
-    summary: string;
-    experience: Array<{
-      company: string;
-      title: string;
-      startDate: string;
-      endDate?: string;
-      current: boolean;
-      description: string;
-      bulletPoints: string[];
-    }>;
-    prioritizedSkills: string[];
-  };
+  // Optimized resume
+  optimizedResume?: Resume;
 
   // Format validation results
   formatValidation?: {
@@ -92,44 +48,7 @@ export interface ResumeGenerationState {
   };
 
   // Final output
-  generatedResume?: {
-    personalInfo: {
-      name: string;
-      email: string;
-      phone?: string;
-      location?: string;
-      linkedin?: string;
-      github?: string;
-      website?: string;
-    };
-    summary: string;
-    experience: Array<{
-      company: string;
-      title: string;
-      startDate: string;
-      endDate?: string;
-      current: boolean;
-      description: string;
-      bulletPoints: string[];
-    }>;
-    education: Array<{
-      school: string;
-      degree: string;
-      field: string;
-      gpa?: string;
-      startDate: string;
-      endDate?: string;
-      description?: string;
-    }>;
-    skills: string[];
-    metadata: {
-      generatedAt: string;
-      modelUsed: string;
-      tokensUsed: number;
-      jobTitle?: string;
-      companyName?: string;
-    };
-  };
+  generatedResume?: Resume;
 
   // Cover letter (optional)
   coverLetter?: {

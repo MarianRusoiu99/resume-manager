@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { Profile } from "@/lib/validations/profile";
+import type { Resume } from "@/lib/validations/jsonresume";
 
 export class ProfileRepository {
   async findByUserId(userId: string) {
@@ -8,43 +8,31 @@ export class ProfileRepository {
     });
   }
 
-  async create(userId: string, data: Profile) {
+  async create(userId: string, resume: Resume) {
     return prisma.userProfile.create({
       data: {
         userId,
-        personalInfo: data.personalInfo,
-        summary: data.summary,
-        experience: data.experience,
-        education: data.education,
-        skills: data.skills,
-        certifications: data.certifications || [],
+        resume: resume as never,
       },
     });
   }
 
-  async update(userId: string, data: Partial<Profile>) {
+  async update(userId: string, resume: Resume) {
     return prisma.userProfile.update({
       where: { userId },
       data: {
-        ...(data.personalInfo && { personalInfo: data.personalInfo }),
-        ...(data.summary !== undefined && { summary: data.summary }),
-        ...(data.experience && { experience: data.experience }),
-        ...(data.education && { education: data.education }),
-        ...(data.skills && { skills: data.skills }),
-        ...(data.certifications !== undefined && {
-          certifications: data.certifications,
-        }),
+        resume: resume as never,
       },
     });
   }
 
-  async upsert(userId: string, data: Profile) {
+  async upsert(userId: string, resume: Resume) {
     const existing = await this.findByUserId(userId);
 
     if (existing) {
-      return this.update(userId, data);
+      return this.update(userId, resume);
     } else {
-      return this.create(userId, data);
+      return this.create(userId, resume);
     }
   }
 

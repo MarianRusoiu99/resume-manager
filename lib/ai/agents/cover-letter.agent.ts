@@ -1,10 +1,11 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Cover Letter Agent
- * Generates personalized cover letters based on job description and user profile
+ * Generates personalized cover letters based on job description and user profile (JSON Resume)
  */
 
 interface CoverLetterInput {
@@ -19,32 +20,7 @@ interface CoverLetterInput {
     companyInfo?: string;
     tone?: string;
   };
-  userProfile: {
-    personalInfo: {
-      name: string;
-      email?: string;
-      phone?: string;
-      location?: string;
-    };
-    summary?: string;
-    experience: Array<{
-      company: string;
-      position: string;
-      startDate: string;
-      endDate: string | null;
-      description: string;
-      bulletPoints: string[];
-    }>;
-    education: Array<{
-      institution: string;
-      degree: string;
-      field: string;
-    }>;
-    skills: {
-      technical: string[];
-      soft: string[];
-    };
-  };
+  userResume: Resume; // Use JSON Resume format
   matchingResults: {
     overallScore: number;
     matchingSkills: string[];
@@ -140,21 +116,28 @@ export async function coverLetterAgent(
     const keyRequirements = input.jobAnalysis.requiredSkills.slice(0, 5).join(', ');
     const tone = input.jobAnalysis.tone || 'professional';
     
-    const candidateName = input.userProfile.personalInfo.name;
-    const currentRole = input.userProfile.experience[0]?.position || 'Professional';
-    const topSkills = input.userProfile.skills.technical.slice(0, 5).join(', ');
+    // Extract data from JSON Resume format
+    const candidateName = input.userResume.basics?.name || 'Candidate';
+    const currentRole = input.userResume.work?.[0]?.position || 'Professional';
     
-    // Get relevant experience snippets
-    const relevantExperience = input.userProfile.experience
-      .slice(0, 2)
-      .map(exp => `${exp.position} at ${exp.company}`)
-      .join('; ');
+    // Get technical skills from JSON Resume format
+    const technicalSkills = input.userResume.skills
+      ?.filter(skill => skill.keywords && skill.keywords.length > 0)
+      .flatMap(skill => skill.keywords || [])
+      .slice(0, 5)
+      .join(', ') || 'relevant skills';
     
-    // Get accomplishments from bullet points
-    const accomplishments = input.userProfile.experience
-      .slice(0, 2)
-      .flatMap(exp => exp.bulletPoints.slice(0, 2))
-      .join('; ');
+    // Get relevant experience snippets from JSON Resume format
+    const relevantExperience = input.userResume.work
+      ?.slice(0, 2)
+      .map(w => `${w.position || 'Position'} at ${w.name || 'Company'}`)
+      .join('; ') || 'relevant experience';
+    
+    // Get accomplishments from highlights in JSON Resume format
+    const accomplishments = input.userResume.work
+      ?.slice(0, 2)
+      .flatMap(w => w.highlights?.slice(0, 2) || [])
+      .join('; ') || 'key achievements';
     
     const fitScore = Math.round(input.matchingResults.overallScore);
     const matchingSkills = input.matchingResults.matchingSkills.slice(0, 5).join(', ');
@@ -181,7 +164,7 @@ export async function coverLetterAgent(
       .replace('{tone}', tone)
       .replace('{candidateName}', candidateName)
       .replace('{currentRole}', currentRole)
-      .replace('{topSkills}', topSkills)
+      .replace('{topSkills}', technicalSkills)
       .replace('{relevantExperience}', relevantExperience)
       .replace('{accomplishments}', accomplishments)
       .replace('{fitScore}', fitScore.toString())

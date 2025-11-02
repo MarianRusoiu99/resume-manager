@@ -8,10 +8,10 @@ const ResumeStateAnnotation = Annotation.Root({
   jobDescription: Annotation<string>(),
   jobTitle: Annotation<string | undefined>(),
   companyName: Annotation<string | undefined>(),
-  userProfile: Annotation<ResumeGenerationState['userProfile']>(),
+  userResume: Annotation<ResumeGenerationState['userResume']>(),
   jobAnalysis: Annotation<ResumeGenerationState['jobAnalysis']>(),
   profileMatch: Annotation<ResumeGenerationState['profileMatch']>(),
-  optimizedContent: Annotation<ResumeGenerationState['optimizedContent']>(),
+  optimizedResume: Annotation<ResumeGenerationState['optimizedResume']>(),
   formatValidation: Annotation<ResumeGenerationState['formatValidation']>(),
   generatedResume: Annotation<ResumeGenerationState['generatedResume']>(),
   messages: Annotation<ResumeGenerationState['messages']>(),
@@ -45,10 +45,10 @@ export function createResumeWorkflowGraph() {
         );
       }
 
-      if (!state.userProfile) {
+      if (!state.userResume) {
         return addError(
           setCurrentStep(state, 'validate_input'),
-          'User profile is required'
+          'User resume is required'
         );
       }
 

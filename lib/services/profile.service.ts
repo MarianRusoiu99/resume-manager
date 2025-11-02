@@ -50,13 +50,13 @@ export class ProfileService {
       }
 
       // Create profile
-      const profile = await profileRepository.create(userId, validatedData);
+      const profile = await profileRepository.create(userId, validatedData.resume);
 
       // Invalidate cache
       const cacheKey = this.getCacheKey(userId);
       profileCache.delete(cacheKey);
 
-      return { success: true, data: profile };
+      return { success: true, data: { userId, resume: profile } };
     } catch (error) {
       if (error instanceof ZodError) {
         return {
@@ -89,13 +89,20 @@ export class ProfileService {
       }
 
       // Update profile
-      const profile = await profileRepository.update(userId, validatedData);
+      if (!validatedData.resume) {
+        return {
+          success: false,
+          error: "No resume data provided for update",
+        };
+      }
+      
+      const profile = await profileRepository.update(userId, validatedData.resume);
 
       // Invalidate cache
       const cacheKey = this.getCacheKey(userId);
       profileCache.delete(cacheKey);
 
-      return { success: true, data: profile };
+      return { success: true, data: { userId, resume: profile } };
     } catch (error) {
       if (error instanceof ZodError) {
         return {
@@ -119,13 +126,13 @@ export class ProfileService {
       const validatedData = profileSchema.parse(data);
 
       // Upsert profile
-      const profile = await profileRepository.upsert(userId, validatedData);
+      const profile = await profileRepository.upsert(userId, validatedData.resume);
 
       // Invalidate cache
       const cacheKey = this.getCacheKey(userId);
       profileCache.delete(cacheKey);
 
-      return { success: true, data: profile };
+      return { success: true, data: { userId, resume: profile } };
     } catch (error) {
       if (error instanceof ZodError) {
         return {

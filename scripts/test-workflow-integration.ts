@@ -8,62 +8,93 @@
  */
 
 import { generateResume } from '../lib/ai/workflow';
-import type { GenerateResumeInput } from '../lib/ai/workflow';
+import type { Resume } from '../lib/validations/jsonresume';
 
 // Mock user ID for testing
 const MOCK_USER_ID = 'test-user-123';
 
-// Create test profile
-const testProfile: GenerateResumeInput['userProfile'] = {
-  personalInfo: {
+// Create test profile using JSON Resume format
+const testProfile: Resume = {
+  basics: {
     name: 'Sarah Johnson',
+    label: 'Senior Full Stack Engineer',
     email: 'sarah.johnson@email.com',
     phone: '+1 (555) 123-4567',
-    location: 'San Francisco, CA',
-    linkedin: 'https://linkedin.com/in/sarahjohnson',
-    github: 'https://github.com/sarah-johnson'
+    summary: 'Senior Full Stack Engineer with 7+ years of experience building scalable web applications. Expert in React, Node.js, and cloud infrastructure. Passionate about creating user-friendly products and mentoring junior developers.',
+    location: {
+      city: 'San Francisco',
+      region: 'CA',
+      countryCode: 'US'
+    },
+    profiles: [
+      {
+        network: 'LinkedIn',
+        username: 'sarahjohnson',
+        url: 'https://linkedin.com/in/sarahjohnson'
+      },
+      {
+        network: 'GitHub',
+        username: 'sarah-johnson',
+        url: 'https://github.com/sarah-johnson'
+      }
+    ]
   },
-  summary: 'Senior Full Stack Engineer with 7+ years of experience building scalable web applications. Expert in React, Node.js, and cloud infrastructure. Passionate about creating user-friendly products and mentoring junior developers.',
-  experience: [
+  work: [
     {
-      company: 'TechCorp Solutions',
-      title: 'Senior Software Engineer',
+      name: 'TechCorp Solutions',
+      position: 'Senior Software Engineer',
       startDate: '2020-03',
-      current: true,
-      description: 'Lead engineer for flagship SaaS product serving 10,000+ enterprise customers. Architected microservices infrastructure, led team of 5 engineers, optimized database performance, and mentored junior developers resulting in 3 promotions.'
+      summary: 'Lead engineer for flagship SaaS product serving 10,000+ enterprise customers. Architected microservices infrastructure, led team of 5 engineers, optimized database performance, and mentored junior developers resulting in 3 promotions.',
+      highlights: [
+        'Architected microservices infrastructure serving 10,000+ customers',
+        'Led team of 5 engineers with 3 successful promotions',
+        'Optimized database performance by 40%',
+        'Implemented monitoring and alerting systems'
+      ]
     },
     {
-      company: 'StartupXYZ',
-      title: 'Full Stack Developer',
+      name: 'StartupXYZ',
+      position: 'Full Stack Developer',
       startDate: '2017-06',
       endDate: '2020-02',
-      current: false,
-      description: 'Early employee building MVP and scaling to 1000+ paying customers. Built React frontend serving 50,000+ monthly users, developed RESTful APIs handling 1M+ requests/day, and implemented CI/CD pipeline.'
+      summary: 'Early employee building MVP and scaling to 1000+ paying customers. Built React frontend serving 50,000+ monthly users, developed RESTful APIs handling 1M+ requests/day, and implemented CI/CD pipeline.',
+      highlights: [
+        'Built React frontend serving 50,000+ monthly users',
+        'Developed RESTful APIs handling 1M+ requests/day',
+        'Implemented CI/CD pipeline reducing deployment time by 60%',
+        'Scaled infrastructure to handle 10x growth'
+      ]
     }
   ],
   education: [
     {
-      school: 'University of California, Berkeley',
-      degree: 'Bachelor of Science',
-      field: 'Computer Science',
-      gpa: '3.8',
+      institution: 'University of California, Berkeley',
+      studyType: 'Bachelor of Science',
+      area: 'Computer Science',
+      score: '3.8',
       startDate: '2013-08',
       endDate: '2017-05',
-      description: 'Focus on software engineering and distributed systems. Dean\'s List all semesters.'
+      courses: ['Distributed Systems', 'Algorithms', 'Software Engineering']
     }
   ],
-  skills: {
-    technical: [
-      'JavaScript', 'TypeScript', 'React', 'Node.js', 'Express', 'PostgreSQL',
-      'MongoDB', 'AWS', 'Docker', 'Kubernetes', 'Git', 'CI/CD', 'REST APIs',
-      'GraphQL', 'Redux', 'Jest', 'Cypress'
-    ],
-    soft: [
-      'Team Leadership', 'Mentoring', 'Agile/Scrum', 'Problem Solving',
-      'Communication', 'Code Review', 'Technical Writing'
-    ],
-    languages: ['English (Native)', 'Spanish (Conversational)']
-  }
+  skills: [
+    {
+      name: 'Frontend',
+      keywords: ['JavaScript', 'TypeScript', 'React', 'Redux', 'Next.js']
+    },
+    {
+      name: 'Backend',
+      keywords: ['Node.js', 'Express', 'PostgreSQL', 'MongoDB', 'REST APIs', 'GraphQL']
+    },
+    {
+      name: 'DevOps',
+      keywords: ['AWS', 'Docker', 'Kubernetes', 'CI/CD', 'Git']
+    },
+    {
+      name: 'Testing',
+      keywords: ['Jest', 'Cypress', 'React Testing Library']
+    }
+  ]
 };
 
 // Test job description
@@ -126,7 +157,7 @@ async function main() {
   console.log('Test Configuration:');
   console.log(`- User ID: ${MOCK_USER_ID}`);
   console.log(`- Job: Senior Frontend Engineer at [Test Company]`);
-  console.log(`- Profile: ${testProfile.personalInfo.name}\n`);
+  console.log(`- Profile: ${testProfile.basics?.name}\n`);
 
   console.log('Running complete workflow...\n');
   console.log('═══════════════════════════════════════════════════════════════\n');
@@ -139,7 +170,7 @@ async function main() {
       jobDescription: testJobDescription,
       jobTitle: 'Senior Frontend Engineer',
       companyName: 'Test Company',
-      userProfile: testProfile
+      userResume: testProfile
     });
 
     const endTime = Date.now();
@@ -176,41 +207,45 @@ async function main() {
       console.log('═══════════════════════════════════════════════════════════════\n');
       
       console.log('📋 Personal Information:');
-      console.log(`   ${resume.personalInfo.name}`);
-      console.log(`   ${resume.personalInfo.email} | ${resume.personalInfo.phone || 'N/A'}`);
-      console.log(`   ${resume.personalInfo.location || 'N/A'}`);
-      if (resume.personalInfo.linkedin) console.log(`   LinkedIn: ${resume.personalInfo.linkedin}`);
-      if (resume.personalInfo.github) console.log(`   GitHub: ${resume.personalInfo.github}`);
+      console.log(`   ${resume.basics?.name}`);
+      console.log(`   ${resume.basics?.email} | ${resume.basics?.phone || 'N/A'}`);
+      console.log(`   ${resume.basics?.location?.city || 'N/A'}`);
+      const linkedIn = resume.basics?.profiles?.find(p => p.network === 'LinkedIn');
+      const github = resume.basics?.profiles?.find(p => p.network === 'GitHub');
+      if (linkedIn) console.log(`   LinkedIn: ${linkedIn.url}`);
+      if (github) console.log(`   GitHub: ${github.url}`);
       
       console.log('\n📝 Professional Summary:');
-      console.log(`   ${resume.summary}`);
+      console.log(`   ${resume.basics?.summary}`);
       
       console.log('\n💼 Work Experience:');
-      resume.experience.forEach((exp, i) => {
-        const dates = exp.current ? `${exp.startDate} - Present` : `${exp.startDate} - ${exp.endDate}`;
-        console.log(`\n   ${i + 1}. ${exp.title} at ${exp.company}`);
+      resume.work?.forEach((exp, i) => {
+        const dates = exp.endDate ? `${exp.startDate} - ${exp.endDate}` : `${exp.startDate} - Present`;
+        console.log(`\n   ${i + 1}. ${exp.position} at ${exp.name}`);
         console.log(`      ${dates}`);
-        console.log(`      ${exp.description}`);
-        console.log(`\n      Key Achievements:`);
-        exp.bulletPoints.forEach((bullet: string) => {
-          console.log(`      • ${bullet}`);
-        });
+        console.log(`      ${exp.summary || ''}`);
+        if (exp.highlights && exp.highlights.length > 0) {
+          console.log(`\n      Key Achievements:`);
+          exp.highlights.forEach((bullet) => {
+            console.log(`      • ${bullet}`);
+          });
+        }
       });
       
       console.log('\n🎓 Education:');
-      resume.education.forEach((edu, i) => {
+      resume.education?.forEach((edu, i) => {
         const dates = edu.endDate ? `${edu.startDate} - ${edu.endDate}` : edu.startDate;
-        console.log(`   ${i + 1}. ${edu.degree} in ${edu.field}`);
-        console.log(`      ${edu.school}`);
-        if (edu.gpa) console.log(`      GPA: ${edu.gpa}`);
+        console.log(`   ${i + 1}. ${edu.studyType} in ${edu.area}`);
+        console.log(`      ${edu.institution}`);
+        if (edu.score) console.log(`      GPA: ${edu.score}`);
         console.log(`      ${dates}`);
       });
       
       console.log('\n🔧 Technical Skills:');
-      const skillsPerLine = 5;
-      for (let i = 0; i < resume.skills.length; i += skillsPerLine) {
-        const chunk = resume.skills.slice(i, i + skillsPerLine);
-        console.log(`   ${chunk.join(' • ')}`);
+      if (resume.skills && resume.skills.length > 0) {
+        resume.skills.forEach((skill, i) => {
+          console.log(`   ${i + 1}. ${skill.name}: ${skill.keywords?.join(', ') || ''}`);
+        });
       }
       
       console.log('\n═══════════════════════════════════════════════════════════════');
@@ -218,10 +253,9 @@ async function main() {
       console.log('═══════════════════════════════════════════════════════════════\n');
       
       console.log(`⏱️  Execution Time: ${duration}s`);
-      console.log(`🎯 Tokens Used: ${resume.metadata.tokensUsed}`);
-      console.log(`🤖 Model: ${resume.metadata.modelUsed}`);
-      console.log(`📅 Generated: ${new Date(resume.metadata.generatedAt).toLocaleString()}`);
-      console.log(`💼 Target Role: ${resume.metadata.jobTitle} at ${resume.metadata.companyName}`);
+      if (resume.work && resume.work.length > 0) {
+        console.log(`💼 Target Role: ${resume.work[0].position} at ${resume.work[0].name}`);
+      }
     }
 
     // Display state information if available
@@ -235,7 +269,7 @@ async function main() {
       if (result.state.profileMatch) {
         console.log(`   2. Profile Matching ✓ (Relevance: ${result.state.profileMatch.relevanceScore}/100)`);
       }
-      if (result.state.optimizedContent) console.log('   3. Content Optimization ✓');
+      if (result.state.optimizedResume) console.log('   3. Content Optimization ✓');
       if (result.state.formatValidation) {
         const validation = result.state.formatValidation;
         console.log(`   4. Format Validation ✓ (ATS Compliant: ${validation.atsCompliant ? 'Yes' : 'No'})`);

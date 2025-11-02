@@ -13,6 +13,7 @@ import { profileService } from '@/lib/services/profile.service';
 import { analyzeJobAgent } from '@/lib/ai/workflow/agents/job-analysis.agent';
 import { ChatOpenAI } from '@langchain/openai';
 import type { ResumeGenerationState } from '@/lib/ai/workflow/types';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 // Validation schema
 const generateCoverLetterSchema = z.object({
@@ -72,74 +73,30 @@ export async function POST(request: NextRequest) {
 
     const profile = profileResult.data;
 
-    // Type guard for profile data
-    if (!profile || typeof profile !== 'object' || !('personalInfo' in profile)) {
+    // Type guard for profile data with JSON Resume
+    if (!profile || typeof profile !== 'object' || !('resume' in profile)) {
       return NextResponse.json(
         { error: 'Invalid profile data' },
         { status: 400 }
       );
     }
 
-    // Build user profile for workflow
-    const userProfile = {
-      personalInfo: {
-        ...(profile.personalInfo as {
-          name: string;
-          email?: string;
-          phone?: string;
-          location?: string;
-          linkedin?: string;
-          github?: string;
-          website?: string;
-        }),
-        email: (profile.personalInfo as { email?: string }).email || session.user.email || '',
-      },
-      summary: (profile.summary as string) || '',
-      experience: ((profile.experience as Array<{
-        company: string;
-        title: string;
-        startDate: string;
-        endDate: string | null;
-        current?: boolean;
-        description: string;
-      }>) || []).map(exp => ({
-        company: exp.company,
-        title: exp.title,
-        startDate: exp.startDate,
-        endDate: exp.endDate || undefined,
-        current: exp.current || !exp.endDate,
-        description: exp.description,
-      })),
-      education: ((profile.education as Array<{
-        school: string;
-        degree: string;
-        field: string;
-        gpa?: string;
-        startDate?: string;
-        endDate: string | null;
-        description?: string;
-      }>) || []).map(edu => ({
-        school: edu.school,
-        degree: edu.degree,
-        field: edu.field,
-        gpa: edu.gpa,
-        startDate: edu.startDate || '',
-        endDate: edu.endDate || undefined,
-        description: edu.description,
-      })),
-      skills: {
-        technical: ((profile.skills as { technical?: string[]; soft?: string[] })?.technical) || [],
-        soft: ((profile.skills as { technical?: string[]; soft?: string[] })?.soft) || [],
-        languages: [],
-      },
-    };
+    // Validate and extract JSON Resume
+    const userResume = profile.resume as Resume;
+    
+    if (!userResume) {
+      return NextResponse.json(
+        { error: 'Profile does not contain resume data' },
+        { status: 400 }
+      );
+    }
 
-    // Create initial state for job analysis
+    // Create initial state for job analysis using JSON Resume
     const initialState: ResumeGenerationState = {
       jobDescription,
       jobTitle,
       companyName,
-      userProfile,
+      userResume,
       messages: [],
       currentStep: 'analyze_job',
       errors: [],
@@ -169,11 +126,22 @@ export async function POST(request: NextRequest) {
     console.log('[Cover Letter API] Job analysis complete');
     
     // Step 2: Create simple matching results (for standalone cover letter)
+    // Extract skills from JSON Resume format
+    const technicalSkills = userResume.skills
+      ?.filter(skill => skill.keywords && skill.keywords.length > 0)
+      .flatMap(skill => skill.keywords || [])
+      .slice(0, 5) || [];
+    
+    const topExperiences = userResume.work
+      ?.slice(0, 2)
+      .map(w => w.position || '')
+      .filter(Boolean) || [];
+    
     const matchingResults = {
       overallScore: 80,
-      matchingSkills: userProfile.skills.technical.slice(0, 5),
+      matchingSkills: technicalSkills,
       missingSkills: [],
-      topExperiences: userProfile.experience.slice(0, 2).map(exp => exp.title),
+      topExperiences,
     };
 
     // Step 3: Generate cover letter using AI
@@ -198,27 +166,7 @@ export async function POST(request: NextRequest) {
         preferredSkills: jobAnalysisResult.jobAnalysis.requirements.preferred,
         keyResponsibilities: jobAnalysisResult.jobAnalysis.keyResponsibilities,
       },
-      userProfile: {
-        personalInfo: userProfile.personalInfo,
-        summary: userProfile.summary,
-        experience: userProfile.experience.map(exp => ({
-          company: exp.company,
-          position: exp.title,
-          startDate: exp.startDate,
-          endDate: exp.endDate || null,
-          description: exp.description,
-          bulletPoints: [],
-        })),
-        education: userProfile.education.map(edu => ({
-          institution: edu.school,
-          degree: edu.degree,
-          field: edu.field,
-        })),
-        skills: {
-          technical: userProfile.skills.technical,
-          soft: userProfile.skills.soft,
-        },
-      },
+      userResume, // Pass the entire JSON Resume
       matchingResults,
     };
 

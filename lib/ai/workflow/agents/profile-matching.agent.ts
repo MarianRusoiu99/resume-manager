@@ -17,6 +17,7 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../types';
+import type { Resume } from '@/lib/validations/jsonresume';
 import { addMessage, addError, addTokens, createSystemMessage, createAIMessage, parseAgentJSON } from '../utils';
 import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
 
@@ -85,48 +86,46 @@ Guidelines:
 - Return ONLY the JSON object, nothing else`;
 
 /**
- * Format experience for the prompt
+ * Format work experience for the prompt
  */
-function formatExperience(experience: ResumeGenerationState['userProfile']['experience']): string {
-  if (!experience || experience.length === 0) {
-    return 'No experience listed';
+function formatWork(work: Resume['work']): string {
+  if (!work || work.length === 0) {
+    return 'No work experience listed';
   }
   
-  return experience.map((exp, idx) => 
-    `${idx + 1}. ${exp.title} at ${exp.company} (${exp.startDate} - ${exp.endDate || 'Present'})\n   ${exp.description || 'No description'}`
-  ).join('\n\n');
+  return work.map((job, idx) => {
+    const dates = `${job.startDate || 'N/A'} - ${job.endDate || 'Present'}`;
+    const summary = job.summary || 'No summary';
+    return `${idx + 1}. ${job.position || 'Position'} at ${job.name || 'Company'} (${dates})\n   ${summary}`;
+  }).join('\n\n');
 }
 
 /**
  * Format education for the prompt
  */
-function formatEducation(education: ResumeGenerationState['userProfile']['education']): string {
+function formatEducation(education: Resume['education']): string {
   if (!education || education.length === 0) {
     return 'No education listed';
   }
   
-  return education.map((edu, idx) => 
-    `${idx + 1}. ${edu.degree} in ${edu.field} from ${edu.school} (${edu.endDate || edu.startDate})`
-  ).join('\n');
+  return education.map((edu, idx) => {
+    const degree = edu.studyType || 'Degree';
+    const area = edu.area || 'Field';
+    const institution = edu.institution || 'Institution';
+    const date = edu.endDate || edu.startDate || 'N/A';
+    return `${idx + 1}. ${degree} in ${area} from ${institution} (${date})`;
+  }).join('\n');
 }
 
 /**
  * Format skills for the prompt
  */
-function formatSkills(skills: ResumeGenerationState['userProfile']['skills']): string {
-  const parts: string[] = [];
-  
-  if (skills.technical && skills.technical.length > 0) {
-    parts.push(`Technical: ${skills.technical.join(', ')}`);
-  }
-  if (skills.soft && skills.soft.length > 0) {
-    parts.push(`Soft Skills: ${skills.soft.join(', ')}`);
-  }
-  if (skills.languages && skills.languages.length > 0) {
-    parts.push(`Languages: ${skills.languages.join(', ')}`);
+function formatSkills(skills: Resume['skills']): string {
+  if (!skills || skills.length === 0) {
+    return 'No skills listed';
   }
   
-  return parts.length > 0 ? parts.join('\n') : 'No skills listed';
+  return skills.map((skill) => skill.name).join(', ');
 }
 
 /**
@@ -174,8 +173,8 @@ export async function profileMatchingAgent(
       return addError(state, error);
     }
 
-    if (!state.userProfile) {
-      const error = 'User profile is required for matching';
+    if (!state.userResume) {
+      const error = 'User resume is required for matching';
       console.error('[profileMatchingAgent]', error);
       return addError(state, error);
     }
@@ -191,7 +190,7 @@ export async function profileMatchingAgent(
 
     // Prepare input data
     const jobAnalysis = state.jobAnalysis;
-    const profile = state.userProfile;
+    const resume = state.userResume;
 
     console.log('[profileMatchingAgent] Calling OpenAI for profile matching...');
     const startTime = Date.now();
@@ -202,11 +201,11 @@ export async function profileMatchingAgent(
         preferredSkills: jobAnalysis.requirements.preferred.join(', '),
         keyResponsibilities: jobAnalysis.keyResponsibilities.join('; '),
         jobSummary: jobAnalysis.jobSummary,
-        candidateName: profile.personalInfo.name,
-        candidateSummary: profile.summary || 'No summary provided',
-        experience: formatExperience(profile.experience),
-        education: formatEducation(profile.education),
-        skills: formatSkills(profile.skills),
+        candidateName: resume.basics?.name || 'Candidate',
+        candidateSummary: resume.basics?.summary || 'No summary provided',
+        experience: formatWork(resume.work),
+        education: formatEducation(resume.education),
+        skills: formatSkills(resume.skills),
       }),
       {
         ...AI_RETRY_CONFIG,
@@ -266,10 +265,10 @@ export async function profileMatchingAgent(
     // Estimate token usage
     const inputLength = JSON.stringify({
       jobAnalysis,
-      profile: {
-        experience: formatExperience(profile.experience),
-        education: formatEducation(profile.education),
-        skills: formatSkills(profile.skills)
+      resume: {
+        work: formatWork(resume.work),
+        education: formatEducation(resume.education),
+        skills: formatSkills(resume.skills)
       }
     }).length;
     const inputTokens = Math.ceil(inputLength / 4);

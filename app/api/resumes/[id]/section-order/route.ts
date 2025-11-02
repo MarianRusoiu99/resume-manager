@@ -1,69 +1,27 @@
 /**
  * API Route: PATCH /api/resumes/:id/section-order
- * Updates the section order for a resume
+ * DEPRECATED: Section order is no longer a separate field in JSON Resume schema
+ * This route is kept for backward compatibility but does nothing
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
-import { prisma } from '@/lib/db';
-import { z } from 'zod';
 
-const sectionOrderSchema = z.object({
-  sectionOrder: z.array(z.string()).min(1),
-});
-
-export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PATCH() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await context.params;
-    const body = await request.json();
-
-    // Validate request body
-    const validation = sectionOrderSchema.safeParse(body);
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Invalid section order', details: validation.error },
-        { status: 400 }
-      );
-    }
-
-    const { sectionOrder } = validation.data;
-
-    // Check resume ownership
-    const resume = await prisma.generatedResume.findFirst({
-      where: {
-        id,
-        userId: session.user.id,
-      },
-    });
-
-    if (!resume) {
-      return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
-    }
-
-    // Update section order
-    const updatedResume = await prisma.generatedResume.update({
-      where: { id },
-      data: {
-        sectionOrder,
-        // Clear PDF cache so it regenerates with new order
-        pdfUrl: null,
-      },
-    });
-
+    // Section order is now handled within the JSON Resume structure
+    // This endpoint is deprecated and returns success without doing anything
     return NextResponse.json({
       success: true,
-      sectionOrder: updatedResume.sectionOrder,
+      message: 'Section order is now part of the JSON Resume structure and does not need separate updates',
     });
   } catch (error) {
-    console.error('Error updating section order:', error);
+    console.error('Error in deprecated section-order endpoint:', error);
     return NextResponse.json(
       { error: 'Failed to update section order' },
       { status: 500 }

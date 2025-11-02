@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 export async function POST(
   request: NextRequest,
@@ -32,12 +33,12 @@ export async function POST(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Create duplicate with modified metadata
+    // Create duplicate with modified metadata using JSON Resume format
     const duplicatedResume = await generatedResumeRepository.create({
       userId: session.user.id,
       jobDescription: originalResume.jobDescription,
       jobMetadata: originalResume.jobMetadata as Record<string, unknown>,
-      resumeContent: originalResume.resumeContent as Record<string, unknown>,
+      resume: originalResume.resume as Resume,
       templateId: originalResume.templateId || undefined,
       templateCustomization:
         (originalResume.templateCustomization as Record<string, unknown>) ||

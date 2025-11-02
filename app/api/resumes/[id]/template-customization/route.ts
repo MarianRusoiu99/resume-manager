@@ -105,9 +105,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Update customization (this will clear PDF URL to force regeneration)
-    const updatedResume = await generatedResumeRepository.updateCustomization(
+    // Update customization using updateTemplate (this will clear PDF URL to force regeneration)
+    const updatedResume = await generatedResumeRepository.updateTemplate(
       resumeId,
+      resume.templateId || undefined,
       customization
     );
 

@@ -1,56 +1,96 @@
-import { ResumeGenerationState } from './types';
+import type { Resume } from '@/lib/validations/jsonresume';
 import { createInitialState, validateUserProfile } from './utils';
 import { testEmptyWorkflow } from './graph';
 
 /**
- * Test helper to create a mock user profile
+ * Test helper to create a mock user resume
  */
-export function createMockUserProfile(): ResumeGenerationState['userProfile'] {
+export function createMockUserProfile(): Resume {
   return {
-    personalInfo: {
+    basics: {
       name: 'John Doe',
       email: 'john.doe@example.com',
       phone: '+1-555-0123',
-      location: 'San Francisco, CA',
-      linkedin: 'https://linkedin.com/in/johndoe',
-      github: 'https://github.com/johndoe',
-      website: 'https://johndoe.com'
+      location: {
+        city: 'San Francisco',
+        region: 'CA',
+        countryCode: 'US'
+      },
+      profiles: [
+        {
+          network: 'LinkedIn',
+          username: 'johndoe',
+          url: 'https://linkedin.com/in/johndoe'
+        },
+        {
+          network: 'GitHub',
+          username: 'johndoe',
+          url: 'https://github.com/johndoe'
+        }
+      ],
+      url: 'https://johndoe.com',
+      summary: 'Experienced software engineer with 5+ years building scalable web applications.'
     },
-    summary: 'Experienced software engineer with 5+ years building scalable web applications.',
-    experience: [
+    work: [
       {
-        company: 'Tech Corp',
-        title: 'Senior Software Engineer',
+        name: 'Tech Corp',
+        position: 'Senior Software Engineer',
         startDate: '2021-01',
-        endDate: undefined,
-        current: true,
-        description: 'Leading development of cloud-native applications using TypeScript and React.'
+        highlights: [
+          'Leading development of cloud-native applications using TypeScript and React.',
+          'Mentoring junior developers and conducting code reviews.'
+        ]
       },
       {
-        company: 'Startup Inc',
-        title: 'Software Engineer',
+        name: 'Startup Inc',
+        position: 'Software Engineer',
         startDate: '2019-06',
         endDate: '2020-12',
-        current: false,
-        description: 'Built REST APIs and frontend features for a SaaS platform.'
+        highlights: [
+          'Built REST APIs and frontend features for a SaaS platform.',
+          'Reduced API response time by 40% through optimization.'
+        ]
       }
     ],
     education: [
       {
-        school: 'University of California',
-        degree: 'Bachelor of Science',
-        field: 'Computer Science',
-        gpa: '3.8',
+        institution: 'University of California',
+        studyType: 'Bachelor of Science',
+        area: 'Computer Science',
         startDate: '2015-09',
         endDate: '2019-05',
-        description: 'Focus on software engineering and algorithms.'
+        score: '3.8',
+        courses: ['Data Structures', 'Algorithms', 'Software Engineering']
       }
     ],
-    skills: {
-      technical: ['TypeScript', 'React', 'Node.js', 'PostgreSQL', 'AWS'],
-      soft: ['Leadership', 'Communication', 'Problem Solving'],
-      languages: ['English (Native)', 'Spanish (Conversational)']
-    }
+    skills: [
+      {
+        name: 'Programming Languages',
+        keywords: ['TypeScript', 'JavaScript', 'Python']
+      },
+      {
+        name: 'Frontend',
+        keywords: ['React', 'Next.js', 'Tailwind CSS']
+      },
+      {
+        name: 'Backend',
+        keywords: ['Node.js', 'PostgreSQL', 'REST APIs']
+      },
+      {
+        name: 'Cloud & DevOps',
+        keywords: ['AWS', 'Docker', 'CI/CD']
+      }
+    ],
+    languages: [
+      {
+        language: 'English',
+        fluency: 'Native'
+      },
+      {
+        language: 'Spanish',
+        fluency: 'Conversational'
+      }
+    ]
   };
 }
 
@@ -90,35 +130,35 @@ export async function testWorkflowValidation(): Promise<void> {
   try {
     // Test 1: Valid input
     console.log('Test 1: Valid input');
-    const validProfile = createMockUserProfile();
-    const validState = createInitialState(createMockJobDescription(), validProfile, {
+    const validResume = createMockUserProfile();
+    const validState = createInitialState(createMockJobDescription(), validResume, {
       jobTitle: 'Senior Full Stack Engineer',
       companyName: 'Acme Corp'
     });
 
-    const validation = validateUserProfile(validState.userProfile);
+    const validation = validateUserProfile(validState.userResume);
     console.log('Validation result:', validation);
-    console.assert(validation.valid, 'Valid profile should pass validation');
+    console.assert(validation.valid, 'Valid resume should pass validation');
     console.log('✅ Test 1 passed\n');
 
     // Test 2: Missing name
     console.log('Test 2: Missing name');
-    const invalidProfile = {
-      ...validProfile,
-      personalInfo: { ...validProfile.personalInfo, name: '' }
+    const invalidResume: Resume = {
+      ...validResume,
+      basics: { ...validResume.basics, name: '' }
     };
-    const invalidValidation = validateUserProfile(invalidProfile);
+    const invalidValidation = validateUserProfile(invalidResume);
     console.log('Validation result:', invalidValidation);
-    console.assert(!invalidValidation.valid, 'Invalid profile should fail validation');
+    console.assert(!invalidValidation.valid, 'Invalid resume should fail validation');
     console.assert(invalidValidation.errors.includes('Name is required'), 'Should have name error');
     console.log('✅ Test 2 passed\n');
 
     // Test 3: Missing experience
     console.log('Test 3: Missing experience');
-    const noExperienceProfile = { ...validProfile, experience: [] };
-    const noExpValidation = validateUserProfile(noExperienceProfile);
+    const noExperienceResume: Resume = { ...validResume, work: [] };
+    const noExpValidation = validateUserProfile(noExperienceResume);
     console.log('Validation result:', noExpValidation);
-    console.assert(!noExpValidation.valid, 'Profile without experience should fail');
+    console.assert(!noExpValidation.valid, 'Resume without experience should fail');
     console.log('✅ Test 3 passed\n');
 
     console.log('✅ All validation tests passed!\n');
@@ -135,10 +175,10 @@ export async function testEmptyWorkflowExecution(): Promise<void> {
   console.log('\n🧪 Test: Empty Workflow Execution\n');
 
   try {
-    const profile = createMockUserProfile();
+    const resume = createMockUserProfile();
     const jobDescription = createMockJobDescription();
 
-    const state = createInitialState(jobDescription, profile, {
+    const state = createInitialState(jobDescription, resume, {
       jobTitle: 'Senior Full Stack Engineer',
       companyName: 'Acme Corp'
     });

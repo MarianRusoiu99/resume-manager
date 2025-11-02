@@ -2,38 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
 import { pdfService } from '@/lib/services/pdf.service';
-
-// Type for resume content structure
-interface ResumeContent {
-  personalInfo: {
-    name: string;
-    email: string;
-    phone?: string;
-    location?: string;
-    links?: string[];
-  };
-  summary: string;
-  experience: Array<{
-    company: string;
-    position: string;
-    startDate: string;
-    endDate: string | null;
-    description: string;
-    bulletPoints: string[];
-  }>;
-  education: Array<{
-    institution: string;
-    degree: string;
-    field: string;
-    startDate: string;
-    endDate: string | null;
-    gpa?: string;
-  }>;
-  skills: {
-    technical: string[];
-    soft: string[];
-  };
-}
+import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * POST /api/resumes/[id]/export - Generate and download PDF for a resume
@@ -64,12 +33,11 @@ export async function POST(
       );
     }
 
-    // Generate PDF buffer with template, customization, and section order if available
+    // Generate PDF buffer with template and customization
     const pdfBuffer = await pdfService.generatePDFBuffer(
-      resume.content as unknown as ResumeContent,
+      resume.content as Resume,
       resume.templateId || undefined,
-      resume.templateCustomization as Record<string, unknown> | undefined,
-      resume.sectionOrder as string[] | undefined
+      resume.templateCustomization as Record<string, unknown> | undefined
     );
 
     // Set headers for PDF download
@@ -132,13 +100,12 @@ export async function GET(
       });
     }
 
-    // Generate new PDF and save URL with template, customization, and section order if available
+    // Generate new PDF and save URL with template and customization
     const pdfUrl = await pdfService.generatePDF(
       id,
-      resume.content as unknown as ResumeContent,
+      resume.content as Resume,
       resume.templateId || undefined,
-      resume.templateCustomization as Record<string, unknown> | undefined,
-      resume.sectionOrder as string[] | undefined
+      resume.templateCustomization as Record<string, unknown> | undefined
     );
 
     // Update resume with PDF URL

@@ -156,7 +156,7 @@ function getCompletedSteps(state: ResumeGenerationState): string[] {
     steps.push('match_profile');
   }
   
-  if (state.optimizedContent) {
+  if (state.optimizedResume) {
     steps.push('optimize_content');
   }
   
@@ -180,15 +180,13 @@ function getCompletedSteps(state: ResumeGenerationState): string[] {
 export function canResumeWorkflow(state: ResumeGenerationState): boolean {
   // Can resume if we have at least one intermediate result
   // but haven't completed the final output
-  const hasIntermediateResults = 
+  const hasIntermediateResults =
     state.jobAnalysis !== undefined ||
     state.profileMatch !== undefined ||
-    state.optimizedContent !== undefined ||
+    state.optimizedResume !== undefined ||
     state.formatValidation !== undefined;
   
-  const isComplete = state.generatedResume !== undefined;
-  
-  return hasIntermediateResults && !isComplete;
+  const isComplete = state.generatedResume !== undefined;  return hasIntermediateResults && !isComplete;
 }
 
 /**
@@ -206,7 +204,7 @@ export function getNextStep(state: ResumeGenerationState): string | null {
     return 'match_profile';
   }
   
-  if (!state.optimizedContent) {
+  if (!state.optimizedResume) {
     return 'optimize_content';
   }
   

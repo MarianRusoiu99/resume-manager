@@ -18,8 +18,8 @@ import {
 import { PersonalInfo } from "@/lib/validations/profile";
 import { useAutoSave } from "@/lib/hooks/useAutoSave";
 
-// Validation schema following Zod best practices
-const personalInfoSchema = z.object({
+// Temporary form schema that bridges the gap between old UI and JSON Resume
+const personalInfoFormSchema = z.object({
   name: z
     .string()
     .min(1, "Name is required")
@@ -29,7 +29,14 @@ const personalInfoSchema = z.object({
     .email("Invalid email address")
     .transform((val) => val.trim()),
   phone: z.string().optional(),
-  location: z.string().optional(),
+  locationCity: z.string().optional(),
+  url: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || /^https?:\/\/.+/.test(val),
+      "Must be a valid URL"
+    ),
   linkedin: z
     .string()
     .optional()
@@ -44,21 +51,60 @@ const personalInfoSchema = z.object({
       (val) => !val || /^https?:\/\/.+/.test(val),
       "Must be a valid URL"
     ),
-  website: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || /^https?:\/\/.+/.test(val),
-      "Must be a valid URL"
-    ),
 });
 
-type PersonalInfoFormData = z.infer<typeof personalInfoSchema>;
+type PersonalInfoFormData = z.infer<typeof personalInfoFormSchema>;
 
 interface PersonalInfoFormProps {
   initialData?: PersonalInfo;
   onSave?: (data: PersonalInfo) => void;
   autoSave?: boolean;
+}
+
+// Helper function to convert JSON Resume basics to form data
+function basicsToFormData(basics?: PersonalInfo): PersonalInfoFormData {
+  const linkedinProfile = basics?.profiles?.find(p => p.network?.toLowerCase() === 'linkedin');
+  const githubProfile = basics?.profiles?.find(p => p.network?.toLowerCase() === 'github');
+  
+  return {
+    name: basics?.name || "",
+    email: basics?.email || "",
+    phone: basics?.phone || "",
+    locationCity: basics?.location?.city || "",
+    url: basics?.url || "",
+    linkedin: linkedinProfile?.url || "",
+    github: githubProfile?.url || "",
+  };
+}
+
+// Helper function to convert form data to JSON Resume basics
+function formDataToBasics(formData: PersonalInfoFormData): PersonalInfo {
+  const profiles = [];
+  
+  if (formData.linkedin) {
+    profiles.push({
+      network: "LinkedIn",
+      url: formData.linkedin,
+    });
+  }
+  
+  if (formData.github) {
+    profiles.push({
+      network: "GitHub",
+      url: formData.github,
+    });
+  }
+  
+  return {
+    name: formData.name,
+    email: formData.email,
+    phone: formData.phone,
+    url: formData.url,
+    location: formData.locationCity ? {
+      city: formData.locationCity,
+    } : undefined,
+    profiles: profiles.length > 0 ? profiles : undefined,
+  };
 }
 
 export function PersonalInfoForm({
@@ -69,22 +115,14 @@ export function PersonalInfoForm({
   const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<PersonalInfoFormData>({
-    resolver: zodResolver(personalInfoSchema),
-    defaultValues: {
-      name: initialData?.name || "",
-      email: initialData?.email || "",
-      phone: initialData?.phone || "",
-      location: initialData?.location || "",
-      linkedin: initialData?.linkedin || "",
-      github: initialData?.github || "",
-      website: initialData?.website || "",
-    },
+    resolver: zodResolver(personalInfoFormSchema),
+    defaultValues: basicsToFormData(initialData),
   });
 
   // Reset form when initialData changes
   useEffect(() => {
     if (initialData) {
-      form.reset(initialData);
+      form.reset(basicsToFormData(initialData));
     }
   }, [initialData, form]);
 
@@ -94,7 +132,8 @@ export function PersonalInfoForm({
 
     setIsSaving(true);
     try {
-      await onSave(data as PersonalInfo);
+      const basicsData = formDataToBasics(data);
+      await onSave(basicsData);
     } finally {
       setIsSaving(false);
     }
@@ -113,7 +152,8 @@ export function PersonalInfoForm({
 
     setIsSaving(true);
     try {
-      await onSave(data as PersonalInfo);
+      const basicsData = formDataToBasics(data);
+      await onSave(basicsData);
     } finally {
       setIsSaving(false);
     }
@@ -168,7 +208,7 @@ export function PersonalInfoForm({
 
           <FormField
             control={form.control}
-            name="location"
+            name="locationCity"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Location</FormLabel>
@@ -222,7 +262,7 @@ export function PersonalInfoForm({
           <div className="sm:col-span-2">
             <FormField
               control={form.control}
-              name="website"
+              name="url"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Personal Website</FormLabel>

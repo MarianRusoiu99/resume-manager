@@ -26,17 +26,17 @@ async function main() {
   const mockJobDescription = createMockJobDescription();
 
   console.log('✅ Mock profile created:');
-  console.log('  - Name:', mockProfile.personalInfo.name);
-  console.log('  - Experience entries:', mockProfile.experience.length);
-  console.log('  - Education entries:', mockProfile.education.length);
-  console.log('  - Technical skills:', mockProfile.skills.technical.length);
+  console.log('  - Name:', mockProfile.basics?.name);
+  console.log('  - Work entries:', mockProfile.work?.length || 0);
+  console.log('  - Education entries:', mockProfile.education?.length || 0);
+  console.log('  - Skills:', mockProfile.skills?.length || 0);
 
   // Create initial state
   const initialState: ResumeGenerationState = {
     jobDescription: mockJobDescription,
     jobTitle: 'Senior Full Stack Engineer',
     companyName: 'Tech Company Inc.',
-    userProfile: mockProfile,
+    userResume: mockProfile,
     messages: [],
     currentStep: 'analyze_job',
     errors: [],

@@ -34,32 +34,7 @@ export async function coverLetterWorkflowNode(
         keyResponsibilities: state.jobAnalysis.keyResponsibilities,
         tone: state.jobAnalysis.jobSummary.toLowerCase().includes('startup') ? 'casual' : 'professional',
       },
-      userProfile: {
-        personalInfo: {
-          name: state.userProfile.personalInfo.name,
-          email: state.userProfile.personalInfo.email,
-          phone: state.userProfile.personalInfo.phone,
-          location: state.userProfile.personalInfo.location,
-        },
-        summary: state.userProfile.summary,
-        experience: state.userProfile.experience.map(exp => ({
-          company: exp.company,
-          position: exp.title,
-          startDate: exp.startDate,
-          endDate: exp.endDate || null,
-          description: exp.description,
-          bulletPoints: [], // Will use optimized bullet points if available
-        })),
-        education: state.userProfile.education.map(edu => ({
-          institution: edu.school,
-          degree: edu.degree,
-          field: edu.field,
-        })),
-        skills: {
-          technical: state.userProfile.skills.technical,
-          soft: state.userProfile.skills.soft,
-        },
-      },
+      userResume: state.userResume,
       matchingResults: {
         overallScore: state.profileMatch.relevanceScore * 100,
         matchingSkills: state.profileMatch.matchedSkills,

@@ -1,5 +1,6 @@
 import { PrismaClient, GeneratedResume } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Repository for managing generated resumes in the database
@@ -18,7 +19,7 @@ export class GeneratedResumeRepository {
     userId: string;
     jobDescription: string;
     jobMetadata?: Record<string, unknown>;
-    resumeContent: Record<string, unknown>;
+    resume: Resume;
     templateId?: string;
     templateCustomization?: Record<string, unknown>;
     pdfUrl?: string;
@@ -30,13 +31,11 @@ export class GeneratedResumeRepository {
         userId: data.userId,
         jobDescription: data.jobDescription,
         jobMetadata: data.jobMetadata as never,
-        resumeContent: data.resumeContent as never,
+        resume: data.resume as never,
         templateId: data.templateId || null,
         templateCustomization: data.templateCustomization as never,
         pdfUrl: data.pdfUrl || null,
         coverLetter: data.coverLetter || null,
-        isEdited: false,
-        aiGeneratedContent: data.resumeContent as never, // Store original AI version
         metadata: data.metadata as never
       }
     });
@@ -73,15 +72,14 @@ export class GeneratedResumeRepository {
   /**
    * Update resume content
    */
-  async updateContent(
+  async update(
     id: string,
-    resumeContent: Record<string, unknown>
+    resume: Resume
   ): Promise<GeneratedResume> {
     return this.db.generatedResume.update({
       where: { id },
       data: {
-        resumeContent: resumeContent as never,
-        isEdited: true,
+        resume: resume as never,
         updatedAt: new Date()
       }
     });
@@ -100,24 +98,7 @@ export class GeneratedResumeRepository {
       data: {
         templateId: templateId || null,
         templateCustomization: templateCustomization as never,
-        pdfUrl: null, // Clear PDF URL when template changes
-        updatedAt: new Date()
-      }
-    });
-  }
-
-  /**
-   * Update template customization only (keeps existing templateId)
-   */
-  async updateCustomization(
-    id: string,
-    templateCustomization: Record<string, unknown>
-  ): Promise<GeneratedResume> {
-    return this.db.generatedResume.update({
-      where: { id },
-      data: {
-        templateCustomization: templateCustomization as never,
-        pdfUrl: null, // Clear PDF URL to force regeneration with new customization
+        pdfUrl: null,
         updatedAt: new Date()
       }
     });

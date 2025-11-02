@@ -11,6 +11,7 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../types';
+import type { Resume } from '@/lib/validations/jsonresume';
 import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
 import { parseAgentJSON } from '../utils';
 
@@ -22,7 +23,7 @@ import { parseAgentJSON } from '../utils';
  * @param state - Current workflow state with jobAnalysis and profileMatch
  * @param apiKey - OpenAI API key (from user's settings)
  * @param model - OpenAI model to use (default: gpt-4-turbo-preview)
- * @returns Updated state with optimizedContent
+ * @returns Updated state with optimizedResume
  */
 export async function contentOptimizationAgent(
   state: ResumeGenerationState,
@@ -40,18 +41,18 @@ export async function contentOptimizationAgent(
     throw new Error('Profile matching is required for content optimization');
   }
 
-  if (!state.userProfile) {
-    throw new Error('User profile is required for content optimization');
+  if (!state.userResume) {
+    throw new Error('User resume is required for content optimization');
   }
 
-  const { jobAnalysis, profileMatch, userProfile } = state;
+  const { jobAnalysis, profileMatch, userResume } = state;
 
   try {
     // Create the optimization chain
     const chain = createContentOptimizationChain(
       apiKey,
       model,
-      userProfile,
+      userResume,
       jobAnalysis,
       profileMatch
     );
@@ -72,36 +73,20 @@ export async function contentOptimizationAgent(
     );
 
     // Parse the JSON response - handles both markdown-wrapped and plain JSON
-    const optimizedContent = parseAgentJSON<{
-      summary: string;
-      experience: Array<{
-        company: string;
-        title: string;
-        startDate: string;
-        endDate?: string;
-        current: boolean;
-        description: string;
-        bulletPoints: string[];
-      }>;
-      prioritizedSkills: string[];
-    }>(result);
+    const optimizedResume = parseAgentJSON<Resume>(result);
 
-    if (!optimizedContent) {
+    if (!optimizedResume) {
       throw new Error('Failed to parse content optimization response from AI');
     }
 
     console.log('✅ Content optimization complete');
-    console.log(`- Generated optimized summary (${optimizedContent.summary.length} chars)`);
-    console.log(`- Optimized ${optimizedContent.experience.length} experience entries`);
-    console.log(`- Prioritized ${optimizedContent.prioritizedSkills.length} skills`);
+    console.log(`- Generated optimized summary (${optimizedResume.basics?.summary?.length || 0} chars)`);
+    console.log(`- Optimized ${optimizedResume.work?.length || 0} work entries`);
+    console.log(`- Included ${optimizedResume.skills?.length || 0} skills`);
 
     return {
       ...state,
-      optimizedContent: {
-        summary: optimizedContent.summary,
-        experience: optimizedContent.experience,
-        prioritizedSkills: optimizedContent.prioritizedSkills,
-      },
+      optimizedResume,
       currentStep: 'optimize_content',
       tokensUsed: (state.tokensUsed || 0) + estimateTokens(result),
     };
@@ -123,12 +108,11 @@ export async function contentOptimizationAgent(
 function createContentOptimizationChain(
   apiKey: string,
   model: string = 'gpt-4-turbo-preview',
-  userProfile: ResumeGenerationState['userProfile'],
+  userResume: Resume,
   jobAnalysis: NonNullable<ResumeGenerationState['jobAnalysis']>,
   profileMatch: NonNullable<ResumeGenerationState['profileMatch']>
 ) {
   // Format the data for the prompt
-  const originalSummary = userProfile!.summary || 'No summary provided';
   const matchedSkills = profileMatch.matchedSkills.join(', ');
   const missingSkills = profileMatch.missingSkills.join(', ');
   const jobKeywords = [...jobAnalysis.keywords, ...jobAnalysis.atsKeywords].join(', ');
@@ -158,73 +142,107 @@ Missing Skills: ${missingSkills}
 Relevance Score: ${profileMatch.relevanceScore}/100
 Experience Match: ${profileMatch.experienceMatch}/10
 
-ORIGINAL PROFESSIONAL SUMMARY:
-${originalSummary}
-
-WORK EXPERIENCE:
-${formatExperienceForOptimization(userProfile!.experience)}
+ORIGINAL RESUME (JSON Resume v1.0.0 format):
+\`\`\`json
+${JSON.stringify(userResume, null, 2)}
+\`\`\`
 
 PROFILE RECOMMENDATIONS:
 - ${recommendations}
 
 YOUR TASK:
-Generate optimized resume content that:
+Generate an optimized resume in JSON Resume v1.0.0 format that:
 
-1. PROFESSIONAL SUMMARY:
+1. PROFESSIONAL SUMMARY (basics.summary):
    - Tailor to the specific job and company
    - Highlight matched skills prominently
    - Address missing skills strategically (mention transferable skills)
    - Incorporate relevant ATS keywords naturally
    - Keep to 3-4 sentences (50-80 words)
-   - Use strong action words and quantifiable achievements if mentioned in original
+   - Use strong action words and quantifiable achievements
 
-2. EXPERIENCE OPTIMIZATION:
-   For each work experience entry:
-   - Rewrite description to emphasize job-relevant responsibilities
-   - Create 4-6 powerful bullet points that:
+2. WORK EXPERIENCE OPTIMIZATION (work array):
+   For each work entry:
+   - Keep position, name, startDate, endDate, url, location exactly as provided
+   - Rewrite summary to emphasize job-relevant responsibilities
+   - Create 4-6 powerful highlights (bullet points) that:
      * Start with strong action verbs
      * Incorporate ATS keywords naturally (no keyword stuffing)
      * Highlight achievements relevant to target job
      * Use numbers and metrics when available from original
      * Connect experience to job requirements
    - Maintain authenticity - only enhance, don't fabricate
-   - Keep company, title, and dates exactly as provided
 
-3. SKILL PRIORITIZATION:
+3. SKILLS PRIORITIZATION (skills array):
    - Reorder skills to put most relevant ones first
    - Include all matched skills in top positions
    - Add relevant skills from job requirements that candidate likely has
-   - Group by relevance to this specific job
-   - Return as ordered array (most important first)
+   - Format as: {{ "name": "Skill Name", "level": "Advanced|Intermediate", "keywords": ["related", "terms"] }}
+
+4. OTHER SECTIONS:
+   - Preserve all other sections (education, certificates, projects, etc.) as-is
+   - Only optimize content in basics.summary, work array, and skills array
 
 OUTPUT FORMAT:
-Return ONLY valid JSON with this exact structure:
+Return ONLY valid JSON matching the JSON Resume v1.0.0 schema with ALL these sections:
 {{
-  "summary": "optimized professional summary text",
-  "experience": [
+  "basics": {{
+    "name": "from original",
+    "label": "from original or optimized",
+    "email": "from original",
+    "phone": "from original",
+    "url": "from original",
+    "summary": "YOUR OPTIMIZED SUMMARY HERE",
+    "location": {{ ... }},
+    "profiles": [ ... ]
+  }},
+  "work": [
     {{
-      "company": "exact company name from original",
-      "title": "exact title from original",
-      "startDate": "exact start date from original",
-      "endDate": "exact end date from original or null",
-      "current": boolean from original,
-      "description": "brief optimized description (1-2 sentences)",
-      "bulletPoints": ["bullet 1", "bullet 2", "bullet 3", "bullet 4", "bullet 5", "bullet 6"]
+      "name": "Company Name (exact from original)",
+      "position": "Job Title (exact from original)",
+      "url": "from original",
+      "startDate": "YYYY-MM-DD from original",
+      "endDate": "YYYY-MM-DD from original or empty string if current",
+      "summary": "YOUR OPTIMIZED 1-2 SENTENCE SUMMARY",
+      "highlights": [
+        "YOUR OPTIMIZED BULLET POINT 1",
+        "YOUR OPTIMIZED BULLET POINT 2",
+        "YOUR OPTIMIZED BULLET POINT 3"
+      ],
+      "location": "from original"
     }}
   ],
-  "prioritizedSkills": ["skill1", "skill2", "skill3", ...]
+  "volunteer": [ ... from original ... ],
+  "education": [ ... from original ... ],
+  "awards": [ ... from original ... ],
+  "certificates": [ ... from original ... ],
+  "publications": [ ... from original ... ],
+  "skills": [
+    {{
+      "name": "Most Relevant Skill 1",
+      "level": "Advanced",
+      "keywords": ["related", "terms"]
+    }}
+  ],
+  "languages": [ ... from original ... ],
+  "interests": [ ... from original ... ],
+  "references": [ ... from original ... ],
+  "projects": [ ... from original ... ],
+  "meta": {{ ... from original ... }}
 }}
 
 IMPORTANT GUIDELINES:
+- Return COMPLETE JSON Resume with ALL 14 sections (even if some are empty arrays)
 - Be authentic - enhance but don't fabricate
 - Avoid keyword stuffing - integrate naturally
 - Use industry-standard terminology
 - Match tone to job posting (formal vs casual)
 - Keep descriptions concise and impactful
 - Prioritize relevance over volume
-- Ensure ATS-friendly formatting (no special characters in key info)
+- Ensure ATS-friendly formatting
+- All dates in ISO8601 format (YYYY-MM-DD, YYYY-MM, or YYYY)
 
-Generate the optimized content now:`);
+Generate the optimized JSON Resume now:`);
 
   const llm = new ChatOpenAI({
     openAIApiKey: apiKey,
@@ -238,29 +256,6 @@ Generate the optimized content now:`);
     llm,
     new StringOutputParser(),
   ]);
-}
-
-/**
- * Format experience entries for the optimization prompt
- */
-function formatExperienceForOptimization(
-  experience: ResumeGenerationState['userProfile']['experience']
-): string {
-  return experience
-    .map((exp, index) => {
-      const dates = exp.current
-        ? `${exp.startDate} - Present`
-        : `${exp.startDate} - ${exp.endDate || 'Present'}`;
-
-      let formatted = `\n${index + 1}. ${exp.title} at ${exp.company} (${dates})`;
-
-      if (exp.description) {
-        formatted += `\n   Description: ${exp.description}`;
-      }
-
-      return formatted;
-    })
-    .join('\n');
 }
 
 /**
@@ -290,12 +285,15 @@ export async function testContentOptimizationAgent(
   const mockProfile = createMockUserProfile();
   const mockJob = createMockJobDescription();
 
+  // mockProfile is already a Resume - no conversion needed
+  const mockResume: Resume = mockProfile;
+
   // Initial state
   let state: ResumeGenerationState = {
     jobDescription: mockJob,
     jobTitle: 'Senior Software Engineer',
     companyName: 'Tech Corp',
-    userProfile: mockProfile,
+    userResume: mockResume,
     currentStep: 'validate_input',
     messages: [],
     errors: [],
@@ -322,32 +320,37 @@ export async function testContentOptimizationAgent(
   const optimizeResult = await contentOptimizationAgent(state, apiKey, model);
   state = { ...state, ...optimizeResult };
 
-  if (!state.optimizedContent) {
+  if (!state.optimizedResume) {
     throw new Error('Content optimization failed');
   }
 
   // Display results
   console.log('\n' + '='.repeat(50));
-  console.log('OPTIMIZED CONTENT RESULTS');
+  console.log('OPTIMIZED RESUME RESULTS');
   console.log('='.repeat(50));
 
   console.log('\n📝 OPTIMIZED SUMMARY:');
-  console.log(state.optimizedContent.summary);
+  console.log(state.optimizedResume.basics?.summary || 'No summary');
 
-  console.log('\n💼 OPTIMIZED EXPERIENCE:');
-  state.optimizedContent.experience.forEach((exp, index) => {
-    console.log(`\n${index + 1}. ${exp.title} at ${exp.company}`);
-    console.log(`   Dates: ${exp.startDate} - ${exp.endDate || 'Present'}`);
-    console.log(`   Description: ${exp.description}`);
-    console.log(`   Bullet Points:`);
-    exp.bulletPoints.forEach(bullet => {
-      console.log(`   • ${bullet}`);
-    });
+  console.log('\n💼 OPTIMIZED WORK EXPERIENCE:');
+  state.optimizedResume.work?.forEach((job, index) => {
+    console.log(`\n${index + 1}. ${job.position} at ${job.name}`);
+    console.log(`   Dates: ${job.startDate} - ${job.endDate || 'Present'}`);
+    if (job.summary) {
+      console.log(`   Summary: ${job.summary}`);
+    }
+    if (job.highlights && job.highlights.length > 0) {
+      console.log(`   Highlights:`);
+      job.highlights.forEach((highlight: string) => {
+        console.log(`   • ${highlight}`);
+      });
+    }
   });
 
-  console.log('\n🎯 PRIORITIZED SKILLS:');
-  console.log(state.optimizedContent.prioritizedSkills.slice(0, 10).join(', '));
-  console.log(`(${state.optimizedContent.prioritizedSkills.length} total skills)`);
+  console.log('\n🎯 OPTIMIZED SKILLS:');
+  const skillNames = state.optimizedResume.skills?.map((s) => s.name).slice(0, 10).join(', ') || 'No skills';
+  console.log(skillNames);
+  console.log(`(${state.optimizedResume.skills?.length || 0} total skills)`);
 
   console.log('\n📊 TOKEN USAGE:');
   console.log(`Total tokens used: ${state.tokensUsed || 0}`);

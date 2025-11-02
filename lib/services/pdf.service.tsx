@@ -7,40 +7,10 @@ import { existsSync } from 'fs';
 import React from 'react';
 import { templateRepository } from '../repositories/template.repository';
 import type { ResumeTemplate } from '@/types/template';
-
-interface ResumeContent {
-  personalInfo: {
-    name: string;
-    email: string;
-    phone?: string;
-    location?: string;
-    links?: string[];
-  };
-  summary: string;
-  experience: Array<{
-    company: string;
-    position: string;
-    startDate: string;
-    endDate: string | null;
-    description: string;
-    bulletPoints: string[];
-  }>;
-  education: Array<{
-    institution: string;
-    degree: string;
-    field: string;
-    startDate: string;
-    endDate: string | null;
-    gpa?: string;
-  }>;
-  skills: {
-    technical: string[];
-    soft: string[];
-  };
-}
+import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
- * PDF Service for generating resume PDFs
+ * PDF Service for generating resume PDFs using JSON Resume v1.0.0 format
  */
 class PDFService {
   private readonly pdfDir = join(process.cwd(), 'public', 'pdfs');
@@ -55,20 +25,18 @@ class PDFService {
   }
 
   /**
-   * Generate PDF from resume content
+   * Generate PDF from resume content (JSON Resume format)
    * @param resumeId - The ID of the resume
-   * @param content - The resume content
+   * @param content - The resume content in JSON Resume v1.0.0 format
    * @param templateId - Optional template ID to apply styling
    * @param templateCustomization - Optional customization overrides
-   * @param sectionOrder - Optional custom section order
    * @returns The URL path to the generated PDF
    */
   async generatePDF(
     resumeId: string,
-    content: ResumeContent,
+    content: Resume,
     templateId?: string,
-    templateCustomization?: Record<string, unknown>,
-    sectionOrder?: string[]
+    templateCustomization?: Record<string, unknown>
   ): Promise<string> {
     try {
       // Ensure directory exists
@@ -92,12 +60,11 @@ class PDFService {
         }
       }
 
-      // Generate PDF buffer with template and section order
+      // Generate PDF buffer with template (sectionOrder removed - not needed)
       const pdfBuffer = await renderToBuffer(
         <ResumePDF 
           content={content} 
-          template={template} 
-          sectionOrder={sectionOrder}
+          template={template}
         />
       );
 
@@ -118,17 +85,15 @@ class PDFService {
 
   /**
    * Generate PDF and return as buffer (for download)
-   * @param content - The resume content
+   * @param content - The resume content in JSON Resume v1.0.0 format
    * @param templateId - Optional template ID to apply styling
    * @param templateCustomization - Optional customization overrides
-   * @param sectionOrder - Optional custom section order
    * @returns PDF buffer
    */
   async generatePDFBuffer(
-    content: ResumeContent,
+    content: Resume,
     templateId?: string,
-    templateCustomization?: Record<string, unknown>,
-    sectionOrder?: string[]
+    templateCustomization?: Record<string, unknown>
   ): Promise<Buffer> {
     try {
       // Fetch template if provided
@@ -155,12 +120,11 @@ class PDFService {
 
       console.log('PDF Service: Using template:', template?.name || 'null');
 
-      // Generate PDF buffer with template and section order
+      // Generate PDF buffer with template (sectionOrder removed - not needed)
       const pdfBuffer = await renderToBuffer(
         <ResumePDF 
           content={content} 
-          template={template} 
-          sectionOrder={sectionOrder}
+          template={template}
         />
       );
       return pdfBuffer;

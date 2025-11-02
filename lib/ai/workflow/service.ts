@@ -5,6 +5,7 @@
  * Handles user context, API key resolution, and error management
  */
 
+import type { Resume } from '@/lib/validations/jsonresume';
 import type { ResumeGenerationState } from './types';
 import { createInitialState } from './utils';
 import { compileResumeWorkflow } from './graph';
@@ -21,12 +22,12 @@ export interface GenerateResumeInput {
   jobDescription: string;
   jobTitle?: string;
   companyName?: string;
-  userProfile: ResumeGenerationState['userProfile'];
+  userResume: Resume;
 }
 
 export interface GenerateResumeResult {
   success: boolean;
-  resume?: ResumeGenerationState['generatedResume'];
+  resume?: Resume;
   errors?: string[];
   tokensUsed?: number;
   state?: ResumeGenerationState;
@@ -52,7 +53,7 @@ export class ResumeWorkflowService {
       // Create initial state
       const initialState = createInitialState(
         input.jobDescription,
-        input.userProfile,
+        input.userResume,
         {
           jobTitle: input.jobTitle,
           companyName: input.companyName

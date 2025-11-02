@@ -2,37 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
 import { pdfService } from '@/lib/services/pdf.service';
-
-interface ResumeContent {
-  personalInfo: {
-    name: string;
-    email: string;
-    phone?: string;
-    location?: string;
-    links?: string[];
-  };
-  summary: string;
-  experience: Array<{
-    company: string;
-    position: string;
-    startDate: string;
-    endDate: string | null;
-    description: string;
-    bulletPoints: string[];
-  }>;
-  education: Array<{
-    institution: string;
-    degree: string;
-    field: string;
-    startDate: string;
-    endDate: string | null;
-    gpa?: string;
-  }>;
-  skills: {
-    technical: string[];
-    soft: string[];
-  };
-}
+import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * GET /api/resumes/:id/preview
@@ -56,12 +26,11 @@ export async function GET(
       return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
     }
 
-    // Generate PDF buffer with template, customization, and section order if available
+    // Generate PDF buffer with template and customization
     const pdfBuffer = await pdfService.generatePDFBuffer(
-      resume.content as unknown as ResumeContent,
+      resume.content as Resume,
       resume.templateId || undefined,
-      resume.templateCustomization as Record<string, unknown> | undefined,
-      resume.sectionOrder as string[] | undefined
+      resume.templateCustomization as Record<string, unknown> | undefined
     );
 
     // Return PDF for inline display

@@ -16,6 +16,7 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../types';
+import type { Resume } from '@/lib/validations/jsonresume';
 import { addMessage, addError, addTokens, createSystemMessage, createAIMessage, parseAgentJSON } from '../utils';
 import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
 
@@ -208,29 +209,31 @@ export async function testJobAnalysisAgent(
 ): Promise<void> {
   console.log('\n🧪 Testing Job Analysis Agent\n' + '='.repeat(60));
   
+  // Create minimal Resume for testing (job analysis doesn't use it)
+  const minimalResume: Resume = {
+    basics: {
+      name: 'Test User',
+      email: 'test@example.com',
+    },
+    work: [],
+    volunteer: [],
+    education: [],
+    awards: [],
+    certificates: [],
+    publications: [],
+    skills: [],
+    languages: [],
+    interests: [],
+    references: [],
+    projects: [],
+    meta: {},
+  };
+
   const testState: ResumeGenerationState = {
     jobDescription,
     jobTitle: jobTitle || 'Software Engineer',
     companyName: companyName || 'Test Company',
-    userProfile: {
-      personalInfo: {
-        name: 'Test User',
-        email: 'test@example.com',
-        phone: '',
-        location: '',
-        linkedin: '',
-        github: '',
-        website: '',
-      },
-      summary: '',
-      experience: [],
-      education: [],
-      skills: {
-        technical: [],
-        soft: [],
-        languages: [],
-      },
-    },
+    userResume: minimalResume,
     messages: [],
     currentStep: 'analyze_job',
     errors: [],

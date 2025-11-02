@@ -7,61 +7,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
 import { z } from 'zod';
+import { resumeSchema, type Resume } from '@/lib/validations/jsonresume';
 
-// Validation schema for resume content
+// Validation schema for resume content - use JSON Resume schema
 const contentSchema = z.object({
-  content: z.object({
-    personalInfo: z.object({
-      name: z.string(),
-      email: z.string().email(),
-      phone: z.string().optional(),
-      location: z.string().optional(),
-      links: z.array(z.string()).optional(),
-    }),
-    summary: z.string(),
-    experience: z.array(
-      z.object({
-        company: z.string(),
-        position: z.string(),
-        startDate: z.string(),
-        endDate: z.string().nullable(),
-        description: z.string(),
-        bulletPoints: z.array(z.string()),
-      })
-    ),
-    education: z.array(
-      z.object({
-        institution: z.string(),
-        degree: z.string(),
-        field: z.string(),
-        startDate: z.string(),
-        endDate: z.string().nullable(),
-        gpa: z.string().optional(),
-      })
-    ),
-    skills: z.object({
-      technical: z.array(z.string()),
-      soft: z.array(z.string()),
-    }),
-    certifications: z
-      .array(
-        z.object({
-          name: z.string(),
-          issuer: z.string(),
-          date: z.string(),
-          credentialUrl: z.string().optional(),
-        })
-      )
-      .optional(),
-    languages: z
-      .array(
-        z.object({
-          language: z.string(),
-          proficiency: z.string(),
-        })
-      )
-      .optional(),
-  }),
+  content: resumeSchema
 });
 
 export async function PATCH(
@@ -105,10 +55,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Update content (this will mark resume as edited and clear PDF URL)
-    const updatedResume = await generatedResumeRepository.updateContent(
+    // Update resume content using JSON Resume format
+    const updatedResume = await generatedResumeRepository.update(
       resumeId,
-      content as Record<string, unknown>
+      content as Resume
     );
 
     return NextResponse.json({

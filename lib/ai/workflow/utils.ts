@@ -87,7 +87,7 @@ export function hasProfileMatch(state: ResumeGenerationState): boolean {
 }
 
 export function hasOptimizedContent(state: ResumeGenerationState): boolean {
-  return state.optimizedContent !== undefined;
+  return state.optimizedResume !== undefined;
 }
 
 export function hasFormatValidation(state: ResumeGenerationState): boolean {
@@ -133,7 +133,7 @@ export function parseAgentJSON<T>(content: string): T | null {
  */
 export function createInitialState(
   jobDescription: string,
-  userProfile: ResumeGenerationState['userProfile'],
+  userResume: ResumeGenerationState['userResume'],
   options?: {
     jobTitle?: string;
     companyName?: string;
@@ -143,7 +143,7 @@ export function createInitialState(
     jobDescription,
     jobTitle: options?.jobTitle,
     companyName: options?.companyName,
-    userProfile,
+    userResume,
     messages: [],
     errors: [],
     tokensUsed: 0,
@@ -152,31 +152,27 @@ export function createInitialState(
 }
 
 /**
- * Validate that user profile has required fields
+ * Validate that user resume has required fields
  */
-export function validateUserProfile(profile: ResumeGenerationState['userProfile']): {
+export function validateUserProfile(resume: ResumeGenerationState['userResume']): {
   valid: boolean;
   errors: string[];
 } {
   const errors: string[] = [];
 
-  if (!profile.personalInfo.name) {
+  if (!resume.basics?.name) {
     errors.push('Name is required');
   }
-  if (!profile.personalInfo.email) {
+  if (!resume.basics?.email) {
     errors.push('Email is required');
   }
-  if (profile.experience.length === 0) {
+  if (!resume.work || resume.work.length === 0) {
     errors.push('At least one work experience is required');
   }
-  if (profile.education.length === 0) {
+  if (!resume.education || resume.education.length === 0) {
     errors.push('At least one education entry is required');
   }
-  if (
-    profile.skills.technical.length === 0 &&
-    profile.skills.soft.length === 0 &&
-    profile.skills.languages.length === 0
-  ) {
+  if (!resume.skills || resume.skills.length === 0) {
     errors.push('At least some skills are required');
   }
 
@@ -197,7 +193,7 @@ export function logState(state: ResumeGenerationState, prefix = ''): void {
   console.log(`${prefix}Messages: ${state.messages.length}`);
   console.log(`${prefix}Job Analysis: ${state.jobAnalysis ? 'YES' : 'NO'}`);
   console.log(`${prefix}Profile Match: ${state.profileMatch ? 'YES' : 'NO'}`);
-  console.log(`${prefix}Optimized Content: ${state.optimizedContent ? 'YES' : 'NO'}`);
+  console.log(`${prefix}Optimized Resume: ${state.optimizedResume ? 'YES' : 'NO'}`);
   console.log(`${prefix}Format Validation: ${state.formatValidation ? 'YES' : 'NO'}`);
   console.log(`${prefix}Generated Resume: ${state.generatedResume ? 'YES' : 'NO'}`);
   console.log(`${prefix}=====================`);

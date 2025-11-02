@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import type { ResumeTemplate } from '@/types/template';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 // Helper function to create dynamic styles from template
 const createTemplateStyles = (template: ResumeTemplate | null) => {
@@ -188,43 +189,15 @@ const createStyles = (template: ResumeTemplate | null) => {
 type PDFStyles = ReturnType<typeof createStyles>;
 
 interface ResumeData {
-  content: {
-    personalInfo: {
-      name: string;
-      email: string;
-      phone?: string;
-      location?: string;
-      links?: string[];
-    };
-    summary: string;
-    experience: Array<{
-      company: string;
-      position: string;
-      startDate: string;
-      endDate: string | null;
-      description: string;
-      bulletPoints: string[];
-    }>;
-    education: Array<{
-      institution: string;
-      degree: string;
-      field: string;
-      startDate: string;
-      endDate: string | null;
-      gpa?: string;
-    }>;
-    skills?: {
-      technical?: string[];
-      soft?: string[];
-    };
-  };
+  content: Resume; // JSON Resume v1.0.0 format
   template?: ResumeTemplate | null;
   sectionOrder?: string[];
 }
 
 // Helper function to format dates
-const formatDate = (dateString: string | null): string => {
+const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return 'Present';
+  // JSON Resume uses ISO8601 format (YYYY-MM-DD, YYYY-MM, or YYYY)
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {
     month: 'short',
@@ -233,26 +206,39 @@ const formatDate = (dateString: string | null): string => {
 };
 
 // Resume Header Component
-const ResumeHeader: React.FC<{ personalInfo: ResumeData['content']['personalInfo']; styles: PDFStyles }> = ({
-  personalInfo,
+const ResumeHeader: React.FC<{ basics: Resume['basics']; styles: PDFStyles }> = ({
+  basics,
   styles,
-}) => (
-  <View style={styles.header}>
-    <Text style={styles.name}>{personalInfo.name}</Text>
-    <View style={styles.contactInfo}>
-      {personalInfo.email && <Text style={styles.contactItem}>{personalInfo.email}</Text>}
-      {personalInfo.phone && <Text style={styles.contactItem}>{personalInfo.phone}</Text>}
-      {personalInfo.location && <Text style={styles.contactItem}>{personalInfo.location}</Text>}
-    </View>
-    {personalInfo.links && personalInfo.links.length > 0 && (
-      <View style={styles.links}>
-        {personalInfo.links.map((link, idx) => (
-          <Text key={idx}>{link}</Text>
-        ))}
+}) => {
+  if (!basics) return null;
+  
+  return (
+    <View style={styles.header}>
+      <Text style={styles.name}>{basics.name}</Text>
+      <View style={styles.contactInfo}>
+        {basics.email && <Text style={styles.contactItem}>{basics.email}</Text>}
+        {basics.phone && <Text style={styles.contactItem}>{basics.phone}</Text>}
+        {basics.location?.city && basics.location?.region && (
+          <Text style={styles.contactItem}>
+            {basics.location.city}, {basics.location.region}
+          </Text>
+        )}
       </View>
-    )}
-  </View>
-);
+      {basics.profiles && basics.profiles.length > 0 && (
+        <View style={styles.links}>
+          {basics.profiles.map((profile, idx) => (
+            <Text key={idx}>{profile.url}</Text>
+          ))}
+        </View>
+      )}
+      {basics.url && (
+        <View style={styles.links}>
+          <Text>{basics.url}</Text>
+        </View>
+      )}
+    </View>
+  );
+};
 
 // Summary Section Component
 const ResumeSummary: React.FC<{ summary: string; styles: PDFStyles }> = ({ summary, styles }) => (
@@ -262,100 +248,96 @@ const ResumeSummary: React.FC<{ summary: string; styles: PDFStyles }> = ({ summa
   </View>
 );
 
-// Experience Section Component
-const ResumeExperience: React.FC<{ experience: ResumeData['content']['experience']; styles: PDFStyles }> = ({
-  experience,
+// Experience Section Component - uses Resume.work
+const ResumeExperience: React.FC<{ work: Resume['work']; styles: PDFStyles }> = ({
+  work,
   styles,
-}) => (
-  <View>
-    <Text style={styles.sectionTitle}>PROFESSIONAL EXPERIENCE</Text>
-    {experience.map((exp, idx) => (
-      <View key={idx} style={styles.experienceItem}>
-        <View style={styles.experienceHeader}>
-          <View>
-            <Text style={styles.jobTitle}>{exp.position}</Text>
-            <Text style={styles.company}>{exp.company}</Text>
+}) => {
+  if (!work || work.length === 0) return null;
+  
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>PROFESSIONAL EXPERIENCE</Text>
+      {work.map((job, idx) => (
+        <View key={idx} style={styles.experienceItem}>
+          <View style={styles.experienceHeader}>
+            <View>
+              <Text style={styles.jobTitle}>{job.position}</Text>
+              <Text style={styles.company}>{job.name}</Text>
+            </View>
+            <Text style={styles.dates}>
+              {formatDate(job.startDate)} - {formatDate(job.endDate)}
+            </Text>
           </View>
-          <Text style={styles.dates}>
-            {formatDate(exp.startDate)} - {formatDate(exp.endDate)}
-          </Text>
+          {job.summary && <Text style={styles.description}>{job.summary}</Text>}
+          {job.highlights && job.highlights.length > 0 && (
+            <View style={styles.bulletPoints}>
+              {job.highlights.map((highlight, bulletIdx) => (
+                <View key={bulletIdx} style={styles.bulletPoint}>
+                  <Text style={styles.bullet}>•</Text>
+                  <Text style={styles.bulletText}>{highlight}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
-        {exp.description && <Text style={styles.description}>{exp.description}</Text>}
-        {exp.bulletPoints && exp.bulletPoints.length > 0 && (
-          <View style={styles.bulletPoints}>
-            {exp.bulletPoints.map((bullet, bulletIdx) => (
-              <View key={bulletIdx} style={styles.bulletPoint}>
-                <Text style={styles.bullet}>•</Text>
-                <Text style={styles.bulletText}>{bullet}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-    ))}
-  </View>
-);
+      ))}
+    </View>
+  );
+};
 
-// Education Section Component
-const ResumeEducation: React.FC<{ education: ResumeData['content']['education']; styles: PDFStyles }> = ({
+// Education Section Component - uses Resume.education
+const ResumeEducation: React.FC<{ education: Resume['education']; styles: PDFStyles }> = ({
   education,
   styles,
-}) => (
-  <View>
-    <Text style={styles.sectionTitle}>EDUCATION</Text>
-    {education.map((edu, idx) => (
-      <View key={idx} style={styles.educationItem}>
-        <View style={styles.educationHeader}>
-          <View>
-            <Text style={styles.degree}>
-              {edu.degree} in {edu.field}
+}) => {
+  if (!education || education.length === 0) return null;
+  
+  return (
+    <View>
+      <Text style={styles.sectionTitle}>EDUCATION</Text>
+      {education.map((edu, idx) => (
+        <View key={idx} style={styles.educationItem}>
+          <View style={styles.educationHeader}>
+            <View>
+              <Text style={styles.degree}>
+                {edu.studyType} in {edu.area}
+              </Text>
+              <Text style={styles.institution}>{edu.institution}</Text>
+            </View>
+            <Text style={styles.dates}>
+              {formatDate(edu.startDate)} - {formatDate(edu.endDate)}
             </Text>
-            <Text style={styles.institution}>{edu.institution}</Text>
           </View>
-          <Text style={styles.dates}>
-            {formatDate(edu.startDate)} - {formatDate(edu.endDate)}
-          </Text>
+          {edu.score && <Text style={styles.gpa}>Score: {edu.score}</Text>}
         </View>
-        {edu.gpa && <Text style={styles.gpa}>GPA: {edu.gpa}</Text>}
-      </View>
-    ))}
-  </View>
-);
+      ))}
+    </View>
+  );
+};
 
-// Skills Section Component
-const ResumeSkills: React.FC<{ skills: ResumeData['content']['skills']; styles: PDFStyles }> = ({ skills, styles }) => {
-  const technical = skills?.technical || [];
-  const soft = skills?.soft || [];
+// Skills Section Component - uses Resume.skills
+const ResumeSkills: React.FC<{ skills: Resume['skills']; styles: PDFStyles }> = ({ skills, styles }) => {
+  if (!skills || skills.length === 0) return null;
   
   return (
     <View>
       <Text style={styles.sectionTitle}>SKILLS</Text>
-      {technical.length > 0 && (
-        <View style={styles.skillsContainer}>
-          <Text style={styles.skillCategory}>Technical Skills:</Text>
-          <View style={styles.skillsList}>
-            {technical.map((skill, idx) => (
-              <Text key={idx} style={styles.skillItem}>
-                {skill}
-                {idx < technical.length - 1 ? ',' : ''}
-              </Text>
-            ))}
-          </View>
+      {skills.map((skill, idx) => (
+        <View key={idx} style={styles.skillsContainer}>
+          <Text style={styles.skillCategory}>{skill.name}:</Text>
+          {skill.keywords && skill.keywords.length > 0 && (
+            <View style={styles.skillsList}>
+              {skill.keywords.map((keyword, keywordIdx) => (
+                <Text key={keywordIdx} style={styles.skillItem}>
+                  {keyword}
+                  {keywordIdx < skill.keywords!.length - 1 ? ',' : ''}
+                </Text>
+              ))}
+            </View>
+          )}
         </View>
-      )}
-      {soft.length > 0 && (
-        <View style={styles.skillsContainer}>
-          <Text style={styles.skillCategory}>Soft Skills:</Text>
-          <View style={styles.skillsList}>
-            {soft.map((skill, idx) => (
-              <Text key={idx} style={styles.skillItem}>
-                {skill}
-                {idx < soft.length - 1 ? ',' : ''}
-              </Text>
-            ))}
-          </View>
-        </View>
-      )}
+      ))}
     </View>
   );
 };
@@ -380,20 +362,20 @@ export const ResumePDF: React.FC<ResumeData> = ({ content, template, sectionOrde
     }
   });
   
-  // Default section order if not provided
-  const defaultOrder = ['summary', 'experience', 'education', 'skills'];
+  // Default section order if not provided  
+  const defaultOrder = ['summary', 'work', 'education', 'skills'];
   const order = sectionOrder && sectionOrder.length > 0 ? sectionOrder : defaultOrder;
   
-  // Create section map
+  // Create section map using JSON Resume fields
   const sections: Record<string, React.ReactNode> = {
-    summary: content.summary ? <ResumeSummary summary={content.summary} styles={styles} /> : null,
-    experience: content.experience && content.experience.length > 0 ? (
-      <ResumeExperience experience={content.experience} styles={styles} />
+    summary: content.basics?.summary ? <ResumeSummary summary={content.basics.summary} styles={styles} /> : null,
+    work: content.work && content.work.length > 0 ? (
+      <ResumeExperience work={content.work} styles={styles} />
     ) : null,
     education: content.education && content.education.length > 0 ? (
       <ResumeEducation education={content.education} styles={styles} />
     ) : null,
-    skills: content.skills && ((content.skills.technical?.length || 0) > 0 || (content.skills.soft?.length || 0) > 0) ? (
+    skills: content.skills && content.skills.length > 0 ? (
       <ResumeSkills skills={content.skills} styles={styles} />
     ) : null,
   };
@@ -405,7 +387,7 @@ export const ResumePDF: React.FC<ResumeData> = ({ content, template, sectionOrde
         <Text style={debugStyle.debugText}>
           Template: {template?.name || 'Default'}
         </Text>
-        <ResumeHeader personalInfo={content.personalInfo} styles={styles} />
+        <ResumeHeader basics={content.basics} styles={styles} />
         {/* Render sections in custom order */}
         {order.map((sectionId) => {
           const section = sections[sectionId];
