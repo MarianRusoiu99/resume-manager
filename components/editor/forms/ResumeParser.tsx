@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { parseResume, type ParserResult, type ParserOptions } from "@/lib/services/resume-parser.service";
-import { useProfile } from "@/lib/contexts/ProfileContext";
+import { useEditor } from "@/lib/contexts/EditorContext";
 import { toast } from "sonner";
 
 interface ResumeParserProps {
@@ -18,7 +18,7 @@ interface ResumeParserProps {
 type ParsingState = "idle" | "uploading" | "extracting" | "parsing" | "success" | "error";
 
 export function ResumeParser({ model = "gpt-4o-mini" }: ResumeParserProps) {
-  const { profile, updateResume } = useProfile();
+  const { resume: profile, updateResume } = useEditor();
   const [state, setState] = useState<ParsingState>("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +62,7 @@ export function ResumeParser({ model = "gpt-4o-mini" }: ResumeParserProps) {
       const options: ParserOptions = {
         model: modelRef.current,
         overwrite: mergeStrategyRef.current === "overwrite",
-        existingResume: profileRef.current?.resume,
+        existingResume: profileRef.current,
       };
 
       const parserResult = await parseResume(file, options);

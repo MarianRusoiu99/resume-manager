@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TemplateDropdown } from '@/components/templates/TemplateDropdown';
-import { ResumeEditor } from '@/components/resume/ResumeEditor';
-import { VersionHistory } from '@/components/resume/VersionHistory';
+import { Edit } from 'lucide-react';
 
 interface Resume {
   id: string;
@@ -106,12 +106,9 @@ export default function ResumeDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
-  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
   const [isExportingCoverLetter, setIsExportingCoverLetter] = useState(false);
   const [pdfPreviewKey, setPdfPreviewKey] = useState(Date.now());
-  const [isSectionOrderOpen, setIsSectionOrderOpen] = useState(false);
 
   const fetchResume = async () => {
     try {
@@ -206,27 +203,7 @@ export default function ResumeDetailPage() {
     }
   };
 
-  const handleRestoreVersion = async () => {
-    try {
-      const response = await fetch(`/api/resumes/${resumeId}/content`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(resume?.aiGeneratedContent || resume?.content),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to restore version');
-      }
-
-      toast.success('AI-generated version restored successfully');
-      setIsVersionHistoryOpen(false);
-      fetchResume();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to restore version');
-    }
-  };
+  // TODO: Re-enable handleRestoreVersion after VersionHistory is updated for JSON Resume format
 
   const handleExportPDF = async () => {
     try {
@@ -301,14 +278,7 @@ export default function ResumeDetailPage() {
     }
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Present';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      year: 'numeric'
-    });
-  };
+  // TODO: Re-enable formatDate if needed after VersionHistory is updated for JSON Resume format
 
   if (isLoading) {
     return (
@@ -366,12 +336,12 @@ export default function ResumeDetailPage() {
       <PageContainer className="resume-content max-w-5xl">
         <div className="no-print">
           <div className="flex justify-end gap-2 mb-6">
-            <Button
-              onClick={() => setIsEditorOpen(true)}
-              variant="secondary"
-            >
-              Edit Content
-            </Button>
+            <Link href={`/resumes/${resumeId}/edit`}>
+              <Button variant="outline">
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Resume
+              </Button>
+            </Link>
   
             <TemplateDropdown
               currentTemplateId={resume.templateId}
@@ -379,12 +349,14 @@ export default function ResumeDetailPage() {
               onTemplateChange={handleTemplateChange}
             />
 
+            {/* TODO: Re-enable after VersionHistory is updated for JSON Resume format
             <Button
               onClick={() => setIsVersionHistoryOpen(true)}
               variant="secondary"
             >
               View History
             </Button>
+            */}
             <Button
               onClick={handleDuplicate}
               variant="secondary"
@@ -486,32 +458,16 @@ export default function ResumeDetailPage() {
         onCancel={cancelDelete}
       />
 
-      {/* Resume Editor */}
-      {isEditorOpen && resume.content && (
-        <ResumeEditor
-          resumeId={resumeId}
-          initialContent={resume.content as any}
-          aiGeneratedContent={
-            ((resume.metadata as unknown as { aiGeneratedContent?: typeof resume.content })
-              ?.aiGeneratedContent || resume.content) as any
-          }
-          onSave={() => {
-            fetchResume();
-            setIsEditorOpen(false);
-          }}
-          onClose={() => setIsEditorOpen(false)}
-        />
-      )}
-
-      {/* Version History */}
+      {/* TODO: Re-enable after VersionHistory is updated for JSON Resume format
       {isVersionHistoryOpen && resume.content && (
         <VersionHistory
-          currentContent={resume.content as any}
-          aiGeneratedContent={(resume.aiGeneratedContent || resume.content) as any}
+          currentContent={resume.content}
+          aiGeneratedContent={(resume.aiGeneratedContent || resume.content)}
           onClose={() => setIsVersionHistoryOpen(false)}
           onRestore={handleRestoreVersion}
         />
       )}
+      */}
 
       </PageContainer>
     </>

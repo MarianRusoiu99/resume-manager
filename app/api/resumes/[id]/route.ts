@@ -101,3 +101,54 @@ export async function DELETE(
     );
   }
 }
+
+/**
+ * PATCH /api/resumes/[id] - Update resume content
+ */
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Check authentication
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await context.params;
+    const body = await request.json();
+
+    // Update the resume content
+    const updatedResume = await resumeService.updateResumeContent(
+      id,
+      session.user.id,
+      body.resume
+    );
+
+    // Invalidate cache after updating
+    const cacheKey = `resumes:${session.user.id}`;
+    resumesCache.delete(cacheKey);
+
+    return NextResponse.json(updatedResume);
+
+  } catch (error) {
+    console.error('Error updating resume:', error);
+    
+    // Check if it's a not found error
+    if (error instanceof Error && error.message.includes('not found')) {
+      return NextResponse.json(
+        { error: 'Resume not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to update resume' },
+      { status: 500 }
+    );
+  }
+}

@@ -7,47 +7,10 @@
 
 import { useState } from 'react';
 import { Button, Card } from '@/components/ui';
+import type { Resume } from '@/lib/validations/jsonresume';
 
-interface ResumeContent {
-  personalInfo: {
-    name: string;
-    email: string;
-    phone?: string;
-    location?: string;
-    links?: string[];
-  };
-  summary: string;
-  experience: Array<{
-    company: string;
-    position: string;
-    startDate: string;
-    endDate: string | null;
-    description: string;
-    bulletPoints: string[];
-  }>;
-  education: Array<{
-    institution: string;
-    degree: string;
-    field: string;
-    startDate: string;
-    endDate: string | null;
-    gpa?: string;
-  }>;
-  skills?: {
-    technical?: string[];
-    soft?: string[];
-  };
-  certifications?: Array<{
-    name: string;
-    issuer: string;
-    date: string;
-    expiryDate?: string;
-  }>;
-  languages?: Array<{
-    language: string;
-    proficiency: string;
-  }>;
-}
+// Use JSON Resume format
+type ResumeContent = Resume;
 
 interface VersionHistoryProps {
   currentContent: ResumeContent;
@@ -123,112 +86,113 @@ export function VersionHistory({
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <div className="space-y-6">
             {/* Summary */}
-            <Card className="p-4">
-              <h3 className="text-lg font-semibold mb-3">Professional Summary</h3>
-              <p className="text-gray-700 leading-relaxed">{displayContent.summary}</p>
-            </Card>
+            {displayContent.basics?.summary && (
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-3">Professional Summary</h3>
+                <p className="text-gray-700 leading-relaxed">{displayContent.basics.summary}</p>
+              </Card>
+            )}
 
             {/* Experience */}
-            <Card className="p-4">
-              <h3 className="text-lg font-semibold mb-4">Experience</h3>
-              <div className="space-y-4">
-                {displayContent.experience.map((exp, index) => (
-                  <div key={index} className="border-b border-gray-200 last:border-0 pb-4 last:pb-0">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{exp.position}</h4>
-                        <p className="text-gray-600">{exp.company}</p>
+            {displayContent.work && displayContent.work.length > 0 && (
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-4">Experience</h3>
+                <div className="space-y-4">
+                  {displayContent.work.map((exp, index) => (
+                    <div key={index} className="border-b border-gray-200 last:border-0 pb-4 last:pb-0">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{exp.position}</h4>
+                          <p className="text-gray-600">{exp.name}</p>
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {formatDate(exp.startDate || null)} - {formatDate(exp.endDate || null)}
+                        </span>
                       </div>
-                      <span className="text-sm text-gray-500">
-                        {formatDate(exp.startDate)} - {formatDate(exp.endDate)}
-                      </span>
+                      {exp.summary && <p className="text-gray-700 mb-2">{exp.summary}</p>}
+                      {exp.highlights && exp.highlights.length > 0 && (
+                        <ul className="list-disc list-inside space-y-1">
+                          {exp.highlights.map((point, idx) => (
+                            <li key={idx} className="text-gray-700">{point}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
-                    <p className="text-gray-700 mb-2">{exp.description}</p>
-                    <ul className="list-disc list-inside space-y-1">
-                      {exp.bulletPoints.map((point, idx) => (
-                        <li key={idx} className="text-gray-700">{point}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {/* Education */}
-            <Card className="p-4">
-              <h3 className="text-lg font-semibold mb-4">Education</h3>
-              <div className="space-y-3">
-                {displayContent.education.map((edu, index) => (
-                  <div key={index} className="border-b border-gray-200 last:border-0 pb-3 last:pb-0">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">{edu.degree} in {edu.field}</h4>
-                        <p className="text-gray-600">{edu.institution}</p>
-                        {edu.gpa && <p className="text-sm text-gray-500">GPA: {edu.gpa}</p>}
+            {displayContent.education && displayContent.education.length > 0 && (
+              <Card className="p-4">
+                <h3 className="text-lg font-semibold mb-4">Education</h3>
+                <div className="space-y-3">
+                  {displayContent.education.map((edu, index) => (
+                    <div key={index} className="border-b border-gray-200 last:border-0 pb-3 last:pb-0">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold text-gray-900">
+                            {edu.studyType} in {edu.area}
+                          </h4>
+                          <p className="text-gray-600">{edu.institution}</p>
+                          {edu.score && <p className="text-sm text-gray-500">Score: {edu.score}</p>}
+                        </div>
+                        <span className="text-sm text-gray-500">
+                          {formatDate(edu.startDate || null)} - {formatDate(edu.endDate || null)}
+                        </span>
                       </div>
-                      <span className="text-sm text-gray-500">
-                        {formatDate(edu.startDate)} - {formatDate(edu.endDate)}
-                      </span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                  ))}
+                </div>
+              </Card>
+            )}
 
             {/* Skills */}
-            {displayContent.skills && (displayContent.skills.technical?.length || displayContent.skills.soft?.length) && (
+            {displayContent.skills && displayContent.skills.length > 0 && (
               <Card className="p-4">
                 <h3 className="text-lg font-semibold mb-4">Skills</h3>
                 <div className="space-y-3">
-                  {displayContent.skills.technical && displayContent.skills.technical.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Technical Skills</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {displayContent.skills.technical.map((skill, index) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
+                  {displayContent.skills.map((skill, index) => (
+                    <div key={index}>
+                      <h4 className="font-medium text-gray-900 mb-2">
+                        {skill.name}
+                        {skill.level && <span className="text-sm text-gray-500 ml-2">({skill.level})</span>}
+                      </h4>
+                      {skill.keywords && skill.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {skill.keywords.map((keyword, idx) => (
+                            <span
+                              key={idx}
+                              className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                            >
+                              {keyword}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {displayContent.skills.soft && displayContent.skills.soft.length > 0 && (
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Soft Skills</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {displayContent.skills.soft.map((skill, index) => (
-                          <span
-                            key={index}
-                            className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  ))}
                 </div>
               </Card>
             )}
 
             {/* Certifications (if any) */}
-            {displayContent.certifications && displayContent.certifications.length > 0 && (
+            {displayContent.certificates && displayContent.certificates.length > 0 && (
               <Card className="p-4">
                 <h3 className="text-lg font-semibold mb-3">Certifications</h3>
                 <div className="space-y-2">
-                  {displayContent.certifications.map((cert, index) => (
+                  {displayContent.certificates.map((cert, index) => (
                     <div key={index} className="flex justify-between items-start">
                       <div>
                         <h4 className="font-medium text-gray-900">{cert.name}</h4>
                         <p className="text-sm text-gray-600">{cert.issuer}</p>
                       </div>
-                      <span className="text-sm text-gray-500">
-                        {cert.date}
-                        {cert.expiryDate && ` - ${cert.expiryDate}`}
-                      </span>
+                      {cert.date && (
+                        <span className="text-sm text-gray-500">
+                          {cert.date}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -243,7 +207,7 @@ export function VersionHistory({
                   {displayContent.languages.map((lang, index) => (
                     <div key={index} className="text-gray-700">
                       <span className="font-medium">{lang.language}</span>
-                      <span className="text-gray-500 ml-2">({lang.proficiency})</span>
+                      {lang.fluency && <span className="text-gray-500 ml-2">({lang.fluency})</span>}
                     </div>
                   ))}
                 </div>

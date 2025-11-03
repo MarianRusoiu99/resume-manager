@@ -1,0 +1,239 @@
+"use client";
+
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from "react";
+import { toast } from "sonner";
+import type { Resume } from "@/lib/validations/jsonresume";
+
+/**
+ * Unified Editor Context Interface
+ * 
+ * This context is used for all editing scenarios:
+ * - Profile editing (master resume)
+ * - Individual resume editing (specific generated resume)
+ */
+export interface EditorContextType {
+  /** Current resume data */
+  resume: Resume;
+  /** Loading state */
+  loading: boolean;
+  /** Update entire resume */
+  updateResume: (resume: Resume) => void;
+  /** Update a specific field in the resume */
+  updateField: <K extends keyof Resume>(field: K, value: Resume[K]) => void;
+  /** Save resume (calls onSave callback) */
+  save: () => Promise<boolean>;
+  /** Reload data (calls onLoad callback) */
+  reload: () => Promise<void>;
+  /** Has unsaved changes */
+  isDirty: boolean;
+  /** Set dirty state manually */
+  setDirty: (dirty: boolean) => void;
+}
+
+interface EditorProviderProps {
+  children: ReactNode;
+  /** Initial resume data (optional) */
+  initialResume?: Resume;
+  /** Load data callback - called on mount */
+  onLoad?: () => Promise<Resume | null>;
+  /** Save data callback - called when save() is invoked */
+  onSave: (resume: Resume) => Promise<boolean>;
+  /** Auto-load on mount (default: true) */
+  autoLoad?: boolean;
+}
+
+const EditorContext = createContext<EditorContextType | undefined>(undefined);
+
+/**
+ * Unified Editor Provider
+ * 
+ * Single context for all editing scenarios with pluggable load/save callbacks
+ * 
+ * @example Profile editing
+ * ```tsx
+ * <EditorProvider
+ *   onLoad={async () => {
+ *     const res = await fetch('/api/profile');
+ *     const data = await res.json();
+ *     return data.resume;
+ *   }}
+ *   onSave={async (resume) => {
+ *     await fetch('/api/profile', {
+ *       method: 'PUT',
+ *       body: JSON.stringify({ resume })
+ *     });
+ *     return true;
+ *   }}
+ * >
+ *   <EditorUI />
+ * </EditorProvider>
+ * ```
+ * 
+ * @example Resume editing
+ * ```tsx
+ * <EditorProvider
+ *   onLoad={async () => {
+ *     const res = await fetch(`/api/resumes/${id}`);
+ *     const data = await res.json();
+ *     return data.content;
+ *   }}
+ *   onSave={async (resume) => {
+ *     await fetch(`/api/resumes/${id}`, {
+ *       method: 'PATCH',
+ *       body: JSON.stringify({ resume })
+ *     });
+ *     return true;
+ *   }}
+ * >
+ *   <EditorUI />
+ * </EditorProvider>
+ * ```
+ */
+export function EditorProvider({ 
+  children, 
+  initialResume,
+  onLoad,
+  onSave,
+  autoLoad = true
+}: EditorProviderProps) {
+  const [resume, setResume] = useState<Resume>(initialResume || getEmptyResume());
+  const [loading, setLoading] = useState(autoLoad && !!onLoad);
+  const [isDirty, setDirty] = useState(false);
+
+  /**
+   * Load data using onLoad callback
+   */
+  const loadData = useCallback(async () => {
+    if (!onLoad) return;
+    
+    try {
+      setLoading(true);
+      const data = await onLoad();
+      if (data) {
+        setResume(data);
+        setDirty(false);
+      } else {
+        // No data found, use empty resume
+        setResume(getEmptyResume());
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast.error("Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  }, [onLoad]);
+
+  // Auto-load on mount if enabled
+  useEffect(() => {
+    if (autoLoad && onLoad) {
+      loadData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
+
+  /**
+   * Update entire resume
+   */
+  const updateResume = useCallback((newResume: Resume) => {
+    setResume(newResume);
+    setDirty(true);
+  }, []);
+
+  /**
+   * Update a specific field in the resume
+   */
+  const updateField = useCallback(<K extends keyof Resume>(field: K, value: Resume[K]) => {
+    setResume(prev => ({ ...prev, [field]: value }));
+    setDirty(true);
+  }, []);
+
+  /**
+   * Save resume using onSave callback
+   */
+  const save = useCallback(async (): Promise<boolean> => {
+    try {
+      const success = await onSave(resume);
+      if (success) {
+        setDirty(false);
+        toast.success("Changes saved successfully!");
+      } else {
+        toast.error("Failed to save changes");
+      }
+      return success;
+    } catch (error) {
+      console.error("Error saving:", error);
+      toast.error("Failed to save changes");
+      return false;
+    }
+  }, [resume, onSave]);
+
+  /**
+   * Reload data from source
+   */
+  const reload = useCallback(async () => {
+    await loadData();
+  }, [loadData]);
+
+  const contextValue = useMemo(
+    () => ({
+      resume,
+      loading,
+      updateResume,
+      updateField,
+      save,
+      reload,
+      isDirty,
+      setDirty,
+    }),
+    [resume, loading, updateResume, updateField, save, reload, isDirty]
+  );
+
+  return (
+    <EditorContext.Provider value={contextValue}>
+      {children}
+    </EditorContext.Provider>
+  );
+}
+
+/**
+ * Hook to access editor context
+ * @throws Error if used outside EditorProvider
+ */
+export function useEditor() {
+  const context = useContext(EditorContext);
+  if (context === undefined) {
+    throw new Error("useEditor must be used within an EditorProvider");
+  }
+  return context;
+}
+
+/**
+ * Create an empty resume with all required fields
+ */
+function getEmptyResume(): Resume {
+  return {
+    basics: {
+      name: "",
+      email: "",
+      phone: "",
+      summary: "",
+      location: {
+        city: "",
+        countryCode: "",
+      },
+      profiles: [],
+    },
+    work: [],
+    education: [],
+    skills: [],
+    projects: [],
+    certificates: [],
+    languages: [],
+    volunteer: [],
+    awards: [],
+    publications: [],
+    interests: [],
+    references: [],
+  };
+}

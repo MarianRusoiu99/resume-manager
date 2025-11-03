@@ -1,6 +1,7 @@
 import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
 import { generateResume } from '@/lib/ai/workflow';
 import { profileService } from '@/lib/services/profile.service';
+import { prisma } from '@/lib/db';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 
@@ -365,8 +366,7 @@ export class ResumeService {
         jobDescription: resume.jobDescription,
         content: resume.resume as Record<string, unknown>,
         templateId: resume.templateId,
-        customization: resume.templateCustomization as Record<string, unknown> | null,
-        pdfUrl: resume.pdfUrl,
+        // Removed: customization and pdfUrl (simplified template system)
         metadata: normalizedMetadata,
         createdAt: resume.createdAt,
         updatedAt: resume.updatedAt
@@ -414,9 +414,8 @@ export class ResumeService {
       content: resume.resume as Record<string, unknown>,
       metadata: normalizedMetadata,
       coverLetter: resume.coverLetter,
-      pdfUrl: resume.pdfUrl,
+      // Removed: pdfUrl and templateCustomization (simplified template system)
       templateId: resume.templateId,
-      templateCustomization: resume.templateCustomization as Record<string, unknown> | null,
       createdAt: resume.createdAt,
       updatedAt: resume.updatedAt
     };
@@ -459,6 +458,57 @@ export class ResumeService {
         success: false,
         error: 'Failed to delete resume'
       };
+    }
+  }
+
+  /**
+   * Update resume content (edit a generated resume)
+   * 
+   * @param resumeId - Resume ID
+   * @param userId - User ID (for ownership verification)
+   * @param resumeData - Updated resume data (JSON Resume format)
+   * @returns Updated resume or error
+   */
+  async updateResumeContent(resumeId: string, userId: string, resumeData: Resume) {
+    try {
+      // Verify ownership
+      const existingResume = await this.repository.findByIdAndUserId(resumeId, userId);
+      
+      if (!existingResume) {
+        throw new Error('Resume not found or access denied');
+      }
+
+      // Validate resume data
+      const validatedResume = resumeSchema.parse(resumeData);
+
+      // Update the resume in the database
+      const updatedResume = await prisma.generatedResume.update({
+        where: { id: resumeId },
+        data: {
+          resume: JSON.parse(JSON.stringify(validatedResume)),
+          updatedAt: new Date(),
+        },
+      });
+
+      // Fetch template if needed
+      const template = updatedResume.templateId 
+        ? await prisma.resumeTemplate.findUnique({ where: { id: updatedResume.templateId } })
+        : null;
+
+      return {
+        id: updatedResume.id,
+        resume: updatedResume.resume,
+        jobDescription: updatedResume.jobDescription,
+        jobMetadata: updatedResume.jobMetadata,
+        template,
+        coverLetter: updatedResume.coverLetter,
+        metadata: updatedResume.metadata,
+        createdAt: updatedResume.createdAt,
+        updatedAt: updatedResume.updatedAt,
+      };
+    } catch (error) {
+      console.error('Error updating resume content:', error);
+      throw error;
     }
   }
 }

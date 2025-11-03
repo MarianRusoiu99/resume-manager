@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
-import { pdfService } from '@/lib/services/pdf.service';
+
 
 interface ResumeContent {
   personalInfo: {
