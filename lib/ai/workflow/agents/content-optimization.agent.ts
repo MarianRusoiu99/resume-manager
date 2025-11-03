@@ -118,6 +118,12 @@ function createContentOptimizationChain(
   const jobKeywords = [...jobAnalysis.keywords, ...jobAnalysis.atsKeywords].join(', ');
   const keyResponsibilities = jobAnalysis.keyResponsibilities.join('\n- ');
   const recommendations = profileMatch.recommendations.join('\n- ');
+  
+  // Escape curly braces in JSON for LangChain template parser
+  // LangChain uses {var} syntax, so we need to escape literal braces as {{ and }}
+  const escapedResumeJson = JSON.stringify(userResume, null, 2)
+    .replace(/\{/g, '{{')
+    .replace(/\}/g, '}}');
 
   const prompt = PromptTemplate.fromTemplate(`You are an expert resume writer and ATS optimization specialist. Your task is to optimize resume content to match job requirements while maintaining authenticity and readability.
 
@@ -144,7 +150,7 @@ Experience Match: ${profileMatch.experienceMatch}/10
 
 ORIGINAL RESUME (JSON Resume v1.0.0 format):
 \`\`\`json
-${JSON.stringify(userResume, null, 2)}
+${escapedResumeJson}
 \`\`\`
 
 PROFILE RECOMMENDATIONS:
@@ -177,59 +183,47 @@ Generate an optimized resume in JSON Resume v1.0.0 format that:
    - Reorder skills to put most relevant ones first
    - Include all matched skills in top positions
    - Add relevant skills from job requirements that candidate likely has
-   - Format as: {{ "name": "Skill Name", "level": "Advanced|Intermediate", "keywords": ["related", "terms"] }}
+   - Format as: name, level (Advanced or Intermediate), keywords array
 
 4. OTHER SECTIONS:
    - Preserve all other sections (education, certificates, projects, etc.) as-is
    - Only optimize content in basics.summary, work array, and skills array
 
 OUTPUT FORMAT:
-Return ONLY valid JSON matching the JSON Resume v1.0.0 schema with ALL these sections:
-{{
-  "basics": {{
-    "name": "from original",
-    "label": "from original or optimized",
-    "email": "from original",
-    "phone": "from original",
-    "url": "from original",
-    "summary": "YOUR OPTIMIZED SUMMARY HERE",
-    "location": {{ ... }},
-    "profiles": [ ... ]
-  }},
-  "work": [
-    {{
-      "name": "Company Name (exact from original)",
-      "position": "Job Title (exact from original)",
-      "url": "from original",
-      "startDate": "YYYY-MM-DD from original",
-      "endDate": "YYYY-MM-DD from original or empty string if current",
-      "summary": "YOUR OPTIMIZED 1-2 SENTENCE SUMMARY",
-      "highlights": [
-        "YOUR OPTIMIZED BULLET POINT 1",
-        "YOUR OPTIMIZED BULLET POINT 2",
-        "YOUR OPTIMIZED BULLET POINT 3"
-      ],
-      "location": "from original"
-    }}
-  ],
-  "volunteer": [ ... from original ... ],
-  "education": [ ... from original ... ],
-  "awards": [ ... from original ... ],
-  "certificates": [ ... from original ... ],
-  "publications": [ ... from original ... ],
-  "skills": [
-    {{
-      "name": "Most Relevant Skill 1",
-      "level": "Advanced",
-      "keywords": ["related", "terms"]
-    }}
-  ],
-  "languages": [ ... from original ... ],
-  "interests": [ ... from original ... ],
-  "references": [ ... from original ... ],
-  "projects": [ ... from original ... ],
-  "meta": {{ ... from original ... }}
-}}
+Return ONLY valid JSON matching the JSON Resume v1.0.0 schema with ALL these sections (use proper JSON syntax):
+- Use opening brace for objects
+- Use closing brace for objects
+- Include all 14 standard sections
+
+Example structure:
+  "basics": includes name, label, email, phone, url, summary, location, profiles
+  "work": array of work experience entries
+  "volunteer": array (can be empty)
+  "education": array from original
+  "awards": array (can be empty)
+  "certificates": array from original
+  "publications": array (can be empty)
+  "skills": array with prioritized skills
+  "languages": array from original
+  "interests": array from original
+  "references": array from original
+  "projects": array from original
+  "meta": object from original
+
+For work entries, include:
+- name (company name - exact from original)
+- position (job title - exact from original)
+- url (from original)
+- startDate (YYYY-MM-DD from original)
+- endDate (YYYY-MM-DD from original or empty string if current)
+- summary (YOUR OPTIMIZED 1-2 SENTENCE SUMMARY)
+- highlights (array of YOUR OPTIMIZED BULLET POINTS)
+- location (from original)
+
+For skills entries, include:
+- name (skill name)
+- level (Advanced or Intermediate)
+- keywords (array of related terms)
 
 IMPORTANT GUIDELINES:
 - Return COMPLETE JSON Resume with ALL 14 sections (even if some are empty arrays)

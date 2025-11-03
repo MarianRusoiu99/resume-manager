@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,8 @@ interface VolunteerFormProps {
 }
 
 export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
-  const [volunteerList, setVolunteerList] = useState<Volunteer[]>(volunteer);
+  // Use volunteer directly from props - controlled component pattern
+  const volunteerList = volunteer;
 
   const handleAddVolunteer = () => {
     const newVolunteer: Volunteer = {
@@ -26,15 +27,11 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
       summary: "",
       highlights: [],
     };
-    const updated = [...volunteerList, newVolunteer];
-    setVolunteerList(updated);
-    onChange(updated);
+    onChange([...volunteerList, newVolunteer]);
   };
 
   const handleRemoveVolunteer = (index: number) => {
-    const updated = volunteerList.filter((_, i) => i !== index);
-    setVolunteerList(updated);
-    onChange(updated);
+    onChange(volunteerList.filter((_, i) => i !== index));
   };
 
   const handleVolunteerChange = (index: number, field: keyof Volunteer, value: string | string[]) => {
@@ -44,7 +41,6 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
       }
       return vol;
     });
-    setVolunteerList(updated);
     onChange(updated);
   };
 

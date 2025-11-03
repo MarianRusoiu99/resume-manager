@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '@/lib/db';
-import type { ResumeTemplate, TemplateDefinition } from '@/types/template';
+import type { ResumeTemplate } from '@/types/template';
 import { Prisma } from '@prisma/client';
 
 export class TemplateRepository {
@@ -53,7 +53,8 @@ export class TemplateRepository {
     name: string;
     category: string;
     description: string;
-    definition: TemplateDefinition;
+    htmlTemplate: string;
+    cssStyles: string;
     previewUrl?: string;
     atsScore?: number;
     isPublic?: boolean;
@@ -63,7 +64,8 @@ export class TemplateRepository {
         name: data.name,
         category: data.category,
         description: data.description,
-        definition: data.definition as unknown as Prisma.JsonObject,
+        htmlTemplate: data.htmlTemplate,
+        cssStyles: data.cssStyles,
         previewUrl: data.previewUrl,
         atsScore: data.atsScore ?? 8,
         isPublic: data.isPublic ?? true,
@@ -82,7 +84,8 @@ export class TemplateRepository {
       name: string;
       category: string;
       description: string;
-      definition: TemplateDefinition;
+      htmlTemplate: string;
+      cssStyles: string;
       previewUrl: string;
       atsScore: number;
       isPublic: boolean;
@@ -93,8 +96,8 @@ export class TemplateRepository {
     if (data.name !== undefined) updateData.name = data.name;
     if (data.category !== undefined) updateData.category = data.category;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.definition !== undefined)
-      updateData.definition = data.definition as unknown as Prisma.JsonObject;
+    if (data.htmlTemplate !== undefined) updateData.htmlTemplate = data.htmlTemplate;
+    if (data.cssStyles !== undefined) updateData.cssStyles = data.cssStyles;
     if (data.previewUrl !== undefined) updateData.previewUrl = data.previewUrl;
     if (data.atsScore !== undefined) updateData.atsScore = data.atsScore;
     if (data.isPublic !== undefined) updateData.isPublic = data.isPublic;
@@ -143,7 +146,8 @@ export class TemplateRepository {
     name: string;
     category: string;
     description: string;
-    definition: Prisma.JsonValue;
+    htmlTemplate: string;
+    cssStyles: string;
     previewUrl: string | null;
     isPublic: boolean;
     version: string;
@@ -156,7 +160,8 @@ export class TemplateRepository {
       name: template.name,
       category: template.category as 'professional' | 'modern' | 'creative' | 'ats-optimized' | 'minimal',
       description: template.description,
-      definition: template.definition as unknown as TemplateDefinition,
+      htmlTemplate: template.htmlTemplate,
+      cssStyles: template.cssStyles,
       previewUrl: template.previewUrl ?? undefined,
       isPublic: template.isPublic,
       version: template.version,

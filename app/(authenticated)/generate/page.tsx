@@ -18,40 +18,71 @@ interface Template {
 interface GeneratedResume {
   id: string;
   content: {
-    personalInfo: {
-      name: string;
-      email: string;
+    basics?: {
+      name?: string;
+      email?: string;
       phone?: string;
-      location?: string;
-      linkedin?: string;
-      github?: string;
+      url?: string;
+      summary?: string;
+      location?: {
+        address?: string;
+        city?: string;
+        region?: string;
+        postalCode?: string;
+        countryCode?: string;
+      };
+      profiles?: Array<{
+        network?: string;
+        username?: string;
+        url?: string;
+      }>;
     };
-    summary: string;
-    experience: Array<{
-      company: string;
-      title: string;
-      startDate: string;
+    work?: Array<{
+      name?: string;
+      position?: string;
+      url?: string;
+      startDate?: string;
       endDate?: string;
-      current: boolean;
-      description: string;
-      bulletPoints: string[];
+      summary?: string;
+      highlights?: string[];
     }>;
-    education: Array<{
-      school: string;
-      degree: string;
-      field: string;
-      gpa?: string;
-      startDate: string;
+    education?: Array<{
+      institution?: string;
+      url?: string;
+      area?: string;
+      studyType?: string;
+      startDate?: string;
       endDate?: string;
+      score?: string;
+      courses?: string[];
     }>;
-    skills: string[];
-    metadata: {
-      generatedAt: string;
-      modelUsed: string;
-      tokensUsed: number;
-      jobTitle: string;
-      companyName: string;
-    };
+    skills?: Array<{
+      name?: string;
+      level?: string;
+      keywords?: string[];
+    }>;
+    certificates?: Array<{
+      name?: string;
+      date?: string;
+      issuer?: string;
+      url?: string;
+    }>;
+    projects?: Array<{
+      name?: string;
+      description?: string;
+      highlights?: string[];
+      keywords?: string[];
+      startDate?: string;
+      endDate?: string;
+      url?: string;
+    }>;
+    [key: string]: unknown;
+  };
+  metadata: {
+    generatedAt: string;
+    model?: string;
+    totalTokens?: number;
+    processingTime?: number;
   };
 }
 
@@ -415,52 +446,55 @@ export default function GeneratePage() {
               <div className="space-y-6">
                 {/* Personal Info */}
                 <div className="border-b pb-4">
-                  <h3 className="text-2xl font-bold">{generatedResume.content.personalInfo.name}</h3>
-                  <p className="text-gray-600">{generatedResume.content.personalInfo.email}</p>
-                  {generatedResume.content.personalInfo.phone && (
-                    <p className="text-gray-600">{generatedResume.content.personalInfo.phone}</p>
+                  <h3 className="text-2xl font-bold">{generatedResume.content.basics?.name || 'N/A'}</h3>
+                  <p className="text-gray-600">{generatedResume.content.basics?.email || ''}</p>
+                  {generatedResume.content.basics?.phone && (
+                    <p className="text-gray-600">{generatedResume.content.basics.phone}</p>
                   )}
-                  {generatedResume.content.personalInfo.location && (
-                    <p className="text-gray-600">{generatedResume.content.personalInfo.location}</p>
+                  {generatedResume.content.basics?.location && (
+                    <p className="text-gray-600">
+                      {[
+                        generatedResume.content.basics.location.city,
+                        generatedResume.content.basics.location.region,
+                        generatedResume.content.basics.location.countryCode
+                      ].filter(Boolean).join(', ')}
+                    </p>
                   )}
                   <div className="flex gap-3 mt-2">
-                    {generatedResume.content.personalInfo.linkedin && (
-                      <a href={generatedResume.content.personalInfo.linkedin} className="text-sm text-blue-600 hover:underline">
-                        LinkedIn
-                      </a>
-                    )}
-                    {generatedResume.content.personalInfo.github && (
-                      <a href={generatedResume.content.personalInfo.github} className="text-sm text-blue-600 hover:underline">
-                        GitHub
-                      </a>
-                    )}
+                    {generatedResume.content.basics?.profiles?.map((profile, idx) => (
+                      profile.url && (
+                        <a key={idx} href={profile.url} className="text-sm text-blue-600 hover:underline">
+                          {profile.network || 'Link'}
+                        </a>
+                      )
+                    ))}
                   </div>
                 </div>
 
                 {/* Summary */}
-                {generatedResume.content.summary && (
+                {generatedResume.content.basics?.summary && (
                   <div>
                     <h4 className="font-semibold text-lg mb-2">Professional Summary</h4>
-                    <p className="text-gray-700">{generatedResume.content.summary}</p>
+                    <p className="text-gray-700">{generatedResume.content.basics.summary}</p>
                   </div>
                 )}
 
                 {/* Experience */}
-                {generatedResume.content.experience.length > 0 && (
+                {generatedResume.content.work && generatedResume.content.work.length > 0 && (
                   <div>
                     <h4 className="font-semibold text-lg mb-3">Experience</h4>
                     <div className="space-y-4">
-                      {generatedResume.content.experience.map((exp, idx) => (
+                      {generatedResume.content.work.map((exp, idx) => (
                         <div key={idx} className="border-l-2 border-gray-200 pl-4">
-                          <h5 className="font-semibold">{exp.title}</h5>
-                          <p className="text-gray-600">{exp.company}</p>
+                          <h5 className="font-semibold">{exp.position || 'Position'}</h5>
+                          <p className="text-gray-600">{exp.name || 'Company'}</p>
                           <p className="text-sm text-gray-500 mb-2">
-                            {formatDate(exp.startDate, exp.endDate, exp.current)}
+                            {formatDate(exp.startDate || '', exp.endDate, !exp.endDate)}
                           </p>
-                          <p className="text-sm text-gray-700 mb-2">{exp.description}</p>
-                          {exp.bulletPoints && exp.bulletPoints.length > 0 && (
+                          {exp.summary && <p className="text-sm text-gray-700 mb-2">{exp.summary}</p>}
+                          {exp.highlights && exp.highlights.length > 0 && (
                             <ul className="list-disc list-inside space-y-1">
-                              {exp.bulletPoints.map((bullet, bidx) => (
+                              {exp.highlights.map((bullet, bidx) => (
                                 <li key={bidx} className="text-sm text-gray-700">{bullet}</li>
                               ))}
                             </ul>
@@ -472,17 +506,19 @@ export default function GeneratePage() {
                 )}
 
                 {/* Education */}
-                {generatedResume.content.education.length > 0 && (
+                {generatedResume.content.education && generatedResume.content.education.length > 0 && (
                   <div>
                     <h4 className="font-semibold text-lg mb-3">Education</h4>
                     <div className="space-y-3">
                       {generatedResume.content.education.map((edu, idx) => (
                         <div key={idx}>
-                          <h5 className="font-semibold">{edu.degree} in {edu.field}</h5>
-                          <p className="text-gray-600">{edu.school}</p>
+                          <h5 className="font-semibold">
+                            {edu.studyType || 'Degree'} {edu.area ? `in ${edu.area}` : ''}
+                          </h5>
+                          <p className="text-gray-600">{edu.institution || 'Institution'}</p>
                           <p className="text-sm text-gray-500">
-                            {formatDate(edu.startDate, edu.endDate)}
-                            {edu.gpa && ` • GPA: ${edu.gpa}`}
+                            {formatDate(edu.startDate || '', edu.endDate)}
+                            {edu.score && ` • GPA: ${edu.score}`}
                           </p>
                         </div>
                       ))}
@@ -491,7 +527,7 @@ export default function GeneratePage() {
                 )}
 
                 {/* Skills */}
-                {generatedResume.content.skills.length > 0 && (
+                {generatedResume.content.skills && generatedResume.content.skills.length > 0 && (
                   <div>
                     <h4 className="font-semibold text-lg mb-2">Skills</h4>
                     <div className="flex flex-wrap gap-2">
@@ -500,7 +536,7 @@ export default function GeneratePage() {
                           key={idx}
                           className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
                         >
-                          {skill}
+                          {skill.name || 'Skill'}
                         </span>
                       ))}
                     </div>
@@ -510,11 +546,11 @@ export default function GeneratePage() {
                 {/* Metadata */}
                 <div className="border-t pt-4 mt-6">
                   <p className="text-xs text-gray-500">
-                    Generated on {new Date(generatedResume.content.metadata.generatedAt).toLocaleString()}
+                    Generated on {new Date(generatedResume.metadata.generatedAt).toLocaleString()}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Model: {generatedResume.content.metadata.modelUsed} • 
-                    Tokens: {generatedResume.content.metadata.tokensUsed}
+                    Model: {generatedResume.metadata.model || 'unknown'} • 
+                    Tokens: {generatedResume.metadata.totalTokens || 0}
                   </p>
                 </div>
               </div>

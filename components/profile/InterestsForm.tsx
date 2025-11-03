@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,22 +14,19 @@ interface InterestsFormProps {
 }
 
 export function InterestsForm({ interests, onChange }: InterestsFormProps) {
-  const [interestsList, setInterestsList] = useState<Interest[]>(interests);
+  // Use interests directly from props - controlled component pattern
+  const interestsList = interests;
 
   const handleAddInterest = () => {
     const newInterest: Interest = {
       name: "",
       keywords: [],
     };
-    const updated = [...interestsList, newInterest];
-    setInterestsList(updated);
-    onChange(updated);
+    onChange([...interestsList, newInterest]);
   };
 
   const handleRemoveInterest = (index: number) => {
-    const updated = interestsList.filter((_, i) => i !== index);
-    setInterestsList(updated);
-    onChange(updated);
+    onChange(interestsList.filter((_, i) => i !== index));
   };
 
   const handleInterestChange = (index: number, field: keyof Interest, value: string | string[]) => {
@@ -39,7 +36,6 @@ export function InterestsForm({ interests, onChange }: InterestsFormProps) {
       }
       return interest;
     });
-    setInterestsList(updated);
     onChange(updated);
   };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
@@ -20,6 +20,8 @@ import { ReferencesForm } from "@/components/profile/ReferencesForm";
 import { ResumeParser } from "@/components/profile/ResumeParser";
 import { ProfileSection } from "@/components/profile/ProfileSection";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { ProfileProvider } from "@/lib/contexts/ProfileContext";
+import { useProfile } from "@/lib/contexts/ProfileContext";
 import type { 
   Resume, 
   Basics, 
@@ -121,423 +123,157 @@ function oldFormatToLanguages(oldLangs: Language[]): Resume['languages'] {
   }));
 }
 
-interface ProfileData {
-  userId: string;
-  resume: Resume;
+// Main export wraps ProfilePageContent with ProfileProvider
+export default function ProfilePage() {
+  return (
+    <ProfileProvider>
+      <ProfilePageContent />
+    </ProfileProvider>
+  );
 }
 
-export default function ProfilePage() {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
+// Rename the main component to ProfilePageContent
+function ProfilePageContent() {
+  // Use context instead of local state
+  const { profile, loading, updateProfile } = useProfile();
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  const fetchProfile = useCallback(async () => {
-    try {
-      const response = await fetch("/api/profile");
-      
-      if (response.status === 200) {
-        const data = await response.json();
-        setProfile(data);
-      } else if (response.status === 404 || response.status === 400) {
-        // Profile doesn't exist yet
-        setProfile(null);
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      showMessage("error", "Failed to load profile");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
 
   const showMessage = (type: "success" | "error", text: string) => {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 5000);
   };
 
-  const handleSavePersonalInfo = async (data?: Basics) => {
-    if (!data) return;
-    
+  // Helper function to save profile data
+  const saveProfileData = async (
+    resumeData: Partial<Resume>,
+    successMessage: string
+  ): Promise<boolean> => {
     try {
-      const payload = profile
-        ? { resume: { ...profile.resume, basics: data } }
-        : {
-            resume: {
-              basics: data,
-              work: [],
-              education: [],
-              skills: [],
-            }
-          };
+      const payload = {
+        resume: profile ? { ...profile.resume, ...resumeData } : resumeData
+      };
 
       const response = await fetch("/api/profile", {
-        method: profile ? "PATCH" : "POST",
+        method: "PUT", // Use PUT for upsert (create or update)
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to save profile");
+        const errorData = await response.json();
+        console.error("Profile save error:", {
+          status: response.status,
+          error: errorData,
+          payload
+        });
+        throw new Error(errorData.error || "Failed to save profile");
       }
 
       const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Personal information saved successfully!");
-      toast.success("Personal information saved successfully!");
+      updateProfile(updatedProfile);
+      showMessage("success", successMessage);
+      toast.success(successMessage);
+      return true;
     } catch (error) {
       console.error("Error saving profile:", error);
-      showMessage("error", "Failed to save personal information");
-      toast.error("Failed to save personal information");
+      const errorMessage = error instanceof Error ? error.message : "Failed to save profile";
+      showMessage("error", errorMessage);
+      toast.error(errorMessage);
+      return false;
     }
+  };
+
+  const handleSavePersonalInfo = async (data?: Basics) => {
+    if (!data) return;
+    
+    const resumeData = profile
+      ? { basics: data }
+      : {
+          basics: data,
+          work: [],
+          education: [],
+          skills: [],
+        };
+    
+    await saveProfileData(resumeData, "Personal information saved successfully!");
   };
 
   const handleSaveSummary = async (summary: string) => {
     if (!profile) return;
     
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { 
-            ...profile.resume, 
-            basics: { ...profile.resume.basics, summary } 
-          } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save summary");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Summary saved successfully!");
-      toast.success("Summary saved successfully!");
-    } catch (error) {
-      console.error("Error saving summary:", error);
-      showMessage("error", "Failed to save summary");
-      toast.error("Failed to save summary");
-    }
+    await saveProfileData(
+      {
+        basics: { ...profile.resume.basics, summary }
+      },
+      "Summary saved successfully!"
+    );
   };
 
   const handleSaveWork = async (work: Work[]) => {
     if (!profile) return;
-    
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, work } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save work experience");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Work experience saved successfully!");
-      toast.success("Work experience saved successfully!");
-    } catch (error) {
-      console.error("Error saving work experience:", error);
-      showMessage("error", "Failed to save work experience");
-      toast.error("Failed to save work experience");
-    }
+    await saveProfileData({ work }, "Work experience saved successfully!");
   };
 
   const handleSaveEducation = async (education: JSONEducation[]) => {
     if (!profile) return;
-    
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, education } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save education");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Education saved successfully!");
-      toast.success("Education saved successfully!");
-    } catch (error) {
-      console.error("Error saving education:", error);
-      showMessage("error", "Failed to save education");
-      toast.error("Failed to save education");
-    }
+    await saveProfileData({ education }, "Education saved successfully!");
   };
 
   const handleSaveSkills = async (oldSkills: { technical: string[]; soft: string[]; languages: string[] }) => {
     if (!profile) return;
-    
-    try {
-      const skills = oldFormatToSkills(oldSkills);
-      
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, skills } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save skills");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Skills saved successfully!");
-      toast.success("Skills saved successfully!");
-    } catch (error) {
-      console.error("Error saving skills:", error);
-      showMessage("error", "Failed to save skills");
-      toast.error("Failed to save skills");
-    }
+    const skills = oldFormatToSkills(oldSkills);
+    await saveProfileData({ skills }, "Skills saved successfully!");
   };
 
   const handleSaveCertifications = async (oldCerts: Certification[]) => {
     if (!profile) return;
-    
-    try {
-      const certificates = oldFormatToCertificates(oldCerts);
-      
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, certificates } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save certifications");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Certifications saved successfully!");
-      toast.success("Certifications saved successfully!");
-    } catch (error) {
-      console.error("Error saving certifications:", error);
-      showMessage("error", "Failed to save certifications");
-      toast.error("Failed to save certifications");
-    }
+    const certificates = oldFormatToCertificates(oldCerts);
+    await saveProfileData({ certificates }, "Certifications saved successfully!");
   };
 
   const handleSaveLanguages = async (oldLangs: Language[]) => {
     if (!profile) return;
-    
-    try {
-      const languages = oldFormatToLanguages(oldLangs);
-      
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, languages } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save languages");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Languages saved successfully!");
-      toast.success("Languages saved successfully!");
-    } catch (error) {
-      console.error("Error saving languages:", error);
-      showMessage("error", "Failed to save languages");
-      toast.error("Failed to save languages");
-    }
+    const languages = oldFormatToLanguages(oldLangs);
+    await saveProfileData({ languages }, "Languages saved successfully!");
   };
 
   const handleSaveProjects = async (projects: Project[]) => {
     if (!profile) return;
-    
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, projects } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save projects");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Projects saved successfully!");
-      toast.success("Projects saved successfully!");
-    } catch (error) {
-      console.error("Error saving projects:", error);
-      showMessage("error", "Failed to save projects");
-      toast.error("Failed to save projects");
-    }
+    await saveProfileData({ projects }, "Projects saved successfully!");
   };
 
   const handleSaveVolunteer = async (volunteer: Volunteer[]) => {
     if (!profile) return;
-    
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, volunteer } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save volunteer experience");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Volunteer experience saved successfully!");
-      toast.success("Volunteer experience saved successfully!");
-    } catch (error) {
-      console.error("Error saving volunteer experience:", error);
-      showMessage("error", "Failed to save volunteer experience");
-      toast.error("Failed to save volunteer experience");
-    }
+    await saveProfileData({ volunteer }, "Volunteer experience saved successfully!");
   };
 
   const handleSaveAwards = async (awards: Award[]) => {
     if (!profile) return;
-    
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, awards } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save awards");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Awards saved successfully!");
-      toast.success("Awards saved successfully!");
-    } catch (error) {
-      console.error("Error saving awards:", error);
-      showMessage("error", "Failed to save awards");
-      toast.error("Failed to save awards");
-    }
+    await saveProfileData({ awards }, "Awards saved successfully!");
   };
 
   const handleSavePublications = async (publications: Publication[]) => {
     if (!profile) return;
-    
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, publications } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save publications");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Publications saved successfully!");
-      toast.success("Publications saved successfully!");
-    } catch (error) {
-      console.error("Error saving publications:", error);
-      showMessage("error", "Failed to save publications");
-      toast.error("Failed to save publications");
-    }
+    await saveProfileData({ publications }, "Publications saved successfully!");
   };
 
   const handleSaveInterests = async (interests: Interest[]) => {
     if (!profile) return;
-    
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, interests } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save interests");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Interests saved successfully!");
-      toast.success("Interests saved successfully!");
-    } catch (error) {
-      console.error("Error saving interests:", error);
-      showMessage("error", "Failed to save interests");
-      toast.error("Failed to save interests");
-    }
+    await saveProfileData({ interests }, "Interests saved successfully!");
   };
 
   const handleSaveReferences = async (references: Reference[]) => {
     if (!profile) return;
-    
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume: { ...profile.resume, references } 
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save references");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "References saved successfully!");
-      toast.success("References saved successfully!");
-    } catch (error) {
-      console.error("Error saving references:", error);
-      showMessage("error", "Failed to save references");
-      toast.error("Failed to save references");
-    }
+    await saveProfileData({ references }, "References saved successfully!");
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
-          </div>
+      <PageContainer>
+        <div className="flex items-center justify-center h-64">
+          <p>Loading...</p>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
@@ -567,25 +303,7 @@ export default function ProfilePage() {
 
         {/* Resume Parser - Always visible */}
         <div className="mb-6">
-          <ResumeParser
-            existingResume={profile?.resume}
-            onParsed={(parsedResume, tokensUsed) => {
-                if (profile) {
-                  setProfile({
-                    ...profile,
-                    resume: parsedResume
-                  });
-                  toast.success(`Resume imported successfully! ${tokensUsed ? `Used ${tokensUsed.toLocaleString()} tokens.` : ""}`);
-                } else {
-                  // Create new profile with parsed resume
-                  setProfile({
-                    userId: "", // Will be set by the backend
-                    resume: parsedResume
-                  });
-                  toast.success("Resume imported! Don't forget to save your changes.");
-                }
-              }}
-            />
+          <ResumeParser />
           </div>
 
         {/* Profile Sections */}
@@ -613,7 +331,7 @@ export default function ProfilePage() {
               summary={profile?.resume.basics?.summary || ""}
               onChange={(summary) => {
                 if (profile) {
-                  setProfile({
+                  updateProfile({
                     ...profile,
                     resume: {
                       ...profile.resume,
@@ -635,7 +353,7 @@ export default function ProfilePage() {
                 experiences={profile?.resume.work || []}
                 onChange={(work) => {
                   if (profile) {
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, work }
                     });
@@ -654,7 +372,7 @@ export default function ProfilePage() {
                 education={profile?.resume.education || []}
                 onChange={(education) => {
                   if (profile) {
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, education }
                     });
@@ -674,7 +392,7 @@ export default function ProfilePage() {
                 onChange={(oldSkills) => {
                   if (profile) {
                     const skills = oldFormatToSkills(oldSkills);
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, skills }
                     });
@@ -694,7 +412,7 @@ export default function ProfilePage() {
                 onChange={(oldCerts) => {
                   if (profile) {
                     const certificates = oldFormatToCertificates(oldCerts);
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, certificates }
                     });
@@ -714,7 +432,7 @@ export default function ProfilePage() {
                 onChange={(oldLangs) => {
                   if (profile) {
                     const languages = oldFormatToLanguages(oldLangs);
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, languages }
                     });
@@ -733,7 +451,7 @@ export default function ProfilePage() {
                 projects={profile?.resume.projects || []}
                 onChange={(projects) => {
                   if (profile) {
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, projects }
                     });
@@ -752,7 +470,7 @@ export default function ProfilePage() {
                 volunteer={profile?.resume.volunteer || []}
                 onChange={(volunteer) => {
                   if (profile) {
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, volunteer }
                     });
@@ -771,7 +489,7 @@ export default function ProfilePage() {
                 awards={profile?.resume.awards || []}
                 onChange={(awards) => {
                   if (profile) {
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, awards }
                     });
@@ -790,7 +508,7 @@ export default function ProfilePage() {
                 publications={profile?.resume.publications || []}
                 onChange={(publications) => {
                   if (profile) {
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, publications }
                     });
@@ -809,7 +527,7 @@ export default function ProfilePage() {
                 interests={profile?.resume.interests || []}
                 onChange={(interests) => {
                   if (profile) {
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, interests }
                     });
@@ -828,7 +546,7 @@ export default function ProfilePage() {
                 references={profile?.resume.references || []}
                 onChange={(references) => {
                   if (profile) {
-                    setProfile({
+                    updateProfile({
                       ...profile,
                       resume: { ...profile.resume, references }
                     });

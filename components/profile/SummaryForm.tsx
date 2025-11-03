@@ -36,15 +36,24 @@ export function SummaryForm({ summary, onChange }: SummaryFormProps) {
 
   const currentSummary = form.watch("summary");
 
-  // Reset form when summary prop changes
+  // Reset form when summary prop changes (only when externally updated)
   useEffect(() => {
-    form.reset({ summary });
-  }, [summary, form]);
+    // Only reset if the prop is different from current form value
+    if (summary !== currentSummary) {
+      form.reset({ summary }, { keepDefaultValues: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summary]); // Only depend on summary prop, not form
 
-  // Call onChange when form value changes
+  // Call onChange when form value changes (debounced to avoid rapid updates)
   useEffect(() => {
+    // Only call onChange if value actually changed from prop
     if (currentSummary !== summary) {
-      onChange(currentSummary);
+      const timeoutId = setTimeout(() => {
+        onChange(currentSummary);
+      }, 300); // 300ms debounce
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [currentSummary, onChange, summary]);
 

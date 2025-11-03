@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth/config";
 import OpenAI from "openai";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import { z } from "zod";
-import { apiKeyService } from "@/lib/services/apikey.service";
+import { env } from "process";
 
 /**
  * POST /api/resume-parser/parse
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const { text, model } = validatedData;
 
     // Fetch user's OpenAI API key from database
-    const apiKey = await apiKeyService.getDecryptedKey(session.user.id, "openai");
+    const apiKey = env.OPENAI_API_KEY;
     
     if (!apiKey) {
       return NextResponse.json(
@@ -66,127 +66,128 @@ export async function POST(request: NextRequest) {
 CRITICAL REQUIREMENTS:
 1. Return ONLY valid JSON - no markdown, no explanations, no extra text
 2. Use ISO 8601 date format (YYYY-MM-DD) for all dates
-3. Infer reasonable values for missing fields when possible
-4. For date ranges, use startDate and endDate (or null if still ongoing)
-5. Extract all sections: basics, summary, work, education, skills, certificates, languages, projects, volunteer, awards, publications, interests, references
-6. Be thorough and extract as much information as possible
+3. Extract all available information - be thorough and comprehensive
+4. For date ranges, use startDate and endDate fields
+5. If a field has no data, omit it entirely (do not include empty strings or null values)
+6. Focus on accuracy over completeness - only include information you can extract with confidence
+7. Structure the output exactly according to the JSON Resume schema provided below
 
-JSON Resume Schema Structure:
+JSON Resume Schema (fill this template with extracted data):
 {
   "basics": {
-    "name": "Full Name",
-    "label": "Professional Title",
-    "email": "email@example.com",
-    "phone": "+1234567890",
-    "url": "https://website.com",
-    "summary": "Brief professional summary",
+    "name": "string (required if found)",
+    "label": "string (job title/professional label)",
+    "email": "string (valid email)",
+    "phone": "string",
+    "url": "string (personal website URL)",
+    "summary": "string (professional summary)",
     "location": {
-      "address": "Street Address",
-      "city": "City",
-      "countryCode": "US",
-      "region": "State"
+      "address": "string",
+      "city": "string",
+      "countryCode": "string (ISO country code)",
+      "region": "string (state/province)"
     },
     "profiles": [
       {
-        "network": "LinkedIn",
-        "username": "username",
-        "url": "https://linkedin.com/in/username"
+        "network": "string (e.g., LinkedIn, GitHub)",
+        "username": "string",
+        "url": "string (profile URL)"
       }
     ]
   },
   "work": [
     {
-      "name": "Company Name",
-      "position": "Job Title",
+      "name": "string (company name)",
+      "position": "string (job title)",
       "startDate": "YYYY-MM-DD",
-      "endDate": "YYYY-MM-DD",
-      "summary": "Brief description",
-      "highlights": ["Achievement 1", "Achievement 2"]
+      "endDate": "YYYY-MM-DD (omit if current position)",
+      "summary": "string (brief description)",
+      "highlights": ["string (achievements and responsibilities)"]
     }
   ],
   "education": [
     {
-      "institution": "University Name",
-      "area": "Field of Study",
-      "studyType": "Degree",
+      "institution": "string (school name)",
+      "area": "string (field of study)",
+      "studyType": "string (degree type)",
       "startDate": "YYYY-MM-DD",
       "endDate": "YYYY-MM-DD",
-      "score": "GPA or grade"
+      "score": "string (GPA or grade)"
     }
   ],
   "skills": [
     {
-      "name": "Skill Name",
-      "level": "Expert/Advanced/Intermediate/Beginner",
-      "keywords": ["keyword1", "keyword2"]
+      "name": "string (skill category or name)",
+      "level": "string (Expert/Advanced/Intermediate/Beginner)",
+      "keywords": ["string (specific skills)"]
     }
   ],
   "certificates": [
     {
-      "name": "Certification Name",
-      "issuer": "Issuing Organization",
-      "date": "YYYY-MM-DD",
-      "url": "https://..."
+      "name": "string (certification name)",
+      "issuer": "string (issuing organization)",
+      "date": "YYYY-MM-DD"
     }
   ],
   "languages": [
     {
-      "language": "Language Name",
-      "fluency": "Native/Fluent/Conversational/Basic"
+      "language": "string (language name)",
+      "fluency": "string (Native/Fluent/Conversational/Basic)"
     }
   ],
   "projects": [
     {
-      "name": "Project Name",
-      "description": "Brief description",
+      "name": "string (project name)",
+      "description": "string",
       "startDate": "YYYY-MM-DD",
       "endDate": "YYYY-MM-DD",
-      "url": "https://...",
-      "highlights": ["Achievement 1"]
+      "highlights": ["string (key achievements)"]
     }
   ],
   "volunteer": [
     {
-      "organization": "Organization Name",
-      "position": "Role",
+      "organization": "string",
+      "position": "string",
       "startDate": "YYYY-MM-DD",
       "endDate": "YYYY-MM-DD",
-      "summary": "Description",
-      "highlights": ["Achievement 1"]
+      "summary": "string",
+      "highlights": ["string"]
     }
   ],
   "awards": [
     {
-      "title": "Award Title",
-      "date": "YYYY-MM-DD",
-      "awarder": "Awarding Organization",
-      "summary": "Description"
+      "title": "string (award name)",
+      "date": "string (YYYY-MM-DD or YYYY)",
+      "awarder": "string (awarding organization)",
+      "summary": "string"
     }
   ],
   "publications": [
     {
-      "name": "Publication Title",
-      "publisher": "Publisher Name",
-      "releaseDate": "YYYY-MM-DD",
-      "url": "https://...",
-      "summary": "Description"
+      "name": "string (publication title)",
+      "publisher": "string",
+      "releaseDate": "YYYY-MM-DD"
     }
   ],
   "interests": [
     {
-      "name": "Interest Name",
-      "keywords": ["keyword1", "keyword2"]
+      "name": "string (interest area)",
+      "keywords": ["string"]
     }
   ],
   "references": [
     {
-      "name": "Reference Name",
-      "reference": "Reference statement"
+      "name": "string (reference name)",
+      "reference": "string (reference statement or contact)"
     }
   ]
 }
 
-IMPORTANT: Return ONLY the JSON object. No markdown code blocks, no explanations.`;
+IMPORTANT NOTES:
+- Only include sections that have data - omit empty arrays
+- Dates must be in YYYY-MM-DD format (use YYYY-MM or YYYY if day/month unknown)
+- URLs must be valid and complete (include https://)
+- Return ONLY the JSON object - no markdown code blocks or explanations`;
 
     const userPrompt = `Parse this resume text and return structured data in JSON Resume format:\n\n${text}`;
 
@@ -221,21 +222,27 @@ IMPORTANT: Return ONLY the JSON object. No markdown code blocks, no explanations
       );
     }
 
-    // Validate against resume schema
+    // Validate against resume schema AFTER AI has filled the template
+    // This is the only place we check schema compliance
     const validationResult = resumeSchema.safeParse(parsedData);
+    
     if (!validationResult.success) {
-      console.error("Schema validation failed:", validationResult.error);
+      console.warn("Schema validation has warnings:", validationResult.error);
       
-      // Try to return partial data if possible
+      // Return the data anyway, with a warning about validation issues
+      // The client can decide whether to use it or not
       return NextResponse.json({
         resume: parsedData,
         tokensUsed: completion.usage?.total_tokens || 0,
-        warning: "Some fields may not match the expected format",
-        validationErrors: validationResult.error.issues,
+        warning: "Some fields may not match the expected format. The data has been returned as-is.",
+        validationErrors: validationResult.error.issues.map(issue => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        })),
       });
     }
 
-    // Return successfully parsed resume
+    // Return successfully parsed and validated resume
     return NextResponse.json({
       resume: validationResult.data,
       tokensUsed: completion.usage?.total_tokens || 0,

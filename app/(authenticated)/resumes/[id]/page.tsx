@@ -10,7 +10,6 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TemplateSelector } from '@/components/templates/TemplateSelector';
 import { ResumeEditor } from '@/components/resume/ResumeEditor';
 import { VersionHistory } from '@/components/resume/VersionHistory';
-import { SectionOrderManager } from '@/components/resume/SectionOrderManager';
 
 interface Resume {
   id: string;
@@ -19,34 +18,65 @@ interface Resume {
   companyName: string | null;
   jobDescription: string;
   content: {
-    personalInfo: {
-      name: string;
-      email: string;
+    basics?: {
+      name?: string;
+      email?: string;
       phone?: string;
-      location?: string;
-      links?: string[];
+      url?: string;
+      summary?: string;
+      location?: {
+        address?: string;
+        city?: string;
+        region?: string;
+        postalCode?: string;
+        countryCode?: string;
+      };
+      profiles?: Array<{
+        network?: string;
+        username?: string;
+        url?: string;
+      }>;
     };
-    summary: string;
-    experience: Array<{
-      company: string;
-      position: string;
-      startDate: string;
-      endDate: string | null;
-      description: string;
-      bulletPoints: string[];
+    work?: Array<{
+      name?: string;
+      position?: string;
+      url?: string;
+      startDate?: string;
+      endDate?: string;
+      summary?: string;
+      highlights?: string[];
     }>;
-    education: Array<{
-      institution: string;
-      degree: string;
-      field: string;
-      startDate: string;
-      endDate: string | null;
-      gpa?: string;
+    education?: Array<{
+      institution?: string;
+      url?: string;
+      area?: string;
+      studyType?: string;
+      startDate?: string;
+      endDate?: string;
+      score?: string;
+      courses?: string[];
     }>;
-    skills: {
-      technical: string[];
-      soft: string[];
-    };
+    skills?: Array<{
+      name?: string;
+      level?: string;
+      keywords?: string[];
+    }>;
+    certificates?: Array<{
+      name?: string;
+      date?: string;
+      issuer?: string;
+      url?: string;
+    }>;
+    projects?: Array<{
+      name?: string;
+      description?: string;
+      highlights?: string[];
+      keywords?: string[];
+      startDate?: string;
+      endDate?: string;
+      url?: string;
+    }>;
+    [key: string]: unknown;
   };
   templateId: string | null;
   customization: Record<string, unknown> | null;
@@ -342,12 +372,7 @@ export default function ResumeDetailPage() {
             >
               Edit Content
             </Button>
-            <Button
-              onClick={() => setIsSectionOrderOpen(true)}
-              variant="secondary"
-            >
-              Reorder Sections
-            </Button>
+  
             <Button
               onClick={() => setIsVersionHistoryOpen(true)}
               variant="secondary"
@@ -377,7 +402,7 @@ export default function ResumeDetailPage() {
           </div>
         </div>
 
-        {/* PDF Preview - Always Visible */}
+        {/* Resume HTML Preview */}
       <Card className="p-4 mb-6 no-print">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Resume Preview</h2>
@@ -394,11 +419,11 @@ export default function ResumeDetailPage() {
             </Button>
           </div>
         </div>
-        <div className="w-full h-96 border rounded-lg overflow-hidden">
+        <div className="w-full border rounded-lg overflow-hidden bg-white" style={{ height: '800px' }}>
           <iframe
             src={`/api/resumes/${resumeId}/preview?v=${pdfPreviewKey}`}
             className="w-full h-full border-0"
-            title="Resume PDF Preview"
+            title="Resume Preview"
           />
         </div>
       </Card>
@@ -450,164 +475,7 @@ export default function ResumeDetailPage() {
         </Card>
       )}
 
-      {/* Resume Content */}
-      <Card className="p-8 print-card print-no-break">
-        {/* Personal Info */}
-        <div className="mb-8 print-no-break">
-          <h1 className="text-3xl font-bold mb-2">{resume.content.personalInfo.name}</h1>
-          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-            {resume.content.personalInfo.email && (
-              <span>{resume.content.personalInfo.email}</span>
-            )}
-            {resume.content.personalInfo.phone && (
-              <span>{resume.content.personalInfo.phone}</span>
-            )}
-            {resume.content.personalInfo.location && (
-              <span>{resume.content.personalInfo.location}</span>
-            )}
-          </div>
-          {resume.content.personalInfo.links && resume.content.personalInfo.links.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {resume.content.personalInfo.links.map((link, idx) => (
-                <a
-                  key={idx}
-                  href={link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  {link}
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Professional Summary */}
-        {resume.content.summary && (
-          <div className="mb-8 print-no-break">
-            <h2 className="text-xl font-bold mb-3 border-b-2 border-gray-200 pb-2">
-              Professional Summary
-            </h2>
-            <p className="text-gray-700">{resume.content.summary}</p>
-          </div>
-        )}
-
-        {/* Experience */}
-        {resume.content.experience && resume.content.experience.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-200 pb-2">
-              Professional Experience
-            </h2>
-            {resume.content.experience.map((exp, idx) => (
-              <div key={idx} className="mb-6 last:mb-0 print-no-break">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="font-semibold text-lg">{exp.position}</h3>
-                    <p className="text-gray-700">{exp.company}</p>
-                  </div>
-                  <span className="text-sm text-gray-600 whitespace-nowrap ml-4">
-                    {formatDate(exp.startDate)} - {formatDate(exp.endDate)}
-                  </span>
-                </div>
-                {exp.description && (
-                  <p className="text-gray-700 mb-2">{exp.description}</p>
-                )}
-                {exp.bulletPoints && exp.bulletPoints.length > 0 && (
-                  <ul className="list-disc list-inside space-y-1 text-gray-700">
-                    {exp.bulletPoints.map((bullet, bulletIdx) => (
-                      <li key={bulletIdx}>{bullet}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Education */}
-        {resume.content.education && resume.content.education.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-200 pb-2">
-              Education
-            </h2>
-            {resume.content.education.map((edu, idx) => (
-              <div key={idx} className="mb-4 last:mb-0 print-no-break">
-                <div className="flex justify-between items-start mb-1">
-                  <div>
-                    <h3 className="font-semibold">{edu.degree} in {edu.field}</h3>
-                    <p className="text-gray-700">{edu.institution}</p>
-                  </div>
-                  <span className="text-sm text-gray-600 whitespace-nowrap ml-4">
-                    {formatDate(edu.startDate)} - {formatDate(edu.endDate)}
-                  </span>
-                </div>
-                {edu.gpa && (
-                  <p className="text-sm text-gray-600">GPA: {edu.gpa}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Skills */}
-        {resume.content.skills && (
-          <div className="print-no-break">
-            <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-200 pb-2">
-              Skills
-            </h2>
-            {resume.content.skills.technical && resume.content.skills.technical.length > 0 && (
-              <div className="mb-3">
-                <h3 className="font-semibold mb-2">Technical Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {resume.content.skills.technical.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {resume.content.skills.soft && resume.content.skills.soft.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-2">Soft Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {resume.content.skills.soft.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Metadata Footer */}
-        <div className="mt-8 pt-6 border-t border-gray-200 no-print">
-          <div className="text-xs text-gray-500 space-y-1">
-            <div className="flex justify-between">
-              <span>Generated: {new Date(resume.metadata.generatedAt).toLocaleString()}</span>
-              <span>Model: {resume.metadata.model}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Tokens: {resume.metadata.totalTokens.toLocaleString()}</span>
-              <span>Processing: {(resume.metadata.processingTime / 1000).toFixed(2)}s</span>
-            </div>
-            {resume.isEdited && (
-              <div className="text-blue-600 font-medium">
-                ✏️ This resume has been edited
-              </div>
-            )}
-          </div>
-        </div>
-      </Card>
+      
 
       {/* Confirmation Dialog */}
       <ConfirmDialog
@@ -625,10 +493,10 @@ export default function ResumeDetailPage() {
       {isEditorOpen && resume.content && (
         <ResumeEditor
           resumeId={resumeId}
-          initialContent={resume.content}
+          initialContent={resume.content as any}
           aiGeneratedContent={
-            (resume.metadata as unknown as { aiGeneratedContent?: typeof resume.content })
-              ?.aiGeneratedContent || resume.content
+            ((resume.metadata as unknown as { aiGeneratedContent?: typeof resume.content })
+              ?.aiGeneratedContent || resume.content) as any
           }
           onSave={() => {
             fetchResume();
@@ -641,22 +509,13 @@ export default function ResumeDetailPage() {
       {/* Version History */}
       {isVersionHistoryOpen && resume.content && (
         <VersionHistory
-          currentContent={resume.content}
-          aiGeneratedContent={resume.aiGeneratedContent || resume.content}
+          currentContent={resume.content as any}
+          aiGeneratedContent={(resume.aiGeneratedContent || resume.content) as any}
           onClose={() => setIsVersionHistoryOpen(false)}
           onRestore={handleRestoreVersion}
         />
       )}
 
-      {/* Section Order Manager */}
-      {isSectionOrderOpen && (
-        <SectionOrderManager
-          resumeId={resumeId}
-          initialOrder={resume.sectionOrder as string[] | undefined}
-          onClose={() => setIsSectionOrderOpen(false)}
-          onSave={fetchResume}
-        />
-      )}
       </PageContainer>
     </>
   );

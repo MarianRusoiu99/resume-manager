@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -13,9 +12,8 @@ interface EducationFormProps {
 }
 
 export function EducationForm({ education, onChange }: EducationFormProps) {
-  const [localEducation, setLocalEducation] = useState<Education[]>(
-    education.length > 0 ? education : []
-  );
+  // Use education directly from props - controlled component pattern
+  const localEducation = education.length > 0 ? education : [];
 
   const addEducation = () => {
     const newEducation: Education = {
@@ -27,15 +25,11 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
       score: "",
       courses: [],
     };
-    const updated = [...localEducation, newEducation];
-    setLocalEducation(updated);
-    onChange(updated);
+    onChange([...localEducation, newEducation]);
   };
 
   const removeEducation = (index: number) => {
-    const updated = localEducation.filter((_, i) => i !== index);
-    setLocalEducation(updated);
-    onChange(updated);
+    onChange(localEducation.filter((_, i) => i !== index));
   };
 
   const updateEducation = (index: number, field: keyof Education, value: string | string[]) => {
@@ -45,7 +39,6 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
       }
       return edu;
     });
-    setLocalEducation(updated);
     onChange(updated);
   };
 

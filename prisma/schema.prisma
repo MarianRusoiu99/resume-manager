@@ -61,6 +61,7 @@ model APIKey {
 }
 
 // Generated resumes with AI and user edits
+// REFACTORED: Removed templateCustomization and pdfUrl (generate PDF on-demand)
 model GeneratedResume {
   id              String   @id @default(cuid())
   userId          String
@@ -71,8 +72,6 @@ model GeneratedResume {
   resume          Json     // JSON Resume v1.0.0 format
   templateId      String?
   template        ResumeTemplate? @relation(fields: [templateId], references: [id])
-  templateCustomization Json? // User's template overrides
-  pdfUrl          String?  // URL if stored externally
   coverLetter     String?  @db.Text
   
   metadata        Json     // {model, tokens, score, generationTime}
@@ -85,12 +84,19 @@ model GeneratedResume {
 }
 
 // Resume templates (professional layouts)
+// REFACTORED: Simple HTML/CSS templates (like JSON Resume themes)
 model ResumeTemplate {
   id          String   @id @default(cuid())
   name        String
   category    String   // 'professional', 'modern', 'creative', 'ats-optimized', 'minimal'
   description String
-  definition  Json     // Template configuration JSON
+  
+  // HTML template with Handlebars placeholders: {{basics.name}}, {{basics.email}}, etc.
+  htmlTemplate String  @db.Text
+  
+  // CSS styles for the template
+  cssStyles    String  @db.Text
+  
   previewUrl  String?
   isPublic    Boolean  @default(true)
   version     String   @default("1.0.0")

@@ -1,50 +1,77 @@
+/**
+ * Resume HTML Preview API
+ * GET /api/resumes/[id]/preview
+ * Returns rendered HTML for iframe preview
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
-import { resumeService } from '@/lib/services/resume.service';
-import { pdfService } from '@/lib/services/pdf.service';
+import { prisma } from '@/lib/db';
+import { renderCompleteDocument } from '@/lib/templates/renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 
-/**
- * GET /api/resumes/:id/preview
- * Preview PDF in browser (inline display)
- */
 export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = await context.params;
 
-    // Fetch resume with ownership verification
-    const resume = await resumeService.getResume(id, session.user.id);
+    // Fetch resume with template
+    const resume = await prisma.generatedResume.findUnique({
+      where: { id },
+      include: { template: true },
+    });
+
     if (!resume) {
-      return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
+      return new NextResponse('Resume not found', { status: 404 });
     }
 
-    // Generate PDF buffer with template and customization
-    const pdfBuffer = await pdfService.generatePDFBuffer(
-      resume.content as Resume,
-      resume.templateId || undefined,
-      resume.templateCustomization as Record<string, unknown> | undefined
+    if (resume.userId !== session.user.id) {
+      return new NextResponse('Forbidden', { status: 403 });
+    }
+
+    // Get template (use default if none selected)
+    let template = resume.template;
+    
+    if (!template) {
+      // Get first available template as fallback
+      template = await prisma.resumeTemplate.findFirst({
+        where: { isPublic: true },
+      });
+      
+      if (!template) {
+        return new NextResponse('No template available', { status: 500 });
+      }
+    }
+
+    // Render HTML
+    const html = renderCompleteDocument(
+      template.htmlTemplate,
+      template.cssStyles,
+      resume.resume as Resume
     );
 
-    // Return PDF for inline display
-    return new NextResponse(Buffer.from(pdfBuffer), {
+    // Return HTML for iframe
+    return new NextResponse(html, {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="resume-${id}.pdf"`,
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
   } catch (error) {
-    console.error('Error generating PDF preview:', error);
-    return NextResponse.json(
-      { error: 'Failed to generate PDF preview' },
-      { status: 500 }
+    console.error('Resume preview error:', error);
+    return new NextResponse(
+      `<html><body style="font-family: sans-serif; padding: 40px;"><h1>Error loading preview</h1><p>${error instanceof Error ? error.message : 'Unknown error'}</p></body></html>`,
+      {
+        status: 500,
+        headers: { 'Content-Type': 'text/html' },
+      }
     );
   }
 }

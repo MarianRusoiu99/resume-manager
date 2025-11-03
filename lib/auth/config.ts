@@ -61,7 +61,8 @@ export const authConfig: NextAuthConfig = {
   session: {
     strategy: "jwt"
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
+  trustHost: true, // Required for NextAuth v5 to prevent CSRF errors
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

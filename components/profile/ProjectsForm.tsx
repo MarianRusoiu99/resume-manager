@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +13,8 @@ interface ProjectsFormProps {
 }
 
 export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
-  const [projectsList, setProjectsList] = useState<Project[]>(projects);
+  // Use projects directly from props - controlled component pattern
+  const projectsList = projects;
 
   const handleAddProject = () => {
     const newProject: Project = {
@@ -26,15 +26,11 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
       endDate: "",
       url: "",
     };
-    const updated = [...projectsList, newProject];
-    setProjectsList(updated);
-    onChange(updated);
+    onChange([...projectsList, newProject]);
   };
 
   const handleRemoveProject = (index: number) => {
-    const updated = projectsList.filter((_, i) => i !== index);
-    setProjectsList(updated);
-    onChange(updated);
+    onChange(projectsList.filter((_, i) => i !== index));
   };
 
   const handleProjectChange = (index: number, field: keyof Project, value: string | string[]) => {
@@ -44,7 +40,6 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
       }
       return project;
     });
-    setProjectsList(updated);
     onChange(updated);
   };
 

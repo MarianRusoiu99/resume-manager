@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -13,9 +12,8 @@ interface ExperienceFormProps {
 }
 
 export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
-  const [localExperiences, setLocalExperiences] = useState<Experience[]>(
-    experiences.length > 0 ? experiences : []
-  );
+  // Use experiences directly from props - controlled component pattern
+  const localExperiences = experiences.length > 0 ? experiences : [];
 
   const addExperience = () => {
     const newExperience: Experience = {
@@ -26,15 +24,11 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
       summary: "",
       highlights: [],
     };
-    const updated = [...localExperiences, newExperience];
-    setLocalExperiences(updated);
-    onChange(updated);
+    onChange([...localExperiences, newExperience]);
   };
 
   const removeExperience = (index: number) => {
-    const updated = localExperiences.filter((_, i) => i !== index);
-    setLocalExperiences(updated);
-    onChange(updated);
+    onChange(localExperiences.filter((_, i) => i !== index));
   };
 
   const updateExperience = (index: number, field: keyof Experience, value: string | boolean | string[]) => {
@@ -44,7 +38,6 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
       }
       return exp;
     });
-    setLocalExperiences(updated);
     onChange(updated);
   };
 

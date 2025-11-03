@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,8 @@ interface PublicationsFormProps {
 }
 
 export function PublicationsForm({ publications, onChange }: PublicationsFormProps) {
-  const [publicationsList, setPublicationsList] = useState<Publication[]>(publications);
+  // Use publications directly from props - controlled component pattern
+  const publicationsList = publications;
 
   const handleAddPublication = () => {
     const newPublication: Publication = {
@@ -24,15 +25,11 @@ export function PublicationsForm({ publications, onChange }: PublicationsFormPro
       url: "",
       summary: "",
     };
-    const updated = [...publicationsList, newPublication];
-    setPublicationsList(updated);
-    onChange(updated);
+    onChange([...publicationsList, newPublication]);
   };
 
   const handleRemovePublication = (index: number) => {
-    const updated = publicationsList.filter((_, i) => i !== index);
-    setPublicationsList(updated);
-    onChange(updated);
+    onChange(publicationsList.filter((_, i) => i !== index));
   };
 
   const handlePublicationChange = (index: number, field: keyof Publication, value: string) => {
@@ -42,7 +39,6 @@ export function PublicationsForm({ publications, onChange }: PublicationsFormPro
       }
       return pub;
     });
-    setPublicationsList(updated);
     onChange(updated);
   };
 

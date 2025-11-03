@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -113,18 +113,22 @@ export function PersonalInfoForm({
   autoSave = true,
 }: PersonalInfoFormProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const prevInitialDataRef = useRef<string>("");
 
   const form = useForm<PersonalInfoFormData>({
     resolver: zodResolver(personalInfoFormSchema),
     defaultValues: basicsToFormData(initialData),
   });
 
-  // Reset form when initialData changes
+  // Reset form when initialData changes (using JSON comparison to avoid unnecessary resets)
   useEffect(() => {
-    if (initialData) {
+    const currentDataStr = JSON.stringify(initialData);
+    if (initialData && currentDataStr !== prevInitialDataRef.current) {
+      prevInitialDataRef.current = currentDataStr;
       form.reset(basicsToFormData(initialData));
     }
-  }, [initialData, form]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData]); // Only depend on initialData, comparison handled internally
 
   const saveData = async (data: PersonalInfoFormData) => {
     const isValid = await form.trigger();

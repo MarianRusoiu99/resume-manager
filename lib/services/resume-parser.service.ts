@@ -1,5 +1,4 @@
 import { Resume } from "@/lib/validations/jsonresume";
-import { resumeSchema } from "@/lib/validations/jsonresume";
 
 /**
  * Resume Parser Service
@@ -18,6 +17,8 @@ export interface ParserResult {
   resume?: Resume;
   error?: string;
   tokensUsed?: number;
+  warning?: string;
+  validationErrors?: Array<{ path: string; message: string }>;
 }
 
 /**
@@ -76,18 +77,16 @@ async function parseWithAI(text: string, model: string): Promise<ParserResult> {
     
     const result = await response.json();
     
-    // Validate the parsed resume against the JSON Resume schema
-    const validationResult = resumeSchema.safeParse(result.resume);
-    
-    if (!validationResult.success) {
-      console.warn("Parsed resume doesn't fully match schema:", validationResult.error);
-      // Still return it, but log the validation issues
-    }
+    // The API now validates against JSON Resume schema AFTER AI fills the template
+    // We accept the result even if there are validation warnings
+    // The schema validation happens server-side as the final step
     
     return {
       success: true,
       resume: result.resume,
       tokensUsed: result.tokensUsed,
+      warning: result.warning,
+      validationErrors: result.validationErrors,
     };
   } catch (error) {
     return {
@@ -136,13 +135,6 @@ export async function parseResume(
     
     // Extract text from file
     const text = await extractText(file);
-    
-    if (!text || text.trim().length === 0) {
-      return {
-        success: false,
-        error: "Could not extract text from file. The file may be empty or corrupted.",
-      };
-    }
     
     // Parse with AI
     const result = await parseWithAI(text, model);

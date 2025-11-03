@@ -1,128 +1,109 @@
-import { NextResponse } from 'next/server';
+/**
+ * Resume PDF Export API
+ * POST /api/resumes/[id]/export
+ * Downloads resume as PDF using HTML template (supports multi-page PDFs)
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
-import { resumeService } from '@/lib/services/resume.service';
-import { pdfService } from '@/lib/services/pdf.service';
+import { prisma } from '@/lib/db';
+import { chromium } from 'playwright';
+import { renderCompleteDocument } from '@/lib/templates/renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 
-/**
- * POST /api/resumes/[id]/export - Generate and download PDF for a resume
- */
 export async function POST(
-  request: Request,
+  req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  let browser;
+
   try {
-    // Check authentication
     const session = await auth();
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await context.params;
 
-    // Get resume (with ownership verification)
-    const resume = await resumeService.getResume(id, session.user.id);
-
-    if (!resume) {
-      return NextResponse.json(
-        { error: 'Resume not found' },
-        { status: 404 }
-      );
-    }
-
-    // Generate PDF buffer with template and customization
-    const pdfBuffer = await pdfService.generatePDFBuffer(
-      resume.content as Resume,
-      resume.templateId || undefined,
-      resume.templateCustomization as Record<string, unknown> | undefined
-    );
-
-    // Set headers for PDF download
-    const headers = new Headers();
-    headers.set('Content-Type', 'application/pdf');
-    headers.set('Content-Disposition', `attachment; filename="resume-${id}.pdf"`);
-
-    return new NextResponse(Buffer.from(pdfBuffer), {
-      status: 200,
-      headers,
+    // Fetch resume with template
+    const resume = await prisma.generatedResume.findUnique({
+      where: { id },
+      include: { template: true },
     });
 
-  } catch (error) {
-    console.error('Error exporting PDF:', error);
-    
-    return NextResponse.json(
-      { 
-        error: 'Failed to export PDF',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * GET /api/resumes/[id]/export - Get or generate PDF URL for a resume
- */
-export async function GET(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Check authentication
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { id } = await context.params;
-
-    // Get resume (with ownership verification)
-    const resume = await resumeService.getResume(id, session.user.id);
-
     if (!resume) {
-      return NextResponse.json(
-        { error: 'Resume not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
     }
 
-    // Check if PDF already exists
-    if (resume.pdfUrl) {
-      return NextResponse.json({
-        success: true,
-        pdfUrl: resume.pdfUrl,
+    if (resume.userId !== session.user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    // Get template (use default if none selected)
+    let template = resume.template;
+    
+    if (!template) {
+      // Get first available template as fallback
+      template = await prisma.resumeTemplate.findFirst({
+        where: { isPublic: true },
       });
+      
+      if (!template) {
+        return NextResponse.json(
+          { error: 'No template available' },
+          { status: 500 }
+        );
+      }
     }
 
-    // Generate new PDF and save URL with template and customization
-    const pdfUrl = await pdfService.generatePDF(
-      id,
-      resume.content as Resume,
-      resume.templateId || undefined,
-      resume.templateCustomization as Record<string, unknown> | undefined
+    // Render HTML
+    const html = renderCompleteDocument(
+      template.htmlTemplate,
+      template.cssStyles,
+      resume.resume as Resume
     );
 
-    // Update resume with PDF URL
-    await resumeService.updatePdfUrl(id, session.user.id, pdfUrl);
+    // Launch browser
+    browser = await chromium.launch({ headless: true });
+    const browserContext = await browser.newContext();
+    const page = await browserContext.newPage();
 
-    return NextResponse.json({
-      success: true,
-      pdfUrl,
+    // Set content and generate PDF
+    await page.setContent(html, { waitUntil: 'networkidle' });
+
+    // Generate multi-page PDF with proper formatting
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '0',
+        right: '0',
+        bottom: '0',
+        left: '0',
+      },
+      // Allow content to flow across multiple pages naturally
+      preferCSSPageSize: false,
     });
 
+    await browser.close();
+
+    // Return PDF
+    return new NextResponse(Buffer.from(pdfBuffer), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="resume-${id}.pdf"`,
+      },
+    });
   } catch (error) {
-    console.error('Error generating PDF URL:', error);
-    
+    if (browser) {
+      await browser.close().catch(() => {});
+    }
+
+    console.error('Resume PDF export error:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to generate PDF',
-        message: error instanceof Error ? error.message : 'Unknown error'
+      {
+        error: 'Failed to export PDF',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

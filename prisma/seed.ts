@@ -90,265 +90,35 @@ async function main() {
   // Create default resume templates
   console.log('\n📄 Creating default resume templates...');
   
+  // Import templates
+  const { modernTemplateHtml, modernTemplateCss } = await import('../lib/templates/modern');
+  const { professionalTemplateHtml, professionalTemplateCss } = await import('../lib/templates/professional');
+  const { minimalTemplateHtml, minimalTemplateCss } = await import('../lib/templates/minimal');
+  
   const templates = [
-    {
-      name: 'Professional',
-      category: 'professional',
-      description: 'Clean and traditional layout perfect for corporate positions. Single column design with clear section headings.',
-      atsScore: 9,
-      definition: {
-        layout: {
-          paperSize: 'letter' as const,
-          margins: { top: 72, right: 72, bottom: 72, left: 72 },
-          columns: 1 as const,
-        },
-        typography: {
-          bodyFont: 'Times New Roman',
-          headingFont: 'Times New Roman',
-          fontSize: {
-            name: 24,
-            heading: 14,
-            subheading: 12,
-            body: 11,
-            small: 9,
-          },
-          lineHeight: 1.5,
-        },
-        colors: {
-          primary: '#000000',
-          secondary: '#666666',
-          accent: '#2C3E50',
-          background: '#FFFFFF',
-          border: '#CCCCCC',
-        },
-        sections: {
-          showDividers: true,
-          dividerThickness: 1,
-          spacing: 16,
-          order: ['summary', 'experience', 'education', 'skills', 'certifications', 'languages'],
-        },
-        contact: {
-          layout: 'horizontal' as const,
-          showIcons: false,
-        },
-        experience: {
-          dateFormat: 'month-year' as const,
-          showCompanyLogo: false,
-          bulletStyle: 'disc' as const,
-        },
-        skills: {
-          format: 'list' as const,
-          groupByCategory: true,
-        },
-      },
-    },
     {
       name: 'Modern',
       category: 'modern',
-      description: 'Contemporary design with two-column layout and accent colors. Great for tech and creative roles.',
-      atsScore: 8,
-      definition: {
-        layout: {
-          paperSize: 'letter' as const,
-          margins: { top: 54, right: 54, bottom: 54, left: 54 },
-          columns: 2 as const,
-          columnGap: 20,
-        },
-        typography: {
-          bodyFont: 'Helvetica',
-          headingFont: 'Helvetica',
-          fontSize: {
-            name: 28,
-            heading: 16,
-            subheading: 13,
-            body: 10,
-            small: 8,
-          },
-          lineHeight: 1.4,
-        },
-        colors: {
-          primary: '#1A1A1A',
-          secondary: '#757575',
-          accent: '#3498DB',
-          background: '#FFFFFF',
-          border: '#E0E0E0',
-        },
-        sections: {
-          showDividers: false,
-          dividerThickness: 0,
-          spacing: 14,
-          order: ['summary', 'experience', 'skills', 'education', 'certifications', 'languages'],
-        },
-        contact: {
-          layout: 'vertical' as const,
-          showIcons: true,
-          iconSize: 12,
-        },
-        experience: {
-          dateFormat: 'month-year' as const,
-          showCompanyLogo: false,
-          bulletStyle: 'dash' as const,
-        },
-        skills: {
-          format: 'tags' as const,
-          groupByCategory: false,
-        },
-      },
+      description: 'Clean, professional design with blue accents. Great for tech and business roles.',
+      atsScore: 9,
+      htmlTemplate: modernTemplateHtml,
+      cssStyles: modernTemplateCss,
     },
     {
-      name: 'ATS-Optimized',
-      category: 'ats-optimized',
-      description: 'Highly optimized for Applicant Tracking Systems. Simple formatting ensures perfect parsing by ATS software.',
+      name: 'Professional',
+      category: 'professional',
+      description: 'Traditional ATS-optimized layout. Perfect for corporate positions and maximum compatibility.',
       atsScore: 10,
-      definition: {
-        layout: {
-          paperSize: 'letter' as const,
-          margins: { top: 72, right: 72, bottom: 72, left: 72 },
-          columns: 1 as const,
-        },
-        typography: {
-          bodyFont: 'Arial',
-          headingFont: 'Arial',
-          fontSize: {
-            name: 20,
-            heading: 14,
-            subheading: 12,
-            body: 11,
-            small: 10,
-          },
-          lineHeight: 1.6,
-        },
-        colors: {
-          primary: '#000000',
-          secondary: '#000000',
-          accent: '#000000',
-          background: '#FFFFFF',
-          border: '#000000',
-        },
-        sections: {
-          showDividers: true,
-          dividerThickness: 2,
-          spacing: 18,
-          order: ['summary', 'skills', 'experience', 'education', 'certifications', 'languages'],
-        },
-        contact: {
-          layout: 'horizontal' as const,
-          showIcons: false,
-        },
-        experience: {
-          dateFormat: 'month-year' as const,
-          showCompanyLogo: false,
-          bulletStyle: 'disc' as const,
-        },
-        skills: {
-          format: 'list' as const,
-          groupByCategory: true,
-        },
-      },
+      htmlTemplate: professionalTemplateHtml,
+      cssStyles: professionalTemplateCss,
     },
     {
       name: 'Minimal',
       category: 'minimal',
-      description: 'Sleek and minimalist design with plenty of white space. Perfect for designers and creative professionals.',
-      atsScore: 7,
-      definition: {
-        layout: {
-          paperSize: 'letter' as const,
-          margins: { top: 90, right: 90, bottom: 90, left: 90 },
-          columns: 1 as const,
-        },
-        typography: {
-          bodyFont: 'Helvetica',
-          headingFont: 'Helvetica',
-          fontSize: {
-            name: 32,
-            heading: 18,
-            subheading: 14,
-            body: 11,
-            small: 9,
-          },
-          lineHeight: 1.8,
-        },
-        colors: {
-          primary: '#2C2C2C',
-          secondary: '#A0A0A0',
-          accent: '#2C2C2C',
-          background: '#FFFFFF',
-          border: '#EEEEEE',
-        },
-        sections: {
-          showDividers: false,
-          dividerThickness: 0,
-          spacing: 24,
-          order: ['summary', 'experience', 'skills', 'education', 'certifications', 'languages'],
-        },
-        contact: {
-          layout: 'horizontal' as const,
-          showIcons: false,
-        },
-        experience: {
-          dateFormat: 'year' as const,
-          showCompanyLogo: false,
-          bulletStyle: 'dash' as const,
-        },
-        skills: {
-          format: 'list' as const,
-          groupByCategory: false,
-        },
-      },
-    },
-    {
-      name: 'Creative',
-      category: 'creative',
-      description: 'Bold and eye-catching design with unique typography. Stand out in creative industries.',
-      atsScore: 6,
-      definition: {
-        layout: {
-          paperSize: 'letter' as const,
-          margins: { top: 60, right: 60, bottom: 60, left: 60 },
-          columns: 2 as const,
-          columnGap: 24,
-        },
-        typography: {
-          bodyFont: 'Georgia',
-          headingFont: 'Georgia',
-          fontSize: {
-            name: 30,
-            heading: 18,
-            subheading: 14,
-            body: 10,
-            small: 8,
-          },
-          lineHeight: 1.5,
-        },
-        colors: {
-          primary: '#2C3E50',
-          secondary: '#7F8C8D',
-          accent: '#E74C3C',
-          background: '#FFFFFF',
-          border: '#BDC3C7',
-        },
-        sections: {
-          showDividers: true,
-          dividerThickness: 2,
-          spacing: 16,
-          order: ['summary', 'skills', 'experience', 'education', 'certifications', 'languages'],
-        },
-        contact: {
-          layout: 'grid' as const,
-          showIcons: true,
-          iconSize: 14,
-        },
-        experience: {
-          dateFormat: 'month-year' as const,
-          showCompanyLogo: false,
-          bulletStyle: 'arrow' as const,
-        },
-        skills: {
-          format: 'bars' as const,
-          groupByCategory: true,
-        },
-      },
+      description: 'Clean and modern with lots of white space. Ideal for designers and creative professionals.',
+      atsScore: 8,
+      htmlTemplate: minimalTemplateHtml,
+      cssStyles: minimalTemplateCss,
     },
   ];
 

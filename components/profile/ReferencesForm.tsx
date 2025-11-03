@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,22 +14,19 @@ interface ReferencesFormProps {
 }
 
 export function ReferencesForm({ references, onChange }: ReferencesFormProps) {
-  const [referencesList, setReferencesList] = useState<Reference[]>(references);
+  // Use references directly from props - controlled component pattern
+  const referencesList = references;
 
   const handleAddReference = () => {
     const newReference: Reference = {
       name: "",
       reference: "",
     };
-    const updated = [...referencesList, newReference];
-    setReferencesList(updated);
-    onChange(updated);
+    onChange([...referencesList, newReference]);
   };
 
   const handleRemoveReference = (index: number) => {
-    const updated = referencesList.filter((_, i) => i !== index);
-    setReferencesList(updated);
-    onChange(updated);
+    onChange(referencesList.filter((_, i) => i !== index));
   };
 
   const handleReferenceChange = (index: number, field: keyof Reference, value: string) => {
@@ -39,7 +36,6 @@ export function ReferencesForm({ references, onChange }: ReferencesFormProps) {
       }
       return ref;
     });
-    setReferencesList(updated);
     onChange(updated);
   };
 

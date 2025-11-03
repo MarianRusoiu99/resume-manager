@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,8 @@ interface AwardsFormProps {
 }
 
 export function AwardsForm({ awards, onChange }: AwardsFormProps) {
-  const [awardsList, setAwardsList] = useState<Award[]>(awards);
+  // Use awards directly from props - controlled component pattern
+  const awardsList = awards;
 
   const handleAddAward = () => {
     const newAward: Award = {
@@ -23,15 +24,11 @@ export function AwardsForm({ awards, onChange }: AwardsFormProps) {
       awarder: "",
       summary: "",
     };
-    const updated = [...awardsList, newAward];
-    setAwardsList(updated);
-    onChange(updated);
+    onChange([...awardsList, newAward]);
   };
 
   const handleRemoveAward = (index: number) => {
-    const updated = awardsList.filter((_, i) => i !== index);
-    setAwardsList(updated);
-    onChange(updated);
+    onChange(awardsList.filter((_, i) => i !== index));
   };
 
   const handleAwardChange = (index: number, field: keyof Award, value: string) => {
@@ -41,7 +38,6 @@ export function AwardsForm({ awards, onChange }: AwardsFormProps) {
       }
       return award;
     });
-    setAwardsList(updated);
     onChange(updated);
   };
 
