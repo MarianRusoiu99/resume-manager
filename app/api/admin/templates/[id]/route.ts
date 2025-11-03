@@ -63,7 +63,6 @@ const updateTemplateSchema = z.object({
   category: z.string().min(1).max(50).optional(),
   description: z.string().max(500).optional(),
   isPublic: z.boolean().optional(),
-  atsScore: z.number().min(1).max(10).optional(),
   definition: templateDefinitionSchema.optional(),
 });
 
@@ -144,7 +143,6 @@ export async function PUT(
       ...(data.category && { category: data.category }),
       ...(data.description && { description: data.description }),
       ...(data.isPublic !== undefined && { isPublic: data.isPublic }),
-      ...(data.atsScore !== undefined && { atsScore: data.atsScore }),
       ...(data.definition && { definition: data.definition as TemplateDefinition }),
     });
 

@@ -40,9 +40,6 @@ export async function POST(
       jobMetadata: originalResume.jobMetadata as Record<string, unknown>,
       resume: originalResume.resume as Resume,
       templateId: originalResume.templateId || undefined,
-      templateCustomization:
-        (originalResume.templateCustomization as Record<string, unknown>) ||
-        undefined,
       coverLetter: originalResume.coverLetter || undefined,
       metadata: {
         ...(originalResume.metadata as Record<string, unknown>),

@@ -9,7 +9,6 @@ export interface TemplateMetadata {
   category: 'professional' | 'modern' | 'creative' | 'ats-optimized' | 'minimal';
   description: string;
   version: string;
-  atsScore: number;
   isPublic: boolean;
   previewUrl?: string;
   createdAt: Date;

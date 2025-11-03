@@ -556,7 +556,6 @@ describe('JSON Resume Schema Validation', () => {
         meta: {
           version: 'v1.0.0',
           customField: 'custom value',
-          atsScore: 95,
         },
       };
 

@@ -100,8 +100,6 @@ model ResumeTemplate {
   previewUrl  String?
   isPublic    Boolean  @default(true)
   version     String   @default("1.0.0")
-  atsScore    Int      @default(8) // 1-10 ATS compatibility rating
-  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   

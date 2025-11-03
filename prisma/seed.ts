@@ -100,7 +100,6 @@ async function main() {
       name: 'Modern',
       category: 'modern',
       description: 'Clean, professional design with blue accents. Great for tech and business roles.',
-      atsScore: 9,
       htmlTemplate: modernTemplateHtml,
       cssStyles: modernTemplateCss,
     },
@@ -108,7 +107,6 @@ async function main() {
       name: 'Professional',
       category: 'professional',
       description: 'Traditional ATS-optimized layout. Perfect for corporate positions and maximum compatibility.',
-      atsScore: 10,
       htmlTemplate: professionalTemplateHtml,
       cssStyles: professionalTemplateCss,
     },
@@ -116,7 +114,6 @@ async function main() {
       name: 'Minimal',
       category: 'minimal',
       description: 'Clean and modern with lots of white space. Ideal for designers and creative professionals.',
-      atsScore: 8,
       htmlTemplate: minimalTemplateHtml,
       cssStyles: minimalTemplateCss,
     },
@@ -133,7 +130,7 @@ async function main() {
       await prisma.resumeTemplate.create({
         data: template,
       });
-      console.log(`   ✅ Created template: ${template.name} (ATS Score: ${template.atsScore}/10)`);
+      console.log(`   ✅ Created template: ${template.name} `);
     }
   }
 

@@ -14,7 +14,7 @@ export class TemplateRepository {
   async findAllPublic(): Promise<ResumeTemplate[]> {
     const templates = await prisma.resumeTemplate.findMany({
       where: { isPublic: true },
-      orderBy: [{ atsScore: 'desc' }, { name: 'asc' }],
+      orderBy: [{ name: 'asc' }],
     });
 
     return templates.map((t) => this.mapToTemplate(t));
@@ -29,7 +29,7 @@ export class TemplateRepository {
         isPublic: true,
         category,
       },
-      orderBy: [{ atsScore: 'desc' }, { name: 'asc' }],
+      orderBy: [{ name: 'asc' }],
     });
 
     return templates.map((t) => this.mapToTemplate(t));
@@ -56,7 +56,6 @@ export class TemplateRepository {
     htmlTemplate: string;
     cssStyles: string;
     previewUrl?: string;
-    atsScore?: number;
     isPublic?: boolean;
   }): Promise<ResumeTemplate> {
     const template = await prisma.resumeTemplate.create({
@@ -67,7 +66,6 @@ export class TemplateRepository {
         htmlTemplate: data.htmlTemplate,
         cssStyles: data.cssStyles,
         previewUrl: data.previewUrl,
-        atsScore: data.atsScore ?? 8,
         isPublic: data.isPublic ?? true,
       },
     });
@@ -87,7 +85,6 @@ export class TemplateRepository {
       htmlTemplate: string;
       cssStyles: string;
       previewUrl: string;
-      atsScore: number;
       isPublic: boolean;
     }>
   ): Promise<ResumeTemplate> {
@@ -99,7 +96,6 @@ export class TemplateRepository {
     if (data.htmlTemplate !== undefined) updateData.htmlTemplate = data.htmlTemplate;
     if (data.cssStyles !== undefined) updateData.cssStyles = data.cssStyles;
     if (data.previewUrl !== undefined) updateData.previewUrl = data.previewUrl;
-    if (data.atsScore !== undefined) updateData.atsScore = data.atsScore;
     if (data.isPublic !== undefined) updateData.isPublic = data.isPublic;
 
     const template = await prisma.resumeTemplate.update({
@@ -139,6 +135,28 @@ export class TemplateRepository {
   }
 
   /**
+   * Check if a template is in use by any resumes
+   */
+  async isInUse(templateId: string): Promise<boolean> {
+    const count = await prisma.generatedResume.count({
+      where: { templateId },
+    });
+    return count > 0;
+  }
+
+  /**
+   * Get all unique categories
+   */
+  async getCategories(): Promise<string[]> {
+    const categories = await prisma.resumeTemplate.findMany({
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+    });
+    return categories.map((c) => c.category);
+  }
+
+  /**
    * Map Prisma model to domain model
    */
   private mapToTemplate(template: {
@@ -151,7 +169,6 @@ export class TemplateRepository {
     previewUrl: string | null;
     isPublic: boolean;
     version: string;
-    atsScore: number;
     createdAt: Date;
     updatedAt: Date;
   }): ResumeTemplate {
@@ -165,7 +182,6 @@ export class TemplateRepository {
       previewUrl: template.previewUrl ?? undefined,
       isPublic: template.isPublic,
       version: template.version,
-      atsScore: template.atsScore,
       createdAt: template.createdAt,
       updatedAt: template.updatedAt,
     };

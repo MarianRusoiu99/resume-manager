@@ -7,7 +7,6 @@ interface Template {
   id: string;
   name: string;
   category: string;
-  atsScore: number;
   description: string;
 }
 
@@ -98,9 +97,6 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
                 <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700">
                   {currentTemplate.category}
                 </span>
-                <span className="text-xs text-gray-600">
-                  ATS Score: {currentTemplate.atsScore}%
-                </span>
               </div>
             )}
           </div>
@@ -142,9 +138,6 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">
                       {template.category}
-                    </span>
-                    <span className="text-xs text-gray-600">
-                      ATS: {template.atsScore}%
                     </span>
                   </div>
                 </div>

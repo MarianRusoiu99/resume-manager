@@ -14,7 +14,6 @@ const templateSchema = z.object({
   category: z.enum(['professional', 'modern', 'creative', 'ats-optimized', 'minimal']),
   description: z.string().min(1, 'Description is required'),
   version: z.string().default('1.0.0'),
-  atsScore: z.number().min(1).max(10).default(8),
   isPublic: z.boolean().default(true),
   definition: z.object({
     layout: z.object({
@@ -93,7 +92,6 @@ export async function POST(request: NextRequest) {
       name: validatedData.name,
       category: validatedData.category,
       description: validatedData.description,
-      atsScore: validatedData.atsScore,
       isPublic: validatedData.isPublic,
       definition: validatedData.definition,
     });

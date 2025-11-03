@@ -17,7 +17,6 @@ interface Template {
   id: string;
   name: string;
   category: string;
-  atsScore: number;
   description: string;
 }
 
@@ -148,9 +147,7 @@ export function TemplateDropdown({
                     <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
                       {template.category}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      ATS: {template.atsScore}%
-                    </span>
+        
                   </div>
                 </div>
               </DropdownMenuItem>

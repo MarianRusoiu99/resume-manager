@@ -12,7 +12,6 @@ interface Template {
   name: string;
   category: string;
   description: string;
-  atsScore: number;
 }
 
 interface GeneratedResume {
@@ -372,11 +371,7 @@ export default function GeneratePage() {
                     className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={isGenerating}
                   >
-                    {templates.map((template) => (
-                      <option key={template.id} value={template.id}>
-                        {template.name} - ATS Score: {template.atsScore}/10
-                      </option>
-                    ))}
+                
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
                     {templates.find(t => t.id === selectedTemplateId)?.description}

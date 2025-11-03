@@ -21,20 +21,20 @@ export class GeneratedResumeRepository {
     jobMetadata?: Record<string, unknown>;
     resume: Resume;
     templateId?: string;
-    templateCustomization?: Record<string, unknown>;
-    pdfUrl?: string;
     coverLetter?: string;
     metadata: Record<string, unknown>;
   }): Promise<GeneratedResume> {
     return this.db.generatedResume.create({
       data: {
-        userId: data.userId,
+        user: {
+          connect: { id: data.userId }
+        },
         jobDescription: data.jobDescription,
         jobMetadata: data.jobMetadata as never,
         resume: data.resume as never,
-        templateId: data.templateId || null,
-        templateCustomization: data.templateCustomization as never,
-        pdfUrl: data.pdfUrl || null,
+        template: data.templateId ? {
+          connect: { id: data.templateId }
+        } : undefined,
         coverLetter: data.coverLetter || null,
         metadata: data.metadata as never
       }
@@ -90,28 +90,16 @@ export class GeneratedResumeRepository {
    */
   async updateTemplate(
     id: string,
-    templateId?: string,
-    templateCustomization?: Record<string, unknown>
+    templateId?: string
   ): Promise<GeneratedResume> {
     return this.db.generatedResume.update({
       where: { id },
       data: {
-        templateId: templateId || null,
-        templateCustomization: templateCustomization as never,
-        pdfUrl: null,
-        updatedAt: new Date()
-      }
-    });
-  }
-
-  /**
-   * Update PDF URL
-   */
-  async updatePdfUrl(id: string, pdfUrl: string): Promise<GeneratedResume> {
-    return this.db.generatedResume.update({
-      where: { id },
-      data: {
-        pdfUrl,
+        template: templateId ? {
+          connect: { id: templateId }
+        } : {
+          disconnect: true
+        },
         updatedAt: new Date()
       }
     });

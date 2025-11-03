@@ -422,20 +422,6 @@ export class ResumeService {
   }
 
   /**
-   * Update PDF URL for a resume
-   */
-  async updatePdfUrl(resumeId: string, userId: string, pdfUrl: string): Promise<void> {
-    // Verify ownership
-    const resume = await this.repository.findByIdAndUserId(resumeId, userId);
-    
-    if (!resume) {
-      throw new Error('Resume not found or access denied');
-    }
-
-    await this.repository.updatePdfUrl(resumeId, pdfUrl);
-  }
-
-  /**
    * Delete a resume
    */
   async deleteResume(resumeId: string, userId: string): Promise<{ success: boolean; error?: string }> {
