@@ -22,12 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-
-export interface Language {
-  id: string;
-  language: string;
-  proficiency: string;
-}
+import type { Language } from '@/lib/validations/jsonresume';
 
 interface LanguagesFormProps {
   languages: Language[];
@@ -35,41 +30,41 @@ interface LanguagesFormProps {
   errors?: Record<string, string>;
 }
 
-const PROFICIENCY_LEVELS = [
-  { value: 'native', label: 'Native / Bilingual' },
-  { value: 'fluent', label: 'Fluent' },
-  { value: 'advanced', label: 'Advanced' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'basic', label: 'Basic' },
+const FLUENCY_LEVELS = [
+  { value: 'Native speaker', label: 'Native / Bilingual' },
+  { value: 'Fluent', label: 'Fluent' },
+  { value: 'Professional working proficiency', label: 'Professional' },
+  { value: 'Limited working proficiency', label: 'Intermediate' },
+  { value: 'Elementary proficiency', label: 'Basic' },
 ];
 
 const languageFormSchema = z.object({
   language: z.string().min(1, 'Language is required'),
-  proficiency: z.string().min(1, 'Proficiency level is required'),
+  fluency: z.string().min(1, 'Fluency level is required'),
 });
 
 type LanguageFormData = z.infer<typeof languageFormSchema>;
 
 export default function LanguagesForm({
-  languages,
+  languages = [],
   onChange,
   errors,
 }: LanguagesFormProps) {
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
   const form = useForm<LanguageFormData>({
     resolver: zodResolver(languageFormSchema),
     defaultValues: {
       language: '',
-      proficiency: 'intermediate',
+      fluency: 'Limited working proficiency',
     },
   });
 
   const handleAdd = (data: LanguageFormData) => {
     const language: Language = {
-      id: crypto.randomUUID(),
-      ...data,
+      language: data.language,
+      fluency: data.fluency,
     };
 
     onChange([...languages, language]);
@@ -77,52 +72,49 @@ export default function LanguagesForm({
     setIsAdding(false);
   };
 
-  const handleUpdate = (id: string, data: LanguageFormData) => {
-    const updated = languages.map((lang) =>
-      lang.id === id ? { ...lang, ...data } : lang
+  const handleUpdate = (index: number, data: LanguageFormData) => {
+    const updated = languages.map((lang, i) =>
+      i === index ? { language: data.language, fluency: data.fluency } : lang
     );
     onChange(updated);
     form.reset();
-    setEditingId(null);
+    setEditingIndex(null);
   };
 
-  const handleDelete = (id: string) => {
-    onChange(languages.filter((lang) => lang.id !== id));
+  const handleDelete = (index: number) => {
+    onChange(languages.filter((_, i) => i !== index));
   };
 
-  const startEdit = (lang: Language) => {
+  const startEdit = (lang: Language, index: number) => {
     form.reset({
-      language: lang.language,
-      proficiency: lang.proficiency,
+      language: lang.language || '',
+      fluency: lang.fluency || '',
     });
-    setEditingId(lang.id);
+    setEditingIndex(index);
     setIsAdding(false);
   };
 
   const cancelEdit = () => {
     form.reset();
-    setEditingId(null);
+    setEditingIndex(null);
     setIsAdding(false);
   };
 
-  const getProficiencyLabel = (value: string) => {
-    return PROFICIENCY_LEVELS.find((level) => level.value === value)?.label || value;
+  const getFluencyLabel = (value: string) => {
+    return FLUENCY_LEVELS.find((level) => level.value === value)?.label || value;
   };
 
-  const getProficiencyColor = (value: string) => {
-    switch (value) {
-      case 'native':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'fluent':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'advanced':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-      case 'intermediate':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'basic':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+  const getFluencyColor = (value: string) => {
+    if (value.includes('Native')) {
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+    } else if (value.includes('Fluent')) {
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+    } else if (value.includes('Professional')) {
+      return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+    } else if (value.includes('Limited')) {
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+    } else {
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
     }
   };
 
@@ -130,7 +122,7 @@ export default function LanguagesForm({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900">Languages</h3>
-        {!isAdding && !editingId && (
+        {!isAdding && editingIndex === null && (
           <Button
             type="button"
             onClick={() => setIsAdding(true)}
@@ -148,14 +140,14 @@ export default function LanguagesForm({
 
       {/* List of existing languages */}
       <div className="space-y-3">
-        {languages.map((lang) => (
-          <Card key={lang.id}>
-            {editingId === lang.id ? (
+        {languages.map((lang, index) => (
+          <Card key={index}>
+            {editingIndex === index ? (
               <CardContent className="pt-6">
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit((data) =>
-                      handleUpdate(lang.id, data)
+                      handleUpdate(index, data)
                     )}
                     className="space-y-4"
                   >
@@ -178,21 +170,21 @@ export default function LanguagesForm({
 
                     <FormField
                       control={form.control}
-                      name="proficiency"
+                      name="fluency"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Proficiency Level</FormLabel>
+                          <FormLabel>Fluency Level</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select proficiency level" />
+                                <SelectValue placeholder="Select fluency level" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {PROFICIENCY_LEVELS.map((level) => (
+                              {FLUENCY_LEVELS.map((level) => (
                                 <SelectItem key={level.value} value={level.value}>
                                   {level.label}
                                 </SelectItem>
@@ -224,18 +216,18 @@ export default function LanguagesForm({
                     <div className="flex items-center space-x-3">
                       <h4 className="font-medium">{lang.language}</h4>
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${getProficiencyColor(
-                          lang.proficiency
+                        className={`px-2 py-1 rounded text-xs font-medium ${getFluencyColor(
+                          lang.fluency || ''
                         )}`}
                       >
-                        {getProficiencyLabel(lang.proficiency)}
+                        {getFluencyLabel(lang.fluency || '')}
                       </span>
                     </div>
                   </div>
                   <div className="flex space-x-2 ml-4">
                     <Button
                       type="button"
-                      onClick={() => startEdit(lang)}
+                      onClick={() => startEdit(lang, index)}
                       variant="secondary"
                       size="sm"
                     >
@@ -243,7 +235,7 @@ export default function LanguagesForm({
                     </Button>
                     <Button
                       type="button"
-                      onClick={() => handleDelete(lang.id)}
+                      onClick={() => handleDelete(index)}
                       variant="destructive"
                       size="sm"
                     >
@@ -288,21 +280,21 @@ export default function LanguagesForm({
 
                 <FormField
                   control={form.control}
-                  name="proficiency"
+                  name="fluency"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Proficiency Level</FormLabel>
+                      <FormLabel>Fluency Level</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select proficiency level" />
+                            <SelectValue placeholder="Select fluency level" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {PROFICIENCY_LEVELS.map((level) => (
+                          {FLUENCY_LEVELS.map((level) => (
                             <SelectItem key={level.value} value={level.value}>
                               {level.label}
                             </SelectItem>

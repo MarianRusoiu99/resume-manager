@@ -17,18 +17,7 @@ import { PublicationsForm } from "@/components/editor/forms/PublicationsForm";
 import { InterestsForm } from "@/components/editor/forms/InterestsForm";
 import { ReferencesForm } from "@/components/editor/forms/ReferencesForm";
 import { ProfileSection } from "@/components/editor/forms/ProfileSection";
-import type { Basics } from "@/lib/validations/jsonresume";
-import {
-    skillsToOldFormat,
-    skillsFromOldFormat,
-    certificatesToOldFormat,
-    certificatesFromOldFormat,
-    languagesToOldFormat,
-    languagesFromOldFormat,
-    calculateCompletionPercentage,
-    type OldCertification,
-    type OldLanguage,
-} from "@/lib/utils/format-converters";
+import type { Basics, Skill, Certificate, Language } from "@/lib/validations/jsonresume";
 
 export interface EditorUIProps {
     /** Show resume parser (only for profile editing) */
@@ -37,6 +26,58 @@ export interface EditorUIProps {
     parserComponent?: React.ReactNode;
     /** Show completion indicator */
     showCompletion?: boolean;
+}
+
+/**
+ * Calculate profile completion percentage
+ */
+function calculateCompletionPercentage(resume: { basics?: any; work?: any[]; education?: any[]; skills?: any[]; projects?: any[]; certificates?: any[]; languages?: any[]; volunteer?: any[] }): number {
+    let completed = 0;
+    let total = 0;
+
+    // Personal info (weight: 30%)
+    total += 30;
+    const hasBasicInfo = !!(resume.basics?.name && resume.basics?.email);
+    const hasContact = !!(resume.basics?.phone || resume.basics?.location?.city);
+    const hasProfiles = !!(resume.basics?.profiles && resume.basics.profiles.length > 0);
+    if (hasBasicInfo) completed += 15;
+    if (hasContact) completed += 10;
+    if (hasProfiles) completed += 5;
+
+    // Summary (weight: 10%)
+    total += 10;
+    if (resume.basics?.summary && resume.basics.summary.length > 50) {
+        completed += 10;
+    }
+
+    // Work experience (weight: 25%)
+    total += 25;
+    if (resume.work && resume.work.length > 0) {
+        completed += Math.min(25, resume.work.length * 8);
+    }
+
+    // Education (weight: 15%)
+    total += 15;
+    if (resume.education && resume.education.length > 0) {
+        completed += Math.min(15, resume.education.length * 7);
+    }
+
+    // Skills (weight: 10%)
+    total += 10;
+    if (resume.skills && resume.skills.length > 0) {
+        completed += 10;
+    }
+
+    // Optional sections (weight: 10%)
+    total += 10;
+    let optionalCount = 0;
+    if (resume.projects && resume.projects.length > 0) optionalCount++;
+    if (resume.certificates && resume.certificates.length > 0) optionalCount++;
+    if (resume.languages && resume.languages.length > 0) optionalCount++;
+    if (resume.volunteer && resume.volunteer.length > 0) optionalCount++;
+    completed += Math.min(10, optionalCount * 2.5);
+
+    return Math.round((completed / total) * 100);
 }
 
 /**
@@ -72,17 +113,17 @@ export function EditorUI({ showParser, parserComponent, showCompletion = false }
         updateField('basics', data);
     };
 
-    // Format converter handlers
-    const handleSkillsChange = (oldSkills: { technical: string[]; soft: string[]; languages: string[] }) => {
-        updateField('skills', skillsFromOldFormat(oldSkills));
+    // Direct handlers for JSON Resume types
+    const handleSkillsChange = (skills: Skill[]) => {
+        updateField('skills', skills);
     };
 
-    const handleCertificationsChange = (oldCerts: OldCertification[]) => {
-        updateField('certificates', certificatesFromOldFormat(oldCerts));
+    const handleCertificationsChange = (certificates: Certificate[]) => {
+        updateField('certificates', certificates);
     };
 
-    const handleLanguagesChange = (oldLangs: OldLanguage[]) => {
-        updateField('languages', languagesFromOldFormat(oldLangs));
+    const handleLanguagesChange = (languages: Language[]) => {
+        updateField('languages', languages);
     };
 
     const completionPercentage = showCompletion ? calculateCompletionPercentage(resume) : 0;
@@ -179,7 +220,7 @@ export function EditorUI({ showParser, parserComponent, showCompletion = false }
                 onSave={handleSectionSave}
             >
                 <SkillsForm
-                    skills={skillsToOldFormat(resume.skills)}
+                    skills={resume.skills || []}
                     onChange={handleSkillsChange}
                 />
             </ProfileSection>
@@ -203,7 +244,7 @@ export function EditorUI({ showParser, parserComponent, showCompletion = false }
                 onSave={handleSectionSave}
             >
                 <CertificationsForm
-                    certifications={certificatesToOldFormat(resume.certificates)}
+                    certifications={resume.certificates || []}
                     onChange={handleCertificationsChange}
                 />
             </ProfileSection>
@@ -211,11 +252,11 @@ export function EditorUI({ showParser, parserComponent, showCompletion = false }
             {/* Languages */}
             <ProfileSection
                 title="Languages"
-                description="Languages you speak and your proficiency level"
+                description="Languages you speak and your fluency level"
                 onSave={handleSectionSave}
             >
                 <LanguagesForm
-                    languages={languagesToOldFormat(resume.languages)}
+                    languages={resume.languages || []}
                     onChange={handleLanguagesChange}
                 />
             </ProfileSection>

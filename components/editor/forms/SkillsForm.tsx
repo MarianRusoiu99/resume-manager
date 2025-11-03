@@ -1,199 +1,201 @@
 'use client';
 
-import React, { useState, KeyboardEvent } from 'react';
+import React, { useState } from 'react';
 import { Input, Button } from '@/components/ui';
-
-export interface SkillsData {
-  technical: string[];
-  soft: string[];
-  languages: string[];
-}
+import type { Skill } from '@/lib/validations/jsonresume';
 
 interface SkillsFormProps {
-  skills: SkillsData;
-  onChange: (skills: SkillsData) => void;
+  skills: Skill[];
+  onChange: (skills: Skill[]) => void;
   errors?: Record<string, string>;
 }
 
-export default function SkillsForm({ skills, onChange, errors }: SkillsFormProps) {
-  const [technicalInput, setTechnicalInput] = useState('');
-  const [softInput, setSoftInput] = useState('');
-  const [languageInput, setLanguageInput] = useState('');
+export default function SkillsForm({ skills = [], onChange, errors }: SkillsFormProps) {
+  const [newSkillName, setNewSkillName] = useState('');
+  const [newSkillLevel, setNewSkillLevel] = useState('');
+  const [newKeyword, setNewKeyword] = useState<Record<number, string>>({});
 
-  const handleAddSkill = (type: 'technical' | 'soft' | 'languages', value: string) => {
-    const trimmedValue = value.trim();
-    if (!trimmedValue) return;
+  const handleAddSkill = () => {
+    const trimmedName = newSkillName.trim();
+    if (!trimmedName) return;
     
-    if (!skills[type].includes(trimmedValue)) {
-      onChange({
-        ...skills,
-        [type]: [...skills[type], trimmedValue]
+    const newSkill: Skill = {
+      name: trimmedName,
+      level: newSkillLevel.trim() || undefined,
+      keywords: [],
+    };
+    
+    onChange([...skills, newSkill]);
+    setNewSkillName('');
+    setNewSkillLevel('');
+  };
+
+  const handleRemoveSkill = (index: number) => {
+    onChange(skills.filter((_, i) => i !== index));
+  };
+
+  const handleUpdateSkill = (index: number, updates: Partial<Skill>) => {
+    const updated = skills.map((skill, i) => 
+      i === index ? { ...skill, ...updates } : skill
+    );
+    onChange(updated);
+  };
+
+  const handleAddKeyword = (skillIndex: number, keyword: string) => {
+    const trimmedKeyword = keyword.trim();
+    if (!trimmedKeyword) return;
+    
+    const skill = skills[skillIndex];
+    const keywords = skill.keywords || [];
+    
+    if (!keywords.includes(trimmedKeyword)) {
+      handleUpdateSkill(skillIndex, {
+        keywords: [...keywords, trimmedKeyword]
       });
     }
     
-    // Clear input after adding
-    if (type === 'technical') setTechnicalInput('');
-    if (type === 'soft') setSoftInput('');
-    if (type === 'languages') setLanguageInput('');
+    setNewKeyword(prev => ({ ...prev, [skillIndex]: '' }));
   };
 
-  const handleRemoveSkill = (type: 'technical' | 'soft' | 'languages', index: number) => {
-    onChange({
-      ...skills,
-      [type]: skills[type].filter((_, i) => i !== index)
+  const handleRemoveKeyword = (skillIndex: number, keywordIndex: number) => {
+    const skill = skills[skillIndex];
+    const keywords = skill.keywords || [];
+    
+    handleUpdateSkill(skillIndex, {
+      keywords: keywords.filter((_, i) => i !== keywordIndex)
     });
-  };
-
-  const handleKeyPress = (
-    e: KeyboardEvent<HTMLInputElement>,
-    type: 'technical' | 'soft' | 'languages',
-    value: string
-  ) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddSkill(type, value);
-    }
   };
 
   return (
     <div className="space-y-6">
-      {/* Technical Skills */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Technical Skills
-        </label>
-        <div className="flex space-x-2 mb-3">
+      {/* Add New Skill */}
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+        <h3 className="text-sm font-medium text-gray-700 mb-3">Add New Skill Category</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Input
             type="text"
-            value={technicalInput}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTechnicalInput(e.target.value)}
-            onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyPress(e, 'technical', technicalInput)}
-            placeholder="e.g., JavaScript, Python, AWS"
-            className="flex-1"
+            value={newSkillName}
+            onChange={(e) => setNewSkillName(e.target.value)}
+            placeholder="Skill category (e.g., Web Development)"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddSkill();
+              }
+            }}
+          />
+          <Input
+            type="text"
+            value={newSkillLevel}
+            onChange={(e) => setNewSkillLevel(e.target.value)}
+            placeholder="Level (e.g., Master, Intermediate)"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddSkill();
+              }
+            }}
           />
           <Button
             type="button"
-            onClick={() => handleAddSkill('technical', technicalInput)}
+            onClick={handleAddSkill}
             variant="secondary"
+            className="w-full"
           >
-            Add
+            Add Skill
           </Button>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {skills.technical.map((skill, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
-            >
-              {skill}
-              <button
-                type="button"
-                onClick={() => handleRemoveSkill('technical', index)}
-                className="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none"
-                aria-label={`Remove ${skill}`}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-        {errors?.technical && (
-          <p className="mt-1 text-sm text-red-600">{errors.technical}</p>
-        )}
       </div>
 
-      {/* Soft Skills */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Soft Skills
-        </label>
-        <div className="flex space-x-2 mb-3">
-          <Input
-            type="text"
-            value={softInput}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSoftInput(e.target.value)}
-            onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyPress(e, 'soft', softInput)}
-            placeholder="e.g., Leadership, Communication"
-            className="flex-1"
-          />
-          <Button
-            type="button"
-            onClick={() => handleAddSkill('soft', softInput)}
-            variant="secondary"
-          >
-            Add
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {skills.soft.map((skill, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800"
-            >
-              {skill}
-              <button
-                type="button"
-                onClick={() => handleRemoveSkill('soft', index)}
-                className="ml-2 text-green-600 hover:text-green-800 focus:outline-none"
-                aria-label={`Remove ${skill}`}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-        {errors?.soft && (
-          <p className="mt-1 text-sm text-red-600">{errors.soft}</p>
-        )}
-      </div>
+      {/* Existing Skills */}
+      {skills.length === 0 ? (
+        <p className="text-sm text-gray-500 text-center py-4">
+          No skills added yet. Add your first skill category above.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {skills.map((skill, skillIndex) => (
+            <div key={skillIndex} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">
+                    {skill.name}
+                    {skill.level && (
+                      <span className="ml-2 text-sm text-gray-500">({skill.level})</span>
+                    )}
+                  </h4>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => handleRemoveSkill(skillIndex)}
+                  variant="ghost"
+                  className="text-red-600 hover:text-red-800 h-auto p-1"
+                >
+                  Remove
+                </Button>
+              </div>
 
-      {/* Languages */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Languages
-        </label>
-        <div className="flex space-x-2 mb-3">
-          <Input
-            type="text"
-            value={languageInput}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLanguageInput(e.target.value)}
-            onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => handleKeyPress(e, 'languages', languageInput)}
-            placeholder="e.g., English (Native), Spanish (Fluent)"
-            className="flex-1"
-          />
-          <Button
-            type="button"
-            onClick={() => handleAddSkill('languages', languageInput)}
-            variant="secondary"
-          >
-            Add
-          </Button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {skills.languages.map((lang, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800"
-            >
-              {lang}
-              <button
-                type="button"
-                onClick={() => handleRemoveSkill('languages', index)}
-                className="ml-2 text-purple-600 hover:text-purple-800 focus:outline-none"
-                aria-label={`Remove ${lang}`}
-              >
-                ×
-              </button>
-            </span>
+              {/* Keywords */}
+              <div>
+                <label className="block text-sm font-medium text-gray-600 mb-2">
+                  Keywords / Technologies
+                </label>
+                <div className="flex space-x-2 mb-2">
+                  <Input
+                    type="text"
+                    value={newKeyword[skillIndex] || ''}
+                    onChange={(e) => setNewKeyword(prev => ({ 
+                      ...prev, 
+                      [skillIndex]: e.target.value 
+                    }))}
+                    placeholder="e.g., JavaScript, React, Node.js"
+                    className="flex-1"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddKeyword(skillIndex, newKeyword[skillIndex] || '');
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => handleAddKeyword(skillIndex, newKeyword[skillIndex] || '')}
+                    variant="secondary"
+                  >
+                    Add
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(skill.keywords || []).map((keyword, keywordIndex) => (
+                    <span
+                      key={keywordIndex}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                    >
+                      {keyword}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveKeyword(skillIndex, keywordIndex)}
+                        className="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none"
+                        aria-label={`Remove ${keyword}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
           ))}
         </div>
-        {errors?.languages && (
-          <p className="mt-1 text-sm text-red-600">{errors.languages}</p>
-        )}
-      </div>
+      )}
+
+      {errors?.skills && (
+        <p className="text-sm text-red-600">{errors.skills}</p>
+      )}
 
       <p className="text-sm text-gray-600">
-        Press Enter or click Add to add skills. Click the × to remove.
+        <strong>JSON Resume Format:</strong> Each skill category can have a name, optional level, and keywords.
+        Example: "Web Development" with keywords "HTML", "CSS", "JavaScript".
       </p>
     </div>
   );

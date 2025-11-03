@@ -5,30 +5,23 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-
-export interface Certification {
-  id: string;
-  name: string;
-  issuer: string;
-  date: string;
-  url?: string;
-}
+import type { Certificate } from '@/lib/validations/jsonresume';
 
 interface CertificationsFormProps {
-  certifications: Certification[];
-  onChange: (certifications: Certification[]) => void;
+  certifications: Certificate[];
+  onChange: (certifications: Certificate[]) => void;
   errors?: Record<string, string>;
 }
 
 export default function CertificationsForm({
-  certifications,
+  certifications = [],
   onChange,
   errors,
 }: CertificationsFormProps) {
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
 
-  const emptyEntry: Omit<Certification, 'id'> = {
+  const emptyEntry: Certificate = {
     name: '',
     issuer: '',
     date: '',
@@ -38,47 +31,42 @@ export default function CertificationsForm({
   const [newEntry, setNewEntry] = useState(emptyEntry);
 
   const handleAdd = () => {
-    if (!newEntry.name.trim() || !newEntry.issuer.trim()) {
+    if (!newEntry.name?.trim() || !newEntry.issuer?.trim()) {
       return;
     }
 
-    const certification: Certification = {
-      id: Date.now().toString(),
-      ...newEntry,
-    };
-
-    onChange([...certifications, certification]);
+    onChange([...certifications, newEntry]);
     setNewEntry(emptyEntry);
     setIsAdding(false);
   };
 
-  const handleUpdate = (id: string) => {
-    const updated = certifications.map((cert) =>
-      cert.id === id ? { ...cert, ...newEntry } : cert
+  const handleUpdate = (index: number) => {
+    const updated = certifications.map((cert, i) =>
+      i === index ? newEntry : cert
     );
     onChange(updated);
     setNewEntry(emptyEntry);
-    setEditingId(null);
+    setEditingIndex(null);
   };
 
-  const handleDelete = (id: string) => {
-    onChange(certifications.filter((cert) => cert.id !== id));
+  const handleDelete = (index: number) => {
+    onChange(certifications.filter((_, i) => i !== index));
   };
 
-  const startEdit = (cert: Certification) => {
+  const startEdit = (cert: Certificate, index: number) => {
     setNewEntry({
-      name: cert.name,
-      issuer: cert.issuer,
-      date: cert.date,
+      name: cert.name || '',
+      issuer: cert.issuer || '',
+      date: cert.date || '',
       url: cert.url || '',
     });
-    setEditingId(cert.id);
+    setEditingIndex(index);
     setIsAdding(false);
   };
 
   const cancelEdit = () => {
     setNewEntry(emptyEntry);
-    setEditingId(null);
+    setEditingIndex(null);
     setIsAdding(false);
   };
 
@@ -86,7 +74,7 @@ export default function CertificationsForm({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900">Certifications</h3>
-        {!isAdding && !editingId && (
+        {!isAdding && editingIndex === null && (
           <Button
             type="button"
             onClick={() => setIsAdding(true)}
@@ -104,15 +92,15 @@ export default function CertificationsForm({
 
       {/* List of existing certifications */}
       <div className="space-y-3">
-        {certifications.map((cert) => (
-          <Card key={cert.id} className="p-4">
-            {editingId === cert.id ? (
+        {certifications.map((cert, index) => (
+          <Card key={index} className="p-4">
+            {editingIndex === index ? (
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="cert-name-edit">Certification Name</Label>
                   <Input
                     id="cert-name-edit"
-                    value={newEntry.name}
+                    value={newEntry.name || ''}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setNewEntry({ ...newEntry, name: e.target.value })
                     }
@@ -124,7 +112,7 @@ export default function CertificationsForm({
                   <Label htmlFor="cert-issuer-edit">Issuing Organization</Label>
                   <Input
                     id="cert-issuer-edit"
-                    value={newEntry.issuer}
+                    value={newEntry.issuer || ''}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setNewEntry({ ...newEntry, issuer: e.target.value })
                     }
@@ -137,7 +125,7 @@ export default function CertificationsForm({
                   <Input
                     id="cert-date-edit"
                     type="month"
-                    value={newEntry.date}
+                    value={newEntry.date || ''}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setNewEntry({ ...newEntry, date: e.target.value })
                     }
@@ -148,7 +136,7 @@ export default function CertificationsForm({
                   <Input
                     id="cert-url-edit"
                     type="url"
-                    value={newEntry.url}
+                    value={newEntry.url || ''}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       setNewEntry({ ...newEntry, url: e.target.value })
                     }
@@ -158,8 +146,8 @@ export default function CertificationsForm({
                 <div className="flex space-x-2">
                   <Button
                     type="button"
-                    onClick={() => handleUpdate(cert.id)}
-                    disabled={!newEntry.name.trim() || !newEntry.issuer.trim()}
+                    onClick={() => handleUpdate(index)}
+                    disabled={!newEntry.name?.trim() || !newEntry.issuer?.trim()}
                   >
                     Save
                   </Button>
@@ -200,7 +188,7 @@ export default function CertificationsForm({
                   <div className="flex space-x-2 ml-4">
                     <Button
                       type="button"
-                      onClick={() => startEdit(cert)}
+                      onClick={() => startEdit(cert, index)}
                       variant="secondary"
                       size="sm"
                     >
@@ -208,7 +196,7 @@ export default function CertificationsForm({
                     </Button>
                     <Button
                       type="button"
-                      onClick={() => handleDelete(cert.id)}
+                      onClick={() => handleDelete(index)}
                       variant="destructive"
                       size="sm"
                     >
@@ -278,7 +266,7 @@ export default function CertificationsForm({
               <Button
                 type="button"
                 onClick={handleAdd}
-                disabled={!newEntry.name.trim() || !newEntry.issuer.trim()}
+                disabled={!newEntry.name?.trim() || !newEntry.issuer?.trim()}
               >
                 Add Certification
               </Button>
