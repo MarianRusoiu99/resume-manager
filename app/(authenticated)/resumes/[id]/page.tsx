@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { TemplateSelector } from '@/components/templates/TemplateSelector';
+import { TemplateDropdown } from '@/components/templates/TemplateDropdown';
 import { ResumeEditor } from '@/components/resume/ResumeEditor';
 import { VersionHistory } from '@/components/resume/VersionHistory';
 
@@ -373,6 +373,12 @@ export default function ResumeDetailPage() {
               Edit Content
             </Button>
   
+            <TemplateDropdown
+              currentTemplateId={resume.templateId}
+              resumeId={resumeId}
+              onTemplateChange={handleTemplateChange}
+            />
+
             <Button
               onClick={() => setIsVersionHistoryOpen(true)}
               variant="secondary"
@@ -433,15 +439,6 @@ export default function ResumeDetailPage() {
         <h2 className="text-lg font-semibold mb-3">Job Description</h2>
         <p className="text-gray-700 whitespace-pre-wrap">{resume.jobDescription}</p>
       </Card>
-
-      {/* Template Selector */}
-      <div className="mb-6 no-print">
-        <TemplateSelector
-          currentTemplateId={resume.templateId}
-          resumeId={resumeId}
-          onTemplateChange={handleTemplateChange}
-        />
-      </div>
 
       {/* Cover Letter (if generated) */}
       {resume.coverLetter && (
