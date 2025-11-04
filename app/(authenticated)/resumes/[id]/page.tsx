@@ -10,6 +10,7 @@ import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TemplateDropdown } from '@/components/templates/TemplateDropdown';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import { PDFStylePreview } from '@/components/resume/PDFStylePreview';
 import { Edit } from 'lucide-react';
 
 interface Resume {
@@ -436,13 +437,12 @@ export default function ResumeDetailPage() {
             </Button>
           </div>
         </div>
-        <div className="w-full border rounded-lg overflow-hidden bg-white" style={{ height: '800px' }}>
-          <iframe
-            src={`/api/resumes/${resumeId}/preview?v=${pdfPreviewKey}`}
-            className="w-full h-full border-0"
-            title="Resume Preview"
-          />
-        </div>
+        
+        {/* PDF-Style Preview with Pagination */}
+        <PDFStylePreview 
+          resumeId={resumeId} 
+          previewKey={pdfPreviewKey}
+        />
       </Card>
 
       {/* Job Description */}

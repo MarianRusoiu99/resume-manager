@@ -103,10 +103,61 @@ export function renderCompleteDocument(
       box-sizing: border-box;
     }
     
-    body {
+    /* A4 Page sizing for consistent preview and PDF export */
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 210mm; /* A4 width */
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       line-height: 1.6;
       color: #333;
+      background: white;
+    }
+    
+    body {
+      /* Ensure content fits A4 page */
+      max-width: 210mm;
+      margin: 0 auto;
+    }
+    
+    /* Ensure resume content respects A4 dimensions */
+    .resume {
+      width: 210mm !important; /* A4 width - override template */
+      max-width: 210mm !important; /* Override template max-width */
+      min-height: 297mm; /* A4 height */
+      margin: 0 !important; /* Override template centering */
+      padding: 40px !important; /* Consistent padding */
+      background: white;
+      position: relative;
+      box-sizing: border-box;
+    }
+    
+    /* Print-specific adjustments */
+    @media print {
+      html, body {
+        width: 210mm;
+        height: 297mm;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .resume {
+        page-break-after: auto;
+        padding: 20px !important; /* Less padding for print */
+      }
+      
+      /* Prevent awkward breaks */
+      .section, .item {
+        page-break-inside: avoid;
+      }
     }
     
     /* Template-specific styles */

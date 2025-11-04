@@ -134,10 +134,8 @@ export const modernTemplateHtml = `
 `;
 
 export const modernTemplateCss = `
+/* Note: .resume dimensions and padding are controlled by the renderer for A4 consistency */
 .resume {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 40px;
   background: white;
 }
 
@@ -282,20 +280,5 @@ export const modernTemplateCss = `
 .skill-keywords {
   font-size: 14px;
   color: #64748b;
-}
-
-/* Print styles */
-@media print {
-  .resume {
-    padding: 20px;
-  }
-  
-  .section {
-    page-break-inside: avoid;
-  }
-  
-  .item {
-    page-break-inside: avoid;
-  }
 }
 `;

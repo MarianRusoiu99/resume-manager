@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Download, Copy, Trash2, Edit } from 'lucide-react';
+import { PDFStylePreview } from './PDFStylePreview';
 
 export interface ResumePreviewWithActionsProps {
   resumeId: string;
@@ -203,13 +204,12 @@ export function ResumePreviewWithActions({
               Refresh Preview
             </Button>
           </div>
-          <div className="w-full border rounded-lg overflow-hidden bg-white" style={{ height: '800px' }}>
-            <iframe
-              src={`/api/resumes/${resumeId}/preview?v=${pdfPreviewKey}`}
-              className="w-full h-full border-0"
-              title="Resume Preview"
-            />
-          </div>
+          
+          {/* PDF-Style Preview with Pagination */}
+          <PDFStylePreview 
+            resumeId={resumeId} 
+            previewKey={pdfPreviewKey}
+          />
         </Card>
       </div>
 
