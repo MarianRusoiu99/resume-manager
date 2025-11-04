@@ -4,6 +4,8 @@
  * Centralized export for all AI functionality
  */
 
+//TODO REFACTOR FULL FOLDER STRUCTURE LATER
+
 // Configuration
 export * from './config';
 
@@ -82,9 +84,7 @@ export type {
 export {
   BaseAgent,
   createAgentMessages,
-  executeAgentBatch,
-  JobAnalysisAgent,
-  analyzeJob
+  executeAgentBatch
 } from './agents';
 
 export type {
@@ -106,4 +106,4 @@ export {
 
 export {
   analyzeJobAgent
-} from './workflow/agents/job-analysis.agent';
+} from './agents/job-analysis.agent';

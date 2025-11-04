@@ -42,40 +42,41 @@ export type {
   GenerateResumeResult
 } from './service';
 
-// Agents
+// Agents (from lib/ai/agents)
 export {
   analyzeJobAgent,
-  testJobAnalysisAgent
-} from './agents/job-analysis.agent';
+  JobAnalysisAgent
+} from '../agents/job-analysis.agent';
 
 export {
   profileMatchingAgent,
   testProfileMatchingAgent
-} from './agents/profile-matching.agent';
+} from '../agents/profile-matching.agent';
 
 export {
   contentOptimizationAgent,
   testContentOptimizationAgent
-} from './agents/content-optimization.agent';
+} from '../agents/content-optimization.agent';
 
 export {
   formatValidationAgent,
   testFormatValidationAgent
-} from './agents/format-validation.agent';
+} from '../agents/format-validation.agent';
 
 export {
   outputGeneratorAgent,
   testOutputGeneratorAgent
-} from './agents/output-generator.agent';
+} from '../agents/output-generator.agent';
 
+// Workflow nodes (from lib/ai/workflow/nodes)
 export {
-  analyzeJobWorkflowNode,
-  profileMatchingWorkflowNode,
-  contentOptimizationWorkflowNode,
-  formatValidationWorkflowNode,
-  outputGeneratorWorkflowNode,
-  workflowAgents
-} from './agents';
+  jobAnalysisNode,
+  profileMatchingNode,
+  contentOptimizationNode,
+  formatValidationNode,
+  outputGenerationNode,
+  coverLetterGenerationNode
+} from './nodes';
 
 // Utilities
 export {
@@ -97,13 +98,3 @@ export {
   validateUserProfile,
   logState
 } from './utils';
-
-// Testing
-export {
-  createMockUserProfile,
-  createMockJobDescription,
-  testWorkflowValidation,
-  testEmptyWorkflowExecution,
-  runAllTests,
-  testUtils
-} from './testing';

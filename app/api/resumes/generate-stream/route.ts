@@ -67,13 +67,33 @@ export async function POST(request: NextRequest) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        try {
-          // Helper function to send SSE messages
-          const sendEvent = (event: string, data: unknown) => {
+        // Track controller state to prevent "already closed" errors
+        let isControllerClosed = false;
+
+        // Helper function to send SSE messages (only if controller is open)
+        const sendEvent = (event: string, data: unknown) => {
+          if (isControllerClosed) {
+            console.warn(`📡 SSE: Attempted to send ${event} after stream closed`);
+            return;
+          }
+          try {
             const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
             controller.enqueue(encoder.encode(message));
-          };
+          } catch (error) {
+            console.error(`📡 SSE: Error sending ${event}:`, error);
+            isControllerClosed = true;
+          }
+        };
 
+        // Helper to safely close controller
+        const closeController = () => {
+          if (!isControllerClosed) {
+            isControllerClosed = true;
+            controller.close();
+          }
+        };
+
+        try {
           // Send initial connection event
           sendEvent('connected', { message: 'Connection established' });
 
@@ -108,7 +128,7 @@ export async function POST(request: NextRequest) {
               error: 'Resume generation failed',
               details: result.errors,
             });
-            controller.close();
+            closeController();
             return;
           }
 
@@ -123,14 +143,13 @@ export async function POST(request: NextRequest) {
           console.log(`✅ SSE: Resume generation complete (ID: ${result.resumeId})`);
 
           // Close the stream
-          controller.close();
+          closeController();
         } catch (error) {
           console.error('❌ SSE: Error during generation:', error);
-          const errorMessage = `event: error\ndata: ${JSON.stringify({
+          sendEvent('error', {
             error: error instanceof Error ? error.message : 'Unknown error occurred'
-          })}\n\n`;
-          controller.enqueue(encoder.encode(errorMessage));
-          controller.close();
+          });
+          closeController();
         }
       },
 

@@ -2,7 +2,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { ResumeGenerationState } from '../types';
 import { coverLetterAgent } from '../../agents/cover-letter.agent';
 import { addTokens, addError } from '../utils';
-import { getProviderForUser } from '../../provider-utils';
+import { getProviderForUser } from '../../providers';
 
 /**
  * Cover Letter Generation Workflow Node

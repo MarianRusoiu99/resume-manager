@@ -8,6 +8,7 @@ export * from './message-builder';
 export * from './response-parser';
 export * from './state-manager';
 export * from './token-counter';
+export * from './structured-parser';
 
 // Re-export common functions for convenience
 export {
@@ -35,3 +36,13 @@ export {
   estimateTokens,
   createTokenTracker
 } from './token-counter';
+
+export {
+  createStructuredParser,
+  createJsonParser,
+  parseWithFallback,
+  validateAgainstSchema,
+  safeParseWithSchema,
+  formatZodError,
+  RobustStructuredParser
+} from './structured-parser';

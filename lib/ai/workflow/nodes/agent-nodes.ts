@@ -2,18 +2,20 @@
  * Agent Node Wrappers
  * 
  * Wrapper functions that integrate agent logic with the workflow graph
- * These nodes call agents and handle state updates consistently
+ * These nodes call agents directly and handle state updates consistently
  */
 
 import type { ResumeGenerationState } from '../types';
 import {
-  analyzeJobWorkflowNode,
-  profileMatchingWorkflowNode,
-  contentOptimizationWorkflowNode,
-  formatValidationWorkflowNode,
-  outputGeneratorWorkflowNode
-} from '../agents';
-import { coverLetterWorkflowNode } from '../agents/cover-letter.node';
+  analyzeJobAgent,
+  profileMatchingAgent,
+  contentOptimizationAgent,
+  formatValidationAgent,
+  outputGeneratorAgent
+} from '../../agents';
+import { coverLetterWorkflowNode } from './cover-letter.node';
+import { addError } from '../utils';
+import { getProviderForUser } from '../../providers';
 
 /**
  * Job Analysis Node
@@ -21,17 +23,28 @@ import { coverLetterWorkflowNode } from '../agents/cover-letter.node';
  * Analyzes job description to extract requirements, keywords, and responsibilities
  * 
  * @param state - Current workflow state
- * @param apiKey - OpenAI API key (injected by workflow service)
+ * @param userId - User ID for API key lookup
  * @returns Updated state with job analysis results
  */
 export async function jobAnalysisNode(
   state: ResumeGenerationState,
-  apiKey: string
+  userId: string
 ): Promise<Partial<ResumeGenerationState>> {
   console.log('🔍 [analyze_job] Starting job analysis...');
   
   try {
-    const result = await analyzeJobWorkflowNode(state, apiKey);
+    // Get user's OpenAI provider
+    const provider = await getProviderForUser(userId, 'openai');
+    
+    if (!provider) {
+      return addError(state, 'No OpenAI API key found. Please add an API key in settings.');
+    }
+
+    // Get provider configuration
+    const config = provider.getConfig();
+
+    // Call the job analysis agent
+    const result = await analyzeJobAgent(state, config.apiKey, config.model);
     
     if (result.jobAnalysis) {
       console.log('✅ [analyze_job] Analysis complete');
@@ -58,12 +71,12 @@ export async function jobAnalysisNode(
  * Matches user profile against job requirements to assess fit
  * 
  * @param state - Current workflow state
- * @param apiKey - OpenAI API key
+ * @param userId - User ID for API key lookup
  * @returns Updated state with profile match results
  */
 export async function profileMatchingNode(
   state: ResumeGenerationState,
-  apiKey: string
+  userId: string
 ): Promise<Partial<ResumeGenerationState>> {
   console.log('🎯 [match_profile] Starting profile matching...');
   
@@ -73,7 +86,18 @@ export async function profileMatchingNode(
       throw new Error('Job analysis is required before profile matching');
     }
     
-    const result = await profileMatchingWorkflowNode(state, apiKey);
+    // Get user's OpenAI provider
+    const provider = await getProviderForUser(userId, 'openai');
+    
+    if (!provider) {
+      return addError(state, 'No OpenAI API key found. Please add an API key in settings.');
+    }
+
+    // Get provider configuration
+    const config = provider.getConfig();
+
+    // Call the profile matching agent
+    const result = await profileMatchingAgent(state, config.apiKey, config.model);
     
     if (result.profileMatch) {
       console.log('✅ [match_profile] Matching complete');
@@ -100,12 +124,12 @@ export async function profileMatchingNode(
  * Optimizes resume content based on job requirements and profile match
  * 
  * @param state - Current workflow state
- * @param apiKey - OpenAI API key
+ * @param userId - User ID for API key lookup
  * @returns Updated state with optimized resume
  */
 export async function contentOptimizationNode(
   state: ResumeGenerationState,
-  apiKey: string
+  userId: string
 ): Promise<Partial<ResumeGenerationState>> {
   console.log('✨ [optimize_content] Starting content optimization...');
   
@@ -118,7 +142,18 @@ export async function contentOptimizationNode(
       throw new Error('Profile matching is required for content optimization');
     }
     
-    const result = await contentOptimizationWorkflowNode(state, apiKey);
+    // Get user's OpenAI provider
+    const provider = await getProviderForUser(userId, 'openai');
+    
+    if (!provider) {
+      return addError(state, 'No OpenAI API key found. Please add an API key in settings.');
+    }
+
+    // Get provider configuration
+    const config = provider.getConfig();
+
+    // Call the content optimization agent
+    const result = await contentOptimizationAgent(state, config.apiKey, config.model);
     
     if (result.optimizedResume) {
       console.log('✅ [optimize_content] Optimization complete');
@@ -144,12 +179,12 @@ export async function contentOptimizationNode(
  * Validates resume format for ATS compliance and best practices
  * 
  * @param state - Current workflow state
- * @param apiKey - OpenAI API key
+ * @param userId - User ID for API key lookup
  * @returns Updated state with validation results
  */
 export async function formatValidationNode(
   state: ResumeGenerationState,
-  apiKey: string
+  userId: string
 ): Promise<Partial<ResumeGenerationState>> {
   console.log('📐 [validate_format] Starting format validation...');
   
@@ -159,7 +194,18 @@ export async function formatValidationNode(
       throw new Error('Optimized resume is required for format validation');
     }
     
-    const result = await formatValidationWorkflowNode(state, apiKey);
+    // Get user's OpenAI provider
+    const provider = await getProviderForUser(userId, 'openai');
+    
+    if (!provider) {
+      return addError(state, 'No OpenAI API key found. Please add an API key in settings.');
+    }
+
+    // Get provider configuration
+    const config = provider.getConfig();
+
+    // Call the format validation agent
+    const result = await formatValidationAgent(state, config.apiKey, config.model);
     
     if (result.formatValidation) {
       console.log('✅ [validate_format] Validation complete');
@@ -198,7 +244,8 @@ export async function outputGenerationNode(
       throw new Error('Optimized resume is required for output generation');
     }
     
-    const result = await outputGeneratorWorkflowNode(state);
+    // Output generator doesn't need API key - just assembles data
+    const result = await outputGeneratorAgent(state);
     
     if (result.generatedResume) {
       console.log('✅ [generate_output] Resume generated successfully');
@@ -222,17 +269,17 @@ export async function outputGenerationNode(
  * Generates personalized cover letter based on job and profile
  * 
  * @param state - Current workflow state
- * @param apiKey - OpenAI API key
+ * @param userId - User ID for API key lookup
  * @returns Updated state with cover letter
  */
 export async function coverLetterGenerationNode(
   state: ResumeGenerationState,
-  apiKey: string
+  userId: string
 ): Promise<Partial<ResumeGenerationState>> {
   console.log('✉️ [generate_cover_letter] Starting cover letter generation...');
   
   try {
-    const result = await coverLetterWorkflowNode(state, apiKey);
+    const result = await coverLetterWorkflowNode(state, userId);
     
     if (result.coverLetter) {
       console.log('✅ [generate_cover_letter] Cover letter generated');

@@ -1,15 +1,13 @@
 /**
- * AI Agents Module
+ * AI Agents - Main Export
  * 
- * Export agent classes and helper functions
+ * Specialized agents for resume generation workflow
  */
 
-// Base agent class
-export { BaseAgent, createAgentMessages, executeAgentBatch } from './base-agent';
-export type { BaseAgentConfig, AgentResult } from './base-agent';
-
-// Refactored agents
-export { JobAnalysisAgent, analyzeJob } from './job-analysis-refactored.agent';
-
-// Re-export original cover letter agent (not yet refactored)
+export * from './base-agent';
+export * from './job-analysis.agent';
+export * from './profile-matching.agent';
+export * from './content-optimization.agent';
+export * from './format-validation.agent';
+export * from './output-generator.agent';
 export * from './cover-letter.agent';

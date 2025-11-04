@@ -11,7 +11,6 @@ export {
 
 export {
   JOB_ANALYSIS_USER_TEMPLATE,
-  formatJobAnalysisPrompt,
   type JobAnalysisPromptInput
 } from './user-template';
 

@@ -1,26 +1,62 @@
 import { StateGraph, END, START, Annotation } from '@langchain/langgraph';
 import { ResumeGenerationState } from './types';
-import { setCurrentStep, addError, logState } from './utils';
+import { logState } from './utils';
 import { createMemoryCheckpointer } from './checkpointing';
 
-// Define the state annotation for LangGraph
+/**
+ * State reducers for array fields
+ * These define how to merge state updates for array fields
+ */
+function messagesReducer(left: ResumeGenerationState['messages'], right: ResumeGenerationState['messages']) {
+  // Append new messages to existing ones
+  return [...left, ...right];
+}
+
+function errorsReducer(left: string[], right: string[]) {
+  // Append new errors to existing ones
+  return [...left, ...right];
+}
+
+function tokensReducer(left: number, right: number) {
+  // Sum token usage
+  return left + right;
+}
+
+/**
+ * Define the state annotation for LangGraph with proper reducers
+ * This provides type-safe state management with automatic merging
+ */
 const ResumeStateAnnotation = Annotation.Root({
+  // Input data
   jobDescription: Annotation<string>(),
   jobTitle: Annotation<string | undefined>(),
   companyName: Annotation<string | undefined>(),
   userResume: Annotation<ResumeGenerationState['userResume']>(),
   personalInstructions: Annotation<string | undefined>(),
   includeCoverLetter: Annotation<boolean | undefined>(),
+  
+  // Agent results - will be replaced, not merged
   jobAnalysis: Annotation<ResumeGenerationState['jobAnalysis']>(),
   profileMatch: Annotation<ResumeGenerationState['profileMatch']>(),
   optimizedResume: Annotation<ResumeGenerationState['optimizedResume']>(),
   formatValidation: Annotation<ResumeGenerationState['formatValidation']>(),
   generatedResume: Annotation<ResumeGenerationState['generatedResume']>(),
   coverLetter: Annotation<ResumeGenerationState['coverLetter']>(),
-  messages: Annotation<ResumeGenerationState['messages']>(),
+  
+  // Workflow metadata with custom reducers
+  messages: Annotation<ResumeGenerationState['messages'], ResumeGenerationState['messages']>({
+    reducer: messagesReducer,
+    default: () => []
+  }),
   currentStep: Annotation<string | undefined>(),
-  errors: Annotation<string[]>(),
-  tokensUsed: Annotation<number>()
+  errors: Annotation<string[], string[]>({
+    reducer: errorsReducer,
+    default: () => []
+  }),
+  tokensUsed: Annotation<number, number>({
+    reducer: tokensReducer,
+    default: () => 0
+  })
 });
 
 /**
@@ -42,82 +78,82 @@ export function createResumeWorkflowGraph() {
     try {
       // Check for required fields
       if (!state.jobDescription || state.jobDescription.trim().length === 0) {
-        return addError(
-          setCurrentStep(state, 'validate_input'),
-          'Job description is required'
-        );
+        return {
+          currentStep: 'validate_input',
+          errors: ['Job description is required']
+        };
       }
 
       if (!state.userResume) {
-        return addError(
-          setCurrentStep(state, 'validate_input'),
-          'User resume is required'
-        );
+        return {
+          currentStep: 'validate_input',
+          errors: ['User resume is required']
+        };
       }
 
       console.log('✅ Input validation passed');
-      return setCurrentStep(state, 'validate_input');
+      return { currentStep: 'validate_input' };
     } catch (error) {
       console.error('❌ Input validation failed:', error);
-      return addError(
-        setCurrentStep(state, 'validate_input'),
-        `Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      return {
+        currentStep: 'validate_input',
+        errors: [`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`]
+      };
     }
   });
 
   /**
    * Job analysis node placeholder
    */
-  workflow.addNode('analyze_job', async (state: ResumeGenerationState) => {
+  workflow.addNode('analyze_job', async () => {
     console.log('🔍 Analyzing job description...');
     // Will be implemented in Phase 4.2
-    return setCurrentStep(state, 'analyze_job');
+    return { currentStep: 'analyze_job' };
   });
 
   /**
    * Profile matching node placeholder
    */
-  workflow.addNode('match_profile', async (state: ResumeGenerationState) => {
+  workflow.addNode('match_profile', async () => {
     console.log('🎯 Matching profile to job...');
     // Will be implemented in Phase 4.3
-    return setCurrentStep(state, 'match_profile');
+    return { currentStep: 'match_profile' };
   });
 
   /**
    * Content optimization node placeholder
    */
-  workflow.addNode('optimize_content', async (state: ResumeGenerationState) => {
+  workflow.addNode('optimize_content', async () => {
     console.log('✨ Optimizing content...');
     // Will be implemented in Phase 4.4
-    return setCurrentStep(state, 'optimize_content');
+    return { currentStep: 'optimize_content' };
   });
 
   /**
    * Format validation node placeholder
    */
-  workflow.addNode('validate_format', async (state: ResumeGenerationState) => {
+  workflow.addNode('validate_format', async () => {
     console.log('📐 Validating format...');
     // Will be implemented in Phase 4.5
-    return setCurrentStep(state, 'validate_format');
+    return { currentStep: 'validate_format' };
   });
 
   /**
    * Output generation node placeholder
    */
-  workflow.addNode('generate_output', async (state: ResumeGenerationState) => {
+  workflow.addNode('generate_output', async () => {
     console.log('📄 Generating final output...');
     // Will be implemented in Phase 4.6
-    return setCurrentStep(state, 'generate_output');
+    return { currentStep: 'generate_output' };
   });
 
   /**
    * Cover letter generation node (conditional)
    */
-  workflow.addNode('generate_cover_letter', async (state: ResumeGenerationState) => {
+  workflow.addNode('generate_cover_letter', async () => {
     console.log('✉️ Generating cover letter...');
     // Will be implemented in Phase 7.2
-    return setCurrentStep(state, 'generate_cover_letter');
+    return { currentStep: 'generate_cover_letter' };
   });
 
   /**
@@ -126,7 +162,7 @@ export function createResumeWorkflowGraph() {
   workflow.addNode('handle_error', async (state: ResumeGenerationState) => {
     console.error('❌ Workflow error encountered:', state.errors);
     logState(state, '  ');
-    return setCurrentStep(state, 'error');
+    return { currentStep: 'error' };
   });
 
   // Define the workflow edges

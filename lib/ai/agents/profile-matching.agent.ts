@@ -1,3 +1,13 @@
+import { ChatOpenAI } from '@langchain/openai';
+import { PromptTemplate } from '@langchain/core/prompts';
+import { RunnableSequence } from '@langchain/core/runnables';
+import { StringOutputParser } from '@langchain/core/output_parsers';
+import type { ResumeGenerationState } from '../workflow/types';
+import type { Resume } from '@/lib/validations/jsonresume';
+import { addError, createSystemMessage, createAIMessage, parseAgentJSON } from '../workflow/utils';
+import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
+import { PROFILE_MATCHING_PROMPT } from '../prompts/agents/profile-matching';
+
 /**
  * Profile Matching Agent
  * 
@@ -11,79 +21,6 @@
  * This agent uses OpenAI to intelligently compare the user's background
  * with job requirements extracted by the Job Analysis Agent.
  */
-
-import { ChatOpenAI } from '@langchain/openai';
-import { PromptTemplate } from '@langchain/core/prompts';
-import { RunnableSequence } from '@langchain/core/runnables';
-import { StringOutputParser } from '@langchain/core/output_parsers';
-import type { ResumeGenerationState } from '../types';
-import type { Resume } from '@/lib/validations/jsonresume';
-import { addMessage, addError, addTokens, createSystemMessage, createAIMessage, parseAgentJSON } from '../utils';
-import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
-
-/**
- * Prompt template for profile matching
- * Instructs the AI to compare profile against job requirements
- */
-const PROFILE_MATCHING_PROMPT = `You are an expert recruiter and career advisor. Your task is to analyze how well a candidate's profile matches a job's requirements and provide actionable recommendations.
-
-You will receive:
-1. Job requirements (required skills, preferred skills, responsibilities)
-2. Candidate's profile (experience, education, skills)
-
-Analyze the match and provide:
-1. **Overall Match Score** (0-100): How well the candidate fits the role
-2. **Skill Match Details**: Which skills they have vs. need
-3. **Experience Relevance** (0-10): How relevant their experience is
-4. **Education Match** (0-10): How well their education aligns
-5. **Missing Qualifications**: Critical gaps in their profile
-6. **Strengths**: What makes them a strong candidate
-7. **Recommendations**: Specific actions to improve their application
-
-Job Requirements:
-- Required Skills: {requiredSkills}
-- Preferred Skills: {preferredSkills}
-- Key Responsibilities: {keyResponsibilities}
-- Job Summary: {jobSummary}
-
-Candidate Profile:
-- Name: {candidateName}
-- Summary: {candidateSummary}
-- Experience: {experience}
-- Education: {education}
-- Skills: {skills}
-
-Provide your analysis in the following JSON format:
-\`\`\`json
-{{
-  "overallMatchScore": 0-100,
-  "skillMatchScore": 0-100,
-  "experienceRelevanceScore": 0-10,
-  "educationMatchScore": 0-10,
-  "matchedSkills": ["skill1", "skill2", ...],
-  "missingRequiredSkills": ["skill1", "skill2", ...],
-  "missingPreferredSkills": ["skill1", "skill2", ...],
-  "relevantExperience": [
-    {{
-      "company": "Company Name",
-      "title": "Job Title",
-      "relevanceScore": 0-10,
-      "reasoning": "Why this experience is relevant"
-    }}
-  ],
-  "strengths": ["strength1", "strength2", ...],
-  "gaps": ["gap1", "gap2", ...],
-  "recommendations": ["recommendation1", "recommendation2", ...]
-}}
-\`\`\`
-
-Guidelines:
-- Be honest about gaps but encouraging about strengths
-- Focus on actionable recommendations
-- Consider transferable skills from different domains
-- Assess both technical and soft skills
-- Be specific in reasoning for experience relevance
-- Return ONLY the JSON object, nothing else`;
 
 /**
  * Format work experience for the prompt
@@ -182,12 +119,6 @@ export async function profileMatchingAgent(
     // Create the matching chain
     const chain = createProfileMatchingChain(apiKey, model);
 
-    // Add system message
-    let updatedState = addMessage(
-      state,
-      createSystemMessage('Analyzing profile match against job requirements...')
-    );
-
     // Prepare input data
     const jobAnalysis = state.jobAnalysis;
     const resume = state.userResume;
@@ -252,16 +183,6 @@ export async function profileMatchingAgent(
       return addError(state, error);
     }
 
-    // Add AI response message
-    updatedState = addMessage(
-      updatedState,
-      createAIMessage(
-        `Profile analysis complete. Overall match: ${matching.overallMatchScore}%. ` +
-        `Found ${matching.matchedSkills?.length || 0} matching skills. ` +
-        `Identified ${matching.missingRequiredSkills?.length || 0} critical gaps.`
-      )
-    );
-
     // Estimate token usage
     const inputLength = JSON.stringify({
       jobAnalysis,
@@ -273,7 +194,7 @@ export async function profileMatchingAgent(
     }).length;
     const inputTokens = Math.ceil(inputLength / 4);
     const outputTokens = Math.ceil(result.length / 4);
-    updatedState = addTokens(updatedState, inputTokens + outputTokens);
+    const estimatedTokens = inputTokens + outputTokens;
 
     console.log('[profileMatchingAgent] Successfully completed profile matching');
     console.log('[profileMatchingAgent] Overall match score:', matching.overallMatchScore);
@@ -286,9 +207,17 @@ export async function profileMatchingAgent(
       ...(matching.missingPreferredSkills || [])
     ];
 
-    // Return updated state with profile matching results (matching simplified ProfileMatch interface)
+    // Return ONLY the fields we're updating - state reducers will merge them
     return {
-      ...updatedState,
+      messages: [
+        createSystemMessage('Analyzing profile match against job requirements...'),
+        createAIMessage(
+          `Profile analysis complete. Overall match: ${matching.overallMatchScore}%. ` +
+          `Found ${matching.matchedSkills?.length || 0} matching skills. ` +
+          `Identified ${matching.missingRequiredSkills?.length || 0} critical gaps.`
+        )
+      ],
+      tokensUsed: estimatedTokens,
       profileMatch: {
         relevanceScore: matching.overallMatchScore,
         matchedSkills: matching.matchedSkills || [],

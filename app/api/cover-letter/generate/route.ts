@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { z } from 'zod';
 import { profileService } from '@/lib/services/profile.service';
-import { analyzeJobAgent } from '@/lib/ai/workflow/agents/job-analysis.agent';
+import { analyzeJobAgent } from '@/lib/ai/agents/job-analysis.agent';
 import { ChatOpenAI } from '@langchain/openai';
 import type { ResumeGenerationState } from '@/lib/ai/workflow/types';
 import type { Resume } from '@/lib/validations/jsonresume';

@@ -10,13 +10,13 @@ import type { ResumeGenerationState } from './types';
 import { createInitialState } from './utils';
 import { compileResumeWorkflow } from './graph';
 import {
-  analyzeJobWorkflowNode,
-  profileMatchingWorkflowNode,
-  contentOptimizationWorkflowNode,
-  formatValidationWorkflowNode,
-  outputGeneratorWorkflowNode
-} from './agents';
-import { coverLetterWorkflowNode } from './agents/cover-letter.node';
+  jobAnalysisNode,
+  profileMatchingNode,
+  contentOptimizationNode,
+  formatValidationNode,
+  outputGenerationNode,
+  coverLetterGenerationNode
+} from './nodes';
 
 export interface GenerateResumeInput {
   userId: string;
@@ -67,68 +67,67 @@ export class ResumeWorkflowService {
       );
 
       // Execute workflow steps manually (since we need to pass userId)
+      // IMPORTANT: Nodes return Partial<State>, so we must MERGE updates
       // Step 1: Analyze job
       console.log('\n🔍 Step 1: Analyzing job description...');
-      let state = await analyzeJobWorkflowNode(initialState, input.userId);
+      let state: ResumeGenerationState = { ...initialState, ...(await jobAnalysisNode(initialState, input.userId)) };
       if (state.errors && state.errors.length > 0) {
         return {
           success: false,
           errors: state.errors,
-          state: state as ResumeGenerationState
+          state
         };
       }
 
       // Step 2: Match profile
       console.log('\n🎯 Step 2: Matching profile to job...');
-      state = await profileMatchingWorkflowNode(state as ResumeGenerationState, input.userId);
+      state = { ...state, ...(await profileMatchingNode(state, input.userId)) };
       if (state.errors && state.errors.length > 0) {
         return {
           success: false,
           errors: state.errors,
-          state: state as ResumeGenerationState
+          state
         };
       }
 
       // Step 3: Optimize content
       console.log('\n✨ Step 3: Optimizing content...');
-      state = await contentOptimizationWorkflowNode(state as ResumeGenerationState, input.userId);
+      state = { ...state, ...(await contentOptimizationNode(state, input.userId)) };
       if (state.errors && state.errors.length > 0) {
         return {
           success: false,
           errors: state.errors,
-          state: state as ResumeGenerationState
+          state
         };
       }
 
-      // Step 4: Validate format
-      console.log('\n📐 Step 4: Validating format...');
-      state = await formatValidationWorkflowNode(state as ResumeGenerationState, input.userId);
+            // Step 4: Validate format
+      console.log('\n✅ Step 4: Validating format...');
+      state = { ...state, ...(await formatValidationNode(state, input.userId)) };
       if (state.errors && state.errors.length > 0) {
         return {
           success: false,
           errors: state.errors,
-          state: state as ResumeGenerationState
+          state
         };
       }
 
       // Step 5: Generate output
       console.log('\n📄 Step 5: Generating final output...');
-      state = await outputGeneratorWorkflowNode(state as ResumeGenerationState);
+      state = { ...state, ...(await outputGenerationNode(state)) };
       if (state.errors && state.errors.length > 0) {
         return {
           success: false,
           errors: state.errors,
-          state: state as ResumeGenerationState
+          state
         };
       }
 
-      const finalState = state as ResumeGenerationState;
-
-      if (!finalState.generatedResume) {
+      if (!state.generatedResume) {
         return {
           success: false,
           errors: ['Failed to generate resume: No output produced'],
-          state: finalState
+          state
         };
       }
 
@@ -136,19 +135,33 @@ export class ResumeWorkflowService {
       let coverLetterContent: string | undefined;
       if (input.includeCoverLetter) {
         console.log('\n✉️ Step 6: Generating cover letter...');
-        const coverLetterState = await coverLetterWorkflowNode(finalState, input.userId);
-        if (coverLetterState.errors && coverLetterState.errors.length > 0) {
+        
+        // Store current error count to detect new errors
+        const previousErrorCount = state.errors?.length || 0;
+        
+        // Merge personalInstructions into state for cover letter generation
+        const coverLetterUpdate = await coverLetterGenerationNode(
+          { ...state, personalInstructions: input.personalInstructions },
+          input.userId
+        );
+        
+        // Merge cover letter update into state
+        state = { ...state, ...coverLetterUpdate };
+        
+        // Check if NEW errors were added during cover letter generation
+        const newErrorCount = state.errors?.length || 0;
+        const hasNewErrors = newErrorCount > previousErrorCount;
+        
+        if (hasNewErrors) {
           console.warn('⚠️ Cover letter generation failed, continuing without it');
-          console.warn('   Errors:', coverLetterState.errors);
-        } else if (coverLetterState.coverLetter) {
-          coverLetterContent = coverLetterState.coverLetter.content;
-          // Update finalState with cover letter info
-          Object.assign(finalState, {
-            coverLetter: coverLetterState.coverLetter,
-            tokensUsed: coverLetterState.tokensUsed || finalState.tokensUsed
-          });
+          const newErrors = state.errors?.slice(previousErrorCount) || [];
+          console.warn('   New errors:', newErrors);
+        } else if (state.coverLetter) {
+          coverLetterContent = state.coverLetter.content;
         }
       }
+
+      const finalState = state as ResumeGenerationState;
 
       console.log('\n✅ Resume generation completed successfully');
       console.log(`   Tokens used: ${finalState.tokensUsed || 0}`);

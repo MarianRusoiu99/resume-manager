@@ -1,32 +1,27 @@
 /**
  * Base Agent Class
  * 
- * Abstract base class for all AI agents in the workflow.
- * Provides shared functionality for:
- * - LLM initialization with retry logic
- * - Prompt building and execution
- * - Response parsing and validation
- * - Error handling and logging
- * - Token tracking
- * 
- * Agents should extend this class and implement:
- * - buildPrompt(): Create agent-specific prompts
- * - parseResponse(): Parse and validate LLM responses
- * - execute(): Main agent logic
+ * Modern base class using LangChain's structured output patterns.
+ * Follows SOLID principles:
+ * - Single Responsibility: Each agent handles one specific task
+ * - Open/Closed: Extensible through schema definition
+ * - Liskov Substitution: Consistent interface for all agents
+ * - Interface Segregation: Clean, minimal interface
+ * - Dependency Inversion: Depends on LangChain abstractions
  */
 
 import { ChatOpenAI } from '@langchain/openai';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
-import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { BaseMessage } from '@langchain/core/messages';
 import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
 import { getModelConfig, type AgentType } from '../config/models';
 import { 
   createSystemMessage, 
   createHumanMessage,
-  robustParseJSON,
+  createStructuredParser,
 } from '../utils';
+import type { ZodType } from 'zod';
 
 /**
  * Base configuration for all agents
@@ -49,17 +44,35 @@ export interface AgentResult<T = unknown> {
   error?: string;
   tokensUsed: number;
   duration: number;
+  metadata?: {
+    promptTokens?: number;
+    completionTokens?: number;
+    totalTokens?: number;
+    model?: string;
+  };
 }
 
 /**
- * Abstract base class for AI agents
+ * Agent metadata for tracking
+ */
+export interface AgentMetadata {
+  agentType: AgentType;
+  model: string;
+  temperature: number;
+  timestamp: Date;
+}
+
+/**
+ * Base class for AI agents with structured output
  */
 export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
   protected readonly config: Required<BaseAgentConfig>;
   protected readonly llm: ChatOpenAI;
   protected readonly logger: (...args: unknown[]) => void;
+  protected readonly outputSchema: ZodType<TOutput>;
+  protected readonly parser: ReturnType<typeof createStructuredParser<TOutput>>;
 
-  constructor(config: BaseAgentConfig) {
+  constructor(config: BaseAgentConfig, outputSchema: ZodType<TOutput>) {
     // Merge with model configuration
     const modelConfig = getModelConfig(config.agentType);
     
@@ -71,7 +84,10 @@ export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
       enableLogging: config.enableLogging ?? true,
     };
 
-    // Initialize LLM
+    this.outputSchema = outputSchema;
+    this.parser = createStructuredParser(outputSchema);
+
+    // Initialize LLM with structured output support
     this.llm = new ChatOpenAI({
       openAIApiKey: this.config.apiKey,
       modelName: this.config.model,
@@ -94,30 +110,25 @@ export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
   protected abstract buildPrompt(input: TInput): BaseMessage[] | Promise<BaseMessage[]>;
 
   /**
-   * Parse and validate the LLM response
-   * 
-   * @param rawResponse - Raw string response from LLM
-   * @returns Parsed and validated output
-   * @throws Error if parsing or validation fails
+   * Get format instructions to include in system prompt
+   * This tells the LLM how to structure its response
    */
-  protected abstract parseResponse(rawResponse: string): TOutput | Promise<TOutput>;
-
-  /**
-   * Validate the parsed output
-   * 
-   * @param _output - Parsed output to validate
-   * @returns True if valid, throws error if invalid
-   */
-  protected validateOutput(_output: TOutput): boolean {
-    // Default: assume valid if parsing succeeded
-    return true;
+  protected getFormatInstructions(): string {
+    return this.parser.getFormatInstructions();
   }
 
   /**
-   * Execute the agent with retry logic
+   * Execute the agent with retry logic and structured output
+   * 
+   * Uses .withStructuredOutput() with includeRaw: true to get both:
+   * - Parsed, validated output (via Zod schema)
+   * - Raw AIMessage with actual token usage metadata
+   * 
+   * This follows LangChain best practices for accurate token tracking
+   * instead of estimations.
    * 
    * @param input - Agent-specific input data
-   * @returns Agent execution result
+   * @returns Agent execution result with typed output and metadata
    */
   async execute(input: TInput): Promise<AgentResult<TOutput>> {
     const startTime = Date.now();
@@ -128,13 +139,18 @@ export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
       this.logger('Building prompt...');
       const messages = await this.buildPrompt(input);
 
-      // Create chain
-      const chain = this.createChain(messages);
+      // Use withStructuredOutput with includeRaw: true to get both parsed output AND metadata
+      // This is the recommended approach per LangChain docs for accessing token usage
+      const structuredLLM = this.llm.withStructuredOutput(this.outputSchema, {
+        includeRaw: true,
+      });
 
       // Execute with retry logic
-      this.logger('Calling LLM...');
-      const rawResponse = await retryWithBackoff(
-        () => chain.invoke({}),
+      this.logger('Calling LLM with structured output...');
+      const result = await retryWithBackoff(
+        async () => {
+          return await structuredLLM.invoke(messages);
+        },
         {
           ...AI_RETRY_CONFIG,
           onRetry: (error, attempt, delay) => {
@@ -143,22 +159,32 @@ export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
         }
       );
 
-      // Parse response
-      this.logger('Parsing response...');
-      const parsedOutput = await this.parseResponse(rawResponse);
-
-      // Validate output
-      this.logger('Validating output...');
-      this.validateOutput(parsedOutput);
-
+      // Extract parsed output and raw message
+      const { parsed, raw } = result as { parsed: TOutput; raw: { usage_metadata?: { input_tokens?: number; output_tokens?: number; total_tokens?: number } } };
+      
       const duration = Date.now() - startTime;
-      this.logger(`Execution completed in ${duration}ms`);
+      
+      // Use actual token usage from API response if available (much more accurate)
+      const usageMetadata = raw.usage_metadata;
+      const tokensUsed = usageMetadata?.total_tokens ?? this.estimateTokens(JSON.stringify(parsed));
+      
+      this.logger(`Execution completed in ${duration}ms, ${tokensUsed} tokens`);
+      if (usageMetadata) {
+        this.logger(`  - Prompt tokens: ${usageMetadata.input_tokens}`);
+        this.logger(`  - Completion tokens: ${usageMetadata.output_tokens}`);
+      }
 
       return {
         success: true,
-        data: parsedOutput,
-        tokensUsed: this.estimateTokens(rawResponse),
+        data: parsed,
+        tokensUsed,
         duration,
+        metadata: usageMetadata ? {
+          promptTokens: usageMetadata.input_tokens,
+          completionTokens: usageMetadata.output_tokens,
+          totalTokens: usageMetadata.total_tokens,
+          model: this.config.model,
+        } : undefined,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -176,29 +202,64 @@ export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
   }
 
   /**
-   * Create a LangChain runnable sequence
+   * Execute with custom chain (for more complex workflows)
    * 
-   * @param messages - Messages to send to LLM
-   * @returns Runnable chain
+   * @param input - Agent input
+   * @param chain - Custom runnable chain
+   * @returns Agent execution result
    */
-  protected createChain(messages: BaseMessage[]): RunnableSequence {
-    // For simple message-based chains, we can use the LLM directly
-    // Subclasses can override this for more complex chains
-    return RunnableSequence.from([
-      // Convert messages to a prompt
-      async () => messages,
-      this.llm,
-      new StringOutputParser(),
-    ]);
+  protected async executeWithChain(
+    input: TInput,
+    chain: RunnableSequence
+  ): Promise<AgentResult<TOutput>> {
+    const startTime = Date.now();
+    this.logger('Executing custom chain...');
+
+    try {
+      const rawResponse = await retryWithBackoff(
+        () => chain.invoke({ input }),
+        {
+          ...AI_RETRY_CONFIG,
+          onRetry: (error, attempt, delay) => {
+            this.logger(`Retry attempt ${attempt} after ${delay}ms due to: ${error.message}`);
+          },
+        }
+      );
+
+      // Parse the response using structured parser
+      const output = await this.parser.parse(rawResponse as string);
+
+      const duration = Date.now() - startTime;
+      const tokensUsed = this.estimateTokens(rawResponse as string);
+
+      this.logger(`Chain execution completed in ${duration}ms`);
+
+      return {
+        success: true,
+        data: output,
+        tokensUsed,
+        duration,
+      };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      this.logger(`Chain execution failed after ${duration}ms:`, errorMessage);
+
+      return {
+        success: false,
+        error: errorMessage,
+        tokensUsed: 0,
+        duration,
+      };
+    }
   }
 
   /**
-   * Create a template-based chain
-   * 
-   * Useful when you need to inject variables into a prompt template
+   * Create a template-based chain with structured output
    * 
    * @param template - Prompt template string with {variables}
-   * @returns Runnable chain
+   * @returns Runnable chain with parser
    */
   protected createTemplateChain(template: string): RunnableSequence {
     const prompt = PromptTemplate.fromTemplate(template);
@@ -206,18 +267,8 @@ export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
     return RunnableSequence.from([
       prompt,
       this.llm,
-      new StringOutputParser(),
+      this.parser,
     ]);
-  }
-
-  /**
-   * Parse JSON response with fallback strategies
-   * 
-   * @param rawResponse - Raw LLM response
-   * @returns Parsed JSON object or null if parsing fails
-   */
-  protected parseJSON<T = TOutput>(rawResponse: string): T | null {
-    return robustParseJSON<T>(rawResponse);
   }
 
   /**
@@ -234,15 +285,15 @@ export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
   }
 
   /**
-   * Format error message for consistent logging
-   * 
-   * @param context - Error context
-   * @param error - Error object
-   * @returns Formatted error message
+   * Get agent metadata for tracking
    */
-  protected formatError(context: string, error: unknown): string {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return `${context}: ${errorMessage}`;
+  getMetadata(): AgentMetadata {
+    return {
+      agentType: this.config.agentType,
+      model: this.config.model,
+      temperature: this.config.temperature,
+      timestamp: new Date(),
+    };
   }
 
   /**
@@ -264,31 +315,39 @@ export abstract class BaseAgent<TInput = unknown, TOutput = unknown> {
 }
 
 /**
- * Helper function to create system + user message pair
+ * Helper function to create system + user message pair with format instructions
  * 
- * Common pattern for agents: system message sets context, user message provides data
+ * @param systemPrompt - Base system prompt
+ * @param userPrompt - User message
+ * @param formatInstructions - Optional format instructions from parser
+ * @returns Array of messages
  */
 export function createAgentMessages(
   systemPrompt: string,
-  userPrompt: string
+  userPrompt: string,
+  formatInstructions?: string
 ): BaseMessage[] {
+  const systemMessage = formatInstructions
+    ? `${systemPrompt}\n\n${formatInstructions}`
+    : systemPrompt;
+
   return [
-    createSystemMessage(systemPrompt),
+    createSystemMessage(systemMessage),
     createHumanMessage(userPrompt),
   ];
 }
 
 /**
- * Helper to batch multiple agent executions
+ * Helper to batch multiple agent executions in parallel
  * 
  * @param agents - Array of agents to execute
  * @param inputs - Corresponding inputs for each agent
  * @returns Array of results
  */
-export async function executeAgentBatch(
-  agents: BaseAgent[],
+export async function executeAgentBatch<T>(
+  agents: BaseAgent<unknown, T>[],
   inputs: unknown[]
-): Promise<AgentResult<unknown>[]> {
+): Promise<AgentResult<T>[]> {
   if (agents.length !== inputs.length) {
     throw new Error('Number of agents must match number of inputs');
   }
@@ -296,4 +355,43 @@ export async function executeAgentBatch(
   return Promise.all(
     agents.map((agent, i) => agent.execute(inputs[i]))
   );
+}
+
+/**
+ * Helper to execute agents sequentially with state passing
+ * 
+ * @param agents - Array of agents to execute in sequence
+ * @param initialInput - Initial input for first agent
+ * @param transform - Function to transform output to next input
+ * @returns Final result
+ */
+export async function executeAgentSequence<TIn, TOut>(
+  agents: BaseAgent<unknown, unknown>[],
+  initialInput: TIn,
+  transform: (output: unknown, index: number) => unknown
+): Promise<AgentResult<TOut>> {
+  let currentInput: unknown = initialInput;
+  let totalTokens = 0;
+  let totalDuration = 0;
+
+  for (let i = 0; i < agents.length; i++) {
+    const result = await agents[i].execute(currentInput);
+    
+    if (!result.success) {
+      return result as AgentResult<TOut>;
+    }
+
+    totalTokens += result.tokensUsed;
+    totalDuration += result.duration;
+    
+    // Transform output for next agent
+    currentInput = transform(result.data, i);
+  }
+
+  return {
+    success: true,
+    data: currentInput as TOut,
+    tokensUsed: totalTokens,
+    duration: totalDuration,
+  };
 }

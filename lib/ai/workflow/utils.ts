@@ -36,42 +36,47 @@ export function formatMessages(messages: BaseMessage[]): string {
 }
 
 /**
- * Add a message to the state
+ * Add a message to the state (returns PARTIAL state for agent returns)
+ * 
+ * Note: Use this in agents that return Partial<ResumeGenerationState>.
+ * The state reducer will merge the messages array automatically.
  */
-export function addMessage(state: ResumeGenerationState, message: BaseMessage): ResumeGenerationState {
+export function addMessage(state: ResumeGenerationState, message: BaseMessage): Partial<ResumeGenerationState> {
   return {
-    ...state,
-    messages: [...state.messages, message]
+    messages: [message] // Return only new messages - reducer will append
   };
 }
 
 /**
- * Add an error to the state
+ * Add an error to the state (returns PARTIAL state for agent returns)
+ * 
+ * Note: Use this in agents that return Partial<ResumeGenerationState>.
+ * The state reducer will merge the errors array automatically.
  */
-export function addError(state: ResumeGenerationState, error: string): ResumeGenerationState {
+export function addError(state: ResumeGenerationState, error: string): Partial<ResumeGenerationState> {
   return {
-    ...state,
-    errors: [...state.errors, error]
+    errors: [error] // Return only new errors - reducer will append
   };
 }
 
 /**
- * Update current step in the workflow
+ * Update current step in the workflow (returns PARTIAL state)
  */
-export function setCurrentStep(state: ResumeGenerationState, step: string): ResumeGenerationState {
+export function setCurrentStep(state: ResumeGenerationState, step: string): Partial<ResumeGenerationState> {
   return {
-    ...state,
     currentStep: step
   };
 }
 
 /**
- * Track token usage
+ * Track token usage (returns PARTIAL state for agent returns)
+ * 
+ * Note: Use this in agents that return Partial<ResumeGenerationState>.
+ * The state reducer will sum token usage automatically.
  */
-export function addTokens(state: ResumeGenerationState, tokens: number): ResumeGenerationState {
+export function addTokens(state: ResumeGenerationState, tokens: number): Partial<ResumeGenerationState> {
   return {
-    ...state,
-    tokensUsed: state.tokensUsed + tokens
+    tokensUsed: tokens // Return only new tokens - reducer will sum
   };
 }
 

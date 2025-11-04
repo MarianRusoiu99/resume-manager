@@ -2,6 +2,7 @@
  * Job Analysis User Prompt Template
  * 
  * Template for the actual analysis request sent to the AI
+ * Compatible with LangChain's PromptTemplate
  */
 
 export const JOB_ANALYSIS_USER_TEMPLATE = `Analyze the following job posting and extract:
@@ -32,17 +33,11 @@ Provide your analysis in the following JSON format:
 Return ONLY the JSON object, nothing else.`;
 
 /**
- * Format job analysis prompt with actual values
+ * Input interface for job analysis prompt
+ * Used with LangChain's PromptTemplate.format()
  */
 export interface JobAnalysisPromptInput {
   jobTitle: string;
   companyName: string;
   jobDescription: string;
-}
-
-export function formatJobAnalysisPrompt(input: JobAnalysisPromptInput): string {
-  return JOB_ANALYSIS_USER_TEMPLATE
-    .replace('{jobTitle}', input.jobTitle)
-    .replace('{companyName}', input.companyName)
-    .replace('{jobDescription}', input.jobDescription);
 }

@@ -1,13 +1,24 @@
 /**
- * Centralized Prompt Management
+ * AI Prompts Module
  * 
- * Main export point for all AI prompts used in the resume optimization system
+ * Central export point for all AI agent prompts
  */
 
-// Agent-specific prompts
+// Job Analysis prompts
 export * from './agents/job-analysis';
+
+// Content Optimization prompts  
 export * from './agents/content-optimization';
 
-// Shared instructions
+// Profile Matching prompts
+export * from './agents/profile-matching';
+
+// Format Validation prompts
+export * from './agents/format-validation';
+
+// Cover Letter prompts
+export * from './agents/cover-letter';
+
+// Shared prompt components
 export * from './shared/json-instructions';
 export * from './shared/formatting-instructions';
