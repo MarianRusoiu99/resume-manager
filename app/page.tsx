@@ -45,15 +45,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="text-3xl mb-4">🔑</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Bring Your Own Key
-            </h3>
-            <p className="text-gray-600">
-              Use your own OpenAI API key - you control costs and privacy
-            </p>
-          </div>
+          
         </div>
 
         {/* CTA */}

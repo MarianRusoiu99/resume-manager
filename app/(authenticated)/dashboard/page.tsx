@@ -21,12 +21,6 @@ export default async function DashboardPage() {
       icon: User,
     },
     {
-      title: "Configure API Key",
-      description: "Add your OpenAI API key to generate resumes",
-      href: "/settings",
-      icon: Key,
-    },
-    {
       title: "Generate Resume",
       description: "Create an ATS-optimized resume from a job description",
       href: "/generate",
@@ -46,7 +40,7 @@ export default async function DashboardPage() {
     },
     {
       title: "Coming Soon",
-      description: "Analytics and optimization insights",
+      description: "Job automation and application tracking",
       href: "#",
       icon: TrendingUp,
       disabled: true,
@@ -57,7 +51,7 @@ export default async function DashboardPage() {
     <>
       <PageHeader
         title={`Welcome, ${session.user?.name || session.user?.email}!`}
-        description="Get started by setting up your profile and API key"
+        description="Get started by setting up your profile and generating your first resume"
         breadcrumbs={[{ label: "Dashboard" }]}
       />
       <PageContainer>

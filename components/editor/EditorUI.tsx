@@ -23,62 +23,9 @@ export interface EditorUIProps {
     /** Show resume parser (only for profile editing) */
     showParser?: boolean;
     /** Custom parser component */
-    parserComponent?: React.ReactNode;
-    /** Show completion indicator */
-    showCompletion?: boolean;
+    parserComponent?: React.ReactNode; 
 }
 
-/**
- * Calculate profile completion percentage
- */
-function calculateCompletionPercentage(resume: { basics?: any; work?: any[]; education?: any[]; skills?: any[]; projects?: any[]; certificates?: any[]; languages?: any[]; volunteer?: any[] }): number {
-    let completed = 0;
-    let total = 0;
-
-    // Personal info (weight: 30%)
-    total += 30;
-    const hasBasicInfo = !!(resume.basics?.name && resume.basics?.email);
-    const hasContact = !!(resume.basics?.phone || resume.basics?.location?.city);
-    const hasProfiles = !!(resume.basics?.profiles && resume.basics.profiles.length > 0);
-    if (hasBasicInfo) completed += 15;
-    if (hasContact) completed += 10;
-    if (hasProfiles) completed += 5;
-
-    // Summary (weight: 10%)
-    total += 10;
-    if (resume.basics?.summary && resume.basics.summary.length > 50) {
-        completed += 10;
-    }
-
-    // Work experience (weight: 25%)
-    total += 25;
-    if (resume.work && resume.work.length > 0) {
-        completed += Math.min(25, resume.work.length * 8);
-    }
-
-    // Education (weight: 15%)
-    total += 15;
-    if (resume.education && resume.education.length > 0) {
-        completed += Math.min(15, resume.education.length * 7);
-    }
-
-    // Skills (weight: 10%)
-    total += 10;
-    if (resume.skills && resume.skills.length > 0) {
-        completed += 10;
-    }
-
-    // Optional sections (weight: 10%)
-    total += 10;
-    let optionalCount = 0;
-    if (resume.projects && resume.projects.length > 0) optionalCount++;
-    if (resume.certificates && resume.certificates.length > 0) optionalCount++;
-    if (resume.languages && resume.languages.length > 0) optionalCount++;
-    if (resume.volunteer && resume.volunteer.length > 0) optionalCount++;
-    completed += Math.min(10, optionalCount * 2.5);
-
-    return Math.round((completed / total) * 100);
-}
 
 /**
  * Unified Editor UI Component
@@ -86,7 +33,7 @@ function calculateCompletionPercentage(resume: { basics?: any; work?: any[]; edu
  * Renders all resume editing sections using the editor context.
  * Can be used for both profile and individual resume editing.
  */
-export function EditorUI({ showParser, parserComponent, showCompletion = false }: EditorUIProps) {
+export function EditorUI({ showParser, parserComponent}: EditorUIProps) {
     const { resume, updateField, save, isDirty } = useEditor();
 
     // Warn user about unsaved changes when navigating away
@@ -126,29 +73,10 @@ export function EditorUI({ showParser, parserComponent, showCompletion = false }
         updateField('languages', languages);
     };
 
-    const completionPercentage = showCompletion ? calculateCompletionPercentage(resume) : 0;
+    
 
     return (
         <div className="space-y-6">
-            {/* Completion Indicator */}
-            {showCompletion && (
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between text-sm">
-                                <span className="font-medium">Profile Completion</span>
-                                <span className="font-bold text-blue-600">{completionPercentage}%</span>
-                            </div>
-                            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full bg-blue-600 transition-all duration-300"
-                                    style={{ width: `${completionPercentage}%` }}
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
 
             {/* Resume Parser */}
             {showParser && parserComponent && (

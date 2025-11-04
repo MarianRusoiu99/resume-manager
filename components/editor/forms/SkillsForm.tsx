@@ -195,7 +195,7 @@ export default function SkillsForm({ skills = [], onChange, errors }: SkillsForm
 
       <p className="text-sm text-gray-600">
         <strong>JSON Resume Format:</strong> Each skill category can have a name, optional level, and keywords.
-        Example: "Web Development" with keywords "HTML", "CSS", "JavaScript".
+        Example: &quot;Web Development&quot; with keywords &quot;HTML&quot;, &quot;CSS&quot;, &quot;JavaScript&quot;.
       </p>
     </div>
   );

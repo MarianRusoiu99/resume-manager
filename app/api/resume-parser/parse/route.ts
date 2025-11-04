@@ -13,7 +13,7 @@ import { env } from "process";
  * @body model - OpenAI model to use (default: gpt-4o-mini)
  * @returns Parsed resume data in JSON Resume format
  * 
- * Note: API key is fetched server-side from user's settings for security
+ * 
  */
 
 const requestSchema = z.object({

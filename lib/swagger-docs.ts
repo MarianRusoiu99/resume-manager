@@ -902,36 +902,7 @@
 
 /**
  * @swagger
- * /api/settings/api-keys/{id}/validate:
- *   post:
- *     tags:
- *       - Settings
- *     summary: Validate API key
- *     description: Test if API key is valid by making a test call to OpenAI
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: API key is valid
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 valid:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: API key is valid
- *       400:
- *         description: API key is invalid
- *       404:
- *         description: API key not found
+ 
  */
 
 /**
