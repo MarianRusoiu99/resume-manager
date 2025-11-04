@@ -8,7 +8,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { z } from 'zod';
-import { apiKeyService } from '@/lib/services/apikey.service';
 import { profileService } from '@/lib/services/profile.service';
 import { analyzeJobAgent } from '@/lib/ai/workflow/agents/job-analysis.agent';
 import { ChatOpenAI } from '@langchain/openai';
@@ -50,14 +49,14 @@ export async function POST(request: NextRequest) {
 
     const { jobDescription, jobTitle, companyName, personalInstructions } = validationResult.data;
 
-    // Get user's decrypted OpenAI API key
-    const apiKey = await apiKeyService.getDecryptedKey(session.user.id, 'openai');
+    // Get OpenAI API key from environment
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json(
         { 
-          error: 'No active API key found. Please add an OpenAI API key in settings.' 
+          error: 'OpenAI API key not configured. Please contact support.' 
         },
-        { status: 400 }
+        { status: 500 }
       );
     }
 

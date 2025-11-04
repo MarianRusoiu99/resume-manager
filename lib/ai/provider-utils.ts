@@ -1,6 +1,6 @@
 import { AIProvider, AIProviderConfig } from './providers/base';
 import { AIProviderRegistry, ProviderType } from './providers/registry';
-import { apiKeyService, AIProvider as AIProviderType } from '@/lib/services/apikey.service';
+import { AIProvider as AIProviderType } from '@/lib/ai/ai-provider';
 
 /**
  * Get an AI provider instance for a user
@@ -19,15 +19,8 @@ export async function getProviderForUser(
 ): Promise<AIProvider | null> {
   try {
     // Get the decrypted API key from the database
-    let apiKey = await apiKeyService.getDecryptedKey(userId, providerType);
+    const apiKey = process.env.OPENAI_API_KEY
 
-    // Dev mode fallback: use environment variable if no user key exists
-    if (!apiKey && process.env.NODE_ENV === 'development') {
-      if (providerType === 'openai' && process.env.OPENAI_API_KEY) {
-        apiKey = process.env.OPENAI_API_KEY;
-        console.log(`🔧 Dev mode: Using OPENAI_API_KEY from environment for user ${userId}`);
-      }
-    }
 
     if (!apiKey) {
       console.error(`No active API key found for user ${userId} and provider ${providerType}`);
@@ -55,34 +48,6 @@ export async function getProviderForUser(
   }
 }
 
-/**
- * Validate that a user has an active API key for a provider
- * 
- * In development mode, returns true if process.env.OPENAI_API_KEY is set
- */
-export async function hasActiveProvider(
-  userId: string,
-  providerType: AIProviderType = 'openai'
-): Promise<boolean> {
-  try {
-    const apiKey = await apiKeyService.getDecryptedKey(userId, providerType);
-    
-    // Check user's API key first
-    if (apiKey !== null) {
-      return true;
-    }
-    
-    // Dev mode fallback: check environment variable
-    if (process.env.NODE_ENV === 'development' && providerType === 'openai') {
-      return !!process.env.OPENAI_API_KEY;
-    }
-    
-    return false;
-  } catch (error) {
-    console.error('Error checking for active provider:', error);
-    return false;
-  }
-}
 
 /**
  * Test if a user's API key is valid by making a test call
@@ -115,46 +80,5 @@ export async function testUserProvider(
   }
 }
 
-/**
- * Get provider capabilities for a given provider type
- */
-export function getProviderCapabilities(providerType: ProviderType) {
-  // This would normally query the provider instance, but we'll return defaults
-  const capabilities = {
-    openai: {
-      supportsStreaming: true,
-      supportsVision: true,
-      supportsFunctionCalling: true,
-      maxContextLength: 128000,
-      defaultModel: 'gpt-4-turbo-preview',
-      availableModels: [
-        'gpt-4-turbo-preview',
-        'gpt-4',
-        'gpt-3.5-turbo',
-        'gpt-3.5-turbo-16k'
-      ]
-    },
-    anthropic: {
-      supportsStreaming: true,
-      supportsVision: true,
-      supportsFunctionCalling: true,
-      maxContextLength: 200000,
-      defaultModel: 'claude-3-opus-20240229',
-      availableModels: [
-        'claude-3-opus-20240229',
-        'claude-3-sonnet-20240229',
-        'claude-3-haiku-20240307'
-      ]
-    },
-    google: {
-      supportsStreaming: true,
-      supportsVision: true,
-      supportsFunctionCalling: true,
-      maxContextLength: 32000,
-      defaultModel: 'gemini-pro',
-      availableModels: ['gemini-pro', 'gemini-pro-vision']
-    }
-  };
-
-  return capabilities[providerType];
-}
+// Re-export getProviderCapabilities from ai-provider types
+export { getProviderCapabilities } from '@/lib/ai/ai-provider';

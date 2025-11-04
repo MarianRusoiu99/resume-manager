@@ -1,6 +1,9 @@
 import { auth } from "@/lib/auth/config";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default async function Home() {
   const session = await auth();
@@ -11,106 +14,138 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-background">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+        <div className="text-center mb-16 mt-8">
+          <h1 className="text-5xl font-bold mb-4 bg-linear-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             AI Resume Optimizer
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Generate ATS-optimized resumes tailored to specific job descriptions using advanced AI agents
           </p>
         </div>
 
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="text-3xl mb-4">🤖</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              AI-Powered Optimization
-            </h3>
-            <p className="text-gray-600">
-              Multi-agent AI workflow analyzes job descriptions and tailors your resume perfectly
-            </p>
-          </div>
+          <Card>
+            <CardHeader>
+              <div className="text-3xl mb-2">🤖</div>
+              <CardTitle>AI-Powered Optimization</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Multi-agent AI workflow analyzes job descriptions and tailors your resume perfectly
+              </CardDescription>
+            </CardContent>
+          </Card>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="text-3xl mb-4">🎯</div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              ATS-Compliant
-            </h3>
-            <p className="text-gray-600">
-              Optimized for Applicant Tracking Systems to increase your chances of getting noticed
-            </p>
-          </div>
+          <Card>
+            <CardHeader>
+              <div className="text-3xl mb-2">🎯</div>
+              <CardTitle>ATS-Compliant</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Optimized for Applicant Tracking Systems to increase your chances of getting noticed
+              </CardDescription>
+            </CardContent>
+          </Card>
 
-          
+          <Card>
+            <CardHeader>
+              <div className="text-3xl mb-2">⚡</div>
+              <CardTitle>Fast & Easy</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>
+                Generate professional resumes in minutes with our streamlined workflow
+              </CardDescription>
+            </CardContent>
+          </Card>
         </div>
 
         {/* CTA */}
-        <div className="text-center">
-          <div className="space-x-4">
-            <Link
-              href="/register"
-              className="inline-block px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Get Started
-            </Link>
-            <Link
-              href="/login"
-              className="inline-block px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg border-2 border-blue-600 hover:bg-blue-50 transition-colors"
-            >
-              Sign In
-            </Link>
+        <div className="text-center mb-24">
+          <div className="flex gap-4 justify-center">
+            <Button asChild size="lg">
+              <Link href="/register">
+                Get Started
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link href="/login">
+                Sign In
+              </Link>
+            </Button>
           </div>
         </div>
 
         {/* How It Works */}
         <div className="mt-24">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+          <h2 className="text-3xl font-bold text-center mb-12">
             How It Works
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                1
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Create Profile</h4>
-              <p className="text-sm text-gray-600">
-                Add your experience, skills, and education
-              </p>
-            </div>
+            <Card className="text-center">
+              <CardHeader>
+                <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                  1
+                </div>
+                <CardTitle className="text-lg">Create Profile</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Add your experience, skills, and education
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                2
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Add API Key</h4>
-              <p className="text-sm text-gray-600">
-                Configure your OpenAI API key securely
-              </p>
-            </div>
+            <Card className="text-center">
+              <CardHeader>
+                <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                  2
+                </div>
+                <CardTitle className="text-lg">Paste Job Description</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Copy and paste the job description you&apos;re applying for
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                3
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Paste Job Description</h4>
-              <p className="text-sm text-gray-600">
-                AI analyzes and optimizes your resume
-              </p>
-            </div>
+            <Card className="text-center">
+              <CardHeader>
+                <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                  3
+                </div>
+                <CardTitle className="text-lg">AI Optimization</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  AI analyzes and optimizes your resume for the job
+                </CardDescription>
+              </CardContent>
+            </Card>
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                4
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Download PDF</h4>
-              <p className="text-sm text-gray-600">
-                Get your tailored, professional resume
-              </p>
-            </div>
+            <Card className="text-center">
+              <CardHeader>
+                <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                  4
+                </div>
+                <CardTitle className="text-lg">Download PDF</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Get your tailored, professional resume
+                </CardDescription>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

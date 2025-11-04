@@ -67,7 +67,6 @@ export async function PATCH(
       resume: {
         id: updatedResume.id,
         templateId: updatedResume.templateId,
-        pdfUrl: updatedResume.pdfUrl,
       },
       message: 'Template updated successfully',
     });

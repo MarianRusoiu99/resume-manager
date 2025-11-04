@@ -173,14 +173,14 @@ export class ResumeWorkflowService {
   }
 
   /**
-   * Validate that a user can generate resumes (has API key)
+   * Validate that a user can generate resumes (todo check tokens or number of generations)
    * 
    * @param userId - User ID to check
    * @returns True if user has active OpenAI key
    */
-  async canGenerateResume(userId: string): Promise<boolean> {
-    const { hasActiveProvider } = await import('../provider-utils');
-    return await hasActiveProvider(userId, 'openai');
+  async canGenerateResume(): Promise<boolean> {
+    
+    return await true;
   }
 
   /**

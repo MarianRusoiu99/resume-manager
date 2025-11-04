@@ -17,7 +17,6 @@ export { AIProviderRegistry, type ProviderType } from './providers/registry';
 // Utility functions
 export {
   getProviderForUser,
-  hasActiveProvider,
   testUserProvider,
   getProviderCapabilities
 } from './provider-utils';

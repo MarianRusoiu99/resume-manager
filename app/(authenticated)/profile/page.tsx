@@ -74,7 +74,6 @@ export default function ProfilePage() {
         <EditorUI
           showParser
           parserComponent={<ResumeParser />}
-          showCompletion
         />
       </PageContainer>
     </EditorProvider>

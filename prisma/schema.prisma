@@ -20,7 +20,6 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   profile       UserProfile?
-  apiKeys       APIKey[]
   resumes       GeneratedResume[]
   sessions      Session[]
   
@@ -43,22 +42,6 @@ model UserProfile {
   @@index([updatedAt])
 }
 
-// Encrypted API keys for AI providers (BYOK model)
-model APIKey {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  provider      String    // 'openai', 'anthropic', etc.
-  encryptedKey  String    // AES-256-GCM encrypted
-  keyHash       String    // For validation without decryption
-  isActive      Boolean   @default(true)
-  lastUsedAt    DateTime?
-  createdAt     DateTime  @default(now())
-  
-  @@index([userId, provider])
-  @@index([userId, isActive])
-}
 
 // Generated resumes with AI and user edits
 // REFACTORED: Removed templateCustomization and pdfUrl (generate PDF on-demand)

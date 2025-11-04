@@ -196,7 +196,7 @@ export function PDFStylePreview({ resumeId, previewKey = 0, className = '' }: PD
               size="sm"
               onClick={goToPreviousPage}
               disabled={currentPage === 1}
-              className="disabled:opacity-50"
+              className="disabled:opacity-50 text-foreground bg-b"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous

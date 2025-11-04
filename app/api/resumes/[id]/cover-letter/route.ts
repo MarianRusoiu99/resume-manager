@@ -17,7 +17,7 @@ const updateCoverLetterSchema = z.object({
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -29,7 +29,7 @@ export async function PUT(
       );
     }
 
-    const resumeId = params.id;
+    const { id: resumeId } = await params;
 
     // Parse and validate request body
     const body = await request.json();
