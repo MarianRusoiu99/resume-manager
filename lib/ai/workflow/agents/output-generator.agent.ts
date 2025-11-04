@@ -86,10 +86,7 @@ export async function testOutputGeneratorAgent() {
   const { formatValidationAgent } = await import('./format-validation.agent');
   const { createMockUserProfile, createMockJobDescription } = await import('../testing');
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is required');
-  }
+  const apiKey = process.env.OPENAI_API_KEY || '';
 
   const model = 'gpt-4-turbo-preview';
 

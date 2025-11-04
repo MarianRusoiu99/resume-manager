@@ -50,16 +50,9 @@ export async function POST(request: NextRequest) {
     const { jobDescription, jobTitle, companyName, personalInstructions } = validationResult.data;
 
     // Get OpenAI API key from environment
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { 
-          error: 'OpenAI API key not configured. Please contact support.' 
-        },
-        { status: 500 }
-      );
-    }
-
+    const apiKey = process.env.OPENAI_API_KEY || '';
+   
+    
     // Get user's profile for personalization
     const profileResult = await profileService.getProfile(session.user.id);
     if (!profileResult.data) {

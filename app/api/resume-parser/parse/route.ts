@@ -40,12 +40,6 @@ export async function POST(request: NextRequest) {
     // Fetch user's OpenAI API key from database
     const apiKey = env.OPENAI_API_KEY;
     
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "No OpenAI API key configured. Please add one in Settings." },
-        { status: 400 }
-      );
-    }
 
     // Validate text length
     if (text.length > 50000) {

@@ -19,13 +19,7 @@ export async function getProviderForUser(
 ): Promise<AIProvider | null> {
   try {
     // Get the decrypted API key from the database
-    const apiKey = process.env.OPENAI_API_KEY
-
-
-    if (!apiKey) {
-      console.error(`No active API key found for user ${userId} and provider ${providerType}`);
-      return null;
-    }
+    const apiKey = process.env.OPENAI_API_KEY || '';
 
     // Create provider configuration
     const config: AIProviderConfig = {

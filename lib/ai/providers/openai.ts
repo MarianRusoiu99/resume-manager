@@ -7,6 +7,7 @@ import {
   AICompletionResponse,
   AICompletionOptions
 } from './base';
+import type { ProviderHealthCheck } from '../types/provider-types';
 
 export class OpenAIProvider implements AIProvider {
   readonly name = 'openai';
@@ -94,6 +95,35 @@ export class OpenAIProvider implements AIProvider {
     } catch (error) {
       console.error('OpenAI validation failed:', error);
       return false;
+    }
+  }
+
+  async healthCheck(): Promise<ProviderHealthCheck> {
+    const startTime = Date.now();
+    const timestamp = new Date();
+
+    try {
+      // Make a minimal API call to check health
+      await this.client.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'user', content: 'ping' }],
+        max_tokens: 5
+      });
+
+      const responseTime = Date.now() - startTime;
+
+      return {
+        healthy: true,
+        responseTime,
+        timestamp
+      };
+    } catch (error) {
+      return {
+        healthy: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        responseTime: Date.now() - startTime,
+        timestamp
+      };
     }
   }
 
