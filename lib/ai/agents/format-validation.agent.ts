@@ -3,7 +3,6 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
 import type { ResumeGenerationState } from '../workflow/types';
-import type { Resume } from '@/lib/validations/jsonresume';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 import { retryWithBackoff, AI_RETRY_CONFIG } from '@/lib/utils/retry';
 import { parseAgentJSON } from '../workflow/utils';

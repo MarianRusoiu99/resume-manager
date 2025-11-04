@@ -132,6 +132,7 @@ Please incorporate these instructions while maintaining professional quality and
       toneGuidance
     });
     
+    console.log(prompt)
     // Call LLM
     const messages = [
       new SystemMessage(SYSTEM_PROMPT),
