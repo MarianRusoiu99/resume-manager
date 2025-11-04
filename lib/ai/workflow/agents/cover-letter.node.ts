@@ -2,6 +2,7 @@ import { ChatOpenAI } from '@langchain/openai';
 import { ResumeGenerationState } from '../types';
 import { coverLetterAgent } from '../../agents/cover-letter.agent';
 import { addTokens, addError } from '../utils';
+import { getProviderForUser } from '../../provider-utils';
 
 /**
  * Cover Letter Generation Workflow Node
@@ -9,7 +10,7 @@ import { addTokens, addError } from '../utils';
  */
 export async function coverLetterWorkflowNode(
   state: ResumeGenerationState,
-  model: ChatOpenAI
+  userId: string
 ): Promise<Partial<ResumeGenerationState>> {
   try {
     console.log('✉️ Generating cover letter...');
@@ -21,6 +22,23 @@ export async function coverLetterWorkflowNode(
     if (!state.profileMatch) {
       throw new Error('Profile matching required for cover letter generation');
     }
+
+    // Get user's OpenAI provider
+    const provider = await getProviderForUser(userId, 'openai');
+    
+    if (!provider) {
+      return addError(state, 'No OpenAI API key found for cover letter generation');
+    }
+
+    // Get provider configuration
+    const config = provider.getConfig();
+
+    // Create ChatOpenAI model
+    const model = new ChatOpenAI({
+      openAIApiKey: config.apiKey,
+      modelName: config.model || 'gpt-4-turbo-preview',
+      temperature: config.temperature || 0.7,
+    });
 
     // Prepare input for cover letter agent
     const input = {
@@ -41,6 +59,7 @@ export async function coverLetterWorkflowNode(
         missingSkills: state.profileMatch.missingSkills,
         topExperiences: state.profileMatch.recommendations.slice(0, 3),
       },
+      personalInstructions: state.personalInstructions, // Pass user's custom instructions
     };
 
     // Generate cover letter

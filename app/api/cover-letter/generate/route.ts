@@ -20,6 +20,7 @@ const generateCoverLetterSchema = z.object({
   jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
   jobTitle: z.string().min(1, 'Job title is required'),
   companyName: z.string().min(1, 'Company name is required'),
+  personalInstructions: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { jobDescription, jobTitle, companyName } = validationResult.data;
+    const { jobDescription, jobTitle, companyName, personalInstructions } = validationResult.data;
 
     // Get user's decrypted OpenAI API key
     const apiKey = await apiKeyService.getDecryptedKey(session.user.id, 'openai');
@@ -168,6 +169,7 @@ export async function POST(request: NextRequest) {
       },
       userResume, // Pass the entire JSON Resume
       matchingResults,
+      personalInstructions, // Pass user's custom instructions
     };
 
     const result = await coverLetterAgent(coverLetterInput, model);

@@ -11,6 +11,8 @@ export interface ResumeGenerationState {
   jobTitle?: string;
   companyName?: string;
   userResume: Resume;
+  personalInstructions?: string; // Optional custom instructions for cover letter
+  includeCoverLetter?: boolean; // Whether to generate cover letter
 
   // Job analysis results
   jobAnalysis?: {

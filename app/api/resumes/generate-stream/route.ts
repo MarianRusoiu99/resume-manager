@@ -17,6 +17,8 @@ const generateResumeSchema = z.object({
   jobTitle: z.string().optional(),
   companyName: z.string().optional(),
   templateId: z.string().optional(),
+  generateCoverLetter: z.boolean().optional(),
+  personalInstructions: z.string().optional(),
 });
 
 /**
@@ -56,9 +58,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { jobDescription, jobTitle, companyName, templateId } = validation.data;
+    const { jobDescription, jobTitle, companyName, templateId, generateCoverLetter, personalInstructions } = validation.data;
 
     console.log(`\n📡 SSE: Resume generation with streaming for user ${session.user.id}`);
+    console.log(`   Cover letter: ${generateCoverLetter ? 'Yes' : 'No'}`);
 
     // Create a readable stream for SSE
     const encoder = new TextEncoder();
@@ -95,6 +98,8 @@ export async function POST(request: NextRequest) {
             jobTitle,
             companyName,
             templateId,
+            generateCoverLetter,
+            personalInstructions,
             onProgress,
           });
 
@@ -112,6 +117,7 @@ export async function POST(request: NextRequest) {
             success: true,
             resumeId: result.resumeId,
             resume: result.resume,
+            coverLetter: result.coverLetter,
           });
 
           console.log(`✅ SSE: Resume generation complete (ID: ${result.resumeId})`);

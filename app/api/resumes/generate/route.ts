@@ -27,6 +27,8 @@ const generateResumeSchema = z.object({
   jobTitle: z.string().optional(),
   companyName: z.string().optional(),
   templateId: z.string().optional(),
+  generateCoverLetter: z.boolean().optional(),
+  personalInstructions: z.string().optional(),
 });
 
 /**
@@ -66,18 +68,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-  const { jobDescription, jobTitle, companyName, templateId } = validation.data;
+  const { jobDescription, jobTitle, companyName, templateId, generateCoverLetter, personalInstructions } = validation.data;
 
     console.log(`\n📝 API: Resume generation request from user ${session.user.id}`);
     console.log(`   Job: ${jobTitle || 'Not specified'} at ${companyName || 'Not specified'}`);
+    console.log(`   Cover letter: ${generateCoverLetter ? 'Yes' : 'No'}`);
 
-    // Generate resume (pass templateId through if provided)
+    // Generate resume (pass all parameters through)
     const result = await resumeService.generateResume({
       userId: session.user.id,
       jobDescription,
       jobTitle,
       companyName,
-      templateId
+      templateId,
+      generateCoverLetter,
+      personalInstructions
     });
 
     if (!result.success) {
@@ -100,7 +105,8 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({
       success: true,
       resumeId: result.resumeId,
-      resume: result.resume
+      resume: result.resume,
+      coverLetter: result.coverLetter
     }, { status: 201 });
 
     return rateLimitCheck.addHeaders(response);

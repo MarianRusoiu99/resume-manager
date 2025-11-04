@@ -19,6 +19,10 @@ export interface GenerateResumeServiceInput {
   companyName?: string;
   /** Optional template ID to apply */
   templateId?: string;
+  /** Whether to generate a cover letter */
+  generateCoverLetter?: boolean;
+  /** Optional personal instructions for cover letter */
+  personalInstructions?: string;
 }
 
 /**
@@ -49,6 +53,8 @@ export interface GenerateResumeServiceResult {
     metadata: Record<string, unknown>;
     createdAt: Date;
   };
+  /** Generated cover letter (if requested) */
+  coverLetter?: string;
   /** Array of error messages (if failed) */
   errors?: string[];
 }
@@ -119,7 +125,9 @@ export class ResumeService {
         jobDescription: input.jobDescription,
         jobTitle: input.jobTitle,
         companyName: input.companyName,
-        userResume
+        userResume,
+        includeCoverLetter: input.generateCoverLetter,
+        personalInstructions: input.personalInstructions
       });
 
       if (!workflowResult.success || !workflowResult.resume) {
@@ -132,6 +140,9 @@ export class ResumeService {
 
       console.log('✅ ResumeService: Workflow completed successfully');
       console.log(`   Tokens used: ${workflowResult.tokensUsed || 0}`);
+      if (workflowResult.coverLetter) {
+        console.log(`   Cover letter: Generated (${workflowResult.coverLetter.length} characters)`);
+      }
 
       // Validate generated resume
       const validatedResume = resumeSchema.parse(workflowResult.resume);
@@ -146,6 +157,7 @@ export class ResumeService {
         },
         templateId: input.templateId ?? undefined,
         resume: validatedResume,
+        coverLetter: workflowResult.coverLetter,
         metadata: {
           model: validatedResume.meta?.model || 'unknown',
           tokens: workflowResult.tokensUsed || 0,
@@ -163,7 +175,8 @@ export class ResumeService {
           content: generatedResume.resume as unknown as Record<string, unknown>,
           metadata: generatedResume.metadata as Record<string, unknown>,
           createdAt: generatedResume.createdAt
-        }
+        },
+        coverLetter: workflowResult.coverLetter
       };
     } catch (error) {
       console.error('❌ ResumeService: Error:', error);
@@ -277,7 +290,9 @@ export class ResumeService {
         jobDescription: baseInput.jobDescription,
         jobTitle: baseInput.jobTitle,
         companyName: baseInput.companyName,
-        userResume
+        userResume,
+        includeCoverLetter: baseInput.generateCoverLetter,
+        personalInstructions: baseInput.personalInstructions
       });
 
       if (!workflowResult.success || !workflowResult.resume) {
@@ -290,6 +305,9 @@ export class ResumeService {
 
       console.log('✅ ResumeService: Workflow completed successfully');
       console.log(`   Tokens used: ${workflowResult.tokensUsed || 0}`);
+      if (workflowResult.coverLetter) {
+        console.log(`   Cover letter: Generated (${workflowResult.coverLetter.length} characters)`);
+      }
 
       onProgress('save', 'Saving resume to database...', 95);
 
@@ -306,6 +324,7 @@ export class ResumeService {
         },
         templateId: baseInput.templateId ?? undefined,
         resume: validatedResume,
+        coverLetter: workflowResult.coverLetter,
         metadata: {
           model: validatedResume.meta?.model || 'unknown',
           tokens: workflowResult.tokensUsed || 0,
@@ -325,7 +344,8 @@ export class ResumeService {
           content: generatedResume.resume as unknown as Record<string, unknown>,
           metadata: generatedResume.metadata as Record<string, unknown>,
           createdAt: generatedResume.createdAt
-        }
+        },
+        coverLetter: workflowResult.coverLetter
       };
     } catch (error) {
       console.error('❌ ResumeService: Error:', error);

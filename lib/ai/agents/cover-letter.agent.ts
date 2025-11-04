@@ -27,6 +27,7 @@ interface CoverLetterInput {
     missingSkills: string[];
     topExperiences: string[];
   };
+  personalInstructions?: string; // Optional custom instructions from user
 }
 
 interface CoverLetterOutput {
@@ -79,6 +80,8 @@ MATCHING ANALYSIS:
 - Strongest Matches: {matchingSkills}
 - Relevant Experiences: {topExperiences}
 
+{personalInstructionsSection}
+
 INSTRUCTIONS:
 1. Opening: Start with a strong, specific hook that shows you understand the company/role. Reference something specific about the company or position that resonates with you.
 
@@ -116,32 +119,47 @@ export async function coverLetterAgent(
     const keyRequirements = input.jobAnalysis.requiredSkills.slice(0, 5).join(', ');
     const tone = input.jobAnalysis.tone || 'professional';
     
-    // Extract data from JSON Resume format
-    const candidateName = input.userResume.basics?.name || 'Candidate';
-    const currentRole = input.userResume.work?.[0]?.position || 'Professional';
+    // Extract data from JSON Resume v1.0.0 format - ensure proper field access
+    const basics = input.userResume.basics || {};
+    const candidateName = basics.name || 'Candidate';
+    const currentRole = input.userResume.work?.[0]?.position || basics.label || 'Professional';
     
-    // Get technical skills from JSON Resume format
-    const technicalSkills = input.userResume.skills
-      ?.filter(skill => skill.keywords && skill.keywords.length > 0)
+    // Get technical skills from JSON Resume format - access keywords array properly
+    const technicalSkills = (input.userResume.skills || [])
+      .filter(skill => skill.keywords && Array.isArray(skill.keywords) && skill.keywords.length > 0)
       .flatMap(skill => skill.keywords || [])
+      .filter(Boolean) // Remove any null/undefined values
       .slice(0, 5)
       .join(', ') || 'relevant skills';
     
-    // Get relevant experience snippets from JSON Resume format
-    const relevantExperience = input.userResume.work
-      ?.slice(0, 2)
-      .map(w => `${w.position || 'Position'} at ${w.name || 'Company'}`)
+    // Get relevant experience snippets from JSON Resume format - ensure fields exist
+    const relevantExperience = (input.userResume.work || [])
+      .slice(0, 2)
+      .map(w => {
+        const position = w.position || 'Position';
+        const company = w.name || 'Company';
+        return `${position} at ${company}`;
+      })
       .join('; ') || 'relevant experience';
     
-    // Get accomplishments from highlights in JSON Resume format
-    const accomplishments = input.userResume.work
-      ?.slice(0, 2)
-      .flatMap(w => w.highlights?.slice(0, 2) || [])
+    // Get accomplishments from highlights in JSON Resume format - safely access nested arrays
+    const accomplishments = (input.userResume.work || [])
+      .slice(0, 2)
+      .flatMap(w => (w.highlights || []).slice(0, 2))
+      .filter(Boolean) // Remove empty strings
       .join('; ') || 'key achievements';
     
     const fitScore = Math.round(input.matchingResults.overallScore);
     const matchingSkills = input.matchingResults.matchingSkills.slice(0, 5).join(', ');
     const topExperiences = input.matchingResults.topExperiences.slice(0, 3).join('; ');
+    
+    // Handle personal instructions if provided
+    const personalInstructionsSection = input.personalInstructions
+      ? `PERSONAL INSTRUCTIONS FROM CANDIDATE:
+${input.personalInstructions}
+
+Please incorporate these instructions while maintaining professional quality and authenticity.`
+      : '';
     
     // Determine tone guidance
     let toneGuidance = '';
@@ -170,6 +188,7 @@ export async function coverLetterAgent(
       .replace('{fitScore}', fitScore.toString())
       .replace('{matchingSkills}', matchingSkills)
       .replace('{topExperiences}', topExperiences)
+      .replace('{personalInstructionsSection}', personalInstructionsSection)
       .replace('{toneGuidance}', toneGuidance);
     
     // Call LLM

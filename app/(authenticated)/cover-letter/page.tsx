@@ -15,6 +15,7 @@ export default function GenerateCoverLetterPage() {
   const [jobDescription, setJobDescription] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [personalInstructions, setPersonalInstructions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedCoverLetter, setGeneratedCoverLetter] = useState<string | null>(null);
@@ -53,6 +54,7 @@ export default function GenerateCoverLetterPage() {
           jobDescription,
           jobTitle,
           companyName,
+          personalInstructions: personalInstructions.trim() || undefined,
         }),
       });
 
@@ -120,6 +122,7 @@ export default function GenerateCoverLetterPage() {
     setJobDescription('');
     setJobTitle('');
     setCompanyName('');
+    setPersonalInstructions('');
     setGeneratedCoverLetter(null);
     setError(null);
   };
@@ -177,6 +180,22 @@ export default function GenerateCoverLetterPage() {
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Minimum 50 characters ({jobDescription.length}/50)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Personal Instructions (Optional)
+                </label>
+                <Textarea
+                  value={personalInstructions}
+                  onChange={(e) => setPersonalInstructions(e.target.value)}
+                  placeholder="Add any specific instructions for your cover letter (e.g., 'Emphasize my leadership experience', 'Use an enthusiastic tone', 'Mention my passion for AI')..."
+                  rows={4}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Provide custom guidance to personalize your cover letter
                 </p>
               </div>
 

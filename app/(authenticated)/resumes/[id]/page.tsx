@@ -9,6 +9,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TemplateDropdown } from '@/components/templates/TemplateDropdown';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { Edit } from 'lucide-react';
 
 interface Resume {
@@ -278,6 +279,44 @@ export default function ResumeDetailPage() {
     }
   };
 
+  const handleSaveCoverLetter = async (html: string) => {
+    try {
+      setError(null);
+
+      const response = await fetch(`/api/resumes/${resumeId}/cover-letter`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          coverLetter: html,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to save cover letter');
+      }
+
+      const data = await response.json();
+      
+      // Update local state
+      if (resume) {
+        setResume({
+          ...resume,
+          coverLetter: data.resume.coverLetter,
+          updatedAt: data.resume.updatedAt,
+        });
+      }
+      
+      toast.success('Cover letter saved successfully');
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to save cover letter';
+      setError(errorMsg);
+      toast.error(errorMsg);
+    }
+  };
+
   // TODO: Re-enable formatDate if needed after VersionHistory is updated for JSON Resume format
 
   if (isLoading) {
@@ -438,9 +477,12 @@ export default function ResumeDetailPage() {
               </Button>
             </div>
           </div>
-          <div className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-            {resume.coverLetter}
-          </div>
+          <RichTextEditor
+            initialValue={resume.coverLetter}
+            onSave={handleSaveCoverLetter}
+            placeholder="Edit your cover letter..."
+            showSaveButton={true}
+          />
         </Card>
       )}
 

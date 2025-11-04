@@ -9,11 +9,14 @@ const ResumeStateAnnotation = Annotation.Root({
   jobTitle: Annotation<string | undefined>(),
   companyName: Annotation<string | undefined>(),
   userResume: Annotation<ResumeGenerationState['userResume']>(),
+  personalInstructions: Annotation<string | undefined>(),
+  includeCoverLetter: Annotation<boolean | undefined>(),
   jobAnalysis: Annotation<ResumeGenerationState['jobAnalysis']>(),
   profileMatch: Annotation<ResumeGenerationState['profileMatch']>(),
   optimizedResume: Annotation<ResumeGenerationState['optimizedResume']>(),
   formatValidation: Annotation<ResumeGenerationState['formatValidation']>(),
   generatedResume: Annotation<ResumeGenerationState['generatedResume']>(),
+  coverLetter: Annotation<ResumeGenerationState['coverLetter']>(),
   messages: Annotation<ResumeGenerationState['messages']>(),
   currentStep: Annotation<string | undefined>(),
   errors: Annotation<string[]>(),
@@ -153,10 +156,12 @@ export function createResumeWorkflowGraph() {
   (workflow as any).addEdge('validate_format', 'generate_output');
   
   // Conditional edge: generate cover letter if requested
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-  (workflow as any).addConditionalEdges('generate_output', (_state: typeof ResumeStateAnnotation.State) => {
-    // Check if cover letter was requested in options
-    // For now, we'll skip cover letter by default (can be enabled later)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (workflow as any).addConditionalEdges('generate_output', (state: typeof ResumeStateAnnotation.State) => {
+    // Check if cover letter was requested
+    if (state.includeCoverLetter === true) {
+      return 'generate_cover_letter';
+    }
     return END;
   }, [END, 'generate_cover_letter']);
   

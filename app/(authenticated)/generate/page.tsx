@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
+import { ResumePreviewWithActions } from '@/components/resume/ResumePreviewWithActions';
 
 interface Template {
   id: string;
@@ -86,16 +86,18 @@ interface GeneratedResume {
 }
 
 export default function GeneratePage() {
-  const router = useRouter();
   const [jobDescription, setJobDescription] = useState('');
   const [jobTitle, setJobTitle] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [generateCoverLetter, setGenerateCoverLetter] = useState(false);
+  const [personalInstructions, setPersonalInstructions] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
+  const [generatedResumeId, setGeneratedResumeId] = useState<string | null>(null);
+  const [generatedCoverLetter, setGeneratedCoverLetter] = useState<string | null>(null);
   
   // Progress streaming state
   const [useStreaming] = useState(true);
@@ -133,6 +135,7 @@ export default function GeneratePage() {
     setIsGenerating(true);
     setError(null);
     setGeneratedResume(null);
+    setGeneratedCoverLetter(null);
 
     try {
       const response = await fetch('/api/resumes/generate', {
@@ -145,6 +148,7 @@ export default function GeneratePage() {
           jobTitle: jobTitle || undefined,
           companyName: companyName || undefined,
           generateCoverLetter,
+          personalInstructions: personalInstructions.trim() || undefined,
           templateId: selectedTemplateId || undefined,
         }),
       });
@@ -156,6 +160,8 @@ export default function GeneratePage() {
       }
 
       setGeneratedResume(data.resume);
+      setGeneratedResumeId(data.resumeId); // Save the resume ID (API returns resumeId)
+      setGeneratedCoverLetter(data.coverLetter || null); // Save the cover letter if generated
       toast.success('Resume generated successfully!');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
@@ -176,6 +182,7 @@ export default function GeneratePage() {
     setIsGenerating(true);
     setError(null);
     setGeneratedResume(null);
+    setGeneratedCoverLetter(null);
     setProgressStep('');
     setProgressMessage('');
     setProgressPercent(0);
@@ -191,6 +198,7 @@ export default function GeneratePage() {
           jobTitle: jobTitle || undefined,
           companyName: companyName || undefined,
           generateCoverLetter,
+          personalInstructions: personalInstructions.trim() || undefined,
           templateId: selectedTemplateId || undefined,
         }),
       });
@@ -250,6 +258,8 @@ export default function GeneratePage() {
                 setProgressMessage('Resume generated successfully!');
                 setProgressPercent(100);
                 setGeneratedResume(eventData.resume);
+                setGeneratedResumeId(eventData.resumeId); // Save the resume ID (API returns resumeId)
+                setGeneratedCoverLetter(eventData.coverLetter || null); // Save the cover letter if generated
                 toast.success('Resume generated successfully!');
                 break;
               
@@ -271,10 +281,11 @@ export default function GeneratePage() {
     }
   };
 
-  const formatDate = (startDate: string, endDate?: string, current?: boolean) => {
-    if (current) return `${startDate} - Present`;
-    if (endDate) return `${startDate} - ${endDate}`;
-    return startDate;
+  // Handler for when resume is deleted from preview component
+  const handleResumeDeleted = () => {
+    setGeneratedResume(null);
+    setGeneratedResumeId(null);
+    setGeneratedCoverLetter(null);
   };
 
   return (
@@ -305,7 +316,7 @@ export default function GeneratePage() {
                   value={jobTitle}
                   onChange={(e) => setJobTitle(e.target.value)}
                   placeholder="e.g., Senior Software Engineer"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-md"
                   disabled={isGenerating}
                 />
               </div>
@@ -320,7 +331,7 @@ export default function GeneratePage() {
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="e.g., Tech Corp"
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-md"
                   disabled={isGenerating}
                 />
               </div>
@@ -335,7 +346,7 @@ export default function GeneratePage() {
                   onChange={(e) => setJobDescription(e.target.value)}
                   placeholder="Paste the full job description here..."
                   rows={12}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  className="w-full px-3 py-2 border rounded-mdfont-mono text-sm"
                   disabled={isGenerating}
                 />
                 <p className="text-sm text-gray-500 mt-1">
@@ -350,13 +361,34 @@ export default function GeneratePage() {
                   id="coverLetter"
                   checked={generateCoverLetter}
                   onChange={(e) => setGenerateCoverLetter(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-foreground border-gray-300 rounded "
                   disabled={isGenerating}
                 />
                 <label htmlFor="coverLetter" className="text-sm text-gray-700 cursor-pointer">
                   Generate cover letter (optional)
                 </label>
               </div>
+
+              {/* Personal Instructions (for cover letter) */}
+              {generateCoverLetter && (
+                <div>
+                  <label htmlFor="personalInstructions" className="block text-sm font-medium mb-2">
+                    Personal Instructions (Optional)
+                  </label>
+                  <textarea
+                    id="personalInstructions"
+                    value={personalInstructions}
+                    onChange={(e) => setPersonalInstructions(e.target.value)}
+                    placeholder="Add specific instructions for your cover letter (e.g., 'Emphasize my leadership experience', 'Use an enthusiastic tone')..."
+                    rows={3}
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    disabled={isGenerating}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Provide custom guidance to personalize your cover letter
+                  </p>
+                </div>
+              )}
 
               {/* Template Selection */}
               {templates.length > 0 && (
@@ -368,10 +400,14 @@ export default function GeneratePage() {
                     id="template"
                     value={selectedTemplateId}
                     onChange={(e) => setSelectedTemplateId(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border rounded-md"
                     disabled={isGenerating}
                   >
-                
+                    {templates.map((template) => (
+                      <option className='bg-background text-foreground' key={template.id} value={template.id}>
+                        {template.name} - {template.category}
+                      </option>
+                    ))}
                   </select>
                   <p className="text-xs text-gray-500 mt-1">
                     {templates.find(t => t.id === selectedTemplateId)?.description}
@@ -425,131 +461,11 @@ export default function GeneratePage() {
 
         {/* Preview Section */}
         <div>
-          {generatedResume ? (
-            <Card className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-xl font-semibold">Generated Resume</h2>
-                <Button
-                  onClick={() => router.push(`/resumes`)}
-                  variant="secondary"
-                  size="sm"
-                >
-                  View All Resumes
-                </Button>
-              </div>
-
-              <div className="space-y-6">
-                {/* Personal Info */}
-                <div className="border-b pb-4">
-                  <h3 className="text-2xl font-bold">{generatedResume.content.basics?.name || 'N/A'}</h3>
-                  <p className="text-gray-600">{generatedResume.content.basics?.email || ''}</p>
-                  {generatedResume.content.basics?.phone && (
-                    <p className="text-gray-600">{generatedResume.content.basics.phone}</p>
-                  )}
-                  {generatedResume.content.basics?.location && (
-                    <p className="text-gray-600">
-                      {[
-                        generatedResume.content.basics.location.city,
-                        generatedResume.content.basics.location.region,
-                        generatedResume.content.basics.location.countryCode
-                      ].filter(Boolean).join(', ')}
-                    </p>
-                  )}
-                  <div className="flex gap-3 mt-2">
-                    {generatedResume.content.basics?.profiles?.map((profile, idx) => (
-                      profile.url && (
-                        <a key={idx} href={profile.url} className="text-sm text-blue-600 hover:underline">
-                          {profile.network || 'Link'}
-                        </a>
-                      )
-                    ))}
-                  </div>
-                </div>
-
-                {/* Summary */}
-                {generatedResume.content.basics?.summary && (
-                  <div>
-                    <h4 className="font-semibold text-lg mb-2">Professional Summary</h4>
-                    <p className="text-gray-700">{generatedResume.content.basics.summary}</p>
-                  </div>
-                )}
-
-                {/* Experience */}
-                {generatedResume.content.work && generatedResume.content.work.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-lg mb-3">Experience</h4>
-                    <div className="space-y-4">
-                      {generatedResume.content.work.map((exp, idx) => (
-                        <div key={idx} className="border-l-2 border-gray-200 pl-4">
-                          <h5 className="font-semibold">{exp.position || 'Position'}</h5>
-                          <p className="text-gray-600">{exp.name || 'Company'}</p>
-                          <p className="text-sm text-gray-500 mb-2">
-                            {formatDate(exp.startDate || '', exp.endDate, !exp.endDate)}
-                          </p>
-                          {exp.summary && <p className="text-sm text-gray-700 mb-2">{exp.summary}</p>}
-                          {exp.highlights && exp.highlights.length > 0 && (
-                            <ul className="list-disc list-inside space-y-1">
-                              {exp.highlights.map((bullet, bidx) => (
-                                <li key={bidx} className="text-sm text-gray-700">{bullet}</li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Education */}
-                {generatedResume.content.education && generatedResume.content.education.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-lg mb-3">Education</h4>
-                    <div className="space-y-3">
-                      {generatedResume.content.education.map((edu, idx) => (
-                        <div key={idx}>
-                          <h5 className="font-semibold">
-                            {edu.studyType || 'Degree'} {edu.area ? `in ${edu.area}` : ''}
-                          </h5>
-                          <p className="text-gray-600">{edu.institution || 'Institution'}</p>
-                          <p className="text-sm text-gray-500">
-                            {formatDate(edu.startDate || '', edu.endDate)}
-                            {edu.score && ` • GPA: ${edu.score}`}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Skills */}
-                {generatedResume.content.skills && generatedResume.content.skills.length > 0 && (
-                  <div>
-                    <h4 className="font-semibold text-lg mb-2">Skills</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {generatedResume.content.skills.map((skill, idx) => (
-                        <span
-                          key={idx}
-                          className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm"
-                        >
-                          {skill.name || 'Skill'}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Metadata */}
-                <div className="border-t pt-4 mt-6">
-                  <p className="text-xs text-gray-500">
-                    Generated on {new Date(generatedResume.metadata.generatedAt).toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Model: {generatedResume.metadata.model || 'unknown'} • 
-                    Tokens: {generatedResume.metadata.totalTokens || 0}
-                  </p>
-                </div>
-              </div>
-            </Card>
+          {generatedResume && generatedResumeId ? (
+            <ResumePreviewWithActions
+              resumeId={generatedResumeId}
+              onDelete={handleResumeDeleted}
+            />
           ) : (
             <Card className="p-6 text-center">
               <div className="py-12">
@@ -575,6 +491,31 @@ export default function GeneratePage() {
           )}
         </div>
       </div>
+
+      {/* Cover Letter Section - Full Width Below Resume */}
+      {generatedCoverLetter && (
+        <div className="mt-6">
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Generated Cover Letter</h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedCoverLetter);
+                  toast.success('Cover letter copied to clipboard!');
+                }}
+              >
+                📋 Copy to Clipboard
+              </Button>
+            </div>
+            <div 
+              className="prose max-w-none bg-muted/50 p-6 rounded-lg border"
+              dangerouslySetInnerHTML={{ __html: generatedCoverLetter }}
+            />
+          </Card>
+        </div>
+      )}
       </PageContainer>
     </>
   );

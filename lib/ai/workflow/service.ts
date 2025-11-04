@@ -16,6 +16,7 @@ import {
   formatValidationWorkflowNode,
   outputGeneratorWorkflowNode
 } from './agents';
+import { coverLetterWorkflowNode } from './agents/cover-letter.node';
 
 export interface GenerateResumeInput {
   userId: string;
@@ -23,11 +24,14 @@ export interface GenerateResumeInput {
   jobTitle?: string;
   companyName?: string;
   userResume: Resume;
+  includeCoverLetter?: boolean;
+  personalInstructions?: string;
 }
 
 export interface GenerateResumeResult {
   success: boolean;
   resume?: Resume;
+  coverLetter?: string;
   errors?: string[];
   tokensUsed?: number;
   state?: ResumeGenerationState;
@@ -56,7 +60,9 @@ export class ResumeWorkflowService {
         input.userResume,
         {
           jobTitle: input.jobTitle,
-          companyName: input.companyName
+          companyName: input.companyName,
+          personalInstructions: input.personalInstructions,
+          includeCoverLetter: input.includeCoverLetter
         }
       );
 
@@ -126,12 +132,34 @@ export class ResumeWorkflowService {
         };
       }
 
+      // Step 6 (Optional): Generate cover letter
+      let coverLetterContent: string | undefined;
+      if (input.includeCoverLetter) {
+        console.log('\n✉️ Step 6: Generating cover letter...');
+        const coverLetterState = await coverLetterWorkflowNode(finalState, input.userId);
+        if (coverLetterState.errors && coverLetterState.errors.length > 0) {
+          console.warn('⚠️ Cover letter generation failed, continuing without it');
+          console.warn('   Errors:', coverLetterState.errors);
+        } else if (coverLetterState.coverLetter) {
+          coverLetterContent = coverLetterState.coverLetter.content;
+          // Update finalState with cover letter info
+          Object.assign(finalState, {
+            coverLetter: coverLetterState.coverLetter,
+            tokensUsed: coverLetterState.tokensUsed || finalState.tokensUsed
+          });
+        }
+      }
+
       console.log('\n✅ Resume generation completed successfully');
       console.log(`   Tokens used: ${finalState.tokensUsed || 0}`);
+      if (coverLetterContent) {
+        console.log(`   Cover letter: Generated (${coverLetterContent.length} characters)`);
+      }
 
       return {
         success: true,
         resume: finalState.generatedResume,
+        coverLetter: coverLetterContent,
         tokensUsed: finalState.tokensUsed,
         state: finalState
       };

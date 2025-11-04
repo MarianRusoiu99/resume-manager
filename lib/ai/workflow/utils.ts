@@ -137,6 +137,8 @@ export function createInitialState(
   options?: {
     jobTitle?: string;
     companyName?: string;
+    personalInstructions?: string;
+    includeCoverLetter?: boolean;
   }
 ): ResumeGenerationState {
   return {
@@ -144,6 +146,8 @@ export function createInitialState(
     jobTitle: options?.jobTitle,
     companyName: options?.companyName,
     userResume,
+    personalInstructions: options?.personalInstructions,
+    includeCoverLetter: options?.includeCoverLetter,
     messages: [],
     errors: [],
     tokensUsed: 0,
