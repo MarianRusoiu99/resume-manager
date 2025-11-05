@@ -100,17 +100,6 @@ ${input.personalInstructions}
 Please incorporate these instructions while maintaining professional quality and authenticity.`
       : '';
     
-    // Determine tone guidance
-    let toneGuidance = '';
-    if (tone.toLowerCase().includes('startup') || tone.toLowerCase().includes('casual')) {
-      toneGuidance = 'Use a warm, enthusiastic, and slightly casual tone. Show personality while maintaining professionalism.';
-    } else if (tone.toLowerCase().includes('technical') || tone.toLowerCase().includes('engineering')) {
-      toneGuidance = 'Use a clear, direct, technically-focused tone. Emphasize technical skills and problem-solving.';
-    } else if (tone.toLowerCase().includes('creative')) {
-      toneGuidance = 'Use a creative, engaging tone that shows your unique perspective and passion.';
-    } else {
-      toneGuidance = 'Use a professional, confident, business-formal tone.';
-    }
     
     // Use LangChain's PromptTemplate for variable substitution
     const promptTemplate = PromptTemplate.fromTemplate(COVER_LETTER_USER_TEMPLATE);
@@ -129,7 +118,6 @@ Please incorporate these instructions while maintaining professional quality and
       matchingSkills,
       topExperiences,
       personalInstructionsSection,
-      toneGuidance
     });
     
     console.log(prompt)
@@ -172,7 +160,7 @@ Please incorporate these instructions while maintaining professional quality and
         wordCount
       };
     }
-    
+    console.log(parsed)
     return parsed;
   } catch (error) {
     console.error('Error in cover letter agent:', error);

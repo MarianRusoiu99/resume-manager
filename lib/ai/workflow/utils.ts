@@ -1,5 +1,6 @@
 import { AIMessage, HumanMessage, SystemMessage, BaseMessage } from '@langchain/core/messages';
 import { ResumeGenerationState } from './types';
+import { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Create a system message for an agent

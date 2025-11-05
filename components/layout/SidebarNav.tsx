@@ -44,8 +44,8 @@ const navigationItems = [
     icon: Palette,
   },
   {
-    title: "Settings",
-    url: "/settings",
+    title: "Generate Cover Letter",
+    url: "/cover-letter",
     icon: Settings,
   },
 ];

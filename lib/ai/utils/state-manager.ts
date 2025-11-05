@@ -131,7 +131,7 @@ export function hasGeneratedResume(state: ResumeGenerationState): boolean {
 export function createInitialState(
   input: Pick<
     ResumeGenerationState,
-    'jobDescription' | 'userResume' | 'jobTitle' | 'companyName' | 'personalInstructions' | 'includeCoverLetter'
+    'jobDescription' | 'userResume'  | 'personalInstructions' | 'includeCoverLetter'
   >
 ): ResumeGenerationState {
   return {

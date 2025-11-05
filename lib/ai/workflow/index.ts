@@ -55,7 +55,6 @@ export {
 
 export {
   contentOptimizationAgent,
-  testContentOptimizationAgent
 } from '../agents/content-optimization.agent';
 
 export {

@@ -37,7 +37,6 @@ const ResumeStateAnnotation = Annotation.Root({
   jobAnalysis: Annotation<ResumeGenerationState['jobAnalysis']>(),
   profileMatch: Annotation<ResumeGenerationState['profileMatch']>(),
   optimizedResume: Annotation<ResumeGenerationState['optimizedResume']>(),
-  formatValidation: Annotation<ResumeGenerationState['formatValidation']>(),
   generatedResume: Annotation<ResumeGenerationState['generatedResume']>(),
   coverLetter: Annotation<ResumeGenerationState['coverLetter']>(),
   
@@ -70,36 +69,7 @@ export function createResumeWorkflowGraph() {
   /**
    * Entry point - validate input
    */
-  workflow.addNode('validate_input', async (state: ResumeGenerationState) => {
-    console.log('📋 Validating input...');
-    
-    try {
-      // Check for required fields
-      if (!state.jobDescription || state.jobDescription.trim().length === 0) {
-        return {
-          currentStep: 'validate_input',
-          errors: ['Job description is required']
-        };
-      }
-
-      if (!state.userResume) {
-        return {
-          currentStep: 'validate_input',
-          errors: ['User resume is required']
-        };
-      }
-
-      console.log('✅ Input validation passed');
-      return { currentStep: 'validate_input' };
-    } catch (error) {
-      console.error('❌ Input validation failed:', error);
-      return {
-        currentStep: 'validate_input',
-        errors: [`Validation error: ${error instanceof Error ? error.message : 'Unknown error'}`]
-      };
-    }
-  });
-
+ 
   /**
    * Job analysis node placeholder
    */
@@ -127,14 +97,6 @@ export function createResumeWorkflowGraph() {
     return { currentStep: 'optimize_content' };
   });
 
-  /**
-   * Format validation node placeholder
-   */
-  workflow.addNode('validate_format', async () => {
-    console.log('📐 Validating format...');
-    // Will be implemented in Phase 4.5
-    return { currentStep: 'validate_format' };
-  });
 
   /**
    * Output generation node placeholder
@@ -163,21 +125,11 @@ export function createResumeWorkflowGraph() {
     return { currentStep: 'error' };
   });
 
-  // Define the workflow edges
-  // Note: Using type assertions to work around LangGraph v1.0.1 type inference issues
-  // The StateGraph type system doesn't properly infer node names from addNode calls
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (workflow as any).addEdge(START, 'validate_input');
 
   // Conditional edge: if validation fails, go to error handler
   // Third parameter explicitly lists possible destinations for graph visualization
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (workflow as any).addConditionalEdges('validate_input', (state: typeof ResumeStateAnnotation.State) => {
-    if (state.errors && state.errors.length > 0) {
-      return 'handle_error';
-    }
-    return 'analyze_job';
-  }, ['handle_error', 'analyze_job']);
+
 
   // Sequential agent workflow
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -202,7 +154,6 @@ export function createResumeWorkflowGraph() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (workflow as any).addEdge('generate_cover_letter', END);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (workflow as any).addEdge('handle_error', END);
 
   return workflow;
 }

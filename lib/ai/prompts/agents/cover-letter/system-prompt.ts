@@ -11,7 +11,7 @@ export const COVER_LETTER_SYSTEM_PROMPT = `You are an expert cover letter writer
 3. Demonstrate specific knowledge about the company and role
 4. Highlight relevant accomplishments with concrete examples
 5. Match the tone and culture suggested by the job description
-6. Are concise yet impactful (250-400 words)
+6. Are concise yet impactful (250-350 words)
 7. Follow professional business letter format
 
 CRITICAL RULES:

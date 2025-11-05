@@ -35,10 +35,9 @@ INSTRUCTIONS:
 
 3. Closing: End with confidence and a clear call to action
 
-TONE: {toneGuidance}
 
 OUTPUT FORMAT:
 Return a JSON object with:
 {{
-  "coverLetter": "Full cover letter text in rich text format with proper paragraph breaks",  
+  "coverLetter": "Full cover letter text in markdown text format with proper paragraph breaks",  
 }}`;

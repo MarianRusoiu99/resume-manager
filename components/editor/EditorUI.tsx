@@ -17,6 +17,7 @@ import { PublicationsForm } from "@/components/editor/forms/PublicationsForm";
 import { InterestsForm } from "@/components/editor/forms/InterestsForm";
 import { ReferencesForm } from "@/components/editor/forms/ReferencesForm";
 import { ProfileSection } from "@/components/editor/forms/ProfileSection";
+import { ImportFromJSON } from "@/components/editor/ImportFromJSON";
 import type { Basics, Skill, Certificate, Language } from "@/lib/validations/jsonresume";
 
 export interface EditorUIProps {
@@ -87,6 +88,19 @@ export function EditorUI({ showParser, parserComponent}: EditorUIProps) {
                     </CardHeader>
                     <CardContent>
                         {parserComponent}
+                    </CardContent>
+                </Card>
+            )}
+
+            {/* Import from JSON */}
+            {showParser && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Import from JSON</CardTitle>
+                        <CardDescription>Import resume data from JSON in your clipboard</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ImportFromJSON />
                     </CardContent>
                 </Card>
             )}

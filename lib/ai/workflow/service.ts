@@ -13,7 +13,6 @@ import {
   jobAnalysisNode,
   profileMatchingNode,
   contentOptimizationNode,
-  formatValidationNode,
   outputGenerationNode,
   coverLetterGenerationNode
 } from './nodes';
@@ -97,19 +96,10 @@ export class ResumeWorkflowService {
         };
       }
 
-            // Step 4: Validate format
-      console.log('\n✅ Step 4: Validating format...');
-      state = { ...state, ...(await formatValidationNode(state, input.userId)) };
-      if (state.errors && state.errors.length > 0) {
-        return {
-          success: false,
-          errors: state.errors,
-          state
-        };
-      }
+   
 
       // Step 5: Generate output
-      console.log('\n📄 Step 5: Generating final output...');
+      console.log('\n📄 Step 4: Generating final output...');
       state = { ...state, ...(await outputGenerationNode(state)) };
       if (state.errors && state.errors.length > 0) {
         return {
@@ -130,7 +120,7 @@ export class ResumeWorkflowService {
       // Step 6 (Optional): Generate cover letter
       let coverLetterContent: string | undefined;
       if (input.includeCoverLetter) {
-        console.log('\n✉️ Step 6: Generating cover letter...');
+        console.log('\n✉️ Step 5: Generating cover letter...');
         
         // Store current error count to detect new errors
         const previousErrorCount = state.errors?.length || 0;
