@@ -12,6 +12,7 @@ import { z } from 'zod';
 
 const updateSchema = z.object({
   content: z.string().min(1).optional(),
+  contentJson: z.string().optional(), // Yoopta editor JSON state
   jobDescription: z.string().optional(),
   jobTitle: z.string().optional(),
   companyName: z.string().optional(),

@@ -1,28 +1,30 @@
 /**
  * Rich Text Editor Component
- * A markdown editor using MDXEditor for cover letter editing
+ * A markdown editor using Yoopta Editor for cover letter editing
  */
 
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui';
 import { Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
+import type { YooptaEditorMethods } from './YooptaEditorWrapper.client';
 
 // Import the wrapper component props type
-type MDXEditorWrapperProps = {
+type YooptaEditorWrapperProps = {
   markdown: string;
+  jsonContent?: string; // Yoopta JSON state for editing
   onChange: (value: string) => void;
   readOnly?: boolean;
   placeholder?: string;
   className?: string;
 };
 
-// Dynamically import MDXEditor to avoid SSR issues
-const MDXEditorComponent = dynamic<MDXEditorWrapperProps>(
-  () => import('./MDXEditorWrapper.client').then((mod) => mod.MDXEditorWrapper),
+// Dynamically import Yoopta Editor to avoid SSR issues
+const YooptaEditorComponent = dynamic<YooptaEditorWrapperProps & { ref?: React.Ref<YooptaEditorMethods> }>(
+  () => import('./YooptaEditorWrapper.client').then((mod) => mod.YooptaEditorWrapper),
   { 
     ssr: false,
     loading: () => (
@@ -35,6 +37,7 @@ const MDXEditorComponent = dynamic<MDXEditorWrapperProps>(
 
 interface RichTextEditorProps {
   initialValue?: string;
+  initialJsonValue?: string; // Yoopta JSON state for editing with formatting
   onChange?: (markdown: string) => void;
   onSave?: (markdown: string) => void;
   placeholder?: string;
@@ -43,21 +46,34 @@ interface RichTextEditorProps {
   showSaveButton?: boolean;
 }
 
-export function RichTextEditor({
-  initialValue = '',
-  onChange,
-  onSave,
-  placeholder = 'Start typing...',
-  className,
-  readOnly = false,
-  showSaveButton = true,
-}: RichTextEditorProps) {
-  const [markdown, setMarkdown] = useState(initialValue);
-  const [hasChanges, setHasChanges] = useState(false);
+export const RichTextEditor = forwardRef<YooptaEditorMethods, RichTextEditorProps>(
+  function RichTextEditor({
+    initialValue = '',
+    initialJsonValue,
+    onChange,
+    onSave,
+    placeholder = 'Start typing...',
+    className,
+    readOnly = false,
+    showSaveButton = true,
+  }, ref) {
+    const editorRef = useRef<YooptaEditorMethods>(null);
+    const [currentMarkdown, setCurrentMarkdown] = useState(initialValue);
+    const [hasChanges, setHasChanges] = useState(false);
 
-  // Handle content changes
+    // Expose editor methods to parent via ref
+    useImperativeHandle(ref, () => ({
+      getMarkdown: () => editorRef.current?.getMarkdown() || '',
+      setMarkdown: (markdown: string) => editorRef.current?.setMarkdown(markdown),
+      getValue: () => editorRef.current?.getValue() || {},
+      setValue: (value) => editorRef.current?.setValue(value),
+      getJSON: () => editorRef.current?.getJSON() || '{}',
+      setJSON: (jsonString: string) => editorRef.current?.setJSON(jsonString),
+    }), []);
+
+  // Handle content changes from the editor
   const handleChange = useCallback((value: string) => {
-    setMarkdown(value);
+    setCurrentMarkdown(value);
     setHasChanges(true);
     onChange?.(value);
   }, [onChange]);
@@ -65,22 +81,13 @@ export function RichTextEditor({
   // Handle save
   const handleSave = useCallback(() => {
     if (onSave) {
-      onSave(markdown);
+      onSave(currentMarkdown);
       setHasChanges(false);
     }
-  }, [markdown, onSave]);
-
-  // Keyboard shortcuts
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    // Ctrl/Cmd + S to save
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      handleSave();
-    }
-  }, [handleSave]);
+  }, [currentMarkdown, onSave]);
 
   return (
-    <div className={cn('border rounded-md overflow-hidden', className)} onKeyDown={handleKeyDown}>
+    <div className={cn('border rounded-md overflow-hidden', className)}>
       {showSaveButton && onSave && (
         <div className="flex items-center justify-end gap-2 p-2 border-b bg-muted/30">
           <Button
@@ -102,8 +109,10 @@ export function RichTextEditor({
         'prose prose-sm max-w-none',
         readOnly && 'bg-muted/20'
       )}>
-        <MDXEditorComponent
-          markdown={markdown}
+        <YooptaEditorComponent
+          ref={editorRef}
+          markdown={initialValue}
+          jsonContent={initialJsonValue}
           onChange={handleChange}
           readOnly={readOnly}
           placeholder={placeholder}
@@ -112,4 +121,4 @@ export function RichTextEditor({
       </div>
     </div>
   );
-}
+});

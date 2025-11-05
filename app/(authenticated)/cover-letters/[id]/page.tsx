@@ -19,6 +19,7 @@ import { ArrowLeft, Trash2, ExternalLink, FileText } from 'lucide-react';
 interface CoverLetter {
   id: string;
   content: string;
+  contentJson?: string | null; // Yoopta JSON state
   jobDescription: string;
   jobTitle: string | null;
   companyName: string | null;
@@ -81,14 +82,14 @@ export default function CoverLetterDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coverLetterId]);
 
-  const handleSaveCoverLetter = async (content: string) => {
+  const handleSaveCoverLetter = async (content: string, contentJson: string) => {
     try {
       const response = await fetch(`/api/cover-letters/${coverLetterId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, contentJson }),
       });
 
       if (!response.ok) {
@@ -259,6 +260,7 @@ export default function CoverLetterDetailPage() {
         {/* Cover Letter Editor */}
         <CoverLetterEditor
           content={coverLetter.content}
+          contentJson={coverLetter.contentJson || undefined}
           editable={true}
           onSave={handleSaveCoverLetter}
           title="Cover Letter"

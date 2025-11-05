@@ -76,7 +76,8 @@ model CoverLetter {
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  content         String   @db.Text  // Markdown formatted cover letter
+  content         String   @db.Text  // Markdown formatted cover letter (for preview)
+  contentJson     String?  @db.Text  // Yoopta editor JSON state (for editing with formatting)
   jobDescription  String   @db.Text
   jobTitle        String?
   companyName     String?

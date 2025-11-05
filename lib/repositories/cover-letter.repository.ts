@@ -10,6 +10,7 @@ import { Prisma } from '@prisma/client';
 export interface CreateCoverLetterInput {
   userId: string;
   content: string;
+  contentJson?: string; // Yoopta editor JSON state
   jobDescription: string;
   jobTitle?: string;
   companyName?: string;
@@ -24,6 +25,7 @@ export interface CreateCoverLetterInput {
 
 export interface UpdateCoverLetterInput {
   content?: string;
+  contentJson?: string; // Yoopta editor JSON state
   jobDescription?: string;
   jobTitle?: string;
   companyName?: string;
@@ -40,6 +42,7 @@ export class CoverLetterRepository {
       data: {
         userId: data.userId,
         content: data.content,
+        contentJson: data.contentJson,
         jobDescription: data.jobDescription,
         jobTitle: data.jobTitle,
         companyName: data.companyName,
@@ -149,6 +152,7 @@ export class CoverLetterRepository {
       },
       data: {
         ...(data.content !== undefined && { content: data.content }),
+        ...(data.contentJson !== undefined && { contentJson: data.contentJson }),
         ...(data.jobDescription !== undefined && { jobDescription: data.jobDescription }),
         ...(data.jobTitle !== undefined && { jobTitle: data.jobTitle }),
         ...(data.companyName !== undefined && { companyName: data.companyName }),

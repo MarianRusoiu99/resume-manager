@@ -12,10 +12,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { Button, Card } from '@/components/ui';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import type { YooptaEditorMethods } from '@/components/editor/YooptaEditorWrapper.client';
+import { MarkdownPreview } from '@/components/editor/MarkdownPreview';
 import { FileDown, Copy, Edit, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +26,11 @@ interface CoverLetterEditorProps {
    * Cover letter content in markdown format
    */
   content: string;
+  
+  /**
+   * Cover letter content in Yoopta JSON format (for editing with formatting)
+   */
+  contentJson?: string;
   
   /**
    * Whether the cover letter can be edited
@@ -38,8 +45,10 @@ interface CoverLetterEditorProps {
   
   /**
    * Callback when cover letter is saved (for editable mode)
+   * @param content - Markdown content
+   * @param contentJson - Yoopta JSON state
    */
-  onSave?: (content: string) => Promise<void>;
+  onSave?: (content: string, contentJson: string) => Promise<void>;
   
   /**
    * Additional CSS classes
@@ -61,6 +70,7 @@ interface CoverLetterEditorProps {
 
 export function CoverLetterEditor({
   content,
+  contentJson,
   editable = false,
   resumeId,
   onSave,
@@ -72,54 +82,7 @@ export function CoverLetterEditor({
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
-
-  /**
-   * Convert markdown to HTML for display
-   * Simple markdown parser for basic formatting
-   */
-  const markdownToHtml = (markdown: string): string => {
-    let html = markdown;
-    
-    // Bold: **text** -> <strong>text</strong>
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    
-    // Italic: *text* -> <em>text</em>
-    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-    
-    // Paragraphs: double newlines
-    html = html.split('\n\n').map(para => `<p>${para}</p>`).join('');
-    
-    // Single newlines within paragraphs
-    html = html.replace(/\n/g, '<br/>');
-    
-    return html;
-  };
-
-  /**
-   * Convert HTML back to markdown for editing
-   */
-  const htmlToMarkdown = (html: string): string => {
-    let markdown = html;
-    
-    // Strong -> **text**
-    markdown = markdown.replace(/<strong>(.*?)<\/strong>/g, '**$1**');
-    markdown = markdown.replace(/<b>(.*?)<\/b>/g, '**$1**');
-    
-    // Em -> *text*
-    markdown = markdown.replace(/<em>(.*?)<\/em>/g, '*$1*');
-    markdown = markdown.replace(/<i>(.*?)<\/i>/g, '*$1*');
-    
-    // Paragraphs
-    markdown = markdown.replace(/<p>(.*?)<\/p>/g, '$1\n\n');
-    
-    // Line breaks
-    markdown = markdown.replace(/<br\s*\/?>/g, '\n');
-    
-    // Clean up extra whitespace
-    markdown = markdown.trim();
-    
-    return markdown;
-  };
+  const editorRef = useRef<YooptaEditorMethods>(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -172,13 +135,16 @@ export function CoverLetterEditor({
     setIsEditing(false);
   };
 
-  const handleSaveEdit = async (html: string) => {
+  const handleSaveEdit = async (markdown: string) => {
     if (!onSave) return;
 
     try {
       setIsSaving(true);
-      const markdown = htmlToMarkdown(html);
-      await onSave(markdown);
+      
+      // Get JSON state from editor
+      const json = editorRef.current?.getJSON() || '{}';
+      
+      await onSave(markdown, json);
       setEditedContent(markdown);
       setIsEditing(false);
       toast.success('Cover letter saved successfully!');
@@ -194,19 +160,23 @@ export function CoverLetterEditor({
     if (isEditing) {
       return (
         <RichTextEditor
-          initialValue={markdownToHtml(editedContent)}
+          ref={editorRef}
+          key="editing-mode" // Force remount when entering edit mode
+          initialValue={editedContent}
+          initialJsonValue={contentJson}
           onSave={handleSaveEdit}
           placeholder="Edit your cover letter..."
           showSaveButton={false}
-          onChange={() => {}} // No-op, we handle save explicitly
+          readOnly={false}
+          onChange={(value) => setEditedContent(value)}
         />
       );
     }
 
     return (
-      <div 
-        className="prose max-w-none bg-muted/50 p-6 rounded-lg border whitespace-pre-wrap leading-relaxed"
-        dangerouslySetInnerHTML={{ __html: markdownToHtml(content) }}
+      <MarkdownPreview 
+        content={content}
+        className="bg-muted/50 p-6 rounded-lg border"
       />
     );
   };
@@ -237,12 +207,7 @@ export function CoverLetterEditor({
           </Button>
           <Button
             size="sm"
-            onClick={() => {
-              const editorEl = document.querySelector('[contenteditable="true"]');
-              if (editorEl) {
-                handleSaveEdit((editorEl as HTMLElement).innerHTML);
-              }
-            }}
+            onClick={() => handleSaveEdit(editedContent)}
             disabled={isSaving}
           >
             <Check className="w-4 h-4 mr-2" />
