@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, User, Sparkles, FileText, Palette, Settings } from "lucide-react";
+import { Home, User, Sparkles, FileText, Palette, Settings, Mail } from "lucide-react";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -32,6 +32,11 @@ const navigationItems = [
     title: "Resumes",
     url: "/resumes",
     icon: FileText,
+  },
+  {
+    title: "Cover Letters",
+    url: "/cover-letters",
+    icon: Mail,
   },
   {
     title: "Templates",

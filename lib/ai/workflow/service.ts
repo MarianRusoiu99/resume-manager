@@ -21,8 +21,6 @@ import {
 export interface GenerateResumeInput {
   userId: string;
   jobDescription: string;
-  jobTitle?: string;
-  companyName?: string;
   userResume: Resume;
   includeCoverLetter?: boolean;
   personalInstructions?: string;
@@ -52,15 +50,13 @@ export class ResumeWorkflowService {
     try {
       console.log('\n🚀 Starting resume generation workflow');
       console.log(`   User ID: ${input.userId}`);
-      console.log(`   Job: ${input.jobTitle || 'Not specified'} at ${input.companyName || 'Not specified'}`);
+      console.log(`   Job description length: ${input.jobDescription.length} characters`);
 
       // Create initial state
       const initialState = createInitialState(
         input.jobDescription,
         input.userResume,
         {
-          jobTitle: input.jobTitle,
-          companyName: input.companyName,
           personalInstructions: input.personalInstructions,
           includeCoverLetter: input.includeCoverLetter
         }

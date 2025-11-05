@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { z } from 'zod';
 import { profileService } from '@/lib/services/profile.service';
+import { coverLetterService } from '@/lib/services/cover-letter.service';
 import { analyzeJobAgent } from '@/lib/ai/agents/job-analysis.agent';
 import { ChatOpenAI } from '@langchain/openai';
 import type { ResumeGenerationState } from '@/lib/ai/workflow/types';
@@ -17,8 +18,6 @@ import type { Resume } from '@/lib/validations/jsonresume';
 // Validation schema
 const generateCoverLetterSchema = z.object({
   jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
-  jobTitle: z.string().min(1, 'Job title is required'),
-  companyName: z.string().min(1, 'Company name is required'),
   personalInstructions: z.string().optional(),
 });
 
@@ -47,7 +46,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { jobDescription, jobTitle, companyName, personalInstructions } = validationResult.data;
+    const { jobDescription, personalInstructions } = validationResult.data;
 
     // Get OpenAI API key from environment
     const apiKey = process.env.OPENAI_API_KEY || '';
@@ -84,11 +83,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create initial state for job analysis using JSON Resume
+    // Create initial state for job analysis using JSON Resume (job title and company extracted from description)
     const initialState: ResumeGenerationState = {
       jobDescription,
-      jobTitle,
-      companyName,
       userResume,
       messages: [],
       currentStep: 'analyze_job',
@@ -96,7 +93,7 @@ export async function POST(request: NextRequest) {
       tokensUsed: 0,
     };
 
-    console.log('[Cover Letter API] Starting job analysis...');
+    console.log('[Cover Letter API] Starting job analysis (extracting job title and company)...');
     
     // Step 1: Analyze the job description
     const jobAnalysisResult = await analyzeJobAgent(initialState, apiKey);
@@ -151,8 +148,8 @@ export async function POST(request: NextRequest) {
     
     const coverLetterInput = {
       jobDescription,
-      jobTitle,
-      companyName,
+      jobTitle: jobAnalysisResult.jobAnalysis.jobTitle,
+      companyName: jobAnalysisResult.jobAnalysis.companyName,
       jobAnalysis: {
         summary: jobAnalysisResult.jobAnalysis.jobSummary,
         requiredSkills: jobAnalysisResult.jobAnalysis.requirements.required,
@@ -171,12 +168,37 @@ export async function POST(request: NextRequest) {
 
     const totalTokens = (jobAnalysisResult.tokensUsed || 0) + (result.wordCount * 1.3);
 
+    // Save cover letter to database
+    const coverLetterData = {
+      userId: session.user.id,
+      content: result.coverLetter,
+      jobDescription,
+      jobTitle: jobAnalysisResult.jobAnalysis.jobTitle,
+      companyName: jobAnalysisResult.jobAnalysis.companyName,
+      metadata: {
+        model: 'gpt-4-turbo-preview',
+        tokens: Math.ceil(totalTokens),
+        generationTime: 0, // Could track this if needed
+        personalInstructions,
+      },
+    };
+
+    const saveResult = await coverLetterService.createCoverLetter(coverLetterData);
+    
+    if (!saveResult.success) {
+      console.error('[Cover Letter API] Failed to save cover letter:', saveResult.error);
+      // Continue anyway - return the generated content even if save fails
+    }
+
+    console.log('[Cover Letter API] Cover letter saved to database');
+
     return NextResponse.json({
       coverLetter: result.coverLetter,
+      coverLetterId: saveResult.data?.id,
       tokensUsed: Math.ceil(totalTokens),
       metadata: {
-        jobTitle,
-        companyName,
+        jobTitle: jobAnalysisResult.jobAnalysis.jobTitle,
+        companyName: jobAnalysisResult.jobAnalysis.companyName,
         wordCount: result.wordCount,
         tone: result.tone,
         generatedAt: new Date().toISOString(),

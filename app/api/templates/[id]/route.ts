@@ -5,6 +5,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { templateRepository } from '@/lib/repositories/template.repository';
 import { templateService } from '@/lib/services/template.service';
 import { logger } from '@/lib/utils/logger';
@@ -63,6 +64,10 @@ export async function PATCH(
       );
     }
 
+    // Revalidate the templates page to show the updated template
+    revalidatePath('/templates');
+    revalidatePath(`/templates/${id}`);
+
     return NextResponse.json(result.data);
   } catch (error) {
     const { id } = await params;
@@ -99,6 +104,9 @@ export async function DELETE(
         { status: statusCode }
       );
     }
+
+    // Revalidate the templates page after deletion
+    revalidatePath('/templates');
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -24,13 +24,11 @@ import {
  */
 export interface JobAnalysisInput {
   jobDescription: string;
-  jobTitle?: string;
-  companyName?: string;
 }
 
 /**
  * Job Analysis Agent
- * Analyzes job descriptions to extract structured requirements
+ * Analyzes job descriptions to extract structured requirements including job title and company name
  */
 export class JobAnalysisAgent extends BaseAgent<JobAnalysisInput, JobAnalysisResult> {
   constructor(apiKey: string, model?: string) {
@@ -50,14 +48,9 @@ export class JobAnalysisAgent extends BaseAgent<JobAnalysisInput, JobAnalysisRes
    * Build prompt with job details using LangChain's PromptTemplate
    */
   protected async buildPrompt(input: JobAnalysisInput): Promise<BaseMessage[]> {
-    const jobTitle = input.jobTitle || 'Not specified';
-    const companyName = input.companyName || 'Not specified';
-    
     // Use LangChain's PromptTemplate for variable substitution
     const promptTemplate = PromptTemplate.fromTemplate(JOB_ANALYSIS_USER_TEMPLATE);
     const userPrompt = await promptTemplate.format({
-      jobTitle,
-      companyName,
       jobDescription: input.jobDescription
     });
 
@@ -100,7 +93,7 @@ export async function analyzeJob(
  * @returns Updated state with job analysis, errors, and token usage
  */
 export async function analyzeJobAgent(
-  state: { jobDescription: string; jobTitle?: string; companyName?: string },
+  state: { jobDescription: string },
   apiKey: string,
   model?: string
 ): Promise<{ jobAnalysis?: JobAnalysisResult; errors?: string[]; tokensUsed?: number }> {
@@ -108,8 +101,6 @@ export async function analyzeJobAgent(
     const result = await analyzeJob(
       {
         jobDescription: state.jobDescription,
-        jobTitle: state.jobTitle,
-        companyName: state.companyName,
       },
       apiKey,
       model

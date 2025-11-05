@@ -27,6 +27,12 @@ export default async function DashboardPage() {
       icon: Sparkles,
     },
     {
+      title: "Generate Cover Letter",
+      description: "Create an cover letter from a job description based on your profile",
+      href: "/cover-letter",
+      icon: Sparkles,
+    },
+    {
       title: "My Resumes",
       description: "View and manage your generated resumes",
       href: "/resumes",
@@ -37,6 +43,12 @@ export default async function DashboardPage() {
       description: "Browse and customize resume templates",
       href: "/templates",
       icon: Palette,
+    },
+    {
+      title: "Cover Letters",
+      description: "Cover Letters",
+      href: "/cover-letters",
+      icon: TrendingUp,
     },
     {
       title: "Coming Soon",

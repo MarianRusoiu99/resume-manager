@@ -65,8 +65,6 @@ export async function contentOptimizationAgent(
     console.log('Optimizing content with AI...');
     const result = await retryWithBackoff(
       () => chain.invoke({
-        jobTitle: state.jobTitle || 'the position',
-        companyName: state.companyName || 'the company',
         keyResponsibilities,
         requiredSkills,
         preferredSkills,
@@ -145,15 +143,3 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-/**
- * Test function for standalone content optimization testing
- * NOTE: Stubbed - requires test data setup
- */
-export async function testContentOptimizationAgent(
-  apiKey: string,
-  model: string = 'gpt-4-turbo-preview'
-) {
-  console.log('Content optimization agent test - not implemented');
-  console.log('Use vitest tests instead: npm test');
-  return null;
-}

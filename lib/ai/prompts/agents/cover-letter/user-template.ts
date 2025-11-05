@@ -7,8 +7,6 @@
 export const COVER_LETTER_USER_TEMPLATE = `Generate a personalized, compelling cover letter for this job application.
 
 JOB INFORMATION:
-- Job Title: {jobTitle}
-- Company: {companyName}
 - Job Description Summary: {jobSummary}
 - Key Requirements: {keyRequirements}
 - Company Culture/Tone: {tone}
@@ -42,12 +40,5 @@ TONE: {toneGuidance}
 OUTPUT FORMAT:
 Return a JSON object with:
 {{
-  "coverLetter": "Full cover letter text with proper spacing and formatting",
-  "structure": {{
-    "opening": "First paragraph text",
-    "body": ["Array of body paragraph texts"],
-    "closing": "Closing paragraph text"
-  }},
-  "tone": "professional|enthusiastic|technical|creative",
-  "wordCount": <number>
+  "coverLetter": "Full cover letter text in rich text format with proper paragraph breaks",  
 }}`;

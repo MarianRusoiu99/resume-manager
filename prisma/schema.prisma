@@ -21,6 +21,7 @@ model User {
   
   profile       UserProfile?
   resumes       GeneratedResume[]
+  coverLetters  CoverLetter[]
   sessions      Session[]
   
   @@index([email])
@@ -57,6 +58,9 @@ model GeneratedResume {
   template        ResumeTemplate? @relation(fields: [templateId], references: [id])
   coverLetter     String?  @db.Text
   
+  // Relation to standalone cover letters
+  coverLetters    CoverLetter[]
+  
   metadata        Json     // {model, tokens, score, generationTime}
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -64,6 +68,30 @@ model GeneratedResume {
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, updatedAt])
   @@index([templateId])
+}
+
+// Standalone Cover Letters (can be linked to a resume or independent)
+model CoverLetter {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  content         String   @db.Text  // Markdown formatted cover letter
+  jobDescription  String   @db.Text
+  jobTitle        String?
+  companyName     String?
+  
+  // Optional link to a resume (if generated together)
+  resumeId        String?
+  resume          GeneratedResume? @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  
+  metadata        Json     // {model, tokens, generationTime, personalInstructions}
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, updatedAt])
+  @@index([resumeId])
 }
 
 // Resume templates (professional layouts)

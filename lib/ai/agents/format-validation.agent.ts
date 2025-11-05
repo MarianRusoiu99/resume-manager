@@ -20,7 +20,7 @@ export async function formatValidationAgent(
     throw new Error('Optimized resume is required for format validation');
   }
 
-  const { optimizedResume, jobTitle, companyName } = state;
+  const { optimizedResume } = state;
 
   try {
     const schemaValidation = resumeSchema.safeParse(optimizedResume);
@@ -69,8 +69,6 @@ export async function formatValidationAgent(
     console.log('Validating format with AI...');
     const result = await retryWithBackoff(
       () => chain.invoke({
-        jobTitle: jobTitle || 'the position',
-        companyName: companyName || 'the company',
         summary: summary,
         workExperience: formattedWork,
         skills: formattedSkills,

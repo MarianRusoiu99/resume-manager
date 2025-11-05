@@ -5,10 +5,7 @@
  */
 
 export const FORMAT_VALIDATION_USER_TEMPLATE = `JOB CONTEXT:
-Title: {jobTitle}
-Company: {companyName}
-
-RESUME CONTENT TO VALIDATE (JSON Resume v1.0.0 format):
+RESUME CONTENT TO VALIDATE
 
 PROFESSIONAL SUMMARY:
 {summary}

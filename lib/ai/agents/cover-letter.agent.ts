@@ -15,8 +15,8 @@ import {
 
 interface CoverLetterInput {
   jobDescription: string;
-  jobTitle?: string;
-  companyName?: string;
+  jobTitle: string; // Now required - extracted from job analysis
+  companyName: string; // Now required - extracted from job analysis
   jobAnalysis: {
     summary: string;
     requiredSkills: string[];
@@ -52,8 +52,8 @@ export async function coverLetterAgent(
 ): Promise<CoverLetterOutput> {
   try {
     // Prepare template variables
-    const jobTitle = input.jobTitle || 'the position';
-    const companyName = input.companyName || 'your company';
+    const jobTitle = input.jobTitle;
+    const companyName = input.companyName;
     const jobSummary = input.jobAnalysis.summary;
     const keyRequirements = input.jobAnalysis.requiredSkills.slice(0, 5).join(', ');
     const tone = input.jobAnalysis.tone || 'professional';

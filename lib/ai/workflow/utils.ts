@@ -136,27 +136,25 @@ export function parseAgentJSON<T>(content: string): T | null {
 /**
  * Create initial state for workflow
  */
+export interface CreateInitialStateOptions {
+  personalInstructions?: string;
+  includeCoverLetter?: boolean;
+}
+
 export function createInitialState(
   jobDescription: string,
-  userResume: ResumeGenerationState['userResume'],
-  options?: {
-    jobTitle?: string;
-    companyName?: string;
-    personalInstructions?: string;
-    includeCoverLetter?: boolean;
-  }
+  userResume: Resume,
+  options?: CreateInitialStateOptions
 ): ResumeGenerationState {
   return {
     jobDescription,
-    jobTitle: options?.jobTitle,
-    companyName: options?.companyName,
     userResume,
     personalInstructions: options?.personalInstructions,
     includeCoverLetter: options?.includeCoverLetter,
     messages: [],
     errors: [],
     tokensUsed: 0,
-    currentStep: 'initialized'
+    currentStep: 'init'
   };
 }
 

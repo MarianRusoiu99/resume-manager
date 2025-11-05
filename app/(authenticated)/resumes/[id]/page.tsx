@@ -9,7 +9,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TemplateDropdown } from '@/components/templates/TemplateDropdown';
-import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import { CoverLetterEditor } from '@/components/cover-letter';
 import { PDFStylePreview } from '@/components/resume/PDFStylePreview';
 import { Edit } from 'lucide-react';
 
@@ -109,7 +109,6 @@ export default function ResumeDetailPage() {
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
-  const [isExportingCoverLetter, setIsExportingCoverLetter] = useState(false);
   const [pdfPreviewKey, setPdfPreviewKey] = useState(Date.now());
 
   const fetchResume = async () => {
@@ -243,44 +242,7 @@ export default function ResumeDetailPage() {
     }
   };
 
-  const handleExportCoverLetter = async () => {
-    try {
-      setIsExportingCoverLetter(true);
-      setError(null);
-
-      const response = await fetch(`/api/resumes/${resumeId}/export-cover-letter`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to export cover letter PDF');
-      }
-
-      // Get PDF blob
-      const blob = await response.blob();
-      
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `cover-letter-${resumeId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast.success('Cover letter PDF exported successfully');
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to export cover letter PDF';
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setIsExportingCoverLetter(false);
-    }
-  };
-
-  const handleSaveCoverLetter = async (html: string) => {
+  const handleSaveCoverLetter = async (markdown: string) => {
     try {
       setError(null);
 
@@ -290,7 +252,7 @@ export default function ResumeDetailPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          coverLetter: html,
+          coverLetter: markdown,
         }),
       });
 
@@ -453,37 +415,13 @@ export default function ResumeDetailPage() {
 
       {/* Cover Letter (if generated) */}
       {resume.coverLetter && (
-        <Card className="p-6 mb-6 no-print">
-          <div className="flex justify-between items-start mb-3">
-            <h2 className="text-lg font-semibold">Cover Letter</h2>
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                onClick={handleExportCoverLetter}
-                disabled={isExportingCoverLetter}
-                size="sm"
-              >
-                {isExportingCoverLetter ? 'Exporting...' : 'Export PDF'}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  navigator.clipboard.writeText(resume.coverLetter || '');
-                  toast.success('Cover letter copied to clipboard!');
-                }}
-                size="sm"
-              >
-                Copy
-              </Button>
-            </div>
-          </div>
-          <RichTextEditor
-            initialValue={resume.coverLetter}
-            onSave={handleSaveCoverLetter}
-            placeholder="Edit your cover letter..."
-            showSaveButton={true}
-          />
-        </Card>
+        <CoverLetterEditor
+          content={resume.coverLetter}
+          editable={true}
+          resumeId={resumeId}
+          onSave={handleSaveCoverLetter}
+          className="mb-6 no-print"
+        />
       )}
 
       

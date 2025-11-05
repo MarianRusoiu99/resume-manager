@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { templateRepository } from '@/lib/repositories/template.repository';
 import { templateService } from '@/lib/services/template.service';
 import { logger } from '@/lib/utils/logger';
@@ -52,6 +53,9 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Revalidate the templates page to show the new template
+    revalidatePath('/templates');
 
     return NextResponse.json(result.data, { status: 201 });
   } catch (error) {

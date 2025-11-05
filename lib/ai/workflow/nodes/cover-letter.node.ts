@@ -43,8 +43,8 @@ export async function coverLetterWorkflowNode(
     // Prepare input for cover letter agent
     const input = {
       jobDescription: state.jobDescription,
-      jobTitle: state.jobTitle,
-      companyName: state.companyName,
+      jobTitle: state.jobAnalysis.jobTitle,
+      companyName: state.jobAnalysis.companyName,
       jobAnalysis: {
         summary: state.jobAnalysis.jobSummary,
         requiredSkills: state.jobAnalysis.requirements.required,

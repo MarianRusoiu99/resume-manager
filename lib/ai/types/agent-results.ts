@@ -10,6 +10,8 @@ import { z } from 'zod';
  * Job Analysis Result Types
  */
 export const JobAnalysisResultSchema = z.object({
+  jobTitle: z.string(),
+  companyName: z.string(),
   requirements: z.object({
     required: z.array(z.string()),
     preferred: z.array(z.string())
@@ -26,6 +28,8 @@ export type JobAnalysisResult = z.infer<typeof JobAnalysisResultSchema>;
  * Raw job analysis response from AI (before transformation)
  */
 export const JobAnalysisRawResponseSchema = z.object({
+  jobTitle: z.string(),
+  companyName: z.string(),
   requiredSkills: z.array(z.string()),
   preferredSkills: z.array(z.string()),
   atsKeywords: z.array(z.string()),

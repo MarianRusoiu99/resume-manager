@@ -20,4 +20,11 @@ CRITICAL RULES:
 - Always include specific examples and metrics when possible
 - Adapt tone based on company culture (formal for corporate, casual for startups)
 - Make every sentence earn its place - no filler content
-- Focus on what you can do for the company, not what the company can do for you`;
+- Focus on what you can do for the company, not what the company can do for you
+
+OUTPUT FORMAT:
+- Format the cover letter in richtext format 
+- Use **bold** for emphasis on key achievements or skills
+- Use proper paragraph breaks (double newlines)
+- Keep it professional and readable
+`;

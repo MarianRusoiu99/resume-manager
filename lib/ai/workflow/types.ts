@@ -8,14 +8,14 @@ import type { Resume } from '@/lib/validations/jsonresume';
 export interface ResumeGenerationState {
   // Input data
   jobDescription: string;
-  jobTitle?: string;
-  companyName?: string;
   userResume: Resume;
   personalInstructions?: string; // Optional custom instructions for cover letter
   includeCoverLetter?: boolean; // Whether to generate cover letter
 
-  // Job analysis results
+  // Job analysis results (includes extracted jobTitle and companyName)
   jobAnalysis?: {
+    jobTitle: string;
+    companyName: string;
     requirements: {
       required: string[];
       preferred: string[];

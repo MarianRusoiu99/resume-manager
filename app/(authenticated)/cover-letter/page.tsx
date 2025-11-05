@@ -9,12 +9,11 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { Button, Card, Input, Label, Textarea } from '@/components/ui';
+import { Button, Card, Textarea } from '@/components/ui';
+import { CoverLetterEditor } from '@/components/cover-letter';
 
 export default function GenerateCoverLetterPage() {
   const [jobDescription, setJobDescription] = useState('');
-  const [jobTitle, setJobTitle] = useState('');
-  const [companyName, setCompanyName] = useState('');
   const [personalInstructions, setPersonalInstructions] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,18 +21,6 @@ export default function GenerateCoverLetterPage() {
 
   const handleGenerate = async () => {
     // Validation
-    if (!jobTitle.trim()) {
-      setError('Job title is required');
-      toast.error('Please enter a job title');
-      return;
-    }
-
-    if (!companyName.trim()) {
-      setError('Company name is required');
-      toast.error('Please enter a company name');
-      return;
-    }
-
     if (jobDescription.length < 50) {
       setError('Job description must be at least 50 characters long');
       toast.error('Job description must be at least 50 characters long');
@@ -52,8 +39,6 @@ export default function GenerateCoverLetterPage() {
         },
         body: JSON.stringify({
           jobDescription,
-          jobTitle,
-          companyName,
           personalInstructions: personalInstructions.trim() || undefined,
         }),
       });
@@ -75,56 +60,16 @@ export default function GenerateCoverLetterPage() {
     }
   };
 
-  const handleCopy = () => {
-    if (generatedCoverLetter) {
-      navigator.clipboard.writeText(generatedCoverLetter);
-      toast.success('Cover letter copied to clipboard!');
-    }
-  };
-
-  const handleDownloadPDF = async () => {
-    if (!generatedCoverLetter) return;
-
-    try {
-      const response = await fetch('/api/cover-letter/export-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          coverLetter: generatedCoverLetter,
-          jobTitle,
-          companyName,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `cover-letter-${companyName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success('PDF downloaded successfully!');
-    } catch {
-      toast.error('Failed to download PDF');
-    }
-  };
-
   const handleReset = () => {
     setJobDescription('');
-    setJobTitle('');
-    setCompanyName('');
     setPersonalInstructions('');
     setGeneratedCoverLetter(null);
     setError(null);
+  };
+
+  const handleSaveCoverLetter = async (content: string) => {
+    // Update the local state with the edited content
+    setGeneratedCoverLetter(content);
   };
 
   return (
@@ -145,28 +90,6 @@ export default function GenerateCoverLetterPage() {
             <h2 className="text-xl font-semibold mb-4">Job Details</h2>
             
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="jobTitle">Job Title *</Label>
-                <Input
-                  id="jobTitle"
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
-                  placeholder="e.g., Senior Software Engineer"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="companyName">Company Name *</Label>
-                <Input
-                  id="companyName"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="e.g., Google"
-                  required
-                />
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Job Description *
@@ -174,8 +97,8 @@ export default function GenerateCoverLetterPage() {
                 <Textarea
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
-                  placeholder="Paste the complete job description here..."
-                  rows={12}
+                  placeholder="Paste the full job description here (including job title and company name)..."
+                  rows={16}
                   className="w-full"
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -247,29 +170,11 @@ export default function GenerateCoverLetterPage() {
 
         {/* Preview/Output */}
         <div>
-          <Card className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Generated Cover Letter</h2>
-              {generatedCoverLetter && (
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleCopy}
-                  >
-                    Copy
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleDownloadPDF}
-                  >
-                    Download PDF
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {!generatedCoverLetter && !isGenerating && (
+          {!generatedCoverLetter && !isGenerating && (
+            <Card className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Generated Cover Letter</h2>
+              </div>
               <div className="text-center py-12 text-gray-500">
                 <svg
                   className="w-16 h-16 mx-auto mb-4 text-gray-300"
@@ -287,24 +192,26 @@ export default function GenerateCoverLetterPage() {
                 <p>Your cover letter will appear here</p>
                 <p className="text-sm mt-2">Fill in the job details and click &quot;Generate Cover Letter&quot;</p>
               </div>
-            )}
+            </Card>
+          )}
 
-            {isGenerating && (
+          {isGenerating && (
+            <Card className="p-6">
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                 <p className="text-gray-600">Analyzing job and crafting your cover letter...</p>
                 <p className="text-sm text-gray-500 mt-2">This typically takes 10-20 seconds</p>
               </div>
-            )}
+            </Card>
+          )}
 
-            {generatedCoverLetter && (
-              <div className="prose max-w-none">
-                <div className="bg-white border border-gray-200 rounded-lg p-6 whitespace-pre-wrap leading-relaxed">
-                  {generatedCoverLetter}
-                </div>
-              </div>
-            )}
-          </Card>
+          {generatedCoverLetter && (
+            <CoverLetterEditor
+              content={generatedCoverLetter}
+              editable={true}
+              onSave={handleSaveCoverLetter}
+            />
+          )}
         </div>
       </div>
       </PageContainer>

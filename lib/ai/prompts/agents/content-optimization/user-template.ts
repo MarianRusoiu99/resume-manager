@@ -5,8 +5,6 @@
 export const CONTENT_OPTIMIZATION_USER_TEMPLATE = `Optimize this resume for the target job while maintaining authenticity and ATS compliance.
 
 JOB INFORMATION:
-Title: {jobTitle}
-Company: {companyName}
 Key Responsibilities:
 {keyResponsibilities}
 
@@ -62,8 +60,6 @@ export interface ContentOptimizationPromptInput {
 
 export function formatContentOptimizationPrompt(input: ContentOptimizationPromptInput): string {
   return CONTENT_OPTIMIZATION_USER_TEMPLATE
-    .replace('{jobTitle}', input.jobTitle)
-    .replace('{companyName}', input.companyName)
     .replace('{keyResponsibilities}', input.keyResponsibilities.map(r => `- ${r}`).join('\n'))
     .replace('{requiredSkills}', input.requiredSkills.join(', '))
     .replace('{preferredSkills}', input.preferredSkills.join(', '))

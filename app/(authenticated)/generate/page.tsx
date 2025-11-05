@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
 import { ResumePreviewWithActions } from '@/components/resume/ResumePreviewWithActions';
+import { CoverLetterEditor } from '@/components/cover-letter';
 
 interface Template {
   id: string;
@@ -87,8 +88,6 @@ interface GeneratedResume {
 
 export default function GeneratePage() {
   const [jobDescription, setJobDescription] = useState('');
-  const [jobTitle, setJobTitle] = useState('');
-  const [companyName, setCompanyName] = useState('');
   const [generateCoverLetter, setGenerateCoverLetter] = useState(false);
   const [personalInstructions, setPersonalInstructions] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
@@ -145,8 +144,6 @@ export default function GeneratePage() {
         },
         body: JSON.stringify({
           jobDescription,
-          jobTitle: jobTitle || undefined,
-          companyName: companyName || undefined,
           generateCoverLetter,
           personalInstructions: personalInstructions.trim() || undefined,
           templateId: selectedTemplateId || undefined,
@@ -195,8 +192,6 @@ export default function GeneratePage() {
         },
         body: JSON.stringify({
           jobDescription,
-          jobTitle: jobTitle || undefined,
-          companyName: companyName || undefined,
           generateCoverLetter,
           personalInstructions: personalInstructions.trim() || undefined,
           templateId: selectedTemplateId || undefined,
@@ -288,6 +283,11 @@ export default function GeneratePage() {
     setGeneratedCoverLetter(null);
   };
 
+  const handleSaveCoverLetter = async (content: string) => {
+    // Update the local state with the edited content
+    setGeneratedCoverLetter(content);
+  };
+
   return (
     <>
       <PageHeader
@@ -307,36 +307,6 @@ export default function GeneratePage() {
 
             <div className="space-y-4">
               <div>
-                <label htmlFor="jobTitle" className="block text-sm font-medium mb-2">
-                  Job Title (Optional)
-                </label>
-                <input
-                  id="jobTitle"
-                  type="text"
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
-                  placeholder="e.g., Senior Software Engineer"
-                  className="w-full px-3 py-2 border rounded-md"
-                  disabled={isGenerating}
-                />
-              </div>
-
-              <div>
-                <label htmlFor="companyName" className="block text-sm font-medium mb-2">
-                  Company Name (Optional)
-                </label>
-                <input
-                  id="companyName"
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="e.g., Tech Corp"
-                  className="w-full px-3 py-2 border rounded-md"
-                  disabled={isGenerating}
-                />
-              </div>
-
-              <div>
                 <label htmlFor="jobDescription" className="block text-sm font-medium mb-2">
                   Job Description <span className="text-red-500">*</span>
                 </label>
@@ -344,9 +314,9 @@ export default function GeneratePage() {
                   id="jobDescription"
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
-                  placeholder="Paste the full job description here..."
-                  rows={12}
-                  className="w-full px-3 py-2 border rounded-mdfont-mono text-sm"
+                  placeholder="Paste the full job description here (including job title and company name)..."
+                  rows={16}
+                  className="w-full px-3 py-2 border rounded-md font-mono text-sm"
                   disabled={isGenerating}
                 />
                 <p className="text-sm text-gray-500 mt-1">
@@ -495,25 +465,12 @@ export default function GeneratePage() {
       {/* Cover Letter Section - Full Width Below Resume */}
       {generatedCoverLetter && (
         <div className="mt-6">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Generated Cover Letter</h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  navigator.clipboard.writeText(generatedCoverLetter);
-                  toast.success('Cover letter copied to clipboard!');
-                }}
-              >
-                📋 Copy to Clipboard
-              </Button>
-            </div>
-            <div 
-              className="prose max-w-none bg-muted/50 p-6 rounded-lg border"
-              dangerouslySetInnerHTML={{ __html: generatedCoverLetter }}
-            />
-          </Card>
+          <CoverLetterEditor
+            content={generatedCoverLetter}
+            editable={true}
+            resumeId={generatedResumeId || undefined}
+            onSave={handleSaveCoverLetter}
+          />
         </div>
       )}
       </PageContainer>

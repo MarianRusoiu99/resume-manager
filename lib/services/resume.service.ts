@@ -1,6 +1,7 @@
 import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
 import { generateResume } from '@/lib/ai/workflow';
 import { profileService } from '@/lib/services/profile.service';
+import { coverLetterService } from '@/lib/services/cover-letter.service';
 import { prisma } from '@/lib/db';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { resumeSchema } from '@/lib/validations/jsonresume';
@@ -123,8 +124,6 @@ export class ResumeService {
       const workflowResult = await generateResume({
         userId: input.userId,
         jobDescription: input.jobDescription,
-        jobTitle: input.jobTitle,
-        companyName: input.companyName,
         userResume,
         includeCoverLetter: input.generateCoverLetter,
         personalInstructions: input.personalInstructions
@@ -166,6 +165,31 @@ export class ResumeService {
       });
 
       console.log(`✅ ResumeService: Saved to database with ID: ${generatedResume.id}`);
+
+      // If cover letter was generated, save it separately to the CoverLetter table
+      if (workflowResult.coverLetter && workflowResult.state?.jobAnalysis) {
+        console.log('📝 ResumeService: Saving cover letter separately...');
+        const coverLetterResult = await coverLetterService.createCoverLetter({
+          userId: input.userId,
+          content: workflowResult.coverLetter,
+          jobDescription: input.jobDescription,
+          jobTitle: workflowResult.state.jobAnalysis.jobTitle,
+          companyName: workflowResult.state.jobAnalysis.companyName,
+          resumeId: generatedResume.id,
+          metadata: {
+            model: String(validatedResume.meta?.model || 'gpt-4'),
+            tokens: workflowResult.tokensUsed || 0,
+            generationTime: 0,
+            personalInstructions: input.personalInstructions,
+          },
+        });
+
+        if (coverLetterResult.success) {
+          console.log(`✅ ResumeService: Cover letter saved with ID: ${coverLetterResult.data?.id}`);
+        } else {
+          console.error('❌ ResumeService: Failed to save cover letter:', coverLetterResult.error);
+        }
+      }
 
       return {
         success: true,
@@ -288,8 +312,6 @@ export class ResumeService {
       const workflowResult = await generateResume({
         userId: baseInput.userId,
         jobDescription: baseInput.jobDescription,
-        jobTitle: baseInput.jobTitle,
-        companyName: baseInput.companyName,
         userResume,
         includeCoverLetter: baseInput.generateCoverLetter,
         personalInstructions: baseInput.personalInstructions

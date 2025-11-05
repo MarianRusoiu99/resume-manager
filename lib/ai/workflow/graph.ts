@@ -29,13 +29,11 @@ function tokensReducer(left: number, right: number) {
 const ResumeStateAnnotation = Annotation.Root({
   // Input data
   jobDescription: Annotation<string>(),
-  jobTitle: Annotation<string | undefined>(),
-  companyName: Annotation<string | undefined>(),
   userResume: Annotation<ResumeGenerationState['userResume']>(),
   personalInstructions: Annotation<string | undefined>(),
   includeCoverLetter: Annotation<boolean | undefined>(),
   
-  // Agent results - will be replaced, not merged
+  // Agent results - will be replaced, not merged (includes jobTitle and companyName from job analysis)
   jobAnalysis: Annotation<ResumeGenerationState['jobAnalysis']>(),
   profileMatch: Annotation<ResumeGenerationState['profileMatch']>(),
   optimizedResume: Annotation<ResumeGenerationState['optimizedResume']>(),

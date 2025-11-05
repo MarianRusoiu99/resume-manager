@@ -29,7 +29,7 @@ export async function outputGeneratorAgent(
     throw new Error('Optimized resume is required for output generation');
   }
 
-  const { optimizedResume, jobTitle, companyName, tokensUsed } = state;
+  const { optimizedResume, tokensUsed } = state;
 
   try {
     // Add generation metadata to the resume
@@ -41,8 +41,6 @@ export async function outputGeneratorAgent(
         version: optimizedResume.meta?.version || 'v1.0.0',
         lastModified: new Date().toISOString(),
         // Add custom metadata about generation
-        ...(jobTitle && { targetJobTitle: jobTitle }),
-        ...(companyName && { targetCompany: companyName }),
         ...(tokensUsed && { tokensUsed: tokensUsed.toString() }),
       },
     };
