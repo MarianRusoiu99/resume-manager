@@ -92,75 +92,67 @@ export function renderCompleteDocument(
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${resumeData.basics?.name || 'Resume'}</title>
   <style>
-    /* Reset and base styles */
+    /* === Reset === */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
-    
-    /* A4 Page sizing for consistent preview and PDF export */
+
+    /* === A4 Setup === */
     @page {
       size: A4;
       margin: 0;
     }
-    
+
     html, body {
+      width: 210mm;
+      height: 297mm;
       margin: 0;
       padding: 0;
-      width: 210mm; /* A4 width */
+      background: #fff;
+      color: #222;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      line-height: 1.6;
-      color: #333;
-      background: white;
+      font-size: 12.5px;
+      line-height: 1.5;
+      overflow: hidden; /* Prevent scrollbars */
     }
-    
+
     body {
-      /* Ensure content fits A4 page */
-      max-width: 210mm;
-      margin: 0 auto;
+      padding: 20mm 15mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
     }
-    
-    /* Ensure resume content respects A4 dimensions */
-    .resume {
-      width: 210mm !important; /* A4 width - override template */
-      max-width: 210mm !important; /* Override template max-width */
-      min-height: 297mm; /* A4 height */
-      margin: 0 !important; /* Override template centering */
-      padding: 40px !important; /* Consistent padding */
-      background: white;
-      position: relative;
-      box-sizing: border-box;
-    }
-    
-    /* Print-specific adjustments */
+
+    /* === Print Optimization === */
     @media print {
       html, body {
         width: 210mm;
         height: 297mm;
       }
-      
+
       body {
-        margin: 0;
-        padding: 0;
+        padding: 15mm;
       }
-      
-      .resume {
-        page-break-after: auto;
-        padding: 20px !important; /* Less padding for print */
+
+      a {
+        color: #000 !important;
+        text-decoration: none;
       }
-      
-      /* Prevent awkward breaks */
-      .section, .item {
+
+      section, div, ul, li {
         page-break-inside: avoid;
       }
     }
-    
-    /* Template-specific styles */
+
+
+
+    /* === External Custom CSS === */
     ${cssStyles}
   </style>
 </head>

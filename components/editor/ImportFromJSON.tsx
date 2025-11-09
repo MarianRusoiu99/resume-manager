@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useEditor } from "@/lib/contexts/EditorContext";
 import { toast } from "sonner";
 import { ClipboardPaste, Upload } from "lucide-react";
-import type { Resume } from "@/lib/validations/jsonresume";
+import { resumeSchema } from "@/lib/validations/jsonresume";
 
 /**
  * ImportFromJSON Component
@@ -16,30 +16,6 @@ import type { Resume } from "@/lib/validations/jsonresume";
 export function ImportFromJSON() {
   const { updateResume } = useEditor();
   const [isImporting, setIsImporting] = useState(false);
-
-  /**
-   * Validate if the JSON matches the Resume schema
-   */
-  const validateResumeJSON = (json: unknown): json is Resume => {
-    if (!json || typeof json !== 'object') return false;
-    
-    const resume = json as Partial<Resume>;
-    
-    // Check for required basics field
-    if (!resume.basics || typeof resume.basics !== 'object') {
-      return false;
-    }
-
-    // Basic validation - ensure it has at least one of the expected fields
-    const hasValidStructure = 
-      'name' in resume.basics ||
-      'email' in resume.basics ||
-      Array.isArray(resume.work) ||
-      Array.isArray(resume.education) ||
-      Array.isArray(resume.skills);
-
-    return hasValidStructure;
-  };
 
   /**
    * Import resume from clipboard
@@ -65,14 +41,24 @@ export function ImportFromJSON() {
         return;
       }
 
-      // Validate structure
-      if (!validateResumeJSON(parsedData)) {
-        toast.error("JSON doesn't match Resume schema. Please ensure it follows JSON Resume format.");
+      // Validate using Zod schema
+      const validation = resumeSchema.safeParse(parsedData);
+      
+      if (!validation.success) {
+        console.error("Validation errors:", validation.error.issues);
+        
+        // Show more specific error message
+        const firstError = validation.error.issues[0];
+        const errorMessage = firstError 
+          ? `Invalid field: ${firstError.path.join('.')} - ${firstError.message}`
+          : "JSON doesn't match Resume schema.";
+        
+        toast.error(errorMessage);
         return;
       }
 
       // Import the resume
-      updateResume(parsedData);
+      updateResume(validation.data);
       toast.success("Resume imported successfully from clipboard!");
       
     } catch (error) {

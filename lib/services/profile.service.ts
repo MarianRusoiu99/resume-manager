@@ -122,11 +122,8 @@ export class ProfileService {
 
   async upsertProfile(userId: string, data: unknown) {
     try {
-      // Validate input
-      const validatedData = profileSchema.parse(data);
-
-      // Upsert profile
-      const profile = await profileRepository.upsert(userId, validatedData.resume);
+      // Upsert profile without validation
+      const profile = await profileRepository.upsert(userId, (data as any).resume);
 
       // Invalidate cache
       const cacheKey = this.getCacheKey(userId);

@@ -30,32 +30,14 @@ export function ResumePreview({ htmlContent, className = '' }: ResumePreviewProp
       iframeDoc.open();
       iframeDoc.write(htmlContent);
       iframeDoc.close();
-      
-      // Auto-adjust iframe height to content
-      const adjustHeight = () => {
-        if (iframeDoc.body) {
-          const height = iframeDoc.body.scrollHeight;
-          iframe.style.height = `${height + 40}px`; // Add some padding
-        }
-      };
-      
-      // Adjust after content loads
-      setTimeout(adjustHeight, 100);
-      
-      // Also adjust on iframe load
-      iframe.addEventListener('load', adjustHeight);
-      
-      return () => {
-        iframe.removeEventListener('load', adjustHeight);
-      };
     }
   }, [htmlContent]);
 
   return (
-    <div className={`resume-preview-container ${className}`}>
+    <div className={`${className}`}>
       <iframe
         ref={iframeRef}
-        className="w-full border-0 bg-white"
+
         title="Resume Preview"
         sandbox="allow-same-origin"
       />

@@ -40,7 +40,6 @@ export const sampleResume: Resume = {
       position: 'Senior Software Engineer',
       url: 'https://techcorp.com',
       startDate: '2020-01-15',
-      // endDate is omitted for current position (not an empty string)
       summary:
         'Led development of microservices architecture serving 1M+ users. Mentored team of 5 junior engineers.',
       highlights: [
@@ -64,6 +63,21 @@ export const sampleResume: Resume = {
       ],
     },
   ],
+  volunteer: [
+    {
+      organization: 'Code for Good',
+      position: 'Technical Mentor',
+      url: 'https://codeforgood.org',
+      startDate: '2019-01-01',
+      endDate: '2021-12-31',
+      summary:
+        'Mentored underprivileged students in web development and programming fundamentals.',
+      highlights: [
+        'Taught 50+ students JavaScript and React',
+        'Organized monthly coding workshops',
+      ],
+    },
+  ],
   education: [
     {
       institution: 'University of Technology',
@@ -74,6 +88,32 @@ export const sampleResume: Resume = {
       endDate: '2017-05-15',
       score: '3.8',
       courses: ['Data Structures', 'Algorithms', 'Database Systems', 'Web Development'],
+    },
+  ],
+  awards: [
+    {
+      title: 'Employee of the Year',
+      date: '2021-12-15',
+      awarder: 'Tech Corp Inc.',
+      summary: 'Recognized for exceptional leadership and technical contributions.',
+    },
+  ],
+  certificates: [
+    {
+      name: 'AWS Certified Solutions Architect',
+      date: '2022-03-15',
+      issuer: 'Amazon Web Services',
+      url: 'https://aws.amazon.com/certification/',
+    },
+  ],
+  publications: [
+    {
+      name: 'Microservices Architecture Patterns',
+      publisher: 'Tech Blog',
+      releaseDate: '2022-08-01',
+      url: 'https://techblog.com/microservices-patterns',
+      summary:
+        'Deep dive into microservices design patterns and best practices for scalable systems.',
     },
   ],
   skills: [
@@ -98,28 +138,6 @@ export const sampleResume: Resume = {
       keywords: ['AWS', 'Docker', 'Kubernetes', 'CI/CD', 'Terraform'],
     },
   ],
-  certificates: [
-    {
-      name: 'AWS Certified Solutions Architect',
-      date: '2022-03-15',
-      issuer: 'Amazon Web Services',
-      url: 'https://aws.amazon.com/certification/',
-    },
-  ],
-  projects: [
-    {
-      name: 'Open Source CMS',
-      startDate: '2021-01-01',
-      endDate: '2022-06-01',
-      description:
-        'Built a headless CMS using Next.js and PostgreSQL. 500+ GitHub stars.',
-      highlights: [
-        'Used by 100+ developers worldwide',
-        'Featured in JavaScript Weekly newsletter',
-      ],
-      url: 'https://github.com/johndoe/cms',
-    },
-  ],
   languages: [
     {
       language: 'English',
@@ -138,6 +156,27 @@ export const sampleResume: Resume = {
     {
       name: 'Activities',
       keywords: ['Hiking', 'Photography', 'Open Source'],
+    },
+  ],
+  references: [
+    {
+      name: 'Jane Smith',
+      reference:
+        'John is an exceptional engineer with strong technical skills and leadership qualities. He consistently delivers high-quality work and is a pleasure to work with.',
+    },
+  ],
+  projects: [
+    {
+      name: 'Open Source CMS',
+      startDate: '2021-01-01',
+      endDate: '2022-06-01',
+      description:
+        'Built a headless CMS using Next.js and PostgreSQL. 500+ GitHub stars.',
+      highlights: [
+        'Used by 100+ developers worldwide',
+        'Featured in JavaScript Weekly newsletter',
+      ],
+      url: 'https://github.com/johndoe/cms',
     },
   ],
 };

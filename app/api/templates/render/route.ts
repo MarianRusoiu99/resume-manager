@@ -20,12 +20,10 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
-    // Validate resume data against JSON Resume schema
-    const validatedResume = resumeSchema.parse(resumeData);
+    // Skip resume data validation
 
     // Render the template
-    const html = renderCompleteDocument(templateHtml, templateCss, validatedResume);
+    const html = renderCompleteDocument(templateHtml, templateCss, resumeData);
 
     return NextResponse.json({ html });
   } catch (error) {

@@ -89,7 +89,7 @@ export function TemplatePreviewModal({
               resumeData={sampleResume}
               templateHtml={template.htmlTemplate}
               templateCss={template.cssStyles}
-              className="min-h-[600px]"
+            
             />
           </div>
         </div>
