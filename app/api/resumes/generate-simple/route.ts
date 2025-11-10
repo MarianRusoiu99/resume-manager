@@ -18,7 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { z } from 'zod';
-import { generateResume } from '@/lib/workflows';
+import { generateResume } from '@/lib/ai';
 import { profileService } from '@/lib/services/profile.service';
 import type { Resume } from '@/lib/validations/jsonresume';
 

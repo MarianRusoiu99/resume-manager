@@ -4,7 +4,7 @@
  * This file demonstrates how to use the Vercel AI SDK workflow
  */
 
-import { generateResume } from '@/lib/workflows';
+import { generateResume } from '@/lib/ai';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 // Example: Basic usage
