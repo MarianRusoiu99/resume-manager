@@ -1,0 +1,136 @@
+/**
+ * Simple Resume Generation API (using Vercel AI SDK)
+ * 
+ * This is a demonstration endpoint showing how to use the simple workflow.
+ * This is NOT meant to replace the main generation endpoint, but to show
+ * how the Vercel AI SDK workflow can be integrated.
+ * 
+ * POST /api/resumes/generate-simple
+ * 
+ * Body: {
+ *   jobDescription: string,
+ *   apiKey: string,  // User must provide their OpenAI API key
+ *   generateCoverLetter?: boolean,
+ *   personalInstructions?: string
+ * }
+ */
+
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth/config';
+import { z } from 'zod';
+import { generateResume } from '@/lib/workflows';
+import { profileService } from '@/lib/services/profile.service';
+import type { Resume } from '@/lib/validations/jsonresume';
+
+// Request validation schema
+const generateResumeSchema = z.object({
+  jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
+  apiKey: z.string().min(20, 'Valid OpenAI API key required'),
+  generateCoverLetter: z.boolean().optional().default(false),
+  personalInstructions: z.string().optional(),
+});
+
+/**
+ * POST /api/resumes/generate-simple
+ * 
+ * Generate a resume using the simple workflow (Vercel AI SDK)
+ * This is a demonstration endpoint - production apps should store API keys securely
+ */
+export async function POST(request: NextRequest) {
+  try {
+    // Check authentication
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Parse and validate request
+    const body = await request.json();
+    const validation = generateResumeSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid request',
+          details: validation.error.issues.map(e => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        },
+        { status: 400 }
+      );
+    }
+
+    const { jobDescription, apiKey, generateCoverLetter, personalInstructions } = validation.data;
+
+    console.log(`\n📝 Simple API: Resume generation for user ${session.user.id}`);
+
+    // Get user's profile (their current resume)
+    const profileResult = await profileService.getProfile(session.user.id);
+    
+    if (!profileResult.data) {
+      return NextResponse.json(
+        { error: 'Profile not found. Please create a profile first.' },
+        { status: 404 }
+      );
+    }
+
+    const profileData = profileResult.data;
+    
+    // Type guard to ensure we have a profile with resume field
+    if (!profileData || typeof profileData !== 'object' || !('resume' in profileData)) {
+      return NextResponse.json(
+        { error: 'Profile structure is invalid. Please update your profile.' },
+        { status: 400 }
+      );
+    }
+
+    // Extract resume from profile
+    const userResume = profileData.resume as Resume;
+
+    // Generate the resume using simple workflow
+    const result = await generateResume({
+      apiKey,
+      jobDescription,
+      userResume,
+      includeCoverLetter: generateCoverLetter,
+      personalInstructions,
+    });
+
+    if (!result.success) {
+      console.error('❌ Simple API: Generation failed');
+      return NextResponse.json(
+        {
+          error: 'Resume generation failed',
+          details: result.error
+        },
+        { status: 500 }
+      );
+    }
+
+    console.log('✅ Simple API: Resume generated successfully');
+
+    // Return the generated content
+    // Note: This doesn't save to database - just returns the result
+    // You can extend this to save if needed
+    return NextResponse.json({
+      success: true,
+      resume: result.resume,
+      coverLetter: result.coverLetter,
+      tokensUsed: result.tokensUsed,
+    });
+
+  } catch (error) {
+    console.error('❌ Simple API: Unexpected error:', error);
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
