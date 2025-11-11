@@ -6,13 +6,14 @@
  * Used in: Generate page, Resume detail page, Resume edit page
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Download, Copy, Trash2, Edit } from 'lucide-react';
-import { PDFStylePreview } from './PDFStylePreview';
+import { UnifiedResumePreview } from './UnifiedResumePreview';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 export interface ResumePreviewWithActionsProps {
   resumeId: string;
@@ -46,7 +47,23 @@ export function ResumePreviewWithActions({
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [pdfPreviewKey, setPdfPreviewKey] = useState(Date.now());
+  const [resumeData, setResumeData] = useState<Resume | null>(null);
+
+  // Fetch resume data
+  useEffect(() => {
+    const fetchResume = async () => {
+      try {
+        const response = await fetch(`/api/resumes/${resumeId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setResumeData(data.content as Resume);
+        }
+      } catch (error) {
+        console.error('Error fetching resume:', error);
+      }
+    };
+    fetchResume();
+  }, [resumeId]);
 
   const handleExportPDF = async () => {
     try {
@@ -193,24 +210,14 @@ export function ResumePreviewWithActions({
         </Card>
 
         {/* Resume Preview */}
-        <Card className="p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Resume Preview</h2>
-            <Button
-              onClick={() => setPdfPreviewKey(Date.now())}
-              variant="secondary"
-              size="sm"
-            >
-              Refresh Preview
-            </Button>
-          </div>
-          
-          {/* PDF-Style Preview with Pagination */}
-          <PDFStylePreview 
-            resumeId={resumeId} 
-            previewKey={pdfPreviewKey}
+        {resumeData && (
+          <UnifiedResumePreview
+            resumeData={resumeData}
+            resumeId={resumeId}
+            showCard={false}
+            showTemplateSelector={true}
           />
-        </Card>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}

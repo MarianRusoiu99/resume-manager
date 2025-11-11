@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { EditorUI } from "@/components/editor/EditorUI";
 import { EditorProvider } from "@/lib/contexts/EditorContext";
-import { PDFStylePreview } from "@/components/resume/PDFStylePreview";
+import { UnifiedResumePreview } from "@/components/resume/UnifiedResumePreview";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ export default function ResumeEditPage() {
   const [jobTitle, setJobTitle] = useState("");
   const [isSavingJobTitle, setIsSavingJobTitle] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
+  const [resumeData, setResumeData] = useState<Resume | null>(null);
 
   // Load job title from metadata
   useEffect(() => {
@@ -37,6 +38,7 @@ export default function ResumeEditPage() {
         if (response.ok) {
           const data = await response.json();
           setJobTitle(data.jobMetadata?.jobTitle || "");
+          setResumeData(data.content as Resume);
         }
       } catch (error) {
         console.error("Error loading job title:", error);
@@ -174,15 +176,15 @@ export default function ResumeEditPage() {
 
           {/* Preview Section */}
           <div className="lg:sticky lg:top-4 lg:h-[calc(100vh-8rem)] lg:overflow-y-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle>Live Preview</CardTitle>
-                <CardDescription>See how your changes look in real-time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <PDFStylePreview resumeId={resumeId} previewKey={previewKey} />
-              </CardContent>
-            </Card>
+            {resumeData && (
+              <UnifiedResumePreview
+                resumeData={resumeData}
+                resumeId={resumeId}
+                showCard={true}
+                showTemplateSelector={true}
+                previewKey={previewKey}
+              />
+            )}
           </div>
         </div>
       </PageContainer>

@@ -10,7 +10,7 @@ import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TemplateDropdown } from '@/components/templates/TemplateDropdown';
 import { CoverLetterEditor } from '@/components/cover-letter';
-import { PDFStylePreview } from '@/components/resume/PDFStylePreview';
+import { UnifiedResumePreview } from '@/components/resume/UnifiedResumePreview';
 import { Edit } from 'lucide-react';
 
 interface Resume {
@@ -383,29 +383,14 @@ export default function ResumeDetailPage() {
         </div>
 
         {/* Resume HTML Preview */}
-      <Card className="p-4 mb-6 no-print">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Resume Preview</h2>
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-500">
-              Template: {resume.templateId || 'Default'}
-            </div>
-            <Button
-              onClick={() => setPdfPreviewKey(Date.now())}
-              variant="secondary"
-              size="sm"
-            >
-              Refresh Preview
-            </Button>
-          </div>
-        </div>
-        
-        {/* PDF-Style Preview with Pagination */}
-        <PDFStylePreview 
-          resumeId={resumeId} 
-          previewKey={pdfPreviewKey}
-        />
-      </Card>
+      <UnifiedResumePreview
+        resumeData={resume.content}
+        resumeId={resumeId}
+        showCard={true}
+        showTemplateSelector={true}
+        previewKey={pdfPreviewKey}
+        className="mb-6 no-print"
+      />
 
       {/* Job Description */}
       <Card className="p-6 mb-6 no-print">
