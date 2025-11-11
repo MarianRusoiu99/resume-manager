@@ -48,6 +48,8 @@ async function main() {
   const profile = await prisma.userProfile.create({
     data: {
       userId: user.id,
+      name: 'Default Profile',
+      isDefault: true,
       resume: {
         basics: {
           name: 'John Doe',

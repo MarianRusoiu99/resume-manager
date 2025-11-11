@@ -22,7 +22,9 @@ const resumesCache = new SimpleCache<Array<{
 // Request validation schema
 const generateResumeSchema = z.object({
   jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
+  profileId: z.string().optional(), // User profile to use as base
   templateId: z.string().optional(),
+  modelId: z.string().optional(), // AI model to use
   generateCoverLetter: z.boolean().optional(),
   personalInstructions: z.string().optional(),
 });
@@ -64,16 +66,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-  const { jobDescription, templateId, generateCoverLetter, personalInstructions } = validation.data;
+  const { jobDescription, profileId, templateId, modelId, generateCoverLetter, personalInstructions } = validation.data;
 
     console.log(`\n📝 API: Resume generation request from user ${session.user.id}`);
+    console.log(`   Model: ${modelId || 'default'}`);
     console.log(`   Cover letter: ${generateCoverLetter ? 'Yes' : 'No'}`);
 
     // Generate resume (job title and company name will be extracted from description)
     const result = await resumeService.generateResume({
       userId: session.user.id,
       jobDescription,
+      profileId,
       templateId,
+      modelId,
       generateCoverLetter,
       personalInstructions
     });

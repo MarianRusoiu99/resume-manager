@@ -19,27 +19,35 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   
-  profile       UserProfile?
+  profiles      UserProfile[]
   resumes       GeneratedResume[]
   coverLetters  CoverLetter[]
   sessions      Session[]
+  apiProviders  ApiProvider[]
   
   @@index([email])
   @@index([createdAt])
 }
 
 // User professional profile and experience
+// UPDATED: Support multiple profiles per user with public sharing
 model UserProfile {
   id              String   @id @default(cuid())
-  userId          String   @unique
+  userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   
+  name            String   // Profile name (e.g., "Software Engineer", "Product Manager")
+  isDefault       Boolean  @default(false) // One default profile per user
+  isPublic        Boolean  @default(false) // Public sharing enabled
+  publicSlug      String?  @unique // Unique slug for public URL
   resume          Json     // JSON Resume v1.0.0 format
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
-  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, isDefault])
+  @@index([publicSlug])
   @@index([updatedAt])
 }
 
@@ -131,4 +139,28 @@ model Session {
   createdAt    DateTime @default(now())
   
   @@index([userId])
+}
+
+// API Provider and Key Management
+// Stores encrypted API keys for different AI providers
+model ApiProvider {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name         String   // User-friendly name (e.g., "My OpenAI Key", "Claude API")
+  provider     String   // Provider type: "openai", "anthropic", "google", etc.
+  encryptedKey String   @db.Text // AES-256-GCM encrypted API key
+  keyPreview   String   // First 8 chars of key for display (e.g., "sk-proj-...")
+  
+  models       Json     // Available models for this provider ["gpt-4", "gpt-3.5-turbo"]
+  isActive     Boolean  @default(true) // Can be disabled without deleting
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastUsedAt   DateTime? // Track when key was last used
+  
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([provider])
 }

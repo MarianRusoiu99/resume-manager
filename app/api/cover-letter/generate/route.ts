@@ -10,9 +10,7 @@ import { auth } from '@/lib/auth/config';
 import { z } from 'zod';
 import { profileService } from '@/lib/services/profile.service';
 import { coverLetterService } from '@/lib/services/cover-letter.service';
-import { analyzeJobAgent } from '@/lib/ai/agents/job-analysis.agent';
-import { ChatOpenAI } from '@langchain/openai';
-import type { ResumeGenerationState } from '@/lib/ai/workflow/types';
+import { generateResume } from '@/lib/ai';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 // Validation schema
@@ -48,10 +46,18 @@ export async function POST(request: NextRequest) {
 
     const { jobDescription, personalInstructions } = validationResult.data;
 
-    // Get OpenAI API key from environment
+    // Get OpenAI API key from environment (BYOK model - users should configure their own keys)
     const apiKey = process.env.OPENAI_API_KEY || '';
-   
     
+    if (!apiKey) {
+      return NextResponse.json(
+        { 
+          error: 'No API key configured. Please add OPENAI_API_KEY to your environment variables.' 
+        },
+        { status: 500 }
+      );
+    }
+
     // Get user's profile for personalization
     const profileResult = await profileService.getProfile(session.user.id);
     if (!profileResult.data) {
@@ -83,102 +89,46 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create initial state for job analysis using JSON Resume (job title and company extracted from description)
-    const initialState: ResumeGenerationState = {
+    console.log('[Cover Letter API] Generating cover letter using Vercel AI SDK...');
+
+    // Generate cover letter using the new workflow
+    const result = await generateResume({
+      apiKey,
       jobDescription,
       userResume,
-      messages: [],
-      currentStep: 'analyze_job',
-      errors: [],
-      tokensUsed: 0,
-    };
-
-    console.log('[Cover Letter API] Starting job analysis (extracting job title and company)...');
-    
-    // Step 1: Analyze the job description
-    const jobAnalysisResult = await analyzeJobAgent(initialState, apiKey);
-    
-    if (jobAnalysisResult.errors && jobAnalysisResult.errors.length > 0) {
-      console.error('[Cover Letter API] Job analysis failed:', jobAnalysisResult.errors);
-      return NextResponse.json(
-        { error: jobAnalysisResult.errors.join(', ') },
-        { status: 500 }
-      );
-    }
-
-    if (!jobAnalysisResult.jobAnalysis) {
-      return NextResponse.json(
-        { error: 'Job analysis failed - no results returned' },
-        { status: 500 }
-      );
-    }
-
-    console.log('[Cover Letter API] Job analysis complete');
-    
-    // Step 2: Create simple matching results (for standalone cover letter)
-    // Extract skills from JSON Resume format
-    const technicalSkills = userResume.skills
-      ?.filter(skill => skill.keywords && skill.keywords.length > 0)
-      .flatMap(skill => skill.keywords || [])
-      .slice(0, 5) || [];
-    
-    const topExperiences = userResume.work
-      ?.slice(0, 2)
-      .map(w => w.position || '')
-      .filter(Boolean) || [];
-    
-    const matchingResults = {
-      overallScore: 80,
-      matchingSkills: technicalSkills,
-      missingSkills: [],
-      topExperiences,
-    };
-
-    // Step 3: Generate cover letter using AI
-    console.log('[Cover Letter API] Generating cover letter...');
-    
-    const model = new ChatOpenAI({
-      openAIApiKey: apiKey,
-      modelName: 'gpt-4-turbo-preview',
-      temperature: 0.7,
+      includeCoverLetter: true,
+      personalInstructions,
     });
 
-    // Import and use the cover letter agent dynamically
-    const { coverLetterAgent } = await import('@/lib/ai/agents/cover-letter.agent');
-    
-    const coverLetterInput = {
-      jobDescription,
-      jobTitle: jobAnalysisResult.jobAnalysis.jobTitle,
-      companyName: jobAnalysisResult.jobAnalysis.companyName,
-      jobAnalysis: {
-        summary: jobAnalysisResult.jobAnalysis.jobSummary,
-        requiredSkills: jobAnalysisResult.jobAnalysis.requirements.required,
-        preferredSkills: jobAnalysisResult.jobAnalysis.requirements.preferred,
-        keyResponsibilities: jobAnalysisResult.jobAnalysis.keyResponsibilities,
-      },
-      userResume, // Pass the entire JSON Resume
-      matchingResults,
-      personalInstructions, // Pass user's custom instructions
-    };
-
-    const result = await coverLetterAgent(coverLetterInput, model);
+    if (!result.success || !result.coverLetter) {
+      console.error('[Cover Letter API] Generation failed:', result.error);
+      return NextResponse.json(
+        { error: result.error || 'Failed to generate cover letter' },
+        { status: 500 }
+      );
+    }
 
     console.log('[Cover Letter API] Cover letter generated successfully');
-    console.log(`[Cover Letter API] Word count: ${result.wordCount}`);
 
-    const totalTokens = (jobAnalysisResult.tokensUsed || 0) + (result.wordCount * 1.3);
+    // Extract job details from the generated analysis (we could parse jobDescription for this)
+    // For now, let's extract from job description
+    const jobTitleMatch = jobDescription.match(/(?:position|role|title):\s*([^\n]+)/i);
+    const companyMatch = jobDescription.match(/(?:company|organization):\s*([^\n]+)/i);
+    
+    const jobTitle = jobTitleMatch?.[1]?.trim() || 'Position';
+    const companyName = companyMatch?.[1]?.trim() || 'Company';
 
     // Save cover letter to database
     const coverLetterData = {
       userId: session.user.id,
       content: result.coverLetter,
       jobDescription,
-      jobTitle: jobAnalysisResult.jobAnalysis.jobTitle,
-      companyName: jobAnalysisResult.jobAnalysis.companyName,
+      jobTitle,
+      companyName,
       metadata: {
-        model: 'gpt-4-turbo-preview',
-        tokens: Math.ceil(totalTokens),
-        generationTime: 0, // Could track this if needed
+        model: 'gpt-4o',
+        tokens: result.tokensUsed || 0,
+        generationTime: 0,
         personalInstructions,
       },
     };
@@ -195,12 +145,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       coverLetter: result.coverLetter,
       coverLetterId: saveResult.data?.id,
-      tokensUsed: Math.ceil(totalTokens),
+      tokensUsed: result.tokensUsed || 0,
       metadata: {
-        jobTitle: jobAnalysisResult.jobAnalysis.jobTitle,
-        companyName: jobAnalysisResult.jobAnalysis.companyName,
-        wordCount: result.wordCount,
-        tone: result.tone,
+        jobTitle,
+        companyName,
         generatedAt: new Date().toISOString(),
       },
     });

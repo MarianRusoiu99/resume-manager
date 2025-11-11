@@ -58,7 +58,13 @@ export async function POST(request: NextRequest) {
 
     logger.debug("Creating profile", { userId, endpoint: "POST /api/profile" });
 
-    const result = await profileService.createProfile(userId, body);
+    // Create default profile with backward compatibility
+    const result = await profileService.createProfile(
+      userId,
+      'Default Profile',
+      body,
+      true // Set as default
+    );
 
     if (!result.success) {
       logger.warn("Profile creation failed", { userId, error: result.error });
@@ -100,7 +106,21 @@ export async function PATCH(request: NextRequest) {
 
     logger.debug("Updating profile", { userId, endpoint: "PATCH /api/profile" });
 
-    const result = await profileService.updateProfile(userId, body);
+    // Get default profile first
+    const profileResult = await profileService.getProfile(userId);
+    if (!profileResult.success || !profileResult.data) {
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update the default profile
+    const result = await profileService.updateProfile(
+      profileResult.data.id,
+      userId,
+      { resume: body }
+    );
 
     if (!result.success) {
       logger.warn("Profile update failed", { userId, error: result.error });
@@ -142,7 +162,26 @@ export async function PUT(request: NextRequest) {
 
     logger.debug("Upserting profile", { userId, endpoint: "PUT /api/profile" });
 
-    const result = await profileService.upsertProfile(userId, body);
+    // Check if profile exists
+    const existingProfile = await profileService.getProfile(userId);
+    
+    let result;
+    if (existingProfile.success && existingProfile.data) {
+      // Update existing profile
+      result = await profileService.updateProfile(
+        existingProfile.data.id,
+        userId,
+        { resume: body }
+      );
+    } else {
+      // Create new default profile
+      result = await profileService.createProfile(
+        userId,
+        'Default Profile',
+        body,
+        true
+      );
+    }
 
     if (!result.success) {
       logger.warn("Profile upsert failed", { userId, error: result.error });
@@ -183,7 +222,17 @@ export async function DELETE() {
 
     logger.debug("Deleting profile", { userId, endpoint: "DELETE /api/profile" });
 
-    const result = await profileService.deleteProfile(userId);
+    // Get default profile first
+    const profileResult = await profileService.getProfile(userId);
+    if (!profileResult.success || !profileResult.data) {
+      return NextResponse.json(
+        { error: 'Profile not found' },
+        { status: 404 }
+      );
+    }
+
+    // Delete the default profile (service prevents deleting last profile)
+    const result = await profileService.deleteProfile(profileResult.data.id, userId);
 
     if (!result.success) {
       logger.warn("Profile deletion failed", { userId, error: result.error });

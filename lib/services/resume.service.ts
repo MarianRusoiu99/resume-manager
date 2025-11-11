@@ -1,5 +1,5 @@
 import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
-import { generateResume } from '@/lib/ai/workflow';
+import { generateResume } from '@/lib/ai';
 import { profileService } from '@/lib/services/profile.service';
 import { coverLetterService } from '@/lib/services/cover-letter.service';
 import { prisma } from '@/lib/db';
@@ -24,6 +24,10 @@ export interface GenerateResumeServiceInput {
   generateCoverLetter?: boolean;
   /** Optional personal instructions for cover letter */
   personalInstructions?: string;
+  /** Optional AI model ID to use for generation */
+  modelId?: string;
+  /** Optional profile ID to use (defaults to user's default profile) */
+  profileId?: string;
 }
 
 /**
@@ -119,21 +123,84 @@ export class ResumeService {
 
       console.log(`\n🚀 ResumeService: Starting resume generation for user ${input.userId}`);
       console.log(`   Job: ${input.jobTitle || 'Not specified'} at ${input.companyName || 'Not specified'}`);
+      console.log(`   Model ID: ${input.modelId || 'default (env OPENAI_API_KEY)'}`);
+
+      // Get API key - either from provider or environment variable
+      let apiKey: string;
+      
+      if (input.modelId) {
+        // Use the provider helper to get the configured AI provider
+        try {
+          const { apiProviderService } = await import('@/lib/services/api-provider.service');
+          
+          // Get available models to find which provider has this model
+          const modelsResult = await apiProviderService.getAvailableModels(input.userId);
+          
+          if (!modelsResult.success || !modelsResult.data) {
+            return {
+              success: false,
+              errors: ['No API providers configured. Please add one in Settings → API Keys']
+            };
+          }
+          
+          // Find the provider that has this model
+          const modelInfo = modelsResult.data.allModels.find(m => m.id === input.modelId);
+          
+          if (!modelInfo) {
+            return {
+              success: false,
+              errors: [`Model ${input.modelId} not found in your configured providers`]
+            };
+          }
+          
+          // Get the decrypted key for this provider
+          const keyResult = await apiProviderService.getDecryptedKey(
+            modelInfo.providerId,
+            input.userId
+          );
+          
+          if (!keyResult.success || !keyResult.data) {
+            return {
+              success: false,
+              errors: [keyResult.error || 'Failed to get API provider configuration']
+            };
+          }
+          
+          apiKey = keyResult.data.apiKey;
+          console.log(`   Using provider: ${modelInfo.providerType} (model: ${modelInfo.name})`);
+        } catch (error) {
+          return {
+            success: false,
+            errors: [error instanceof Error ? error.message : 'Failed to get AI provider']
+          };
+        }
+      } else {
+        // Fallback to environment variable (legacy behavior)
+        apiKey = process.env.OPENAI_API_KEY || '';
+        if (!apiKey) {
+          return {
+            success: false,
+            errors: ['No AI provider configured. Please add an API key in Settings or set OPENAI_API_KEY environment variable.']
+          };
+        }
+      }
 
       // Call workflow service with Resume
       const workflowResult = await generateResume({
-        userId: input.userId,
+        apiKey,
         jobDescription: input.jobDescription,
         userResume,
         includeCoverLetter: input.generateCoverLetter,
-        personalInstructions: input.personalInstructions
+        personalInstructions: input.personalInstructions,
+        modelId: input.modelId,
+        userId: input.userId
       });
 
       if (!workflowResult.success || !workflowResult.resume) {
         console.error('❌ ResumeService: Workflow failed');
         return {
           success: false,
-          errors: workflowResult.errors || ['Failed to generate resume']
+          errors: [workflowResult.error || 'Failed to generate resume']
         };
       }
 
@@ -143,6 +210,12 @@ export class ResumeService {
         console.log(`   Cover letter: Generated (${workflowResult.coverLetter.length} characters)`);
       }
 
+      // Extract job title and company from AI analysis (if available)
+      const extractedJobTitle = workflowResult.jobAnalysis?.jobTitle || input.jobTitle;
+      const extractedCompanyName = workflowResult.jobAnalysis?.companyName || input.companyName;
+      
+      console.log(`📋 Resume Title: "${extractedJobTitle}" at ${extractedCompanyName || 'Unknown Company'}`);
+
       // Validate generated resume
       const validatedResume = resumeSchema.parse(workflowResult.resume);
 
@@ -151,8 +224,8 @@ export class ResumeService {
         userId: input.userId,
         jobDescription: input.jobDescription,
         jobMetadata: {
-          jobTitle: input.jobTitle,
-          companyName: input.companyName
+          jobTitle: extractedJobTitle, // Use AI-extracted title as primary source
+          companyName: extractedCompanyName // Use AI-extracted company name
         },
         templateId: input.templateId ?? undefined,
         resume: validatedResume,
@@ -167,17 +240,22 @@ export class ResumeService {
       console.log(`✅ ResumeService: Saved to database with ID: ${generatedResume.id}`);
 
       // If cover letter was generated, save it separately to the CoverLetter table
-      if (workflowResult.coverLetter && workflowResult.state?.jobAnalysis) {
+      if (workflowResult.coverLetter) {
         console.log('📝 ResumeService: Saving cover letter separately...');
+        
+        // Extract job details from input or description
+        const jobTitle = input.jobTitle || 'Position';
+        const companyName = input.companyName || 'Company';
+        
         const coverLetterResult = await coverLetterService.createCoverLetter({
           userId: input.userId,
           content: workflowResult.coverLetter,
           jobDescription: input.jobDescription,
-          jobTitle: workflowResult.state.jobAnalysis.jobTitle,
-          companyName: workflowResult.state.jobAnalysis.companyName,
+          jobTitle,
+          companyName,
           resumeId: generatedResume.id,
           metadata: {
-            model: String(validatedResume.meta?.model || 'gpt-4'),
+            model: String(validatedResume.meta?.model || 'gpt-4o'),
             tokens: workflowResult.tokensUsed || 0,
             generationTime: 0,
             personalInstructions: input.personalInstructions,
@@ -308,20 +386,82 @@ export class ResumeService {
         }
       }, 18000);
 
+      // Get API key - either from provider or environment variable
+      let apiKey: string;
+      
+      if (baseInput.modelId) {
+        // Use the provider helper to get the configured AI provider
+        try {
+          const { apiProviderService } = await import('@/lib/services/api-provider.service');
+          
+          // Get available models to find which provider has this model
+          const modelsResult = await apiProviderService.getAvailableModels(baseInput.userId);
+          
+          if (!modelsResult.success || !modelsResult.data) {
+            return {
+              success: false,
+              errors: ['No API providers configured. Please add one in Settings → API Keys']
+            };
+          }
+          
+          // Find the provider that has this model
+          const modelInfo = modelsResult.data.allModels.find(m => m.id === baseInput.modelId);
+          
+          if (!modelInfo) {
+            return {
+              success: false,
+              errors: [`Model ${baseInput.modelId} not found in your configured providers`]
+            };
+          }
+          
+          // Get the decrypted key for this provider
+          const keyResult = await apiProviderService.getDecryptedKey(
+            modelInfo.providerId,
+            baseInput.userId
+          );
+          
+          if (!keyResult.success || !keyResult.data) {
+            return {
+              success: false,
+              errors: [keyResult.error || 'Failed to get API provider configuration']
+            };
+          }
+          
+          apiKey = keyResult.data.apiKey;
+          console.log(`   Using provider: ${modelInfo.providerType} (model: ${modelInfo.name})`);
+        } catch (error) {
+          return {
+            success: false,
+            errors: [error instanceof Error ? error.message : 'Failed to get AI provider']
+          };
+        }
+      } else {
+        // Fallback to environment variable (legacy behavior)
+        apiKey = process.env.OPENAI_API_KEY || '';
+        if (!apiKey) {
+          return {
+            success: false,
+            errors: ['No AI provider configured. Please add an API key in Settings or set OPENAI_API_KEY environment variable.']
+          };
+        }
+      }
+
       // Call workflow service with Resume
       const workflowResult = await generateResume({
-        userId: baseInput.userId,
+        apiKey,
         jobDescription: baseInput.jobDescription,
         userResume,
         includeCoverLetter: baseInput.generateCoverLetter,
-        personalInstructions: baseInput.personalInstructions
+        personalInstructions: baseInput.personalInstructions,
+        modelId: baseInput.modelId,
+        userId: baseInput.userId
       });
 
       if (!workflowResult.success || !workflowResult.resume) {
         console.error('❌ ResumeService: Workflow failed');
         return {
           success: false,
-          errors: workflowResult.errors || ['Failed to generate resume']
+          errors: [workflowResult.error || 'Failed to generate resume']
         };
       }
 
@@ -333,6 +473,12 @@ export class ResumeService {
 
       onProgress('save', 'Saving resume to database...', 95);
 
+      // Extract job title and company from AI analysis (if available)
+      const extractedJobTitle = workflowResult.jobAnalysis?.jobTitle || baseInput.jobTitle;
+      const extractedCompanyName = workflowResult.jobAnalysis?.companyName || baseInput.companyName;
+      
+      console.log(`📋 Resume Title: "${extractedJobTitle}" at ${extractedCompanyName || 'Unknown Company'}`);
+
       // Validate generated resume
       const validatedResume = workflowResult.resume;
 
@@ -341,8 +487,8 @@ export class ResumeService {
         userId: baseInput.userId,
         jobDescription: baseInput.jobDescription,
         jobMetadata: {
-          jobTitle: baseInput.jobTitle,
-          companyName: baseInput.companyName
+          jobTitle: extractedJobTitle, // Use AI-extracted title as primary source
+          companyName: extractedCompanyName // Use AI-extracted company name
         },
         templateId: baseInput.templateId ?? undefined,
         resume: validatedResume,

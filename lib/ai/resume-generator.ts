@@ -97,12 +97,15 @@ export interface GenerateResumeInput {
   userResume: Resume;
   includeCoverLetter?: boolean;
   personalInstructions?: string;
+  modelId?: string;
+  userId?: string;
 }
 
 export interface GenerateResumeResult {
   success: boolean;
   resume?: Resume;
   coverLetter?: string;
+  jobAnalysis?: JobAnalysisResult; // Include job analysis with extracted job title
   error?: string;
   tokensUsed?: number;
 }
@@ -147,7 +150,7 @@ async function generateOptimizedResume(
   const result = await generateObject({
     model: openai('gpt-4o'),
     schema: optimizedResumeSchema,
-    prompt: `You are an expert resume writer. Optimize this resume for the job description.
+    prompt: `You are an expert resume writer. Optimize this resume for the job description while maintaining a truthful approach. You must not fabricate any information. Use just the resume data provided.
 
 JOB DETAILS:
 - Job Title: ${jobAnalysis.jobTitle}
@@ -169,6 +172,7 @@ INSTRUCTIONS:
 5. Update the professional summary to align with the job
 6. Keep all personal information (name, contact details) from the original resume
 7. Maintain the same structure but optimize content for this specific job
+8. Do not lie or fabricate any information. Use only the information provided in the original resume.
 
 Generate an optimized resume that will pass ATS systems and appeal to hiring managers.`,
   });
@@ -271,6 +275,7 @@ export async function generateResume(
       success: true,
       resume: optimizedResume as Resume,
       coverLetter,
+      jobAnalysis, // Include job analysis for extracting title and company
     };
   } catch (error) {
     console.error('❌ Resume generation failed:', error);

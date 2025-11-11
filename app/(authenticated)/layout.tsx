@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
+import { ProfileProvider } from "@/lib/contexts/ProfileContext";
 
 export default async function AuthenticatedLayout({
   children,
@@ -20,13 +21,15 @@ export default async function AuthenticatedLayout({
   const defaultOpen = cookieStore.get("sidebar:state")?.value === "true";
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <AppSidebar user={session.user} />
-      <SidebarInset>
-        <main className="flex-1 overflow-y-auto">
-          {children}
-        </main>
-      </SidebarInset>
-    </SidebarProvider>
+    <ProfileProvider>
+      <SidebarProvider defaultOpen={defaultOpen}>
+        <AppSidebar user={session.user} />
+        <SidebarInset>
+          <main className="flex-1 overflow-y-auto">
+            {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </ProfileProvider>
   );
 }

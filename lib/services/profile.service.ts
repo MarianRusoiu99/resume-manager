@@ -2,13 +2,21 @@ import { profileRepository } from "@/lib/repositories/profile.repository";
 import { profileSchema, profileUpdateSchema } from "@/lib/validations/profile";
 import { profileCache } from "@/lib/cache/simple-cache";
 import { ZodError } from "zod";
+import type { Resume } from "@/lib/validations/jsonresume";
 
 export class ProfileService {
   private getCacheKey(userId: string): string {
-    return `profile:${userId}`;
+    return `profiles:${userId}`;
   }
 
-  async getProfile(userId: string) {
+  private getProfileCacheKey(profileId: string): string {
+    return `profile:${profileId}`;
+  }
+
+  /**
+   * Get all profiles for a user
+   */
+  async getProfiles(userId: string) {
     try {
       // Check cache first
       const cacheKey = this.getCacheKey(userId);
@@ -18,12 +26,47 @@ export class ProfileService {
       }
 
       // Fetch from database
-      const profile = await profileRepository.findByUserId(userId);
+      const profiles = await profileRepository.findAllByUserId(userId);
       
-      // Cache the result if found
-      if (profile) {
-        profileCache.set(cacheKey, profile);
+      // Cache the result
+      if (profiles) {
+        profileCache.set(cacheKey, profiles);
       }
+      
+      return { success: true, data: profiles };
+    } catch (error) {
+      console.error("Error fetching profiles:", error);
+      return {
+        success: false,
+        error: "Failed to fetch profiles",
+      };
+    }
+  }
+
+  /**
+   * Get a specific profile by ID
+   */
+  async getProfileById(profileId: string, userId: string) {
+    try {
+      // Check cache first
+      const cacheKey = this.getProfileCacheKey(profileId);
+      const cached = profileCache.get(cacheKey);
+      if (cached) {
+        return { success: true, data: cached };
+      }
+
+      // Fetch from database
+      const profile = await profileRepository.findById(profileId, userId);
+      
+      if (!profile) {
+        return {
+          success: false,
+          error: "Profile not found",
+        };
+      }
+
+      // Cache the result
+      profileCache.set(cacheKey, profile);
       
       return { success: true, data: profile };
     } catch (error) {
@@ -35,28 +78,50 @@ export class ProfileService {
     }
   }
 
-  async createProfile(userId: string, data: unknown) {
+  /**
+   * Get default profile for a user (for backward compatibility)
+   */
+  async getProfile(userId: string) {
+    try {
+      // Fetch default profile
+      const profile = await profileRepository.findDefaultByUserId(userId);
+      
+      return { success: true, data: profile };
+    } catch (error) {
+      console.error("Error fetching default profile:", error);
+      return {
+        success: false,
+        error: "Failed to fetch profile",
+      };
+    }
+  }
+
+  /**
+   * Create a new profile
+   */
+  async createProfile(userId: string, name: string, data: Resume, isDefault: boolean = false) {
     try {
       // Validate input
-      const validatedData = profileSchema.parse(data);
+      const validatedData = profileSchema.parse({ resume: data });
 
-      // Check if profile already exists
-      const exists = await profileRepository.exists(userId);
-      if (exists) {
-        return {
-          success: false,
-          error: "Profile already exists. Use update instead.",
-        };
+      // If this is set as default, unset other defaults
+      if (isDefault) {
+        await profileRepository.unsetAllDefaults(userId);
       }
 
       // Create profile
-      const profile = await profileRepository.create(userId, validatedData.resume);
+      const profile = await profileRepository.create({
+        userId,
+        name,
+        resume: validatedData.resume,
+        isDefault,
+      });
 
       // Invalidate cache
       const cacheKey = this.getCacheKey(userId);
       profileCache.delete(cacheKey);
 
-      return { success: true, data: { userId, resume: profile } };
+      return { success: true, data: profile };
     } catch (error) {
       if (error instanceof ZodError) {
         return {
@@ -74,35 +139,40 @@ export class ProfileService {
     }
   }
 
-  async updateProfile(userId: string, data: unknown) {
+  /**
+   * Update a profile
+   */
+  async updateProfile(profileId: string, userId: string, data: Partial<{ name: string; resume: Resume; isDefault: boolean }>) {
     try {
-      // Validate input (partial update allowed)
-      const validatedData = profileUpdateSchema.parse(data);
+      // Validate resume data if provided
+      if (data.resume) {
+        profileUpdateSchema.parse({ resume: data.resume });
+      }
 
-      // Check if profile exists
-      const exists = await profileRepository.exists(userId);
-      if (!exists) {
+      // Check if profile exists and belongs to user
+      const existing = await profileRepository.findById(profileId, userId);
+      if (!existing) {
         return {
           success: false,
-          error: "Profile not found. Create one first.",
+          error: "Profile not found",
         };
+      }
+
+      // If setting as default, unset other defaults
+      if (data.isDefault) {
+        await profileRepository.unsetAllDefaults(userId);
       }
 
       // Update profile
-      if (!validatedData.resume) {
-        return {
-          success: false,
-          error: "No resume data provided for update",
-        };
-      }
-      
-      const profile = await profileRepository.update(userId, validatedData.resume);
+      const profile = await profileRepository.update(profileId, userId, data);
 
       // Invalidate cache
       const cacheKey = this.getCacheKey(userId);
+      const profileCacheKey = this.getProfileCacheKey(profileId);
       profileCache.delete(cacheKey);
+      profileCache.delete(profileCacheKey);
 
-      return { success: true, data: { userId, resume: profile } };
+      return { success: true, data: profile };
     } catch (error) {
       if (error instanceof ZodError) {
         return {
@@ -120,40 +190,44 @@ export class ProfileService {
     }
   }
 
-  async upsertProfile(userId: string, data: unknown) {
+  /**
+   * Delete a profile
+   */
+  async deleteProfile(profileId: string, userId: string) {
     try {
-      // Upsert profile without validation
-      const profile = await profileRepository.upsert(userId, (data as any).resume);
-
-      // Invalidate cache
-      const cacheKey = this.getCacheKey(userId);
-      profileCache.delete(cacheKey);
-
-      return { success: true, data: { userId, resume: profile } };
-    } catch (error) {
-      if (error instanceof ZodError) {
+      // Check if profile exists
+      const profile = await profileRepository.findById(profileId, userId);
+      if (!profile) {
         return {
           success: false,
-          error: "Validation error",
-          details: error.issues,
+          error: "Profile not found",
         };
       }
 
-      console.error("Error upserting profile:", error);
-      return {
-        success: false,
-        error: "Failed to save profile",
-      };
-    }
-  }
+      // Don't allow deleting the last profile
+      const allProfiles = await profileRepository.findAllByUserId(userId);
+      if (allProfiles.length <= 1) {
+        return {
+          success: false,
+          error: "Cannot delete your last profile",
+        };
+      }
 
-  async deleteProfile(userId: string) {
-    try {
-      await profileRepository.delete(userId);
+      // If deleting default profile, set another as default
+      if (profile.isDefault) {
+        const otherProfile = allProfiles.find(p => p.id !== profileId);
+        if (otherProfile) {
+          await profileRepository.update(otherProfile.id, userId, { isDefault: true });
+        }
+      }
+
+      await profileRepository.delete(profileId, userId);
       
       // Invalidate cache
       const cacheKey = this.getCacheKey(userId);
+      const profileCacheKey = this.getProfileCacheKey(profileId);
       profileCache.delete(cacheKey);
+      profileCache.delete(profileCacheKey);
       
       return { success: true };
     } catch (error) {
@@ -165,8 +239,72 @@ export class ProfileService {
     }
   }
 
-  async profileExists(userId: string): Promise<boolean> {
-    return profileRepository.exists(userId);
+  /**
+   * Set a profile as default
+   */
+  async setDefaultProfile(profileId: string, userId: string) {
+    try {
+      // Check if profile exists
+      const profile = await profileRepository.findById(profileId, userId);
+      if (!profile) {
+        return {
+          success: false,
+          error: "Profile not found",
+        };
+      }
+
+      // Unset all defaults and set this one
+      await profileRepository.unsetAllDefaults(userId);
+      await profileRepository.update(profileId, userId, { isDefault: true });
+
+      // Invalidate cache
+      const cacheKey = this.getCacheKey(userId);
+      profileCache.delete(cacheKey);
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error setting default profile:", error);
+      return {
+        success: false,
+        error: "Failed to set default profile",
+      };
+    }
+  }
+
+  /**
+   * Duplicate a profile
+   */
+  async duplicateProfile(profileId: string, userId: string, newName?: string) {
+    try {
+      const profile = await profileRepository.findById(profileId, userId);
+      if (!profile) {
+        return {
+          success: false,
+          error: "Profile not found",
+        };
+      }
+
+      const duplicateName = newName || `${profile.name} (Copy)`;
+      
+      const newProfile = await profileRepository.create({
+        userId,
+        name: duplicateName,
+        resume: profile.resume as Resume,
+        isDefault: false,
+      });
+
+      // Invalidate cache
+      const cacheKey = this.getCacheKey(userId);
+      profileCache.delete(cacheKey);
+
+      return { success: true, data: newProfile };
+    } catch (error) {
+      console.error("Error duplicating profile:", error);
+      return {
+        success: false,
+        error: "Failed to duplicate profile",
+      };
+    }
   }
 }
 

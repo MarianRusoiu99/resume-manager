@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEditor } from "@/lib/contexts/EditorContext";
 import { PersonalInfoForm } from "@/components/editor/forms/PersonalInfoForm";
 import { SummaryForm } from "@/components/editor/forms/SummaryForm";
@@ -19,6 +20,7 @@ import { ReferencesForm } from "@/components/editor/forms/ReferencesForm";
 import { ProfileSection } from "@/components/editor/forms/ProfileSection";
 import { ImportFromJSON } from "@/components/editor/ImportFromJSON";
 import type { Basics, Skill, Certificate, Language } from "@/lib/validations/jsonresume";
+import { User, FileText, Briefcase, GraduationCap, Trophy, FileCode } from "lucide-react";
 
 export interface EditorUIProps {
     /** Show resume parser (only for profile editing) */
@@ -77,191 +79,224 @@ export function EditorUI({ showParser, parserComponent}: EditorUIProps) {
     
 
     return (
-        <div className="space-y-6">
+        <Tabs defaultValue="basics" className="w-full">
+            <TabsList className="grid w-full grid-cols-6 mb-6">
+                <TabsTrigger value="basics" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">Basics</span>
+                </TabsTrigger>
+                <TabsTrigger value="experience" className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    <span className="hidden sm:inline">Experience</span>
+                </TabsTrigger>
+                <TabsTrigger value="education" className="flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    <span className="hidden sm:inline">Education</span>
+                </TabsTrigger>
+                <TabsTrigger value="skills" className="flex items-center gap-2">
+                    <FileCode className="h-4 w-4" />
+                    <span className="hidden sm:inline">Skills</span>
+                </TabsTrigger>
+                <TabsTrigger value="projects" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span className="hidden sm:inline">Projects</span>
+                </TabsTrigger>
+                <TabsTrigger value="additional" className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4" />
+                    <span className="hidden sm:inline">More</span>
+                </TabsTrigger>
+            </TabsList>
 
-            {/* Resume Parser */}
-            {showParser && parserComponent && (
+            {/* Basics Tab */}
+            <TabsContent value="basics" className="space-y-6">
+                {/* Resume Parser */}
+                {showParser && parserComponent && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Quick Start</CardTitle>
+                            <CardDescription>Upload your existing resume to auto-fill your profile</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {parserComponent}
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Import from JSON */}
+                {showParser && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Import from JSON</CardTitle>
+                            <CardDescription>Import resume data from JSON in your clipboard</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ImportFromJSON />
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Personal Information */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Quick Start</CardTitle>
-                        <CardDescription>Upload your existing resume to auto-fill your profile</CardDescription>
+                        <CardTitle>Personal Information</CardTitle>
+                        <CardDescription>Your contact details and links</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {parserComponent}
+                        <PersonalInfoForm
+                            initialData={resume.basics}
+                            onSave={handlePersonalInfoSave}
+                        />
                     </CardContent>
                 </Card>
-            )}
 
-            {/* Import from JSON */}
-            {showParser && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Import from JSON</CardTitle>
-                        <CardDescription>Import resume data from JSON in your clipboard</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ImportFromJSON />
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Personal Information */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Personal Information</CardTitle>
-                    <CardDescription>Your contact details and links</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <PersonalInfoForm
-                        initialData={resume.basics}
-                        onSave={handlePersonalInfoSave}
+                {/* Professional Summary */}
+                <ProfileSection
+                    title="Professional Summary"
+                    description="A brief overview of your experience and goals"
+                    onSave={handleSectionSave}
+                >
+                    <SummaryForm
+                        summary={resume.basics?.summary || ""}
+                        onChange={(summary) => updateField('basics', { ...resume.basics, summary })}
                     />
-                </CardContent>
-            </Card>
+                </ProfileSection>
+            </TabsContent>
 
-            {/* Professional Summary */}
-            <ProfileSection
-                title="Professional Summary"
-                description="A brief overview of your experience and goals"
-                onSave={handleSectionSave}
-            >
-                <SummaryForm
-                    summary={resume.basics?.summary || ""}
-                    onChange={(summary) => updateField('basics', { ...resume.basics, summary })}
-                />
-            </ProfileSection>
+            {/* Experience Tab */}
+            <TabsContent value="experience" className="space-y-6">
+                <ProfileSection
+                    title="Work Experience"
+                    description="Your professional work history"
+                    onSave={handleSectionSave}
+                >
+                    <ExperienceForm
+                        experiences={resume.work || []}
+                        onChange={(work) => updateField('work', work)}
+                    />
+                </ProfileSection>
 
-            {/* Work Experience */}
-            <ProfileSection
-                title="Work Experience"
-                description="Your professional work history"
-                onSave={handleSectionSave}
-            >
-                <ExperienceForm
-                    experiences={resume.work || []}
-                    onChange={(work) => updateField('work', work)}
-                />
-            </ProfileSection>
+                <ProfileSection
+                    title="Volunteer Work"
+                    description="Community service and volunteer activities"
+                    onSave={handleSectionSave}
+                >
+                    <VolunteerForm
+                        volunteer={resume.volunteer || []}
+                        onChange={(volunteer) => updateField('volunteer', volunteer)}
+                    />
+                </ProfileSection>
+            </TabsContent>
 
-            {/* Education */}
-            <ProfileSection
-                title="Education"
-                description="Your academic background"
-                onSave={handleSectionSave}
-            >
-                <EducationForm
-                    education={resume.education || []}
-                    onChange={(education) => updateField('education', education)}
-                />
-            </ProfileSection>
+            {/* Education Tab */}
+            <TabsContent value="education" className="space-y-6">
+                <ProfileSection
+                    title="Education"
+                    description="Your academic background"
+                    onSave={handleSectionSave}
+                >
+                    <EducationForm
+                        education={resume.education || []}
+                        onChange={(education) => updateField('education', education)}
+                    />
+                </ProfileSection>
 
-            {/* Skills */}
-            <ProfileSection
-                title="Skills"
-                description="Your technical and soft skills"
-                onSave={handleSectionSave}
-            >
-                <SkillsForm
-                    skills={resume.skills || []}
-                    onChange={handleSkillsChange}
-                />
-            </ProfileSection>
+                <ProfileSection
+                    title="Certifications"
+                    description="Professional certifications and credentials"
+                    onSave={handleSectionSave}
+                >
+                    <CertificationsForm
+                        certifications={resume.certificates || []}
+                        onChange={handleCertificationsChange}
+                    />
+                </ProfileSection>
+            </TabsContent>
 
-            {/* Projects */}
-            <ProfileSection
-                title="Projects"
-                description="Notable projects you've worked on"
-                onSave={handleSectionSave}
-            >
-                <ProjectsForm
-                    projects={resume.projects || []}
-                    onChange={(projects) => updateField('projects', projects)}
-                />
-            </ProfileSection>
+            {/* Skills Tab */}
+            <TabsContent value="skills" className="space-y-6">
+                <ProfileSection
+                    title="Skills"
+                    description="Your technical and soft skills"
+                    onSave={handleSectionSave}
+                >
+                    <SkillsForm
+                        skills={resume.skills || []}
+                        onChange={handleSkillsChange}
+                    />
+                </ProfileSection>
 
-            {/* Certifications */}
-            <ProfileSection
-                title="Certifications"
-                description="Professional certifications and credentials"
-                onSave={handleSectionSave}
-            >
-                <CertificationsForm
-                    certifications={resume.certificates || []}
-                    onChange={handleCertificationsChange}
-                />
-            </ProfileSection>
+                <ProfileSection
+                    title="Languages"
+                    description="Languages you speak and your fluency level"
+                    onSave={handleSectionSave}
+                >
+                    <LanguagesForm
+                        languages={resume.languages || []}
+                        onChange={handleLanguagesChange}
+                    />
+                </ProfileSection>
+            </TabsContent>
 
-            {/* Languages */}
-            <ProfileSection
-                title="Languages"
-                description="Languages you speak and your fluency level"
-                onSave={handleSectionSave}
-            >
-                <LanguagesForm
-                    languages={resume.languages || []}
-                    onChange={handleLanguagesChange}
-                />
-            </ProfileSection>
+            {/* Projects Tab */}
+            <TabsContent value="projects" className="space-y-6">
+                <ProfileSection
+                    title="Projects"
+                    description="Notable projects you've worked on"
+                    onSave={handleSectionSave}
+                >
+                    <ProjectsForm
+                        projects={resume.projects || []}
+                        onChange={(projects) => updateField('projects', projects)}
+                    />
+                </ProfileSection>
 
-            {/* Volunteer Work */}
-            <ProfileSection
-                title="Volunteer Work"
-                description="Community service and volunteer activities"
-                onSave={handleSectionSave}
-            >
-                <VolunteerForm
-                    volunteer={resume.volunteer || []}
-                    onChange={(volunteer) => updateField('volunteer', volunteer)}
-                />
-            </ProfileSection>
+                <ProfileSection
+                    title="Publications"
+                    description="Published works and research papers"
+                    onSave={handleSectionSave}
+                >
+                    <PublicationsForm
+                        publications={resume.publications || []}
+                        onChange={(publications) => updateField('publications', publications)}
+                    />
+                </ProfileSection>
+            </TabsContent>
 
-            {/* Awards */}
-            <ProfileSection
-                title="Awards & Honors"
-                description="Recognition and achievements"
-                onSave={handleSectionSave}
-            >
-                <AwardsForm
-                    awards={resume.awards || []}
-                    onChange={(awards) => updateField('awards', awards)}
-                />
-            </ProfileSection>
+            {/* Additional Tab */}
+            <TabsContent value="additional" className="space-y-6">
+                <ProfileSection
+                    title="Awards & Honors"
+                    description="Recognition and achievements"
+                    onSave={handleSectionSave}
+                >
+                    <AwardsForm
+                        awards={resume.awards || []}
+                        onChange={(awards) => updateField('awards', awards)}
+                    />
+                </ProfileSection>
 
-            {/* Publications */}
-            <ProfileSection
-                title="Publications"
-                description="Published works and research papers"
-                onSave={handleSectionSave}
-            >
-                <PublicationsForm
-                    publications={resume.publications || []}
-                    onChange={(publications) => updateField('publications', publications)}
-                />
-            </ProfileSection>
+                <ProfileSection
+                    title="Interests"
+                    description="Personal interests and hobbies"
+                    onSave={handleSectionSave}
+                >
+                    <InterestsForm
+                        interests={resume.interests || []}
+                        onChange={(interests) => updateField('interests', interests)}
+                    />
+                </ProfileSection>
 
-            {/* Interests */}
-            <ProfileSection
-                title="Interests"
-                description="Personal interests and hobbies"
-                onSave={handleSectionSave}
-            >
-                <InterestsForm
-                    interests={resume.interests || []}
-                    onChange={(interests) => updateField('interests', interests)}
-                />
-            </ProfileSection>
-
-            {/* References */}
-            <ProfileSection
-                title="References"
-                description="Professional references"
-                onSave={handleSectionSave}
-            >
-                <ReferencesForm
-                    references={resume.references || []}
-                    onChange={(references) => updateField('references', references)}
-                />
-            </ProfileSection>
-        </div>
+                <ProfileSection
+                    title="References"
+                    description="Professional references"
+                    onSave={handleSectionSave}
+                >
+                    <ReferencesForm
+                        references={resume.references || []}
+                        onChange={(references) => updateField('references', references)}
+                    />
+                </ProfileSection>
+            </TabsContent>
+        </Tabs>
     );
 }

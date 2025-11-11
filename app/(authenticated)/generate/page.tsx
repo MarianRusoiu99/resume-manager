@@ -15,6 +15,20 @@ interface Template {
   description: string;
 }
 
+interface Profile {
+  id: string;
+  name: string;
+  isDefault: boolean;
+}
+
+interface Model {
+  id: string;
+  name: string;
+  description: string;
+  providerId: string;
+  providerType: string;
+}
+
 interface GeneratedResume {
   id: string;
   content: {
@@ -91,7 +105,11 @@ export default function GeneratePage() {
   const [generateCoverLetter, setGenerateCoverLetter] = useState(false);
   const [personalInstructions, setPersonalInstructions] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [selectedProfileId, setSelectedProfileId] = useState<string>('');
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [templates, setTemplates] = useState<Template[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
@@ -124,10 +142,59 @@ export default function GeneratePage() {
     loadTemplates();
   }, []);
 
+  // Load profiles on mount
+  useEffect(() => {
+    const loadProfiles = async () => {
+      try {
+        const response = await fetch('/api/profiles');
+        if (response.ok) {
+          const data = await response.json();
+          setProfiles(data);
+          // Select default profile
+          const defaultProfile = data.find((p: Profile) => p.isDefault);
+          if (defaultProfile) {
+            setSelectedProfileId(defaultProfile.id);
+          } else if (data.length > 0) {
+            setSelectedProfileId(data[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load profiles:', err);
+      }
+    };
+    loadProfiles();
+  }, []);
+
+  // Load available models from configured API providers
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const response = await fetch('/api/settings/api-providers/models');
+        if (response.ok) {
+          const data = await response.json();
+          setModels(data.allModels || []);
+          // Select first model by default
+          if (data.allModels && data.allModels.length > 0) {
+            setSelectedModelId(data.allModels[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load models:', err);
+      }
+    };
+    loadModels();
+  }, []);
+
   const handleGenerate = async () => {
     if (jobDescription.length < 50) {
       setError('Job description must be at least 50 characters long');
       toast.error('Job description must be at least 50 characters long');
+      return;
+    }
+
+    if (!selectedProfileId) {
+      setError('Please select a profile');
+      toast.error('Please select a profile');
       return;
     }
 
@@ -144,6 +211,8 @@ export default function GeneratePage() {
         },
         body: JSON.stringify({
           jobDescription,
+          profileId: selectedProfileId,
+          modelId: selectedModelId || undefined,
           generateCoverLetter,
           personalInstructions: personalInstructions.trim() || undefined,
           templateId: selectedTemplateId || undefined,
@@ -176,6 +245,12 @@ export default function GeneratePage() {
       return;
     }
 
+    if (!selectedProfileId) {
+      setError('Please select a profile');
+      toast.error('Please select a profile');
+      return;
+    }
+
     setIsGenerating(true);
     setError(null);
     setGeneratedResume(null);
@@ -192,6 +267,8 @@ export default function GeneratePage() {
         },
         body: JSON.stringify({
           jobDescription,
+          profileId: selectedProfileId,
+          modelId: selectedModelId || undefined,
           generateCoverLetter,
           personalInstructions: personalInstructions.trim() || undefined,
           templateId: selectedTemplateId || undefined,
@@ -324,6 +401,31 @@ export default function GeneratePage() {
                 </p>
               </div>
 
+              {/* Profile Selection */}
+              {profiles.length > 0 && (
+                <div>
+                  <label htmlFor="profile" className="block text-sm font-medium mb-2">
+                    Source Profile <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="profile"
+                    value={selectedProfileId}
+                    onChange={(e) => setSelectedProfileId(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                    disabled={isGenerating}
+                  >
+                    {profiles.map((profile) => (
+                      <option className='bg-background text-foreground' key={profile.id} value={profile.id}>
+                        {profile.name} {profile.isDefault ? '(Default)' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select which profile to use as the source for your resume
+                  </p>
+                </div>
+              )}
+
               {/* Cover Letter Option */}
               <div className="flex items-center gap-2">
                 <input
@@ -385,6 +487,41 @@ export default function GeneratePage() {
                 </div>
               )}
 
+              {/* AI Model Selection */}
+              {models.length > 0 ? (
+                <div>
+                  <label htmlFor="model" className="block text-sm font-medium mb-2">
+                    AI Model <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="model"
+                    value={selectedModelId}
+                    onChange={(e) => setSelectedModelId(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md"
+                    disabled={isGenerating}
+                  >
+                    {models.map((model) => (
+                      <option className='bg-background text-foreground' key={model.id} value={model.id}>
+                        {model.name} ({model.providerType})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {models.find(m => m.id === selectedModelId)?.description}
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ No AI providers configured. Please add an API key in{' '}
+                    <a href="/settings/api-keys" className="underline font-medium">
+                      Settings → API Keys
+                    </a>{' '}
+                    to generate resumes.
+                  </p>
+                </div>
+              )}
+
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-md">
                   <p className="text-sm text-red-600">{error}</p>
@@ -410,7 +547,7 @@ export default function GeneratePage() {
 
               <Button
                 onClick={useStreaming ? handleGenerateWithStreaming : handleGenerate}
-                disabled={isGenerating || jobDescription.length < 50}
+                disabled={isGenerating || jobDescription.length < 50 || !selectedProfileId || models.length === 0}
                 className="w-full"
               >
                 {isGenerating ? (

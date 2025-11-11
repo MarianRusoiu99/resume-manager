@@ -1,81 +1,42 @@
-"use client";
+/**
+ * Profiles Gallery Page
+ * Browse and manage all your professional profiles
+ */
 
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { ResumeParser } from "@/components/editor/forms/ResumeParser";
-import { EditorProvider } from "@/lib/contexts/EditorContext";
-import { EditorUI } from "@/components/editor/EditorUI";
-import type { Resume } from "@/lib/validations/jsonresume";
+import { ProfileGallery } from "@/components/profile/ProfileGallery";
+import { profileService } from "@/lib/services/profile.service";
+import { auth } from "@/lib/auth/config";
+import { redirect } from "next/navigation";
 
-/**
- * Unified Profile Page
- * 
- * Uses the unified EditorContext with profile-specific load/save callbacks.
- * Displays resume parser and completion tracking.
- */
-export default function ProfilePage() {
-  /**
-   * Load profile data from API
-   */
-  const handleLoad = async (): Promise<Resume | null> => {
-    try {
-      const response = await fetch("/api/profile");
-      
-      if (response.status === 200) {
-        const data = await response.json();
-        return data.resume;
-      } else if (response.status === 404 || response.status === 400) {
-        // Profile doesn't exist yet - return null to use empty resume
-        return null;
-      }
-      
-      throw new Error("Failed to load profile");
-    } catch (error) {
-      console.error("Error loading profile:", error);
-      return null;
-    }
-  };
+export default async function ProfilesPage() {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
 
-  /**
-   * Save profile data to API
-   */
-  const handleSave = async (resume: Resume): Promise<boolean> => {
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Profile save error:", errorData);
-        throw new Error(errorData.error || "Failed to save profile");
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      return false;
-    }
-  };
+  const result = await profileService.getProfiles(session.user.id);
+  
+  if (!result.success || !result.data || !Array.isArray(result.data)) {
+    throw new Error(result.error || "Failed to load profiles");
+  }
 
   return (
-    <EditorProvider onLoad={handleLoad} onSave={handleSave}>
+    <>
       <PageHeader
-        title="Professional Profile"
-        description="Build your professional profile to generate optimized resumes"
+        title="Professional Profiles"
+        description="Manage your professional profiles for targeted resume generation"
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
-          { label: "Profile" },
+          { label: "Profiles" },
         ]}
       />
       <PageContainer>
-        <EditorUI
-          showParser
-          parserComponent={<ResumeParser />}
-        />
+        <ProfileGallery initialProfiles={result.data} />
       </PageContainer>
-    </EditorProvider>
+    </>
   );
 }
+
