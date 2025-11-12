@@ -148,11 +148,17 @@ export function UnifiedResumePreview({
               setTotalPages(totalPagesCalculated);
               // Reset to page 1 when content changes
               setCurrentPage(1);
+              
+              // Ensure we're at the top of the document
+              const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+              if (iframeDoc?.documentElement) {
+                iframeDoc.documentElement.scrollTop = 0;
+              }
             }
           } catch (error) {
             console.error('Error calculating pages:', error);
           }
-        }, 100); // Small delay to ensure rendering is complete
+        }, 150); // Slightly longer delay to ensure rendering is complete
       };
 
       iframe.addEventListener('load', handleLoad);
@@ -244,16 +250,20 @@ export function UnifiedResumePreview({
   }, [isFullscreen]);
 
   const handleExportPDF = async () => {
-    if (!resumeId) {
-      toast.error('Resume ID is required to export PDF');
-      return;
-    }
-
     try {
       setIsExportingPDF(true);
 
-      const response = await fetch(`/api/resumes/${resumeId}/export`, {
+      // Use the generic export endpoint that works with any resume data
+      const response = await fetch('/api/export-resume', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeData: resume,
+          templateId: selectedTemplateId,
+          filename: resumeId 
+            ? `resume-${resumeId}.pdf` 
+            : `resume-${resume.basics?.name || 'download'}.pdf`,
+        }),
       });
 
       if (!response.ok) {
@@ -264,7 +274,9 @@ export function UnifiedResumePreview({
       const url = globalThis.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `resume-${resumeId}.pdf`;
+      a.download = resumeId 
+        ? `resume-${resumeId}.pdf` 
+        : `resume-${resume.basics?.name || 'download'}.pdf`;
       document.body.appendChild(a);
       a.click();
       globalThis.URL.revokeObjectURL(url);
@@ -315,11 +327,10 @@ export function UnifiedResumePreview({
                   srcDoc={htmlContent}
                   className="w-full h-full border-0"
                   title="Template Preview"
-                  sandbox="allow-same-origin"
+                  sandbox="allow-same-origin allow-scripts"
                   style={{
                     width: `${A4_WIDTH}px`,
                     height: `${A4_HEIGHT}px`,
-                    overflow: 'hidden',
                   }}
                 />
               </div>
@@ -356,17 +367,15 @@ export function UnifiedResumePreview({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {resumeId && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportPDF}
-                disabled={isExportingPDF}
-              >
-                <Download className="h-4 w-4 mr-2" />
-                {isExportingPDF ? 'Exporting...' : 'Download PDF'}
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={isExportingPDF}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {isExportingPDF ? 'Exporting...' : 'Download PDF'}
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -486,11 +495,10 @@ export function UnifiedResumePreview({
                                 srcDoc={htmlContent}
                                 className="w-full h-full border-0"
                                 title="Template Preview Modal"
-                                sandbox="allow-same-origin"
+                                sandbox="allow-same-origin allow-scripts"
                                 style={{
                                   width: `${A4_WIDTH}px`,
                                   height: `${A4_HEIGHT}px`,
-                                  overflow: 'hidden',
                                 }}
                               />
                             </div>
@@ -593,11 +601,10 @@ export function UnifiedResumePreview({
                             srcDoc={htmlContent}
                             className="w-full h-full border-0"
                             title="Template Preview Modal"
-                            sandbox="allow-same-origin"
+                            sandbox="allow-same-origin allow-scripts"
                             style={{
                               width: `${A4_WIDTH}px`,
                               height: `${A4_HEIGHT}px`,
-                              overflow: 'hidden',
                             }}
                           />
                         </div>

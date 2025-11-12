@@ -109,9 +109,9 @@ export function renderCompleteDocument(
       margin: 0;
     }
 
-    html, body {
+    html {
       width: 210mm;
-      height: 297mm;
+      min-height: 297mm;
       margin: 0;
       padding: 0;
       background: #fff;
@@ -119,21 +119,32 @@ export function renderCompleteDocument(
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       font-size: 12.5px;
       line-height: 1.5;
-      overflow: hidden; /* Prevent scrollbars */
+      /* Hide scrollbars but allow scrolling */
+      overflow-y: auto;
+      scrollbar-width: none; /* Firefox */
+      -ms-overflow-style: none; /* IE/Edge */
+    }
+
+    html::-webkit-scrollbar {
+      display: none; /* Chrome, Safari, Opera */
     }
 
     body {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0;
       padding: 20mm 15mm;
       display: flex;
       flex-direction: column;
       justify-content: flex-start;
+      overflow: visible;
     }
 
     /* === Print Optimization === */
     @media print {
       html, body {
         width: 210mm;
-        height: 297mm;
+        min-height: 297mm;
       }
 
       body {
@@ -145,6 +156,7 @@ export function renderCompleteDocument(
         text-decoration: none;
       }
 
+      /* Allow content to break across pages naturally */
       section, div, ul, li {
         page-break-inside: avoid;
       }

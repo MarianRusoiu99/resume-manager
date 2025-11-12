@@ -51,17 +51,24 @@ export function configureIframeScrolling(iframeDocument: Document): void {
     throw new Error('Invalid iframe document');
   }
 
-  const { documentElement } = iframeDocument;
+  const { documentElement, body } = iframeDocument;
   
   // Enable scrolling on the document element
   documentElement.style.overflow = 'auto';
   documentElement.style.height = '100%';
   
+  // Ensure body doesn't restrict height
+  if (body) {
+    body.style.overflow = 'visible';
+    body.style.minHeight = '100%';
+  }
+  
   // Hide scrollbars across all browsers
   documentElement.style.scrollbarWidth = 'none'; // Firefox
+  // @ts-expect-error - msOverflowStyle is not in TypeScript definitions but works in IE/Edge
   documentElement.style.msOverflowStyle = 'none'; // IE/Edge
   
-  // Inject CSS to hide WebKit scrollbars
+  // Inject CSS to hide WebKit scrollbars and enable smooth scrolling
   const style = iframeDocument.createElement('style');
   style.textContent = `
     ::-webkit-scrollbar {
@@ -69,6 +76,11 @@ export function configureIframeScrolling(iframeDocument: Document): void {
     }
     html {
       scroll-behavior: smooth;
+      overflow-y: auto;
+    }
+    body {
+      overflow: visible;
+      min-height: 100%;
     }
   `;
   iframeDocument.head.appendChild(style);
