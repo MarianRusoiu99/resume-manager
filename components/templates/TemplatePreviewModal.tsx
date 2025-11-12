@@ -85,12 +85,18 @@ export function TemplatePreviewModal({
         {/* Preview Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-muted/20">
           <div className="bg-card rounded-lg shadow-lg overflow-hidden">
-            <UnifiedResumePreview
-              resumeData={sampleResume}
-              templateHtml={template.htmlTemplate}
-              templateCss={template.cssStyles}
-            
-            />
+            {(() => {
+              const templateProps: { templateHtml?: string; templateCss?: string } = {
+                templateHtml: template.htmlTemplate,
+                templateCss: template.cssStyles,
+              };
+              return (
+                <UnifiedResumePreview
+                  resumeData={sampleResume}
+                  {...templateProps}
+                />
+              );
+            })()}
           </div>
         </div>
 

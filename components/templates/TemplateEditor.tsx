@@ -279,14 +279,12 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
 
         {/* Right Panel - Live Preview */}
       
-         <UnifiedResumePreview
-            {...({
-              resumeData: sampleResume,
-              templateHtml: formData.htmlTemplate,
-              templateCss: formData.cssStyles,
-            } as any)}
-          />
-        </div>
+        <UnifiedResumePreview
+          resumeData={sampleResume}
+          templateHtml={formData.htmlTemplate}
+          templateCss={formData.cssStyles}
+        />
+      </div>
       
     </div>
   );
