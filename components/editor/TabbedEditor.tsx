@@ -64,14 +64,12 @@ export function TabbedEditor({
 }: TabbedEditorProps) {
   const { resume, updateField, save, isDirty } = useEditor();
   const [activeTab, setActiveTab] = useState("basics");
-  const [showPreview, setShowPreview] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [profileName, setProfileName] = useState(initialProfileName || "");
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [isPublic, setIsPublic] = useState(initialIsPublic || false);
   const [publicSlug, setPublicSlug] = useState(initialPublicSlug || "");
-  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Hook for template preview rendering
@@ -132,45 +130,6 @@ export function TabbedEditor({
     if (onProfileNameChange) {
       await onProfileNameChange(profileName);
       setIsEditingName(false);
-    }
-  };
-
-  const handleExportPDF = async () => {
-    if (!profileId) {
-      toast.error("Profile ID is required for PDF export");
-      return;
-    }
-
-    setIsExportingPDF(true);
-    try {
-      const response = await fetch(`/api/profiles/${profileId}/export-pdf`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          resume
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to export PDF");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${profileName || "resume"}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      toast.success("PDF exported successfully");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to export PDF";
-      toast.error(message);
-    } finally {
-      setIsExportingPDF(false);
     }
   };
 
@@ -262,27 +221,6 @@ export function TabbedEditor({
             </Button>
           )}
 
-          {/* Preview Toggle */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowPreview(!showPreview)}
-          >
-            <Eye className="h-4 w-4 mr-2" />
-            {showPreview ? "Hide" : "Show"} Preview
-          </Button>
-
-          {/* Export PDF */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportPDF}
-            disabled={isExportingPDF || !profileId}
-          >
-            <FileDown className="h-4 w-4 mr-2" />
-            {isExportingPDF ? "Exporting..." : "Export PDF"}
-          </Button>
-
           {/* Save */}
           <Button
             size="sm"
@@ -298,7 +236,7 @@ export function TabbedEditor({
       {/* Main Content */}
       <div className="flex flex-1">
         {/* Editor Area */}
-        <div className={`flex-1 overflow-y-auto ${showPreview ? 'border-r' : ''}`}>
+        <div className={`flex-1 overflow-y-auto`}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
             <TabsList className="w-full justify-start border-b rounded-none bg-muted/50 px-6 overflow-x-auto flex-wrap h-auto">
               <TabsTrigger value="basics" className="gap-2">
@@ -533,16 +471,16 @@ export function TabbedEditor({
         </div>
 
         {/* Live Preview */}
-        {showPreview && (
+  
           <div className="w-1/2 bg-muted/20 aspect-[210:297] h-full">
-                  <UnifiedResumePreview
+              <UnifiedResumePreview
               resumeData={resume}
               onTemplateChange={setSelectedTemplateId}
               showTemplateSelector
               showCard
             />
           </div>
-        )}
+
       </div>
 
       
