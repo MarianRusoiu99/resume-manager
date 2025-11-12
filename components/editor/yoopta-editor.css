@@ -2,36 +2,35 @@
 
 /* Define CSS variables at root level for all Yoopta components */
 :root {
-  --yoopta-bg: hsl(var(--background));
+  --yoopta-bg: hsl(var(--card));
   --yoopta-text: hsl(var(--foreground));
-  --yoopta-border: hsl(var(--border));
+  --yoopta-border: transparent;
   --yoopta-muted: hsl(var(--muted));
   --yoopta-accent: hsl(var(--accent));
   --yoopta-primary: hsl(var(--primary));
 }
 
 .yoo-action-menu-bg{
-    background-color: var(--background) !important;
+    background-color: var(--card) !important;
 }
 
 .yoopta-action-menu-list-content{
-    --yoopta-bg: hsl(var(--background));
+    --yoopta-bg: hsl(var(--card));
     --yoopta-text: hsl(var(--foreground));
-    --yoopta-border: hsl(var(--border));
+    --yoopta-border: transparent;
     --yoopta-muted: hsl(var(--muted));
     --yoopta-accent: hsl(var(--accent));
     --yoopta-primary: hsl(var(--primary));
     color: var(--yoopta-text) !important;
-    background-color: var(--background) !important;
+    background-color: var(--card) !important;
 }
 .yoopta-button:hover{
     background-color: var(--yoopta-muted) !important;
 }
 /* Main editor wrapper */
 .yoopta-block-options-menu-content {
-  --yoopta-bg: hsl(var(--background));
+  --yoopta-bg: hsl(var(--card));
   --yoopta-text: hsl(var(--foreground));
-  --yoopta-border: hsl(var(--border));
   --yoopta-muted: hsl(var(--muted));
   --yoopta-accent: hsl(var(--accent));
   --yoopta-primary: hsl(var(--primary));
@@ -40,7 +39,7 @@
 }
 .yoopta-action-menu-list-content
 {
-  --yoopta-bg: hsl(var(--background));
+  --yoopta-bg: hsl(var(--card));
   --yoopta-text: hsl(var(--foreground));
   --yoopta-border: hsl(var(--border));
   --yoopta-muted: hsl(var(--muted));
@@ -48,6 +47,8 @@
   --yoopta-primary: hsl(var(--primary));
   color: var(--yoopta-text) !important;
 }
+
+
 
 /* All yoopta elements inherit text color */
 .yoopta-editor *,
@@ -58,8 +59,16 @@
 .yoopta-block-wrapper,
 [class*="yoopta"] {
   color: var(--yoopta-text) !important;
+  border: none
 }
 
+.yoo-action-menu-flex{
+  
+  background-color: var(--card) !important;
+}
+
+
+ 
 /* Block action buttons need better contrast */
 .yoopta-block-actions-plus,
 .yoopta-block-actions-drag {
@@ -134,7 +143,6 @@
 
 [data-yoopta-toolbar] button {
   color: var(--yoopta-text);
-  background-color: transparent;
   border: none;
   padding: 0.5rem;
   border-radius: 0.375rem;
@@ -185,7 +193,6 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  border: 1px solid transparent;
 }
 
 [data-yoopta-action-menu-item]:hover {
@@ -228,7 +235,6 @@
 [data-yoopta-block-type="HeadingThree"] h3 {
   margin: 1rem 0 0.5rem 0;
   font-weight: 600;
-  color: var(--yoopta-text) !important;
   display: block;
 }
 
@@ -253,7 +259,6 @@
   margin: 0.5rem 0;
   padding-left: 1.5rem;
   display: block;
-  color: var(--yoopta-text) !important;
 }
 
 [data-yoopta-block-type="NumberedList"] ol {
@@ -269,7 +274,6 @@
   display: list-item;
   margin: 0.25rem 0;
   padding-left: 0.25rem;
-  color: var(--yoopta-text) !important;
 }
 
 [data-yoopta-block-type="TodoList"] {
@@ -283,7 +287,6 @@
   padding-left: 1rem;
   margin: 1rem 0;
   font-style: italic;
-  color: var(--yoopta-text);
   opacity: 0.9;
 }
 
@@ -356,4 +359,8 @@ code {
 
 [data-yoopta-action-menu]::-webkit-scrollbar-thumb:hover {
   background: var(--yoopta-primary);
+}
+
+.prose {
+  color: var(--foreground);
 }

@@ -5,8 +5,8 @@ import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
-import { ResumePreviewWithActions } from '@/components/resume/ResumePreviewWithActions';
 import { CoverLetterEditor } from '@/components/cover-letter';
+import { UnifiedResumePreview } from '@/components/resume/UnifiedResumePreview';
 
 interface Template {
   id: string;
@@ -568,9 +568,14 @@ export default function GeneratePage() {
         {/* Preview Section */}
         <div>
           {generatedResume && generatedResumeId ? (
-            <ResumePreviewWithActions
+            <UnifiedResumePreview
+              resumeData={generatedResume.content as any}
               resumeId={generatedResumeId}
-              onDelete={handleResumeDeleted}
+              onTemplateChange={() => {}}
+              showTemplateSelector={true}
+              showCard={true}
+              previewKey={Number(generatedResumeId)}
+              className="mt-4"
             />
           ) : (
             <Card className="p-6 text-center">

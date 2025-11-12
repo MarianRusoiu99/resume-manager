@@ -8,7 +8,6 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { TemplateDropdown } from '@/components/templates/TemplateDropdown';
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { UnifiedResumePreview } from '@/components/resume/UnifiedResumePreview';
 import { Edit } from 'lucide-react';
@@ -135,13 +134,7 @@ export default function ResumeDetailPage() {
     }
   };
 
-  const handleTemplateChange = async () => {
-    console.log('Template change triggered');
-    await fetchResume();
-    const newKey = Date.now();
-    console.log('Setting new PDF preview key:', newKey);
-    setPdfPreviewKey(newKey);
-  };
+  
 
   useEffect(() => {
     if (resumeId) {
@@ -344,20 +337,7 @@ export default function ResumeDetailPage() {
               </Button>
             </Link>
   
-            <TemplateDropdown
-              currentTemplateId={resume.templateId}
-              resumeId={resumeId}
-              onTemplateChange={handleTemplateChange}
-            />
-
-            {/* TODO: Re-enable after VersionHistory is updated for JSON Resume format
-            <Button
-              onClick={() => setIsVersionHistoryOpen(true)}
-              variant="secondary"
-            >
-              View History
-            </Button>
-            */}
+      
             <Button
               onClick={handleDuplicate}
               variant="secondary"
