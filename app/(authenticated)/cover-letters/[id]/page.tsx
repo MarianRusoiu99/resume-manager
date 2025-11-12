@@ -270,15 +270,15 @@ export default function CoverLetterDetailPage() {
         <Card className="p-6 mt-6">
           <h3 className="text-lg font-semibold mb-3">Original Job Description</h3>
           <div className="bg-gray-50 p-4 rounded-md border border-gray-200 max-h-96 overflow-y-auto">
-            <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
+            <pre className="whitespace-pre-wrap text-sm  font-sans">
               {coverLetter.jobDescription}
             </pre>
           </div>
           {coverLetter.metadata?.personalInstructions && (
             <div className="mt-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-2">Personal Instructions</h4>
+              <h4 className="text-sm font-semibold mb-2">Personal Instructions</h4>
               <div className="bg-blue-50 p-3 rounded-md border border-blue-200">
-                <p className="text-sm text-gray-700">{coverLetter.metadata.personalInstructions}</p>
+                <p className="text-sm ">{coverLetter.metadata.personalInstructions}</p>
               </div>
             </div>
           )}

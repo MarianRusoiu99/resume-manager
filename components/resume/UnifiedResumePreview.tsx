@@ -5,13 +5,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PreviewTemplateSelector } from '@/components/templates/PreviewTemplateSelector';
 import { useTemplatePreview } from '@/lib/hooks/useTemplatePreview';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Download } from 'lucide-react';
+import { PaginationControls } from '@/components/ui/pagination-controls';
+import { RefreshCw, Download, Maximize2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface UnifiedResumePreviewProps {
@@ -39,13 +40,56 @@ export function UnifiedResumePreview({
   showCard = true,
   previewKey = 0,
   className = '',
-}: UnifiedResumePreviewProps) {
+}: Readonly<UnifiedResumePreviewProps>) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [resume, setResume] = useState<Resume>(resumeData);
   const [localPreviewKey, setLocalPreviewKey] = useState(previewKey);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [scale, setScale] = useState(1);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch resume data if resumeId is provided
+  // A4 dimensions at 96 DPI
+  const A4_WIDTH = 794;
+  const A4_HEIGHT = 1123;
+
+  // Calculate scale to fit container
+  useEffect(() => {
+    const calculateScale = () => {
+      if (containerRef.current) {
+        const container = containerRef.current;
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+
+        // Calculate scale to fit width or height (whichever is more constraining)
+        const scaleWidth = containerWidth / A4_WIDTH;
+        const scaleHeight = containerHeight / A4_HEIGHT;
+        const newScale = Math.min(scaleWidth, scaleHeight, 1); // Don't scale up beyond 100%
+
+        setScale(newScale);
+        console.log('Scale calculated:', newScale, 'Container:', containerWidth, 'x', containerHeight);
+      }
+    };
+
+    calculateScale();
+    // Recalculate on window resize
+    globalThis.addEventListener('resize', calculateScale);
+    return () => globalThis.removeEventListener('resize', calculateScale);
+  }, [isFullscreen]);
+
+  // Load template preference from localStorage on mount
+  useEffect(() => {
+    const savedTemplateId = localStorage.getItem('preferredTemplateId');
+    if (savedTemplateId && !selectedTemplateId) {
+      setSelectedTemplateId(savedTemplateId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch resume data and default template if resumeId is provided
   useEffect(() => {
     if (resumeId) {
       const fetchResume = async () => {
@@ -54,6 +98,11 @@ export function UnifiedResumePreview({
           if (response.ok) {
             const data = await response.json();
             setResume(data.content as Resume);
+            // Set default template if available and not already selected
+            if (data.templateId && selectedTemplateId === null) {
+              setSelectedTemplateId(data.templateId);
+              localStorage.setItem('preferredTemplateId', data.templateId);
+            }
           }
         } catch (error) {
           console.error('Error fetching resume:', error);
@@ -61,6 +110,8 @@ export function UnifiedResumePreview({
       };
       fetchResume();
     }
+    // Only run on mount or when resumeId/localPreviewKey changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeId, localPreviewKey]);
 
   // Update resume when resumeData prop changes
@@ -79,8 +130,99 @@ export function UnifiedResumePreview({
     resumeData: resume,
   });
 
-  const handleTemplateChange = (templateId: string | null) => {
+  // Calculate pages when iframe loads
+  useEffect(() => {
+    if (iframeRef.current && htmlContent) {
+      const iframe = iframeRef.current;
+      
+      // Wait for iframe to load and content to render
+      const handleLoad = () => {
+        // Use setTimeout to ensure content is fully rendered
+        setTimeout(() => {
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            if (iframeDoc?.body) {
+              // A4 dimensions: 210mm x 297mm at 96 DPI = 794px x 1123px
+              const pageHeight = 1123;
+              const contentHeight = iframeDoc.body.scrollHeight;
+              const calculatedPages = Math.ceil(contentHeight / pageHeight);
+              console.log('Calculated pages:', { contentHeight, pageHeight, calculatedPages });
+              setTotalPages(Math.max(1, calculatedPages));
+              // Reset to page 1 when content changes
+              setCurrentPage(1);
+            }
+          } catch (error) {
+            console.error('Error calculating pages:', error);
+          }
+        }, 100); // Small delay to ensure rendering is complete
+      };
+
+      iframe.addEventListener('load', handleLoad);
+      // Also trigger immediately in case iframe is already loaded
+      handleLoad();
+      
+      return () => iframe.removeEventListener('load', handleLoad);
+    }
+  }, [htmlContent]);
+
+  // Scroll to current page by transforming the iframe body
+  useEffect(() => {
+    if (iframeRef.current && currentPage > 0 && htmlContent) {
+      try {
+        const iframe = iframeRef.current;
+        
+        // Wait a bit for iframe to fully load
+        const timer = setTimeout(() => {
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+            if (iframeDoc?.body) {
+              // A4 page height at 96 DPI
+              const pageHeight = 1123;
+              const translateY = (currentPage - 1) * pageHeight;
+              
+              // Apply transform to shift content up to show the current page
+              iframeDoc.body.style.transform = `translateY(-${translateY}px)`;
+              iframeDoc.body.style.transition = 'transform 0.3s ease-in-out';
+              
+              console.log('Translating to page:', currentPage, 'translateY:', translateY, 'body height:', iframeDoc.body.scrollHeight);
+            }
+          } catch (err) {
+            console.error('Error accessing iframe document:', err);
+          }
+        }, 200);
+        
+        return () => clearTimeout(timer);
+      } catch (error) {
+        console.error('Error translating to page:', error);
+      }
+    }
+  }, [currentPage, htmlContent]);
+
+  const handleTemplateChange = async (templateId: string | null) => {
     setSelectedTemplateId(templateId);
+    
+    // Save to localStorage for all scenarios
+    if (templateId) {
+      localStorage.setItem('preferredTemplateId', templateId);
+    }
+    
+    // Save template selection to resume if resumeId is available
+    if (resumeId && templateId) {
+      try {
+        const response = await fetch(`/api/resumes/${resumeId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ templateId }),
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to save template selection');
+        }
+      } catch (error) {
+        console.error('Error saving template:', error);
+      }
+    }
+    
     if (onTemplateChange) {
       onTemplateChange(templateId);
     }
@@ -89,6 +231,25 @@ export function UnifiedResumePreview({
   const handleRefresh = () => {
     setLocalPreviewKey(prev => prev + 1);
   };
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+   
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [isFullscreen]);
 
   const handleExportPDF = async () => {
     if (!resumeId) {
@@ -108,14 +269,14 @@ export function UnifiedResumePreview({
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const url = globalThis.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `resume-${resumeId}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      globalThis.URL.revokeObjectURL(url);
+      a.remove();
       
       toast.success('PDF exported successfully');
     } catch (err) {
@@ -125,169 +286,351 @@ export function UnifiedResumePreview({
     }
   };
 
-  const PreviewContent = () => (
-    <>
-      {/* Header with Template Selector */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          {showTemplateSelector && (
-            <PreviewTemplateSelector
-              selectedTemplateId={selectedTemplateId}
-              onTemplateChange={handleTemplateChange}
-              variant="outline"
-              size="sm"
-            />
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {resumeId && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportPDF}
-              disabled={isExportingPDF}
+  const PreviewContent = () => {
+    const renderMainPreviewState = () => {
+      if (isLoading) {
+        return (
+          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+            Loading template...
+          </div>
+        );
+      }
+      if (error) {
+        return (
+          <div className="absolute inset-0 flex items-center justify-center text-destructive">
+            {error}
+          </div>
+        );
+      }
+      if (htmlContent) {
+        return (
+          <>
+            <div 
+              ref={containerRef}
+              className="absolute inset-0 flex items-center justify-center"
             >
-              <Download className="h-4 w-4 mr-2" />
-              {isExportingPDF ? 'Exporting...' : 'Download PDF'}
-            </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRefresh}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
-      {/* Preview Area */}
-      {selectedTemplateId ? (
-        // Template-based preview
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">
-              Loading template...
+              <div
+                style={{
+                  width: A4_WIDTH,
+                  height: A4_HEIGHT,
+                  transform: `scale(${scale})`,
+                  transformOrigin: 'center center',
+                }}
+                className="relative"
+              >
+                <iframe
+                  ref={iframeRef}
+                  srcDoc={htmlContent}
+                  className="w-full h-full border-0"
+                  title="Template Preview"
+                  sandbox="allow-same-origin"
+                  style={{
+                    width: `${A4_WIDTH}px`,
+                    height: `${A4_HEIGHT}px`,
+                    overflow: 'hidden',
+                  }}
+                />
+              </div>
             </div>
-          ) : error ? (
-            <div className="p-8 text-center text-destructive">
-              {error}
-            </div>
-          ) : htmlContent ? (
-            <iframe
-              srcDoc={htmlContent}
-              className="w-full h-[1000px] border-0"
-              title="Template Preview"
-              sandbox="allow-same-origin"
+            {/* Pagination Controls */}
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
             />
-          ) : (
-            <div className="p-8 text-center text-muted-foreground">
-              No preview available
-            </div>
-          )}
+          </>
+        );
+      }
+      return (
+        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+          No preview available
         </div>
-      ) : (
-        // Default simple preview
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <div className="space-y-6">
-            {resume.basics && (
-              <div className="border-b pb-4">
-                <h1 className="text-3xl font-bold mb-2">{resume.basics.name || 'Your Name'}</h1>
-                <p className="text-muted-foreground">
-                  {resume.basics.email && <span>{resume.basics.email}</span>}
-                  {resume.basics.phone && <span> | {resume.basics.phone}</span>}
-                  {resume.basics.location?.city && <span> | {resume.basics.location.city}</span>}
-                </p>
-              </div>
-            )}
+      );
+    };
 
-            {resume.basics?.summary && (
-              <div>
-                <h2 className="text-xl font-bold mb-2">Professional Summary</h2>
-                <p className="text-sm">{resume.basics.summary}</p>
-              </div>
-            )}
-
-            {resume.work && resume.work.length > 0 && (
-              <div>
-                <h2 className="text-xl font-bold mb-3">Work Experience</h2>
-                <div className="space-y-4">
-                  {resume.work.map((job, idx) => (
-                    <div key={idx} className="border-l-2 border-muted pl-4">
-                      <h3 className="font-semibold">{job.position}</h3>
-                      <p className="text-sm text-muted-foreground">{job.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {job.startDate} - {job.endDate || 'Present'}
-                      </p>
-                      {job.highlights && job.highlights.length > 0 && (
-                        <ul className="list-disc list-inside mt-2 text-sm">
-                          {job.highlights.map((highlight, hIdx) => (
-                            <li key={hIdx}>{highlight}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {resume.education && resume.education.length > 0 && (
-              <div>
-                <h2 className="text-xl font-bold mb-3">Education</h2>
-                <div className="space-y-3">
-                  {resume.education.map((edu, idx) => (
-                    <div key={idx}>
-                      <h3 className="font-semibold">{edu.studyType} in {edu.area}</h3>
-                      <p className="text-sm text-muted-foreground">{edu.institution}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {edu.startDate} - {edu.endDate || 'Present'}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {resume.skills && resume.skills.length > 0 && (
-              <div>
-                <h2 className="text-xl font-bold mb-3">Skills</h2>
-                <div className="flex flex-wrap gap-2">
-                  {resume.skills.map((skill, idx) => (
-                    <span
-                      key={idx}
-                      className="px-3 py-1 bg-muted rounded-full text-sm"
-                    >
-                      {skill.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
+    return (
+      <>
+        {/* Header with Template Selector */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {showTemplateSelector && (
+              <PreviewTemplateSelector
+                selectedTemplateId={selectedTemplateId}
+                onTemplateChange={handleTemplateChange}
+                variant="outline"
+                size="sm"
+              />
             )}
           </div>
+          <div className="flex items-center gap-2">
+            {resumeId && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportPDF}
+                disabled={isExportingPDF}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isExportingPDF ? 'Exporting...' : 'Download PDF'}
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleFullscreen}
+              title="View in modal"
+            >
+              <Maximize2 className="h-4 w-4 mr-2" />
+              Expand
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
-      )}
-    </>
-  );
+
+        {/* Preview Area with A4 Aspect Ratio */}
+        <div className="flex flex-col items-center justify-center w-full min-h-[600px]">
+          <div 
+            className="relative bg-white rounded-lg shadow-lg w-full"
+            style={{ 
+              aspectRatio: '210/297',
+              maxWidth: '794px',
+            }}
+          >
+            {renderMainPreviewState()}
+          </div>
+        </div>
+      </>
+    );
+  };
 
   if (showCard) {
     return (
-      <Card className={className}>
-        <CardHeader>
-          <CardTitle>Live Preview</CardTitle>
-          <CardDescription>See how your resume looks with different templates</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PreviewContent />
-        </CardContent>
-      </Card>
+      <>
+        <Card className={className}>
+          <CardHeader>
+            <CardTitle>Live Preview</CardTitle>
+            <CardDescription>See how your resume looks with different templates</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PreviewContent />
+          </CardContent>
+        </Card>
+
+        {/* Modal Overlay */}
+        {isFullscreen && (
+          <div 
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={toggleFullscreen}
+            onKeyDown={(e) => e.key === 'Escape' && toggleFullscreen()}
+            role="button"
+            tabIndex={0}
+          >
+            <div 
+              className="relative w-full h-full flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4 z-10 bg-background/80 hover:bg-background"
+                onClick={toggleFullscreen}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+
+              {/* A4 Preview Container */}
+              <div 
+                className="relative bg-white rounded-lg shadow-2xl"
+                style={{ 
+                  aspectRatio: '210/297',
+                  maxHeight: '95%',
+                  width: 'auto',
+                }}
+              >
+                {isLoading ? (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    Loading template...
+                  </div>
+                ) : (
+                  (() => {
+                    let modalContent;
+                    if (isLoading) {
+                      modalContent = (
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                          Loading template...
+                        </div>
+                      );
+                    } else if (error) {
+                      modalContent = (
+                        <div className="absolute inset-0 flex items-center justify-center text-destructive">
+                          {error}
+                        </div>
+                      );
+                    } else if (htmlContent) {
+                      modalContent = (
+                        <>
+                          <div className="absolute inset-0 flex items-center justify-center ">
+                            <div
+                              style={{
+                                width: A4_WIDTH,
+                                height: A4_HEIGHT,
+                                transform: `scale(${scale})`,
+                                transformOrigin: 'center center',
+                              }}
+                              className="relative"
+                            >
+                              <iframe
+                                ref={iframeRef}
+                                srcDoc={htmlContent}
+                                className="w-full h-full border-0"
+                                title="Template Preview Modal"
+                                sandbox="allow-same-origin"
+                                style={{
+                                  width: `${A4_WIDTH}px`,
+                                  height: `${A4_HEIGHT}px`,
+                                  overflow: 'hidden',
+                                }}
+                              />
+                            </div>
+                          </div>
+                          {/* Pagination Controls */}
+                          <PaginationControls
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                            className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
+                          />
+                        </>
+                      );
+                    } else {
+                      modalContent = (
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                          No preview available
+                        </div>
+                      );
+                    }
+                    return modalContent;
+                  })()
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
   return (
-    <div className={className}>
-      <PreviewContent />
-    </div>
+    <>
+      {/* Modal Overlay for non-card mode */}
+      {isFullscreen && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={toggleFullscreen}
+          onKeyDown={(e) => e.key === 'Escape' && toggleFullscreen()}
+          role="button"
+          tabIndex={0}
+        >
+          <div 
+            className="relative w-full h-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
+          >
+            {/* Close Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 z-10 bg-background/80 hover:bg-background"
+              onClick={toggleFullscreen}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+
+            {/* A4 Preview Container */}
+            <div 
+              className="relative bg-white rounded-lg shadow-2xl"
+              style={{ 
+                aspectRatio: '210/297',
+                maxHeight: '95%',
+                width: 'auto',
+              }}
+            >
+              {(() => {
+                if (isLoading) {
+                  return (
+                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                      Loading template...
+                    </div>
+                  );
+                }
+
+                if (error) {
+                  return (
+                    <div className="absolute inset-0 flex items-center justify-center text-destructive">
+                      {error}
+                    </div>
+                  );
+                }
+
+                if (htmlContent) {
+                  return (
+                    <>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div
+                          style={{
+                            width: A4_WIDTH,
+                            height: A4_HEIGHT,
+                            transform: `scale(${scale})`,
+                            transformOrigin: 'center center',
+                          }}
+                          className="relative"
+                        >
+                          <iframe
+                            ref={iframeRef}
+                            srcDoc={htmlContent}
+                            className="w-full h-full border-0"
+                            title="Template Preview Modal"
+                            sandbox="allow-same-origin"
+                            style={{
+                              width: `${A4_WIDTH}px`,
+                              height: `${A4_HEIGHT}px`,
+                              overflow: 'hidden',
+                            }}
+                          />
+                        </div>
+                      </div>
+                      {/* Pagination Controls */}
+                      <PaginationControls
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                        className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
+                      />
+                    </>
+                  );
+                }
+
+                return (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    No preview available
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

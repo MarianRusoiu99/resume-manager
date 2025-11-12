@@ -243,7 +243,7 @@ export default function ResumesPage() {
               </div>
 
               {/* Job Description Preview */}
-              <p className="text-sm text-gray-700 mb-4 line-clamp-3">
+              <p className="text-sm  mb-4 line-clamp-3">
                 {resume.jobDescription}
               </p>
 

@@ -16,19 +16,19 @@ import { UnifiedResumePreview } from './UnifiedResumePreview';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 export interface ResumePreviewWithActionsProps {
-  resumeId: string;
+  readonly resumeId: string;
   /** Show edit button (hidden on edit page) */
-  showEdit?: boolean;
+  readonly showEdit?: boolean;
   /** Show duplicate button */
-  showDuplicate?: boolean;
+  readonly showDuplicate?: boolean;
   /** Show delete button */
-  showDelete?: boolean;
+  readonly showDelete?: boolean;
   /** Show download PDF button */
-  showDownload?: boolean;
+  readonly showDownload?: boolean;
   /** Callback after delete */
-  onDelete?: () => void;
+  readonly onDelete?: () => void;
   /** Custom className for container */
-  className?: string;
+  readonly className?: string;
 }
 
 export function ResumePreviewWithActions({
@@ -78,14 +78,14 @@ export function ResumePreviewWithActions({
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const url = globalThis.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `resume-${resumeId}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      globalThis.URL.revokeObjectURL(url);
+      a.remove();
       
       toast.success('PDF exported successfully');
     } catch (err) {

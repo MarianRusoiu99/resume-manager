@@ -22,10 +22,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Eye, Code } from 'lucide-react';
+import { Save, Code } from 'lucide-react';
 import { toast } from 'sonner';
-import { ResumePreviewLoader } from '@/components/resume/ResumePreview';
 import { sampleResume } from '@/lib/utils/sample-resume';
+import { UnifiedResumePreview } from '../resume/UnifiedResumePreview';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -41,8 +41,8 @@ const Editor = dynamic(() => import('@monaco-editor/react'), {
 });
 
 interface TemplateEditorProps {
-  template?: ResumeTemplate;
-  isNew?: boolean;
+  readonly template?: ResumeTemplate;
+  readonly isNew?: boolean;
 }
 
 const categories = [
@@ -53,7 +53,7 @@ const categories = [
   'minimal',
 ] as const;
 
-export function TemplateEditor({ template, isNew = false }: TemplateEditorProps) {
+export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEditorProps>) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -278,32 +278,16 @@ export function TemplateEditor({ template, isNew = false }: TemplateEditorProps)
         </div>
 
         {/* Right Panel - Live Preview */}
-        <div className="border rounded-lg overflow-hidden flex flex-col bg-card">
-          <div className="border-b px-4 py-3 flex items-center gap-2 bg-muted/50">
-            <Eye className="h-4 w-4" />
-            <h3 className="font-semibold">Live Preview</h3>
-            <span className="text-xs text-muted-foreground ml-auto">With sample resume data</span>
-          </div>
-          <div className="flex-1 overflow-auto bg-muted/30">
-            {formData.htmlTemplate && formData.cssStyles ? (
-              <ResumePreviewLoader
-                resumeData={sampleResume}
-                templateHtml={formData.htmlTemplate}
-                templateCss={formData.cssStyles}
-                className="h-full"
-              />
-            ) : (
-              <div className="h-full flex items-center justify-center text-muted-foreground">
-                <div className="text-center p-8">
-                  <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="mb-2">No preview available</p>
-                  <p className="text-xs">Enter HTML and CSS to see live preview</p>
-                </div>
-              </div>
-            )}
-          </div>
+      
+         <UnifiedResumePreview
+            {...({
+              resumeData: sampleResume,
+              templateHtml: formData.htmlTemplate,
+              templateCss: formData.cssStyles,
+            } as any)}
+          />
         </div>
-      </div>
+      
     </div>
   );
 }

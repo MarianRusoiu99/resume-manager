@@ -395,7 +395,7 @@ export default function ResumeDetailPage() {
       {/* Job Description */}
       <Card className="p-6 mb-6 no-print">
         <h2 className="text-lg font-semibold mb-3">Job Description</h2>
-        <p className="text-gray-700 whitespace-pre-wrap">{resume.jobDescription}</p>
+        <p className=" whitespace-pre-wrap">{resume.jobDescription}</p>
       </Card>
 
       {/* Cover Letter (if generated) */}

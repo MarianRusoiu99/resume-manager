@@ -7,8 +7,8 @@
 
 import { useEffect } from 'react';
 import type { ResumeTemplate } from '@/types/template';
-import { ResumePreviewLoader } from '@/components/resume/ResumePreview';
 import { sampleResume } from '@/lib/utils/sample-resume';
+import { UnifiedResumePreview } from '../resume/UnifiedResumePreview';
 
 interface TemplatePreviewModalProps {
   template: ResumeTemplate;
@@ -85,7 +85,7 @@ export function TemplatePreviewModal({
         {/* Preview Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-muted/20">
           <div className="bg-card rounded-lg shadow-lg overflow-hidden">
-            <ResumePreviewLoader
+            <UnifiedResumePreview
               resumeData={sampleResume}
               templateHtml={template.htmlTemplate}
               templateCss={template.cssStyles}

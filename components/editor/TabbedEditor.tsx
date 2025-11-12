@@ -43,14 +43,15 @@ import { PreviewTemplateSelector } from "@/components/templates/PreviewTemplateS
 import { useTemplatePreview } from "@/lib/hooks/useTemplatePreview";
 import { toast } from "sonner";
 import type { Basics, Skill, Certificate, Language } from "@/lib/validations/jsonresume";
+import { UnifiedResumePreview } from "../resume/UnifiedResumePreview";
 
 interface TabbedEditorProps {
-  profileId?: string;
-  profileName?: string;
-  isPublic?: boolean;
-  publicSlug?: string;
-  onProfileNameChange?: (name: string) => Promise<void>;
-  onTogglePublic?: () => Promise<void>;
+  readonly profileId?: string;
+  readonly profileName?: string;
+  readonly isPublic?: boolean;
+  readonly publicSlug?: string;
+  readonly onProfileNameChange?: (name: string) => Promise<void>;
+  readonly onTogglePublic?: () => Promise<void>;
 }
 
 export function TabbedEditor({ 
@@ -295,7 +296,7 @@ export function TabbedEditor({
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1">
         {/* Editor Area */}
         <div className={`flex-1 overflow-y-auto ${showPreview ? 'border-r' : ''}`}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
@@ -533,140 +534,18 @@ export function TabbedEditor({
 
         {/* Live Preview */}
         {showPreview && (
-          <div className="w-1/2 bg-muted/20 overflow-y-auto">
-            <div className="sticky top-0 bg-background border-b px-6 py-3 z-10 flex items-center justify-between">
-              <h3 className="font-semibold">Live Preview</h3>
-              <PreviewTemplateSelector
-                selectedTemplateId={selectedTemplateId}
-                onTemplateChange={setSelectedTemplateId}
-                variant="outline"
-                size="sm"
-              />
-            </div>
-            <div className="p-6">
-              {selectedTemplateId ? (
-                // Template-based preview
-                <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-[800px] mx-auto">
-                  {isLoadingTemplate ? (
-                    <div className="p-8 text-center text-muted-foreground">
-                      Loading template...
-                    </div>
-                  ) : templateError ? (
-                    <div className="p-8 text-center text-destructive">
-                      {templateError}
-                    </div>
-                  ) : htmlContent ? (
-                    <iframe
-                      srcDoc={htmlContent}
-                      className="w-full h-[1000px] border-0"
-                      title="Template Preview"
-                      sandbox="allow-same-origin"
-                    />
-                  ) : (
-                    <div className="p-8 text-center text-muted-foreground">
-                      No preview available
-                    </div>
-                  )}
-                </div>
-              ) : (
-                // Default simple preview
-                <div className="bg-white rounded-lg shadow-lg p-8 max-w-[800px] mx-auto">
-                  {/* Simple Resume Preview */}
-                  <div className="space-y-6">
-                  {resume.basics && (
-                    <div className="border-b pb-4">
-                      <h1 className="text-3xl font-bold mb-2">{resume.basics.name || "Your Name"}</h1>
-                      <p className="text-muted-foreground">
-                        {resume.basics.email && <span>{resume.basics.email}</span>}
-                        {resume.basics.phone && <span> | {resume.basics.phone}</span>}
-                        {resume.basics.location?.city && <span> | {resume.basics.location.city}</span>}
-                      </p>
-                    </div>
-                  )}
-
-                  {resume.basics?.summary && (
-                    <div>
-                      <h2 className="text-xl font-bold mb-2">Professional Summary</h2>
-                      <p className="text-sm">{resume.basics.summary}</p>
-                    </div>
-                  )}
-
-                  {resume.work && resume.work.length > 0 && (
-                    <div>
-                      <h2 className="text-xl font-bold mb-3">Work Experience</h2>
-                      <div className="space-y-4">
-                        {resume.work.map((job, idx) => (
-                          <div key={idx} className="border-l-2 border-muted pl-4">
-                            <h3 className="font-semibold">{job.position}</h3>
-                            <p className="text-sm text-muted-foreground">{job.name}</p>
-                            <p className="text-xs text-muted-foreground mb-2">
-                              {job.startDate} - {job.endDate || "Present"}
-                            </p>
-                            {job.highlights && job.highlights.length > 0 && (
-                              <ul className="text-sm list-disc list-inside space-y-1">
-                                {job.highlights.map((highlight, i) => (
-                                  <li key={i}>{highlight}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {resume.education && resume.education.length > 0 && (
-                    <div>
-                      <h2 className="text-xl font-bold mb-3">Education</h2>
-                      <div className="space-y-3">
-                        {resume.education.map((edu, idx) => (
-                          <div key={idx}>
-                            <h3 className="font-semibold">{edu.studyType} in {edu.area}</h3>
-                            <p className="text-sm text-muted-foreground">{edu.institution}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {edu.startDate} - {edu.endDate}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {resume.skills && resume.skills.length > 0 && (
-                    <div>
-                      <h2 className="text-xl font-bold mb-3">Skills</h2>
-                      <div className="flex flex-wrap gap-2">
-                        {resume.skills.map((skill, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-muted rounded-full text-sm">
-                            {skill.name}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {resume.projects && resume.projects.length > 0 && (
-                    <div>
-                      <h2 className="text-xl font-bold mb-3">Projects</h2>
-                      <div className="space-y-3">
-                        {resume.projects.map((project, idx) => (
-                          <div key={idx}>
-                            <h3 className="font-semibold">{project.name}</h3>
-                            {project.description && (
-                              <p className="text-sm">{project.description}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                </div>
-              )}
-            </div>
+          <div className="w-1/2 bg-muted/20 aspect-[210:297] h-full">
+                  <UnifiedResumePreview
+              resumeData={resume}
+              onTemplateChange={setSelectedTemplateId}
+              showTemplateSelector
+              showCard
+            />
           </div>
         )}
       </div>
+
+      
 
       {/* Share Dialog */}
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>

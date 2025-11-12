@@ -27,7 +27,6 @@ export default async function EditTemplatePage({
         title={`Edit: ${template.name}`}
         description="Modify the template design and configuration"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Templates", href: "/templates" },
           { label: template.name },
         ]}

@@ -436,7 +436,7 @@ export default function GeneratePage() {
                   className="w-4 h-4 text-foreground border-gray-300 rounded "
                   disabled={isGenerating}
                 />
-                <label htmlFor="coverLetter" className="text-sm text-gray-700 cursor-pointer">
+                <label htmlFor="coverLetter" className="text-sm  cursor-pointer">
                   Generate cover letter (optional)
                 </label>
               </div>

@@ -88,7 +88,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
       <div className="border rounded-lg p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-medium text-sm text-gray-700">Template</h3>
+            <h3 className="font-medium text-sm ">Template</h3>
             <p className="text-lg font-semibold mt-1">
               {currentTemplate?.name || 'Default Template'}
             </p>
@@ -136,7 +136,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
                   <h4 className="font-medium">{template.name}</h4>
                   <p className="text-sm text-gray-600 mt-1">{template.description}</p>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700">
+                    <span className="text-xs px-2 py-0.5 rounded bg-gray-100 ">
                       {template.category}
                     </span>
                   </div>
@@ -167,7 +167,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
             setSelectedTemplateId(currentTemplateId);
           }}
           disabled={isUpdating}
-          className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 px-4 py-2 text-sm font-medium  hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
         </button>

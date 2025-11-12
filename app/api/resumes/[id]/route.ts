@@ -103,7 +103,7 @@ export async function DELETE(
 }
 
 /**
- * PATCH /api/resumes/[id] - Update resume content
+ * PATCH /api/resumes/[id] - Update resume content or template
  */
 export async function PATCH(
   request: Request,
@@ -121,6 +121,21 @@ export async function PATCH(
 
     const { id } = await context.params;
     const body = await request.json();
+
+    // Handle template update separately if only templateId is provided
+    if (body.templateId !== undefined && !body.resume) {
+      const updatedResume = await resumeService.updateResumeTemplate(
+        id,
+        session.user.id,
+        body.templateId
+      );
+
+      // Invalidate cache after updating
+      const cacheKey = `resumes:${session.user.id}`;
+      resumesCache.delete(cacheKey);
+
+      return NextResponse.json(updatedResume);
+    }
 
     // Update the resume content
     const updatedResume = await resumeService.updateResumeContent(

@@ -635,8 +635,8 @@ export class ResumeService {
     }
   }
 
-  /**
-   * Update resume content (edit a generated resume)
+    /**
+   * Update Resume Content (for manual edits)
    * 
    * @param resumeId - Resume ID
    * @param userId - User ID (for ownership verification)
@@ -682,6 +682,55 @@ export class ResumeService {
       };
     } catch (error) {
       console.error('Error updating resume content:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update Resume Template
+   * 
+   * @param resumeId - Resume ID
+   * @param userId - User ID (for ownership verification)
+   * @param templateId - Template ID to apply
+   * @returns Updated resume or error
+   */
+  async updateResumeTemplate(resumeId: string, userId: string, templateId: string | null) {
+    try {
+      // Verify ownership
+      const existingResume = await this.repository.findByIdAndUserId(resumeId, userId);
+      
+      if (!existingResume) {
+        throw new Error('Resume not found or access denied');
+      }
+
+      // Update the template in the database
+      const updatedResume = await prisma.generatedResume.update({
+        where: { id: resumeId },
+        data: {
+          templateId,
+          updatedAt: new Date(),
+        },
+      });
+
+      // Fetch template if needed
+      const template = updatedResume.templateId 
+        ? await prisma.resumeTemplate.findUnique({ where: { id: updatedResume.templateId } })
+        : null;
+
+      return {
+        id: updatedResume.id,
+        resume: updatedResume.resume,
+        jobDescription: updatedResume.jobDescription,
+        jobMetadata: updatedResume.jobMetadata,
+        templateId: updatedResume.templateId,
+        template,
+        coverLetter: updatedResume.coverLetter,
+        metadata: updatedResume.metadata,
+        createdAt: updatedResume.createdAt,
+        updatedAt: updatedResume.updatedAt,
+      };
+    } catch (error) {
+      console.error('Error updating resume template:', error);
       throw error;
     }
   }

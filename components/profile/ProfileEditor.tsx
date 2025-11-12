@@ -25,7 +25,7 @@ interface ProfileEditorProps {
   profileId: string;
 }
 
-export function ProfileEditor({ profileId }: ProfileEditorProps) {
+export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -137,18 +137,7 @@ export function ProfileEditor({ profileId }: ProfileEditorProps) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="h-8 bg-muted rounded w-1/3 mb-4 animate-pulse" />
-        <div className="h-4 bg-muted rounded w-1/2 mb-8 animate-pulse" />
-        <div className="space-y-4">
-          <div className="h-32 bg-muted rounded animate-pulse" />
-          <div className="h-32 bg-muted rounded animate-pulse" />
-        </div>
-      </div>
-    );
-  }
+
 
   if (!profile) {
     return null;
@@ -169,7 +158,7 @@ export function ProfileEditor({ profileId }: ProfileEditorProps) {
       </div>
 
       {/* Editor */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1">
         <EditorProvider onLoad={handleLoad} onSave={handleSave}>
           <TabbedEditor 
             profileId={profileId}
