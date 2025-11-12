@@ -165,7 +165,7 @@ export function UnifiedResumePreview({
     }
   }, [htmlContent]);
 
-  // Scroll to current page by transforming the iframe body
+  // Navigate to current page by scrolling the iframe content
   useEffect(() => {
     if (iframeRef.current && currentPage > 0 && htmlContent) {
       try {
@@ -174,17 +174,40 @@ export function UnifiedResumePreview({
         // Wait a bit for iframe to fully load
         const timer = setTimeout(() => {
           try {
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-            if (iframeDoc?.body) {
+            const iframeWindow = iframe.contentWindow;
+            const iframeDoc = iframe.contentDocument;
+            
+            if (iframeWindow && iframeDoc) {
               // A4 page height at 96 DPI
               const pageHeight = 1123;
-              const translateY = (currentPage - 1) * pageHeight;
+              const scrollY = (currentPage - 1) * pageHeight;
               
-              // Apply transform to shift content up to show the current page
-              iframeDoc.body.style.transform = `translateY(-${translateY}px)`;
-              iframeDoc.body.style.transition = 'transform 0.3s ease-in-out';
+              // Ensure the html and body elements allow scrolling but hide the scrollbar
+              if (iframeDoc.documentElement) {
+                iframeDoc.documentElement.style.overflow = 'auto';
+                iframeDoc.documentElement.style.scrollbarWidth = 'none'; // Firefox
+                // @ts-expect-error - msOverflowStyle is a legacy IE/Edge property
+                iframeDoc.documentElement.style.msOverflowStyle = 'none'; // IE/Edge
+                
+                // Add webkit scrollbar hiding
+                const styleEl = iframeDoc.getElementById('pagination-styles') || iframeDoc.createElement('style');
+                styleEl.id = 'pagination-styles';
+                styleEl.textContent = `
+                  html::-webkit-scrollbar { display: none; }
+                  html { scroll-behavior: smooth; }
+                  body { margin: 0; padding: 0; }
+                `;
+                if (!iframeDoc.getElementById('pagination-styles')) {
+                  iframeDoc.head.appendChild(styleEl);
+                }
+              }
               
-              console.log('Translating to page:', currentPage, 'translateY:', translateY, 'body height:', iframeDoc.body.scrollHeight);
+              // Scroll to the target position
+              if (iframeDoc.documentElement) {
+                iframeDoc.documentElement.scrollTop = scrollY;
+              }
+              
+              console.log('Scrolling to page:', currentPage, 'scrollY:', scrollY, 'scrollTop:', iframeDoc.documentElement.scrollTop);
             }
           } catch (err) {
             console.error('Error accessing iframe document:', err);
@@ -193,7 +216,7 @@ export function UnifiedResumePreview({
         
         return () => clearTimeout(timer);
       } catch (error) {
-        console.error('Error translating to page:', error);
+        console.error('Error navigating to page:', error);
       }
     }
   }, [currentPage, htmlContent]);
@@ -328,6 +351,7 @@ export function UnifiedResumePreview({
                     width: `${A4_WIDTH}px`,
                     height: `${A4_HEIGHT}px`,
                     overflow: 'hidden',
+                    border: 'none',
                   }}
                 />
               </div>
@@ -499,6 +523,7 @@ export function UnifiedResumePreview({
                                   width: `${A4_WIDTH}px`,
                                   height: `${A4_HEIGHT}px`,
                                   overflow: 'hidden',
+                                  border: 'none',
                                 }}
                               />
                             </div>
@@ -606,6 +631,7 @@ export function UnifiedResumePreview({
                               width: `${A4_WIDTH}px`,
                               height: `${A4_HEIGHT}px`,
                               overflow: 'hidden',
+                              border: 'none',
                             }}
                           />
                         </div>
