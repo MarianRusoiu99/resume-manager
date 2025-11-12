@@ -14,6 +14,11 @@ import { Button } from '@/components/ui/button';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { RefreshCw, Download, Maximize2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { 
+  A4_DIMENSIONS, 
+  calculateTotalPages, 
+  setupIframePagination 
+} from '@/lib/utils/pagination';
 
 interface UnifiedResumePreviewProps {
   /** Resume data to preview */
@@ -52,9 +57,9 @@ export function UnifiedResumePreview({
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // A4 dimensions at 96 DPI
-  const A4_WIDTH = 794;
-  const A4_HEIGHT = 1123;
+  // Use A4 dimensions from utility
+  const A4_WIDTH = A4_DIMENSIONS.WIDTH;
+  const A4_HEIGHT = A4_DIMENSIONS.HEIGHT;
 
   // Calculate scale to fit container
   useEffect(() => {
@@ -78,7 +83,7 @@ export function UnifiedResumePreview({
     // Recalculate on window resize
     globalThis.addEventListener('resize', calculateScale);
     return () => globalThis.removeEventListener('resize', calculateScale);
-  }, [isFullscreen]);
+  }, [isFullscreen, A4_WIDTH, A4_HEIGHT]);
 
   // Load template preference from localStorage on mount
   useEffect(() => {
@@ -142,12 +147,10 @@ export function UnifiedResumePreview({
           try {
             const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
             if (iframeDoc?.body) {
-              // A4 dimensions: 210mm x 297mm at 96 DPI = 794px x 1123px
-              const pageHeight = 1123;
               const contentHeight = iframeDoc.body.scrollHeight;
-              const calculatedPages = Math.ceil(contentHeight / pageHeight);
-              console.log('Calculated pages:', { contentHeight, pageHeight, calculatedPages });
-              setTotalPages(Math.max(1, calculatedPages));
+              const calculatedPages = calculateTotalPages(contentHeight, A4_HEIGHT);
+              console.log('Calculated pages:', { contentHeight, pageHeight: A4_HEIGHT, calculatedPages });
+              setTotalPages(calculatedPages);
               // Reset to page 1 when content changes
               setCurrentPage(1);
             }
@@ -163,61 +166,22 @@ export function UnifiedResumePreview({
       
       return () => iframe.removeEventListener('load', handleLoad);
     }
-  }, [htmlContent]);
+  }, [htmlContent, A4_HEIGHT]);
 
-  // Navigate to current page by scrolling the iframe content
+  // Navigate to current page using pagination utilities
   useEffect(() => {
     if (iframeRef.current && currentPage > 0 && htmlContent) {
-      try {
-        const iframe = iframeRef.current;
-        
-        // Wait a bit for iframe to fully load
-        const timer = setTimeout(() => {
-          try {
-            const iframeWindow = iframe.contentWindow;
-            const iframeDoc = iframe.contentDocument;
-            
-            if (iframeWindow && iframeDoc) {
-              // A4 page height at 96 DPI
-              const pageHeight = 1123;
-              const scrollY = (currentPage - 1) * pageHeight;
-              
-              // Ensure the html and body elements allow scrolling but hide the scrollbar
-              if (iframeDoc.documentElement) {
-                iframeDoc.documentElement.style.overflow = 'auto';
-                iframeDoc.documentElement.style.scrollbarWidth = 'none'; // Firefox
-                // @ts-expect-error - msOverflowStyle is a legacy IE/Edge property
-                iframeDoc.documentElement.style.msOverflowStyle = 'none'; // IE/Edge
-                
-                // Add webkit scrollbar hiding
-                const styleEl = iframeDoc.getElementById('pagination-styles') || iframeDoc.createElement('style');
-                styleEl.id = 'pagination-styles';
-                styleEl.textContent = `
-                  html::-webkit-scrollbar { display: none; }
-                  html { scroll-behavior: smooth; }
-                  body { margin: 0; padding: 0; }
-                `;
-                if (!iframeDoc.getElementById('pagination-styles')) {
-                  iframeDoc.head.appendChild(styleEl);
-                }
-              }
-              
-              // Scroll to the target position
-              if (iframeDoc.documentElement) {
-                iframeDoc.documentElement.scrollTop = scrollY;
-              }
-              
-              console.log('Scrolling to page:', currentPage, 'scrollY:', scrollY, 'scrollTop:', iframeDoc.documentElement.scrollTop);
-            }
-          } catch (err) {
-            console.error('Error accessing iframe document:', err);
+      // Wait a bit for iframe to fully load
+      const timer = setTimeout(() => {
+        if (iframeRef.current) {
+          const success = setupIframePagination(iframeRef.current, currentPage);
+          if (success) {
+            console.log('Successfully navigated to page:', currentPage);
           }
-        }, 200);
-        
-        return () => clearTimeout(timer);
-      } catch (error) {
-        console.error('Error navigating to page:', error);
-      }
+        }
+      }, 200);
+      
+      return () => clearTimeout(timer);
     }
   }, [currentPage, htmlContent]);
 
