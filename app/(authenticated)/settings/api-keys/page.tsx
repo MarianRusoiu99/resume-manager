@@ -171,7 +171,6 @@ export default function ApiKeysPage() {
         title="API Keys"
         description="Manage your AI provider API keys securely"
         breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Settings', href: '/settings' },
           { label: 'API Keys' },
         ]}

@@ -139,7 +139,6 @@ export default function CoverLettersPage() {
           title="My Cover Letters"
           description="Manage all your generated cover letters"
           breadcrumbs={[
-            { label: "Dashboard", href: "/dashboard" },
             { label: "Cover Letters" },
           ]}
         />
@@ -158,7 +157,6 @@ export default function CoverLettersPage() {
         title="My Cover Letters"
         description="Manage all your generated cover letters"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Cover Letters" },
         ]}
       />

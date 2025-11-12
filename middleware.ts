@@ -18,7 +18,7 @@ export default auth((req) => {
 
   // Redirect to dashboard if accessing auth pages while authenticated
   if (isAuthenticated && (pathname === "/login" || pathname === "/register")) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(new URL("/profile", req.url));
   }
 
   return NextResponse.next();

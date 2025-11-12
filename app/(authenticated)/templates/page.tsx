@@ -23,7 +23,6 @@ export default async function TemplatesPage() {
         title="Resume Templates"
         description="Choose from professionally designed templates optimized for ATS systems"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Templates" },
         ]}
       />

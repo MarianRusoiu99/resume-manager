@@ -127,7 +127,6 @@ export default function ResumeEditPage() {
         title="Edit Resume"
         description="Customize this resume for your specific needs"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Resumes", href: "/resumes" },
           { label: "Edit" },
         ]}

@@ -29,7 +29,6 @@ export default async function ProfilesPage() {
         title="Professional Profiles"
         description="Manage your professional profiles for targeted resume generation"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Profiles" },
         ]}
       />

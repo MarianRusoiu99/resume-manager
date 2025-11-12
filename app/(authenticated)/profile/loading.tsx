@@ -13,7 +13,6 @@ export default function ProfileLoading() {
         title="Profile"
         description="Manage your professional information"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Profile" },
         ]}
       />

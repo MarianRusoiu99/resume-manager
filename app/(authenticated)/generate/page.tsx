@@ -371,7 +371,6 @@ export default function GeneratePage() {
         title="Generate Resume"
         description="Paste a job description and let AI create a tailored resume for you"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Generate" },
         ]}
       />

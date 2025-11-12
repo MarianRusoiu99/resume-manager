@@ -165,7 +165,6 @@ export default function ResumesPage() {
         title="My Resumes"
         description="Manage your AI-generated resumes"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Resumes" },
         ]}
       />

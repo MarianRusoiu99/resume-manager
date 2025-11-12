@@ -14,7 +14,6 @@ export default function NewTemplatePage() {
         title="Create Template"
         description="Design a new resume template with HTML and Handlebars"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Templates", href: "/templates" },
           { label: "New" },
         ]}

@@ -330,7 +330,6 @@ export default function ResumeDetailPage() {
         title={resume.jobTitle || 'Untitled Resume'}
         description={resume.companyName || undefined}
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Resumes", href: "/resumes" },
           { label: resume.jobTitle || 'Resume' },
         ]}

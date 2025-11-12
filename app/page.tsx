@@ -10,7 +10,7 @@ export default async function Home() {
 
   // If logged in, redirect to dashboard
   if (session) {
-    redirect("/dashboard");
+    redirect("/profile");
   }
 
   return (

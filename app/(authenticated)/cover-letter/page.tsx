@@ -78,7 +78,6 @@ export default function GenerateCoverLetterPage() {
         title="Generate Cover Letter"
         description="Create a professional, tailored cover letter for your job application"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Cover Letter" },
         ]}
       />

@@ -13,7 +13,6 @@ export default function CoverLetterLoading() {
         title="Generate Cover Letter"
         description="Create a personalized cover letter tailored to your target position"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Cover Letter" },
         ]}
       />

@@ -153,7 +153,6 @@ export default function CoverLetterDetailPage() {
           title="Loading..."
           description="Fetching cover letter details"
           breadcrumbs={[
-            { label: "Dashboard", href: "/dashboard" },
             { label: "Cover Letters", href: "/cover-letters" },
             { label: "..." },
           ]}
@@ -174,7 +173,6 @@ export default function CoverLetterDetailPage() {
           title="Error"
           description="Failed to load cover letter"
           breadcrumbs={[
-            { label: "Dashboard", href: "/dashboard" },
             { label: "Cover Letters", href: "/cover-letters" },
             { label: "Error" },
           ]}
@@ -204,7 +202,6 @@ export default function CoverLetterDetailPage() {
         title={getPageTitle()}
         description="View and edit your cover letter"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Cover Letters", href: "/cover-letters" },
           { label: getPageTitle() },
         ]}
