@@ -102,13 +102,13 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       {/* Header - Simple branding without team switcher */}
-      <SidebarHeader className="border-b">
+      <SidebarHeader className="border-b p-4" >
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/">
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Briefcase className="size-4" />
+                  <Briefcase className="size-6" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">Resume Optimizer</span>
@@ -125,12 +125,12 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
       {/* Main Navigation - Flat list without grouping */}
       <SidebarContent className="p-4">
         <TooltipProvider delayDuration={0}>
-          <SidebarMenu>
+          <SidebarMenu className="space-y-1">
             {navigationItems.map((item) => {
               const isActive =
                 pathname === item.url || pathname.startsWith(`${item.url}/`)
               return (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem className="mt-4" key={item.title}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <SidebarMenuButton asChild isActive={isActive}>
@@ -152,7 +152,7 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
       </SidebarContent>
 
       {/* Footer - User Account with Theme & Logout */}
-      <SidebarFooter className="border-t">
+      <SidebarFooter className="border-t p-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
