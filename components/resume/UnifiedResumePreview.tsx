@@ -43,7 +43,7 @@ interface UnifiedResumePreviewProps {
   templateCss?: string;
 }
 
-export function UnifiedResumePreview({
+export function ResumePreview({
   resumeData,
   resumeId,
   onTemplateChange,

@@ -1,7 +1,7 @@
 /**
  * Scaled Iframe Preview Component
  * Reusable component for rendering HTML content in a scaled iframe
- * Used by both GalleryCard and UnifiedResumePreview for consistent scaling
+ * Used by both GalleryCard and ResumePreview for consistent scaling
  */
 
 'use client';

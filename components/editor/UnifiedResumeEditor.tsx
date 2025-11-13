@@ -35,7 +35,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import type { Basics, Skill, Certificate, Language } from "@/lib/validations/jsonresume";
-import { UnifiedResumePreview } from "../resume/UnifiedResumePreview";
+import { ResumePreview } from "../resume/ResumePreview";
 
 interface UnifiedResumeEditorProps {
   /** ID for the resume/profile being edited */
@@ -468,7 +468,7 @@ export function UnifiedResumeEditor({
 
         {/* Live Preview */}
           <div className="w-1/2 border-l bg-muted/20 overflow-hidden">
-            <UnifiedResumePreview
+            <ResumePreview
               resumeData={resume}
               resumeId={id}
               showTemplateSelector

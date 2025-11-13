@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, Code } from 'lucide-react';
 import { toast } from 'sonner';
 import { sampleResume } from '@/lib/utils/sample-resume';
-import { UnifiedResumePreview } from '../resume/UnifiedResumePreview';
+import { ResumePreview } from '../resume/ResumePreview';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -279,7 +279,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
 
         {/* Right Panel - Live Preview */}
         <div className="w-1/2 border-l bg-muted/20 overflow-hidden">
-          <UnifiedResumePreview
+          <ResumePreview
             resumeData={sampleResume}
             templateHtml={formData.htmlTemplate}
             templateCss={formData.cssStyles}

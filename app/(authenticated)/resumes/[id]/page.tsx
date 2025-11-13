@@ -9,7 +9,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { CoverLetterEditor } from '@/components/cover-letter';
-import { UnifiedResumePreview } from '@/components/resume/UnifiedResumePreview';
+import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Edit } from 'lucide-react';
 
 interface Resume {
@@ -362,7 +362,7 @@ export default function ResumeDetailPage() {
         </div>
 
         {/* Resume HTML Preview */}
-      <UnifiedResumePreview
+      <ResumePreview
         resumeData={resume.content}
         resumeId={resumeId}
         showCard={true}

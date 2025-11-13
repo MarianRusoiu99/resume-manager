@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { Button, Card, Textarea, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
 import { CoverLetterEditor } from '@/components/cover-letter';
-import { UnifiedResumePreview } from '@/components/resume/UnifiedResumePreview';
+import { ResumePreview } from '@/components/resume/ResumePreview';
 import { ExternalLink } from 'lucide-react';
 
 interface Template {
@@ -596,7 +596,7 @@ export default function GeneratePage() {
                       </Link>
                     </div>
                     
-                    <UnifiedResumePreview
+                    <ResumePreview
                       resumeData={generatedResume.content as any}
                       resumeId={generatedResumeId}
                       onTemplateChange={() => {}}

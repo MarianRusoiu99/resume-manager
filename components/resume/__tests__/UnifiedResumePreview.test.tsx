@@ -1,11 +1,11 @@
 /**
- * Tests for UnifiedResumePreview Component
+ * Tests for ResumePreview Component
  */
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { UnifiedResumePreview } from '../UnifiedResumePreview';
+import { ResumePreview } from '../ResumePreview';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 // Mock dependencies
@@ -77,7 +77,7 @@ const mockResumeData: Resume = {
   },
 };
 
-describe('UnifiedResumePreview', () => {
+describe('ResumePreview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock localStorage
@@ -93,24 +93,24 @@ describe('UnifiedResumePreview', () => {
   });
 
   it('should render the component', () => {
-    render(<UnifiedResumePreview resumeData={mockResumeData} />);
+    render(<ResumePreview resumeData={mockResumeData} />);
     expect(screen.getByText('Live Preview')).toBeDefined();
   });
 
   it('should render template selector when showTemplateSelector is true', () => {
-    render(<UnifiedResumePreview resumeData={mockResumeData} showTemplateSelector={true} />);
+    render(<ResumePreview resumeData={mockResumeData} showTemplateSelector={true} />);
     expect(screen.getByText('Template Selector')).toBeDefined();
   });
 
   it('should not render card when showCard is false', () => {
     render(
-      <UnifiedResumePreview resumeData={mockResumeData} showCard={false} />
+      <ResumePreview resumeData={mockResumeData} showCard={false} />
     );
     expect(screen.queryByText('Live Preview')).toBeNull();
   });
 
   it('should render pagination controls', async () => {
-    render(<UnifiedResumePreview resumeData={mockResumeData} />);
+    render(<ResumePreview resumeData={mockResumeData} />);
     
     await waitFor(() => {
       expect(screen.getByTestId('pagination-controls')).toBeDefined();
@@ -118,7 +118,7 @@ describe('UnifiedResumePreview', () => {
   });
 
   it('should initialize with page 1', async () => {
-    render(<UnifiedResumePreview resumeData={mockResumeData} />);
+    render(<ResumePreview resumeData={mockResumeData} />);
     
     await waitFor(() => {
       const pagination = screen.getByTestId('pagination-controls');
@@ -127,7 +127,7 @@ describe('UnifiedResumePreview', () => {
   });
 
   it('should render iframe with correct sandbox attribute', async () => {
-    const { container } = render(<UnifiedResumePreview resumeData={mockResumeData} />);
+    const { container } = render(<ResumePreview resumeData={mockResumeData} />);
     
     await waitFor(() => {
       const iframe = container.querySelector('iframe');
@@ -137,28 +137,28 @@ describe('UnifiedResumePreview', () => {
   });
 
   it('should have refresh button', () => {
-    render(<UnifiedResumePreview resumeData={mockResumeData} />);
+    render(<ResumePreview resumeData={mockResumeData} />);
     const buttons = screen.getAllByRole('button');
     const refreshButton = buttons.find((btn) => btn.textContent?.includes('Refresh'));
     expect(refreshButton).toBeDefined();
   });
 
   it('should have expand button', () => {
-    render(<UnifiedResumePreview resumeData={mockResumeData} />);
+    render(<ResumePreview resumeData={mockResumeData} />);
     const buttons = screen.getAllByRole('button');
     const expandButton = buttons.find((btn) => btn.textContent?.includes('Expand'));
     expect(expandButton).toBeDefined();
   });
 
   it('should show download button when resumeId is provided', () => {
-    render(<UnifiedResumePreview resumeData={mockResumeData} resumeId="test-id" />);
+    render(<ResumePreview resumeData={mockResumeData} resumeId="test-id" />);
     const buttons = screen.getAllByRole('button');
     const downloadButton = buttons.find((btn) => btn.textContent?.includes('Download'));
     expect(downloadButton).toBeDefined();
   });
 
   it('should not show download button when resumeId is not provided', () => {
-    render(<UnifiedResumePreview resumeData={mockResumeData} />);
+    render(<ResumePreview resumeData={mockResumeData} />);
     const buttons = screen.getAllByRole('button');
     const downloadButton = buttons.find((btn) => btn.textContent?.includes('Download'));
     expect(downloadButton).toBeUndefined();

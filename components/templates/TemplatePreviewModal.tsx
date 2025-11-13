@@ -8,7 +8,7 @@
 import { useEffect } from 'react';
 import type { ResumeTemplate } from '@/types/template';
 import { sampleResume } from '@/lib/utils/sample-resume';
-import { UnifiedResumePreview } from '../resume/UnifiedResumePreview';
+import { ResumePreview } from '../resume/ResumePreview';
 
 interface TemplatePreviewModalProps {
   template: ResumeTemplate;
@@ -91,7 +91,7 @@ export function TemplatePreviewModal({
                 templateCss: template.cssStyles,
               };
               return (
-                <UnifiedResumePreview
+                <ResumePreview
                   resumeData={sampleResume}
                   {...templateProps}
                 />
