@@ -123,7 +123,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col">
       {/* Header */}
       <div className="border-b px-6 py-4">
         <div className="flex items-center justify-between">
@@ -150,10 +150,10 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+      {/* Main Content - Split Layout */}
+      <div className="flex-1 overflow-hidden flex">
         {/* Left Panel - Form and Code Editor */}
-        <div className="flex flex-col gap-6 overflow-y-auto">
+        <div className="w-1/2 flex flex-col gap-6 overflow-y-auto p-6">
           {/* Template Metadata */}
           <div className="space-y-4 border rounded-lg p-4 bg-card">
             <h3 className="font-semibold text-lg">Template Information</h3>
@@ -278,14 +278,17 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
         </div>
 
         {/* Right Panel - Live Preview */}
-      
-        <UnifiedResumePreview
-          resumeData={sampleResume}
-          templateHtml={formData.htmlTemplate}
-          templateCss={formData.cssStyles}
-        />
+        <div className="w-1/2 border-l bg-muted/20 overflow-hidden">
+          <UnifiedResumePreview
+            resumeData={sampleResume}
+            templateHtml={formData.htmlTemplate}
+            templateCss={formData.cssStyles}
+            showTemplateSelector={false}
+            showCard={false}
+            className="h-full"
+          />
+        </div>
       </div>
-      
     </div>
   );
 }

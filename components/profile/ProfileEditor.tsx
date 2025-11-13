@@ -1,7 +1,7 @@
 "use client";
 
 import { EditorProvider } from "@/lib/contexts/EditorContext";
-import { TabbedEditor } from "@/components/editor/TabbedEditor";
+import { UnifiedResumeEditor } from "@/components/editor/UnifiedResumeEditor";
 import { Button } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -28,7 +28,6 @@ interface ProfileEditorProps {
 export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -44,8 +43,6 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
       const message = error instanceof Error ? error.message : "Failed to load profile";
       toast.error(message);
       router.push("/profile");
-    } finally {
-      setLoading(false);
     }
   }, [profileId, router]);
 
@@ -160,13 +157,14 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
       {/* Editor */}
       <div className="flex-1">
         <EditorProvider onLoad={handleLoad} onSave={handleSave}>
-          <TabbedEditor 
-            profileId={profileId}
-            profileName={profile.name}
+          <UnifiedResumeEditor 
+            id={profileId}
+            displayName={profile.name}
             isPublic={profile.isPublic}
             publicSlug={profile.publicSlug}
-            onProfileNameChange={handleProfileNameChange}
+            onDisplayNameChange={handleProfileNameChange}
             onTogglePublic={handleTogglePublic}
+            showPreview={true}
           />
         </EditorProvider>
       </div>

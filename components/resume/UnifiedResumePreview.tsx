@@ -5,9 +5,10 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { PreviewTemplateSelector } from '@/components/templates/PreviewTemplateSelector';
 import { useTemplatePreview } from '@/lib/hooks/useTemplatePreview';
+import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,10 @@ interface UnifiedResumePreviewProps {
   previewKey?: number;
   /** Custom class name */
   className?: string;
+  /** Custom template HTML (for live editing in TemplateEditor) */
+  templateHtml?: string;
+  /** Custom template CSS (for live editing in TemplateEditor) */
+  templateCss?: string;
 }
 
 export function UnifiedResumePreview({
@@ -46,6 +51,8 @@ export function UnifiedResumePreview({
   showCard = true,
   previewKey = 0,
   className = '',
+  templateHtml,
+  templateCss,
 }: Readonly<UnifiedResumePreviewProps>) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [resume, setResume] = useState<Resume>(resumeData);
@@ -91,6 +98,30 @@ export function UnifiedResumePreview({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Fetch default template if none is selected
+  useEffect(() => {
+    const fetchDefaultTemplate = async () => {
+      // Only fetch if we don't have a template selected yet
+      if (selectedTemplateId !== null) return;
+
+      try {
+        const response = await fetch('/api/templates?limit=1');
+        if (response.ok) {
+          const { templates } = await response.json();
+          if (templates && templates.length > 0) {
+            const defaultTemplate = templates[0];
+            setSelectedTemplateId(defaultTemplate.id);
+            console.log('Using default template:', defaultTemplate.name);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching default template:', error);
+      }
+    };
+
+    fetchDefaultTemplate();
+  }, [selectedTemplateId]);
+
   // Fetch resume data and default template if resumeId is provided
   useEffect(() => {
     if (resumeId) {
@@ -126,11 +157,30 @@ export function UnifiedResumePreview({
     setLocalPreviewKey(previewKey);
   }, [previewKey]);
 
-  // Hook for template preview rendering
-  const { htmlContent, isLoading, error } = useTemplatePreview({
-    templateId: selectedTemplateId,
+  // Hook for template preview rendering (only when not using custom template)
+  const { htmlContent: fetchedHtmlContent, isLoading, error } = useTemplatePreview({
+    templateId: templateHtml ? null : selectedTemplateId, // Skip fetching if custom template provided
     resumeData: resume,
   });
+
+  // Render custom template HTML/CSS if provided (for TemplateEditor live preview)
+  const customHtmlContent = useMemo(() => {
+    if (!templateHtml) return null;
+    
+    try {
+      return renderTemplateClientSide({
+        htmlTemplate: templateHtml,
+        cssStyles: templateCss || '',
+        resumeData: resume,
+      });
+    } catch (err) {
+      console.error('Error rendering custom template:', err);
+      return null;
+    }
+  }, [templateHtml, templateCss, resume]);
+
+  // Use custom HTML if provided, otherwise use fetched template
+  const htmlContent = customHtmlContent || fetchedHtmlContent;
 
   // Calculate pages when iframe loads
   useEffect(() => {
@@ -346,7 +396,7 @@ export function UnifiedResumePreview({
         {/* Header with Template Selector */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            {showTemplateSelector && (
+            {showTemplateSelector && !templateHtml && (
               <PreviewTemplateSelector
                 selectedTemplateId={selectedTemplateId}
                 onTemplateChange={handleTemplateChange}
@@ -356,7 +406,7 @@ export function UnifiedResumePreview({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {resumeId && (
+            {resumeId && !templateHtml && (
               <Button
                 variant="outline"
                 size="sm"
@@ -524,6 +574,9 @@ export function UnifiedResumePreview({
 
   return (
     <>
+      {/* Regular preview content (non-card mode) */}
+      <PreviewContent />
+
       {/* Modal Overlay for non-card mode */}
       {isFullscreen && (
         <div 

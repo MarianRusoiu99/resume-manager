@@ -1,12 +1,10 @@
 /**
  * Edit Template Page
- * Edit an existing resume template
+ * Edit an existing resume template with full-screen editor
  */
 
 import { notFound } from 'next/navigation';
 import { templateRepository } from '@/lib/repositories/template.repository';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
 import { TemplateEditor } from '@/components/templates/TemplateEditor';
 
 export default async function EditTemplatePage({
@@ -21,19 +19,5 @@ export default async function EditTemplatePage({
     notFound();
   }
 
-  return (
-    <>
-      <PageHeader
-        title={`Edit: ${template.name}`}
-        description="Modify the template design and configuration"
-        breadcrumbs={[
-          { label: "Templates", href: "/templates" },
-          { label: template.name },
-        ]}
-      />
-      <PageContainer className="h-[calc(100vh-200px)]">
-        <TemplateEditor template={template} />
-      </PageContainer>
-    </>
-  );
+  return <TemplateEditor template={template} />;
 }
