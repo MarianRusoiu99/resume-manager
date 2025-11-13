@@ -76,7 +76,7 @@ const navigationItems = [
   },
   {
     title: "Settings",
-    url: "/settings",
+    url: "/settings/api-keys",
     icon: Settings,
   },
 ]
@@ -194,13 +194,6 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
                   </Link>
                 </DropdownMenuItem>
 
-                {/* Settings Link */}
-                <DropdownMenuItem asChild>
-                  <Link href="/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
 
                 <DropdownMenuSeparator />
 
