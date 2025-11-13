@@ -103,7 +103,7 @@ export default function CoverLettersPage() {
       />
       <PageContainer>
         <div className="flex justify-end mb-6">
-          <Link href="/cover-letter">
+          <Link href="/generate?tab=cover-letter">
             <Button>
               <FileText className="w-4 h-4 mr-2" />
               Generate New
@@ -123,7 +123,7 @@ export default function CoverLettersPage() {
             <p className="text-gray-600 mb-6">
               Start by generating your first cover letter for a job application
             </p>
-            <Link href="/cover-letter">
+            <Link href="/generate?tab=cover-letter">
               <Button>
                 <FileText className="w-4 h-4 mr-2" />
                 Generate Cover Letter
@@ -140,8 +140,8 @@ export default function CoverLettersPage() {
                 companyName={coverLetter.companyName}
                 content={coverLetter.content}
                 createdAt={coverLetter.createdAt}
-                onView={(id) => router.push(`/cover-letter/${id}`)}
-                onEdit={(id) => router.push(`/cover-letter/${id}/edit`)}
+                onView={(id) => router.push(`/cover-letters/${id}`)}
+                onEdit={(id) => router.push(`/cover-letters/${id}`)}
                 onDelete={handleDelete}
               />
             ))}

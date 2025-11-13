@@ -139,7 +139,7 @@ export function CoverLetterCard({
         id={id}
         title={getDisplayTitle()}
         subtitle={content.substring(0, 100) + '...'}
-        href={`/cover-letter/${id}`}
+        href={`/cover-letters/${id}`}
         previewFallbackIcon={previewFallback}
         metadata={[
           { label: 'Created', value: formatDate(createdAt) },
