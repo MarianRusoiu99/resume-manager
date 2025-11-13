@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 
 interface Template {
   id: string;
@@ -17,6 +18,10 @@ interface UseTemplatePreviewOptions {
   resumeData: Resume;
 }
 
+/**
+ * Hook for template preview rendering
+ * Fetches template from API and renders client-side (no server round-trip for rendering)
+ */
 export function useTemplatePreview({ templateId, resumeData }: UseTemplatePreviewOptions) {
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -34,7 +39,7 @@ export function useTemplatePreview({ templateId, resumeData }: UseTemplatePrevie
         setIsLoading(true);
         setError(null);
 
-        // Fetch template
+        // Fetch template data from API
         const templateResponse = await fetch(`/api/templates/${templateId}`);
         if (!templateResponse.ok) {
           throw new Error('Failed to fetch template');
@@ -42,22 +47,13 @@ export function useTemplatePreview({ templateId, resumeData }: UseTemplatePrevie
 
         const template: Template = await templateResponse.json();
 
-        // Render template with resume data
-        const renderResponse = await fetch('/api/templates/render', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            templateHtml: template.htmlTemplate,
-            templateCss: template.cssStyles,
-            resumeData,
-          }),
+        // Render template client-side (no API call needed!)
+        const html = renderTemplateClientSide({
+          htmlTemplate: template.htmlTemplate,
+          cssStyles: template.cssStyles,
+          resumeData,
         });
 
-        if (!renderResponse.ok) {
-          throw new Error('Failed to render template');
-        }
-
-        const { html } = await renderResponse.json();
         setHtmlContent(html);
       } catch (err) {
         console.error('Template preview error:', err);

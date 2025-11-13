@@ -1,17 +1,17 @@
-"use client";
+/**
+ * Profile Card Component
+ * Displays profile information with preview using GalleryCard
+ */
 
-import { useState } from "react";
-import { Card, Button, Badge } from "@/components/ui";
-import { Star, MoreVertical, Edit, Copy, Trash2, Check } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { toast } from "sonner";
-import type { Resume } from "@/lib/validations/jsonresume";
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Star, Edit, Copy, Trash2, Check } from 'lucide-react';
+import { GalleryCard, type GalleryCardAction } from '@/components/ui/GalleryCard';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { toast } from 'sonner';
+import type { Resume } from '@/lib/validations/jsonresume';
+import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 
 interface ProfileCardProps {
   id: string;
@@ -33,149 +33,167 @@ export function ProfileCard({
   onDelete,
   onDuplicate,
   onSetDefault,
-}: ProfileCardProps) {
+}: Readonly<ProfileCardProps>) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | undefined>(undefined);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
-  // Extract some summary info from resume data
-  const email = resumeData?.basics?.email || "No email";
-  const location = resumeData?.basics?.location?.city || "No location";
+  // Extract metadata from resume data
+  const email = resumeData?.basics?.email || 'No email';
+  const location = resumeData?.basics?.location?.city || 'No location';
   const workExperienceCount = resumeData?.work?.length || 0;
   const educationCount = resumeData?.education?.length || 0;
   const skillsCount = resumeData?.skills?.length || 0;
 
+  // Generate preview HTML when component mounts
+  useEffect(() => {
+    async function generatePreview() {
+      if (!resumeData) return;
+
+      try {
+        setIsLoadingPreview(true);
+
+        // Fetch default template
+        const templatesResponse = await fetch('/api/templates?limit=1');
+        if (!templatesResponse.ok) return;
+
+        const { templates } = await templatesResponse.json();
+        if (!templates || templates.length === 0) return;
+
+        const template = templates[0];
+
+        // Render preview client-side
+        const html = renderTemplateClientSide({
+          htmlTemplate: template.htmlTemplate,
+          cssStyles: template.cssStyles,
+          resumeData,
+        });
+
+        setPreviewHtml(html);
+      } catch (error) {
+        console.error('Failed to generate preview:', error);
+      } finally {
+        setIsLoadingPreview(false);
+      }
+    }
+
+    generatePreview();
+  }, [resumeData]);
+
+  // Define actions for dropdown menu
+  const actions: GalleryCardAction[] = [
+    {
+      label: 'Edit',
+      icon: <Edit className="h-4 w-4" />,
+      onClick: () => onEdit(id),
+    },
+    {
+      label: 'Duplicate',
+      icon: <Copy className="h-4 w-4" />,
+      onClick: async () => {
+        try {
+          const response = await fetch(`/api/profiles/${id}/duplicate`, {
+            method: 'POST',
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to duplicate profile');
+          }
+
+          const data = await response.json();
+          toast.success('Profile duplicated successfully');
+          onDuplicate(data.profile.id);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Failed to duplicate profile';
+          toast.error(message);
+        }
+      },
+    },
+    ...(isDefault
+      ? []
+      : [
+          {
+            label: 'Set as Default',
+            icon: <Check className="h-4 w-4" />,
+            onClick: async () => {
+              try {
+                const response = await fetch(`/api/profiles/${id}/default`, {
+                  method: 'POST',
+                });
+
+                if (!response.ok) {
+                  const error = await response.json();
+                  throw new Error(error.error || 'Failed to set default profile');
+                }
+
+                toast.success('Default profile updated');
+                onSetDefault(id);
+              } catch (error) {
+                const message =
+                  error instanceof Error ? error.message : 'Failed to set default profile';
+                toast.error(message);
+              }
+            },
+          },
+        ]),
+    {
+      label: 'Delete',
+      icon: <Trash2 className="h-4 w-4" />,
+      onClick: () => setShowDeleteDialog(true),
+      variant: 'destructive',
+    },
+  ];
+
   const handleDelete = async () => {
     try {
       const response = await fetch(`/api/profiles/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Failed to delete profile");
+        throw new Error(error.error || 'Failed to delete profile');
       }
 
-      toast.success("Profile deleted successfully");
+      toast.success('Profile deleted successfully');
       onDelete(id);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to delete profile";
+      const message = error instanceof Error ? error.message : 'Failed to delete profile';
       toast.error(message);
-    }
-  };
-
-  const handleDuplicate = async () => {
-    try {
-      const response = await fetch(`/api/profiles/${id}/duplicate`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to duplicate profile");
-      }
-
-      const data = await response.json();
-      toast.success("Profile duplicated successfully");
-      onDuplicate(data.profile.id);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to duplicate profile";
-      toast.error(message);
-    }
-  };
-
-  const handleSetDefault = async () => {
-    try {
-      const response = await fetch(`/api/profiles/${id}/default`, {
-        method: "POST",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to set default profile");
-      }
-
-      toast.success("Default profile updated");
-      onSetDefault(id);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to set default profile";
-      toast.error(message);
+    } finally {
+      setShowDeleteDialog(false);
     }
   };
 
   return (
     <>
-      <Card className="group hover:shadow-lg transition-shadow cursor-pointer relative">
-        <div className="absolute top-4 right-4 flex items-center gap-2">
-          {isDefault && (
-            <Badge variant="secondary" className="gap-1">
-              <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-              Default
-            </Badge>
-          )}
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(id)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDuplicate}>
-                <Copy className="h-4 w-4 mr-2" />
-                Duplicate
-              </DropdownMenuItem>
-              {!isDefault && (
-                <DropdownMenuItem onClick={handleSetDefault}>
-                  <Check className="h-4 w-4 mr-2" />
-                  Set as Default
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteDialog(true);
-                }}
-                className="text-destructive"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        <div className="p-6" onClick={() => onEdit(id)}>
-          <h3 className="text-xl font-semibold mb-2">{name}</h3>
-          
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p className="truncate">{email}</p>
-            <p>{location}</p>
-            
-            <div className="flex gap-4 pt-2 border-t">
-              <div>
-                <span className="font-medium text-foreground">{workExperienceCount}</span>
-                <span className="ml-1">Work</span>
-              </div>
-              <div>
-                <span className="font-medium text-foreground">{educationCount}</span>
-                <span className="ml-1">Education</span>
-              </div>
-              <div>
-                <span className="font-medium text-foreground">{skillsCount}</span>
-                <span className="ml-1">Skills</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+      <GalleryCard
+        id={id}
+        title={name}
+        subtitle={`${email} • ${location}`}
+        href={`/profile/${id}`}
+        previewHtml={previewHtml}
+        isPreviewLoading={isLoadingPreview}
+        badges={
+          isDefault
+            ? [
+                {
+                  label: 'Default',
+                  variant: 'secondary',
+                  icon: <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />,
+                },
+              ]
+            : []
+        }
+        metadata={[
+          { label: 'Work', value: workExperienceCount },
+          { label: 'Education', value: educationCount },
+          { label: 'Skills', value: skillsCount },
+        ]}
+        actions={actions}
+      />
 
       <ConfirmDialog
         isOpen={showDeleteDialog}
