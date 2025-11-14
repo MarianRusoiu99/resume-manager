@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UnifiedResumeEditor } from "@/components/editor/UnifiedResumeEditor";
+import { ResumeEditor } from "@/components/editor/ResumeEditor";
 import { EditorProvider } from "@/lib/contexts/EditorContext";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { toast } from "sonner";
  * 
  * This page edits a specific generated resume (not the master profile).
  * Uses EditorProvider with resume-specific load/save callbacks.
- * UnifiedResumeEditor includes the preview panel built-in.
+ * ResumeEditor includes the preview panel built-in.
  */
 export default function ResumeEditPage() {
   const params = useParams();
@@ -123,7 +123,7 @@ export default function ResumeEditPage() {
 
         {/* Editor */}
         <div className="flex-1">
-          <UnifiedResumeEditor
+          <ResumeEditor
             id={resumeId}
             displayName={jobTitle}
             onDisplayNameChange={handleSaveJobTitle}

@@ -37,7 +37,7 @@ import { toast } from "sonner";
 import type { Basics, Skill, Certificate, Language } from "@/lib/validations/jsonresume";
 import { ResumePreview } from "../resume/ResumePreview";
 
-interface UnifiedResumeEditorProps {
+interface ResumeEditorProps {
   /** ID for the resume/profile being edited */
   readonly id?: string;
   /** Display name (profile name or job title) */
@@ -54,14 +54,14 @@ interface UnifiedResumeEditorProps {
   readonly showPreview?: boolean;
 }
 
-export function UnifiedResumeEditor({ 
+export function ResumeEditor({ 
   id, 
   displayName: initialDisplayName, 
   isPublic: initialIsPublic,
   publicSlug: initialPublicSlug,
   onDisplayNameChange,
   onTogglePublic,
-}: UnifiedResumeEditorProps) {
+}: ResumeEditorProps) {
   const { resume, updateField, save, isDirty } = useEditor();
   const [activeTab, setActiveTab] = useState("basics");
   const [isSaving, setIsSaving] = useState(false);

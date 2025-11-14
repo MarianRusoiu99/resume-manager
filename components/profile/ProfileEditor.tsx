@@ -1,7 +1,7 @@
 "use client";
 
 import { EditorProvider } from "@/lib/contexts/EditorContext";
-import { UnifiedResumeEditor } from "@/components/editor/UnifiedResumeEditor";
+import { ResumeEditor } from "@/components/editor/ResumeEditor";
 import { Button } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -157,7 +157,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
       {/* Editor */}
       <div className="flex-1">
         <EditorProvider onLoad={handleLoad} onSave={handleSave}>
-          <UnifiedResumeEditor 
+          <ResumeEditor 
             id={profileId}
             displayName={profile.name}
             isPublic={profile.isPublic}
