@@ -74,10 +74,15 @@ export function ResumePreview({
 
   const { isExportingPDF, handleExportPDF } = useExportPDF();
 
-  const { currentPage, totalPages, isFullscreen, setCurrentPage, setTotalPages, toggleFullscreen } = usePagination({
-    iframeRef,
-    fullscreenIframeRef,
-  });
+  const handleExport = () => {
+    if (!resumeId) {
+      console.warn('Cannot export: resumeId is required');
+      return;
+    }
+    handleExportPDF(resumeId);
+  };
+
+  const { currentPage, totalPages, isFullscreen, setCurrentPage, setTotalPages, toggleFullscreen } = usePagination();
 
   const { scale } = usePreviewScale({
     containerRef,
@@ -135,7 +140,7 @@ export function ResumePreview({
               resumeId={resumeId}
               templateHtml={templateHtml}
               isExportingPDF={isExportingPDF}
-              onExportPDF={() => handleExportPDF(resumeId)}
+              onExportPDF={handleExport}
               onToggleFullscreen={toggleFullscreen}
               onRefresh={handleRefresh}
               isLoading={isLoading}
@@ -173,7 +178,7 @@ export function ResumePreview({
         resumeId={resumeId}
         templateHtml={templateHtml}
         isExportingPDF={isExportingPDF}
-        onExportPDF={() => handleExportPDF(resumeId)}
+        onExportPDF={handleExport}
         onToggleFullscreen={toggleFullscreen}
         onRefresh={handleRefresh}
         isLoading={isLoading}

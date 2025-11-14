@@ -5,6 +5,7 @@
 
 import Handlebars from 'handlebars';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { renderPDFDocument } from '@/lib/utils/pdf-renderer';
 
 /**
  * Register Handlebars helpers for common formatting tasks
@@ -18,7 +19,7 @@ function registerHelpers() {
     if (parts.length === 1) return parts[0]; // Just year
     
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = months[parseInt(parts[1]) - 1];
+    const month = months[Number.parseInt(parts[1]) - 1];
     return `${month} ${parts[0]}`;
   });
 
@@ -29,7 +30,7 @@ function registerHelpers() {
       const parts = date.split('-');
       if (parts.length === 1) return parts[0];
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const month = months[parseInt(parts[1]) - 1];
+      const month = months[Number.parseInt(parts[1]) - 1];
       return `${month} ${parts[0]}`;
     };
     
@@ -88,76 +89,5 @@ export function renderCompleteDocument(
   resumeData: Resume
 ): string {
   const renderedContent = renderTemplate(htmlTemplate, resumeData);
-  
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${resumeData.basics?.name || 'Resume'}</title>
-  <style>
-    /* === Reset === */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    /* === A4 Setup === */
-    @page {
-      size: A4;
-      margin: 0;
-    }
-
-    html, body {
-      width: 210mm;
-      height: 297mm;
-      margin: 0;
-      padding: 0;
-      background: #fff;
-      color: #222;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      font-size: 12.5px;
-      line-height: 1.5;
-      overflow: hidden; /* Prevent scrollbars */
-    }
-
-    body {
-      padding: 20mm 15mm;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-start;
-    }
-
-    /* === Print Optimization === */
-    @media print {
-      html, body {
-        width: 210mm;
-        height: 297mm;
-      }
-
-      body {
-        padding: 15mm;
-      }
-
-      a {
-        color: #000 !important;
-        text-decoration: none;
-      }
-
-      section, div, ul, li {
-        page-break-inside: avoid;
-      }
-    }
-
-
-
-    /* === External Custom CSS === */
-    ${cssStyles}
-  </style>
-</head>
-<body>
-  ${renderedContent}
-</body>
-</html>`;
+  return renderPDFDocument(renderedContent, cssStyles, resumeData);
 }

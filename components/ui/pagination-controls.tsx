@@ -18,12 +18,14 @@ export function PaginationControls({
 }: Readonly<PaginationControlsProps>) {
   const handlePrevious = () => {
     if (currentPage > 1) {
+      console.log('🔄 Pagination: Going to previous page:', currentPage - 1);
       onPageChange(currentPage - 1);
     }
   };
 
   const handleNext = () => {
     if (currentPage < totalPages) {
+      console.log('🔄 Pagination: Going to next page:', currentPage + 1);
       onPageChange(currentPage + 1);
     }
   };

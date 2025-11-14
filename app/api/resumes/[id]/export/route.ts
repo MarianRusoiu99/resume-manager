@@ -1,7 +1,7 @@
 /**
  * Resume PDF Export API
  * POST /api/resumes/[id]/export
- * Downloads resume as PDF using HTML template (supports multi-page PDFs)
+ * Downloads resume as PDF using unified PDF renderer
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -9,6 +9,7 @@ import { auth } from '@/lib/auth/config';
 import { prisma } from '@/lib/db';
 import { chromium } from 'playwright';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
+import { PDF_CONFIG } from '@/lib/utils/pdf-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 export async function POST(
@@ -56,45 +57,45 @@ export async function POST(
       }
     }
 
-    // Render HTML
+    // Render HTML using unified renderer
     const html = renderCompleteDocument(
       template.htmlTemplate,
       template.cssStyles,
       resume.resume as Resume
     );
 
-    // Launch browser
-    browser = await chromium.launch({ headless: true });
+    // Launch browser with optimal settings
+    browser = await chromium.launch({ 
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     const browserContext = await browser.newContext();
     const page = await browserContext.newPage();
 
-    // Set content and generate PDF
-    await page.setContent(html, { waitUntil: 'networkidle' });
-
-    // Generate multi-page PDF with proper formatting
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '0',
-        right: '0',
-        bottom: '0',
-        left: '0',
-      },
-      // Allow content to flow across multiple pages naturally
-      preferCSSPageSize: false,
+    // Set content and wait for render
+    await page.setContent(html, { 
+      waitUntil: 'networkidle',
+      timeout: 30000 
     });
+
+    // Generate PDF with unified config
+    const pdfBuffer = await page.pdf(PDF_CONFIG);
 
     await browser.close();
 
-    // Return PDF
+    // Return PDF with proper headers
+    const resumeData = resume.resume as Resume;
+    const fileName = `${resumeData.basics?.name?.replaceAll(/\s+/g, '_') || 'resume'}.pdf`;
+    
     return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="resume-${id}.pdf"`,
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Cache-Control': 'no-cache',
       },
     });
   } catch (error) {
+    // Ensure browser cleanup
     if (browser) {
       await browser.close().catch(() => {});
     }

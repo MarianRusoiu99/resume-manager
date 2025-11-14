@@ -3,14 +3,9 @@
  * Single Responsibility: Handle pagination state and navigation + fullscreen modal
  */
 
-import { useState, useEffect, RefObject } from 'react';
+import { useState, useEffect } from 'react';
 
-interface UsePaginationProps {
-  iframeRef: RefObject<HTMLIFrameElement | null>;
-  fullscreenIframeRef: RefObject<HTMLIFrameElement | null>;
-}
-
-export function usePagination({ iframeRef, fullscreenIframeRef }: UsePaginationProps) {
+export function usePagination() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);

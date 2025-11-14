@@ -6,8 +6,6 @@
 'use client';
 
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
 import { RefObject } from 'react';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { A4_WIDTH, A4_HEIGHT } from '@/lib/utils/pagination';
@@ -37,11 +35,6 @@ export function FullscreenModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] max-h-[95vh] p-0">
         <div className="relative h-[95vh] flex flex-col">
-          <div className="absolute top-4 right-4 z-10">
-            <Button variant="outline" size="icon" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
           <div className="flex-1 overflow-auto">
             <div className="flex items-center justify-center min-h-full p-8">
               <div
