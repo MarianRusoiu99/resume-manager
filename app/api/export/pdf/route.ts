@@ -1,67 +1,58 @@
 /**
- * Resume PDF Export API
- * POST /api/resumes/[id]/export
- * Downloads resume as PDF using unified PDF renderer
+ * Universal PDF Export API
+ * POST /api/export/pdf
+ * Generates PDF from any resume data and template
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
-import { prisma } from '@/lib/db';
 import { chromium } from 'playwright';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
 import { PDF_CONFIG } from '@/lib/utils/pdf-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { z } from 'zod';
 
-export async function POST(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+// Request schema validation
+const exportRequestSchema = z.object({
+  resume: z.any(), // Resume data (JSON Resume format) - validated by Resume type
+  template: z.object({
+    htmlTemplate: z.string(),
+    cssStyles: z.string(),
+  }),
+  fileName: z.string().optional(),
+});
+
+export async function POST(req: NextRequest) {
   let browser;
 
   try {
+    // Authentication required
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = await context.params;
-
-    // Fetch resume with template
-    const resume = await prisma.generatedResume.findUnique({
-      where: { id },
-      include: { template: true },
-    });
-
-    if (!resume) {
-      return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
-    }
-
-    if (resume.userId !== session.user.id) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
-    // Get template (use default if none selected)
-    let template = resume.template;
+    // Parse and validate request body
+    const body = await req.json();
+    const validationResult = exportRequestSchema.safeParse(body);
     
-    if (!template) {
-      // Get first available template as fallback
-      template = await prisma.resumeTemplate.findFirst({
-        where: { isPublic: true },
-      });
-      
-      if (!template) {
-        return NextResponse.json(
-          { error: 'No template available' },
-          { status: 500 }
-        );
-      }
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid request data',
+          details: validationResult.error.issues 
+        },
+        { status: 400 }
+      );
     }
+
+    const { resume, template, fileName } = validationResult.data;
 
     // Render HTML using unified renderer
     const html = renderCompleteDocument(
       template.htmlTemplate,
       template.cssStyles,
-      resume.resume as Resume
+      resume as Resume
     );
 
     // Launch browser with optimal settings
@@ -83,14 +74,16 @@ export async function POST(
 
     await browser.close();
 
+    // Generate filename from resume data or use provided name
+    const resumeData = resume as Resume;
+    const defaultFileName = resumeData.basics?.name?.replaceAll(/\s+/g, '_') || 'resume';
+    const finalFileName = fileName || `${defaultFileName}.pdf`;
+
     // Return PDF with proper headers
-    const resumeData = resume.resume as Resume;
-    const fileName = `${resumeData.basics?.name?.replaceAll(/\s+/g, '_') || 'resume'}.pdf`;
-    
     return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Disposition': `attachment; filename="${finalFileName}"`,
         'Cache-Control': 'no-cache',
       },
     });
@@ -100,7 +93,7 @@ export async function POST(
       await browser.close().catch(() => {});
     }
 
-    console.error('Resume PDF export error:', error);
+    console.error('PDF export error:', error);
     return NextResponse.json(
       {
         error: 'Failed to export PDF',

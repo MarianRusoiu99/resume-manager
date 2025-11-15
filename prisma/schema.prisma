@@ -42,6 +42,9 @@ model UserProfile {
   publicSlug      String?  @unique // Unique slug for public URL
   resume          Json     // JSON Resume v1.0.0 format
   
+  selectedTemplateId  String?  // Remember user's preferred template for this profile
+  selectedTemplate    ResumeTemplate? @relation(fields: [selectedTemplateId], references: [id], onDelete: SetNull)
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
@@ -49,6 +52,7 @@ model UserProfile {
   @@index([userId, isDefault])
   @@index([publicSlug])
   @@index([updatedAt])
+  @@index([selectedTemplateId])
 }
 
 
@@ -124,6 +128,7 @@ model ResumeTemplate {
   updatedAt   DateTime @updatedAt
   
   resumes     GeneratedResume[]
+  profiles    UserProfile[]  // Profiles using this template as their preferred template
   
   @@index([category])
   @@index([isPublic])

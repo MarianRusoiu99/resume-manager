@@ -50,8 +50,6 @@ interface ResumeEditorProps {
   readonly onDisplayNameChange?: (name: string) => Promise<void>;
   /** Callback when public status toggles */
   readonly onTogglePublic?: () => Promise<void>;
-  /** Show preview panel */
-  readonly showPreview?: boolean;
 }
 
 export function ResumeEditor({ 
@@ -470,7 +468,7 @@ export function ResumeEditor({
           <div className="w-1/2 border-l bg-muted/20 overflow-hidden">
             <ResumePreview
               resumeData={resume}
-              resumeId={id}
+              profileId={id}
               showTemplateSelector
               showCard={false}
               className="h-full"

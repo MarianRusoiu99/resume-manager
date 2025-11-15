@@ -8,6 +8,7 @@ const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   resume: z.object({}).passthrough().optional(),
   isDefault: z.boolean().optional(),
+  selectedTemplateId: z.string().nullable().optional(), // Add template preference
 });
 
 /**

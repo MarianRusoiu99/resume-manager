@@ -142,7 +142,7 @@ export class ProfileService {
   /**
    * Update a profile
    */
-  async updateProfile(profileId: string, userId: string, data: Partial<{ name: string; resume: Resume; isDefault: boolean }>) {
+  async updateProfile(profileId: string, userId: string, data: Partial<{ name: string; resume: Resume; isDefault: boolean; selectedTemplateId: string | null }>) {
     try {
       // Validate resume data if provided
       if (data.resume) {

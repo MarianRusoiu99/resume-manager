@@ -28,6 +28,8 @@ interface UnifiedResumePreviewProps {
   resumeData: Resume;
   /** Optional resume ID for fetching data */
   resumeId?: string;
+  /** Optional profile ID for fetching data and saving template preference */
+  profileId?: string;
   /** Optional callback when template changes */
   onTemplateChange?: (templateId: string | null) => void;
   /** Show template selector */
@@ -47,6 +49,7 @@ interface UnifiedResumePreviewProps {
 export function ResumePreview({
   resumeData,
   resumeId,
+  profileId,
   onTemplateChange,
   showTemplateSelector = true,
   showCard = true,
@@ -63,6 +66,7 @@ export function ResumePreview({
   // Custom hooks for separated concerns
   const { selectedTemplateId, handleTemplateChange: onTemplateSelect } = useTemplateSelection({
     resumeId,
+    profileId,
     onTemplateChange,
   });
 
@@ -75,11 +79,13 @@ export function ResumePreview({
   const { isExportingPDF, handleExportPDF } = useExportPDF();
 
   const handleExport = () => {
-    if (!resumeId) {
-      console.warn('Cannot export: resumeId is required');
-      return;
-    }
-    handleExportPDF(resumeId);
+    handleExportPDF({
+      resume,
+      templateId: templateHtml ? null : selectedTemplateId,
+      templateHtml,
+      templateCss,
+      fileName: resume.basics?.name ? `${resume.basics.name.replaceAll(' ', '_')}_Resume.pdf` : 'resume.pdf',
+    });
   };
 
   const { currentPage, totalPages, isFullscreen, setCurrentPage, setTotalPages, toggleFullscreen } = usePagination();
