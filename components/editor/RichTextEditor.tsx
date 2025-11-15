@@ -1,6 +1,6 @@
 /**
  * Rich Text Editor Component
- * A markdown editor using Yoopta Editor for cover letter editing
+ * A markdown editor using BlockNote Editor for cover letter editing
  */
 
 'use client';
@@ -10,21 +10,21 @@ import { Button } from '@/components/ui';
 import { Save } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import dynamic from 'next/dynamic';
-import type { YooptaEditorMethods } from './YooptaEditorWrapper.client';
+import type { BlockNoteEditorMethods } from './BlockNoteEditorWrapper.client';
 
 // Import the wrapper component props type
-type YooptaEditorWrapperProps = {
+type BlockNoteEditorWrapperProps = {
   markdown: string;
-  jsonContent?: string; // Yoopta JSON state for editing
+  jsonContent?: string; // BlockNote JSON state for editing
   onChange: (value: string) => void;
   readOnly?: boolean;
   placeholder?: string;
   className?: string;
 };
 
-// Dynamically import Yoopta Editor to avoid SSR issues
-const YooptaEditorComponent = dynamic<YooptaEditorWrapperProps & { ref?: React.Ref<YooptaEditorMethods> }>(
-  () => import('./YooptaEditorWrapper.client').then((mod) => mod.YooptaEditorWrapper),
+// Dynamically import BlockNote Editor to avoid SSR issues
+const BlockNoteEditorComponent = dynamic<BlockNoteEditorWrapperProps & { ref?: React.Ref<BlockNoteEditorMethods> }>(
+  () => import('./BlockNoteEditorWrapper.client').then((mod) => mod.BlockNoteEditorWrapper),
   { 
     ssr: false,
     loading: () => (
@@ -37,7 +37,7 @@ const YooptaEditorComponent = dynamic<YooptaEditorWrapperProps & { ref?: React.R
 
 interface RichTextEditorProps {
   initialValue?: string;
-  initialJsonValue?: string; // Yoopta JSON state for editing with formatting
+  initialJsonValue?: string; // BlockNote JSON state for editing with formatting
   onChange?: (markdown: string) => void;
   onSave?: (markdown: string) => void;
   placeholder?: string;
@@ -46,7 +46,7 @@ interface RichTextEditorProps {
   showSaveButton?: boolean;
 }
 
-export const RichTextEditor = forwardRef<YooptaEditorMethods, RichTextEditorProps>(
+export const RichTextEditor = forwardRef<BlockNoteEditorMethods, RichTextEditorProps>(
   function RichTextEditor({
     initialValue = '',
     initialJsonValue,
@@ -57,18 +57,27 @@ export const RichTextEditor = forwardRef<YooptaEditorMethods, RichTextEditorProp
     readOnly = false,
     showSaveButton = true,
   }, ref) {
-    const editorRef = useRef<YooptaEditorMethods>(null);
+    const editorRef = useRef<BlockNoteEditorMethods>(null);
     const [currentMarkdown, setCurrentMarkdown] = useState(initialValue);
     const [hasChanges, setHasChanges] = useState(false);
 
     // Expose editor methods to parent via ref
     useImperativeHandle(ref, () => ({
-      getMarkdown: () => editorRef.current?.getMarkdown() || '',
-      setMarkdown: (markdown: string) => editorRef.current?.setMarkdown(markdown),
-      getValue: () => editorRef.current?.getValue() || {},
+      getMarkdown: async () => {
+        const markdown = await editorRef.current?.getMarkdown();
+        return markdown || '';
+      },
+      setMarkdown: async (markdown: string) => {
+        await editorRef.current?.setMarkdown(markdown);
+      },
+      getValue: () => editorRef.current?.getValue() || [],
       setValue: (value) => editorRef.current?.setValue(value),
-      getJSON: () => editorRef.current?.getJSON() || '{}',
+      getJSON: () => editorRef.current?.getJSON() || '[]',
       setJSON: (jsonString: string) => editorRef.current?.setJSON(jsonString),
+      getHTML: async () => {
+        const html = await editorRef.current?.getHTML();
+        return html || '';
+      },
     }), []);
 
   // Handle content changes from the editor
@@ -109,7 +118,7 @@ export const RichTextEditor = forwardRef<YooptaEditorMethods, RichTextEditorProp
         'prose prose-sm max-w-none',
         readOnly && 'bg-muted/20'
       )}>
-        <YooptaEditorComponent
+        <BlockNoteEditorComponent
           ref={editorRef}
           markdown={initialValue}
           jsonContent={initialJsonValue}

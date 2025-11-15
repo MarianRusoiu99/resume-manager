@@ -16,7 +16,7 @@ import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { Button, Card } from '@/components/ui';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
-import type { YooptaEditorMethods } from '@/components/editor/YooptaEditorWrapper.client';
+import type { BlockNoteEditorMethods } from '@/components/editor/BlockNoteEditorWrapper.client';
 import { MarkdownPreview } from '@/components/editor/MarkdownPreview';
 import { FileDown, Copy, Edit, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -77,12 +77,12 @@ export function CoverLetterEditor({
   className,
   showCard = true,
   title = 'Generated Cover Letter',
-}: CoverLetterEditorProps) {
+}: Readonly<CoverLetterEditorProps>) {
   const [isEditing, setIsEditing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
-  const editorRef = useRef<YooptaEditorMethods>(null);
+  const editorRef = useRef<BlockNoteEditorMethods>(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
@@ -107,14 +107,14 @@ export function CoverLetterEditor({
       }
 
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const url = globalThis.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `cover-letter-${resumeId}.pdf`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      globalThis.URL.revokeObjectURL(url);
+      a.remove();
       
       toast.success('Cover letter exported to PDF!');
     } catch (error) {
