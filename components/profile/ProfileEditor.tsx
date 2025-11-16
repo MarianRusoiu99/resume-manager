@@ -164,7 +164,6 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
             publicSlug={profile.publicSlug}
             onDisplayNameChange={handleProfileNameChange}
             onTogglePublic={handleTogglePublic}
-            showPreview={true}
           />
         </EditorProvider>
       </div>

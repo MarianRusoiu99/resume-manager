@@ -10,15 +10,12 @@ export interface CreateApiProviderInput {
   name: string;
   provider: string;
   encryptedKey: string;
-  keyPreview: string;
   models: string[];
 }
 
 export interface UpdateApiProviderInput {
   name?: string;
   encryptedKey?: string;
-  keyPreview?: string;
-  models?: string[];
   isActive?: boolean;
   lastUsedAt?: Date;
 }
@@ -31,7 +28,7 @@ class ApiProviderRepository {
     return prisma.apiProvider.create({
       data: {
         ...data,
-        models: data.models,
+        provider: data.provider.toUpperCase() as any, // Convert to uppercase to match enum
       },
     });
   }
@@ -70,37 +67,13 @@ class ApiProviderRepository {
     return prisma.apiProvider.findMany({
       where: {
         userId,
-        provider,
+        provider: provider.toUpperCase() as any, // Convert to uppercase to match enum
         isActive: true,
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
-  }
-
-  /**
-   * Get all active providers with their models
-   */
-  async getActiveProvidersWithModels(userId: string) {
-    const providers = await prisma.apiProvider.findMany({
-      where: {
-        userId,
-        isActive: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        provider: true,
-        models: true,
-        keyPreview: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-
-    return providers;
   }
 
   /**

@@ -10,11 +10,11 @@ import { Prisma } from '@prisma/client';
 export interface CreateCoverLetterInput {
   userId: string;
   content: string;
-  contentJson?: string; // Yoopta editor JSON state
+  // contentJson removed (dropped from schema)
   jobDescription: string;
   jobTitle?: string;
   companyName?: string;
-  resumeId?: string;
+    // resumeId removed (dropped from schema)
   metadata: {
     model?: string;
     tokens?: number;
@@ -25,11 +25,11 @@ export interface CreateCoverLetterInput {
 
 export interface UpdateCoverLetterInput {
   content?: string;
-  contentJson?: string; // Yoopta editor JSON state
+  // contentJson removed (dropped from schema)
   jobDescription?: string;
   jobTitle?: string;
   companyName?: string;
-  resumeId?: string | null;
+    // resumeId removed (dropped from schema)
   metadata?: Prisma.InputJsonValue;
 }
 
@@ -42,22 +42,14 @@ export class CoverLetterRepository {
       data: {
         userId: data.userId,
         content: data.content,
-        contentJson: data.contentJson,
+  // contentJson removed
         jobDescription: data.jobDescription,
         jobTitle: data.jobTitle,
         companyName: data.companyName,
-        resumeId: data.resumeId,
+          // resumeId removed
         metadata: data.metadata as Prisma.InputJsonValue,
       },
-      include: {
-        resume: {
-          select: {
-            id: true,
-            jobDescription: true,
-            createdAt: true,
-          },
-        },
-      },
+        // resume relation removed
     });
   }
 
@@ -70,16 +62,7 @@ export class CoverLetterRepository {
         id,
         userId,
       },
-      include: {
-        resume: {
-          select: {
-            id: true,
-            jobDescription: true,
-            resume: true,
-            createdAt: true,
-          },
-        },
-      },
+        // resume relation removed
     });
   }
 
@@ -100,15 +83,7 @@ export class CoverLetterRepository {
     const [coverLetters, total] = await Promise.all([
       prisma.coverLetter.findMany({
         where: { userId },
-        include: {
-          resume: {
-            select: {
-              id: true,
-              jobDescription: true,
-              createdAt: true,
-            },
-          },
-        },
+          // resume relation removed
         orderBy: { [orderBy]: orderDir },
         take: limit,
         skip: offset,
@@ -117,28 +92,6 @@ export class CoverLetterRepository {
     ]);
 
     return { coverLetters, total };
-  }
-
-  /**
-   * Find cover letters by resume ID
-   */
-  async findByResumeId(resumeId: string, userId: string) {
-    return prisma.coverLetter.findMany({
-      where: {
-        resumeId,
-        userId,
-      },
-      include: {
-        resume: {
-          select: {
-            id: true,
-            jobDescription: true,
-            createdAt: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
   }
 
   /**
@@ -152,23 +105,15 @@ export class CoverLetterRepository {
       },
       data: {
         ...(data.content !== undefined && { content: data.content }),
-        ...(data.contentJson !== undefined && { contentJson: data.contentJson }),
+        // contentJson removed
         ...(data.jobDescription !== undefined && { jobDescription: data.jobDescription }),
         ...(data.jobTitle !== undefined && { jobTitle: data.jobTitle }),
         ...(data.companyName !== undefined && { companyName: data.companyName }),
-        ...(data.resumeId !== undefined && { resumeId: data.resumeId }),
+        // resumeId removed
         ...(data.metadata !== undefined && { metadata: data.metadata }),
         updatedAt: new Date(),
       },
-      include: {
-        resume: {
-          select: {
-            id: true,
-            jobDescription: true,
-            createdAt: true,
-          },
-        },
-      },
+      // resume relation removed
     });
   }
 

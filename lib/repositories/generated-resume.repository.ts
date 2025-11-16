@@ -21,7 +21,7 @@ export class GeneratedResumeRepository {
     jobMetadata?: Record<string, unknown>;
     resume: Resume;
     templateId?: string;
-    coverLetter?: string;
+  // coverLetter removed (dropped from schema)
     metadata: Record<string, unknown>;
   }): Promise<GeneratedResume> {
     return this.db.generatedResume.create({
@@ -35,7 +35,7 @@ export class GeneratedResumeRepository {
         template: data.templateId ? {
           connect: { id: data.templateId }
         } : undefined,
-        coverLetter: data.coverLetter || null,
+  // coverLetter removed
         metadata: data.metadata as never
       }
     });

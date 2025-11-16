@@ -127,7 +127,6 @@ export default function ResumeEditPage() {
             id={resumeId}
             displayName={jobTitle}
             onDisplayNameChange={handleSaveJobTitle}
-            showPreview={true}
           />
         </div>
       </div>

@@ -27,7 +27,7 @@ export class TemplateRepository {
     const templates = await prisma.resumeTemplate.findMany({
       where: {
         isPublic: true,
-        category,
+        category: category as any,
       },
       orderBy: [{ name: 'asc' }],
     });
@@ -61,7 +61,7 @@ export class TemplateRepository {
     const template = await prisma.resumeTemplate.create({
       data: {
         name: data.name,
-        category: data.category,
+        category: data.category as any,
         description: data.description,
         htmlTemplate: data.htmlTemplate,
         cssStyles: data.cssStyles,
@@ -91,7 +91,7 @@ export class TemplateRepository {
     const updateData: Prisma.ResumeTemplateUpdateInput = {};
 
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.category !== undefined) updateData.category = data.category;
+    if (data.category !== undefined) updateData.category = data.category as any;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.htmlTemplate !== undefined) updateData.htmlTemplate = data.htmlTemplate;
     if (data.cssStyles !== undefined) updateData.cssStyles = data.cssStyles;
@@ -168,7 +168,6 @@ export class TemplateRepository {
     cssStyles: string;
     previewUrl: string | null;
     isPublic: boolean;
-    version: string;
     createdAt: Date;
     updatedAt: Date;
   }): ResumeTemplate {
@@ -181,7 +180,6 @@ export class TemplateRepository {
       cssStyles: template.cssStyles,
       previewUrl: template.previewUrl ?? undefined,
       isPublic: template.isPublic,
-      version: template.version,
       createdAt: template.createdAt,
       updatedAt: template.updatedAt,
     };

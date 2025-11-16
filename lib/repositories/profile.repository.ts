@@ -77,7 +77,7 @@ export class ProfileRepository {
       isDefault: boolean;
       isPublic: boolean;
       publicSlug: string | null;
-      selectedTemplateId: string | null;
+  // selectedTemplateId removed (dropped from schema)
     }>
   ) {
     return prisma.userProfile.update({
@@ -91,7 +91,7 @@ export class ProfileRepository {
         ...(data.isDefault !== undefined && { isDefault: data.isDefault }),
         ...(data.isPublic !== undefined && { isPublic: data.isPublic }),
         ...(data.publicSlug !== undefined && { publicSlug: data.publicSlug }),
-        ...(data.selectedTemplateId !== undefined && { selectedTemplateId: data.selectedTemplateId }),
+  // selectedTemplateId removed
       },
     });
   }

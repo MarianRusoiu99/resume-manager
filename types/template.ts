@@ -8,7 +8,6 @@ export interface TemplateMetadata {
   name: string;
   category: 'professional' | 'modern' | 'creative' | 'ats-optimized' | 'minimal';
   description: string;
-  version: string;
   isPublic: boolean;
   previewUrl?: string;
   createdAt: Date;

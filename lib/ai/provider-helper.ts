@@ -3,11 +3,11 @@
  * Helper function to get configured AI providers with decrypted API keys
  */
 
-import { createOpenAI } from '@ai-sdk/openai';
 import { apiProviderService } from '@/lib/services/api-provider.service';
+import type { AIProvider } from '@/lib/ai/providers';
 
 export interface AIProviderConfig {
-  provider: ReturnType<typeof createOpenAI>; // The configured AI SDK provider
+  provider: AIProvider;
   model: string;
   providerType: string;
 }
@@ -15,7 +15,7 @@ export interface AIProviderConfig {
 /**
  * Get configured AI provider for a specific model
  * @param userId - User ID to fetch API keys for
- * @param modelId - The model ID to use (e.g., 'gpt-4', 'claude-3-opus-20240229')
+ * @param modelId - The model ID to use
  * @param providerId - Optional specific provider ID to use
  */
 export async function getAIProvider(
@@ -25,16 +25,19 @@ export async function getAIProvider(
 ): Promise<AIProviderConfig> {
   // If provider ID is specified, get that specific provider
   if (providerId) {
-    const result = await apiProviderService.getDecryptedKey(providerId, userId);
+    const result = await apiProviderService.getProviderInstance(providerId, userId);
     
     if (!result.success || !result.data) {
-      throw new Error(result.error || 'Failed to get API key');
+      throw new Error(result.error || 'Failed to get provider instance');
     }
 
-    const { apiKey, provider: providerType } = result.data;
+    const { provider, providerType } = result.data;
 
-    // Create the appropriate provider
-    return createProviderInstance(providerType, apiKey, modelId);
+    return {
+      provider,
+      model: modelId,
+      providerType,
+    };
   }
 
   // Otherwise, find a provider that supports this model
@@ -51,46 +54,23 @@ export async function getAIProvider(
     throw new Error(`Model ${modelId} not found in your configured providers`);
   }
 
-  // Get the decrypted key for this provider
-  const keyResult = await apiProviderService.getDecryptedKey(
+  // Get the provider instance
+  const providerResult = await apiProviderService.getProviderInstance(
     modelInfo.providerId,
     userId
   );
 
-  if (!keyResult.success || !keyResult.data) {
-    throw new Error(keyResult.error || 'Failed to get API key');
+  if (!providerResult.success || !providerResult.data) {
+    throw new Error(providerResult.error || 'Failed to get provider instance');
   }
 
-  const { apiKey, provider: providerType } = keyResult.data;
+  const { provider, providerType } = providerResult.data;
 
-  return createProviderInstance(providerType, apiKey, modelId);
-}
-
-/**
- * Create provider instance based on provider type
- */
-function createProviderInstance(
-  providerType: string,
-  apiKey: string,
-  modelId: string
-): AIProviderConfig {
-  switch (providerType) {
-    case 'openai':
-      return {
-        provider: createOpenAI({
-          apiKey,
-        }),
-        model: modelId,
-        providerType: 'openai',
-      };
-
-    case 'anthropic':
-    case 'google':
-      throw new Error(`Provider ${providerType} not yet implemented. Currently only OpenAI is supported.`);
-
-    default:
-      throw new Error(`Unsupported provider type: ${providerType}`);
-  }
+  return {
+    provider,
+    model: modelId,
+    providerType,
+  };
 }
 
 /**
@@ -98,10 +78,11 @@ function createProviderInstance(
  */
 export async function getDefaultModel(userId: string): Promise<string | null> {
   const modelsResult = await apiProviderService.getAvailableModels(userId);
-  
-  if (!modelsResult.success || !modelsResult.data) {
+
+  if (!modelsResult.success || !modelsResult.data || modelsResult.data.allModels.length === 0) {
     return null;
   }
 
-  return modelsResult.data.allModels[0]?.id || null;
+  // Return the first available model
+  return modelsResult.data.allModels[0].id;
 }

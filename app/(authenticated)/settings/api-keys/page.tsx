@@ -13,7 +13,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { PROVIDER_CONFIGS } from '@/lib/services/api-provider.service';
+
+// Provider configs fetched from backend
+const PROVIDER_NAMES: Record<string, string> = {
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+  google: 'Google AI',
+};
+
+interface ModelInfo {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 interface ApiProvider {
   id: string;
@@ -37,7 +49,6 @@ export default function ApiKeysPage() {
     name: '',
     provider: 'openai',
     apiKey: '',
-    selectedModels: [] as string[],
   });
 
   const [showApiKey, setShowApiKey] = useState(false);
@@ -67,7 +78,7 @@ export default function ApiKeysPage() {
   const handleAddProvider = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!newProvider.name || !newProvider.apiKey || newProvider.selectedModels.length === 0) {
+    if (!newProvider.name || !newProvider.apiKey) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -81,7 +92,6 @@ export default function ApiKeysPage() {
           name: newProvider.name,
           provider: newProvider.provider,
           apiKey: newProvider.apiKey,
-          models: newProvider.selectedModels,
         }),
       });
 
@@ -94,7 +104,6 @@ export default function ApiKeysPage() {
           name: '',
           provider: 'openai',
           apiKey: '',
-          selectedModels: [],
         });
         loadProviders();
       } else {
@@ -152,17 +161,110 @@ export default function ApiKeysPage() {
     }
   };
 
-  const getProviderConfig = (providerType: string) => {
-    return PROVIDER_CONFIGS[providerType as keyof typeof PROVIDER_CONFIGS];
+  const getProviderConfig = (providerType: string): { name: string; models: ModelInfo[] } => {
+    return {
+      name: PROVIDER_NAMES[providerType] || providerType,
+      models: [] as ModelInfo[] // Models are now fetched dynamically from API
+    };
   };
 
-  const handleModelToggle = (modelId: string) => {
-    setNewProvider((prev) => ({
-      ...prev,
-      selectedModels: prev.selectedModels.includes(modelId)
-        ? prev.selectedModels.filter((id) => id !== modelId)
-        : [...prev.selectedModels, modelId],
-    }));
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Loading providers...</p>
+        </div>
+      );
+    }
+
+    if (providers.length === 0) {
+      return (
+        <Card className="p-12 text-center">
+          <Key className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No API Providers Yet</h3>
+          <p className="text-muted-foreground mb-4">
+            Add your first API provider to start generating resumes
+          </p>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Provider
+          </Button>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {providers.map((provider) => {
+          const config = getProviderConfig(provider.provider);
+          return (
+            <Card key={provider.id} className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold">{provider.name}</h3>
+                    {provider.isActive ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Active
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {config?.name || provider.provider} • {provider.keyPreview}
+                  </p>
+
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {provider.models && provider.models.map((model) => {
+                      const modelInfo = config?.models.find((m) => m.id === model);
+                      return (
+                        <span
+                          key={model}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700"
+                          title={modelInfo?.description}
+                        >
+                          {modelInfo?.name || model}
+                        </span>
+                      );
+                    })}
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    Added {new Date(provider.createdAt).toLocaleDateString()}
+                    {provider.lastUsedAt && (
+                      <> • Last used {new Date(provider.lastUsedAt).toLocaleDateString()}</>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleToggleProvider(provider.id, provider.isActive)}
+                  >
+                    {provider.isActive ? 'Disable' : 'Enable'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteProvider(provider.id, provider.name)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -184,95 +286,9 @@ export default function ApiKeysPage() {
           </Button>
         </div>
 
-        {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Loading providers...</p>
-          </div>
-        ) : providers.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Key className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No API Providers Yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Add your first API provider to start generating resumes
-            </p>
-            <Button onClick={() => setShowAddDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Provider
-            </Button>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {providers.map((provider) => {
-              const config = getProviderConfig(provider.provider);
-              return (
-                <Card key={provider.id} className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold">{provider.name}</h3>
-                        {provider.isActive ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Active
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            Inactive
-                          </span>
-                        )}
-                      </div>
-                      
-                      <p className="text-sm text-muted-foreground mb-3">
-                        {config?.name || provider.provider} • {provider.keyPreview}
-                      </p>
-
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {provider.models.map((model) => {
-                          const modelInfo = config?.models.find((m) => m.id === model);
-                          return (
-                            <span
-                              key={model}
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700"
-                              title={modelInfo?.description}
-                            >
-                              {modelInfo?.name || model}
-                            </span>
-                          );
-                        })}
-                      </div>
-
-                      <div className="text-xs text-muted-foreground">
-                        Added {new Date(provider.createdAt).toLocaleDateString()}
-                        {provider.lastUsedAt && (
-                          <> • Last used {new Date(provider.lastUsedAt).toLocaleDateString()}</>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleToggleProvider(provider.id, provider.isActive)}
-                      >
-                        {provider.isActive ? 'Disable' : 'Enable'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDeleteProvider(provider.id, provider.name)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+        {renderContent()}
       </PageContainer>
+                
 
       {/* Add Provider Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -309,14 +325,13 @@ export default function ApiKeysPage() {
                   setNewProvider({
                     ...newProvider,
                     provider: e.target.value,
-                    selectedModels: [],
                   })
                 }
                 className="w-full px-3 py-2 border rounded-md"
               >
-                {Object.entries(PROVIDER_CONFIGS).map(([key, config]) => (
+                {Object.entries(PROVIDER_NAMES).map(([key, name]) => (
                   <option key={key} value={key} className="bg-background text-foreground">
-                    {config.name}
+                    {name}
                   </option>
                 ))}
               </select>
@@ -349,31 +364,9 @@ export default function ApiKeysPage() {
               </p>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                Select Models
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto border rounded-md p-3">
-                {getProviderConfig(newProvider.provider)?.models.map((model) => (
-                  <label
-                    key={model.id}
-                    className="flex items-start gap-2 p-2 rounded border hover:bg-muted cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={newProvider.selectedModels.includes(model.id)}
-                      onChange={() => handleModelToggle(model.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-sm">{model.name}</div>
-                      <div className="text-xs text-muted-foreground">{model.description}</div>
-                    </div>
-                  </label>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Select the models you want to use with this API key
+            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4">
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                <strong>Note:</strong> Available models will be automatically detected from your API key when you add the provider.
               </p>
             </div>
 
@@ -395,4 +388,4 @@ export default function ApiKeysPage() {
       </Dialog>
     </>
   );
-}
+} 

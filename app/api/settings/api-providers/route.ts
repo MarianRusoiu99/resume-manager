@@ -13,7 +13,6 @@ const addProviderSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   provider: z.enum(['openai', 'anthropic', 'google']),
   apiKey: z.string().min(10, 'API key is required'),
-  models: z.array(z.string()).min(1, 'At least one model is required'),
 });
 
 export async function GET() {

@@ -85,25 +85,6 @@ export class CoverLetterService {
   }
 
   /**
-   * Get cover letters associated with a resume
-   */
-  async getCoverLettersByResume(
-    resumeId: string,
-    userId: string
-  ): Promise<ServiceResult<CoverLetterListItem[]>> {
-    try {
-      const coverLetters = await coverLetterRepository.findByResumeId(resumeId, userId);
-      return { success: true, data: coverLetters };
-    } catch (error) {
-      console.error('[CoverLetterService] Get by resume error:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch cover letters',
-      };
-    }
-  }
-
-  /**
    * Update a cover letter
    */
   async updateCoverLetter(

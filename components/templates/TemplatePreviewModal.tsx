@@ -70,10 +70,6 @@ export function TemplatePreviewModal({
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Version:</span>
-              <span className="text-sm text-muted-foreground">{template.version}</span>
-            </div>
-            <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Visibility:</span>
               <span className="text-sm text-muted-foreground">
                 {template.isPublic ? 'Public' : 'Private'}

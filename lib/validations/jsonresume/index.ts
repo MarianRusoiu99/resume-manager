@@ -116,7 +116,6 @@ const projectSchema = z.object({
 
 const metaSchema = z.object({
   canonical: z.string().url().optional(),
-  version: z.string().optional(),
   lastModified: z.string().optional(),
 }).passthrough();
 

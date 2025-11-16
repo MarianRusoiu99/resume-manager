@@ -5,6 +5,7 @@
  */
 
 import { generateResume } from '@/lib/ai';
+import { createProvider } from '@/lib/ai/providers';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 // Example: Basic usage
@@ -35,8 +36,12 @@ async function basicExample() {
     ],
   };
 
+  // Create provider instance (OpenAI in this example)
+  const provider = createProvider('openai', 'sk-...');
+
   const result = await generateResume({
-    apiKey: 'sk-...', // User's OpenAI API key
+    provider,
+    modelId: 'gpt-4o-mini', // Model to use
     jobDescription: `
       Senior Full Stack Engineer at Acme Corp
       
@@ -69,8 +74,11 @@ async function basicExample() {
 
 // Example: Without cover letter
 async function quickExample() {
+  const provider = createProvider('openai', 'sk-...');
+  
   const result = await generateResume({
-    apiKey: 'sk-...',
+    provider,
+    modelId: 'gpt-4o-mini',
     jobDescription: 'Software Engineer at Startup Inc...',
     userResume: {
       basics: { name: 'Jane Smith' },
@@ -91,8 +99,11 @@ async function quickExample() {
 // Example: Error handling
 async function errorHandlingExample() {
   try {
+    const provider = createProvider('openai', 'invalid-key');
+    
     const result = await generateResume({
-      apiKey: 'invalid-key',
+      provider,
+      modelId: 'gpt-4o-mini',
       jobDescription: 'Job description...',
       userResume: { basics: { name: 'Test User' } },
     });

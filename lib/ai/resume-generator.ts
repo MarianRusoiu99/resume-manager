@@ -2,12 +2,13 @@
  * Simple Resume Generator using Vercel AI SDK
  * 
  * A streamlined workflow for resume generation with structured outputs
+ * Now supports multiple AI providers through the provider abstraction layer
  */
 
-import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import type { Resume } from '@/lib/validations/jsonresume';
+import type { AIProvider } from '@/lib/ai/providers';
 
 // ============================================================================
 // Schemas for Structured Outputs
@@ -92,12 +93,12 @@ export type OptimizedResume = z.infer<typeof optimizedResumeSchema>;
 export type CoverLetterResult = z.infer<typeof coverLetterSchema>;
 
 export interface GenerateResumeInput {
-  apiKey: string;
+  provider: AIProvider;
+  modelId: string;
   jobDescription: string;
   userResume: Resume;
   includeCoverLetter?: boolean;
   personalInstructions?: string;
-  modelId?: string;
   userId?: string;
 }
 
@@ -118,13 +119,14 @@ export interface GenerateResumeResult {
  * Step 1: Analyze the job description
  */
 async function analyzeJob(
-  apiKey: string,
+  provider: AIProvider,
+  modelId: string,
   jobDescription: string
 ): Promise<JobAnalysisResult> {
-  const openai = createOpenAI({ apiKey });
+  const model = provider.createLanguageModel(modelId);
   
   const result = await generateObject({
-    model: openai('gpt-4o-mini'),
+    model,
     schema: jobAnalysisSchema,
     prompt: `Analyze this job description and extract structured information:
 
@@ -140,15 +142,16 @@ Extract the job title, company name, required skills, preferred skills, ATS keyw
  * Step 2: Generate optimized resume
  */
 async function generateOptimizedResume(
-  apiKey: string,
+  provider: AIProvider,
+  modelId: string,
   jobAnalysis: JobAnalysisResult,
   userResume: Resume,
   personalInstructions?: string
 ): Promise<OptimizedResume> {
-  const openai = createOpenAI({ apiKey });
+  const model = provider.createLanguageModel(modelId);
   
   const result = await generateObject({
-    model: openai('gpt-4o'),
+    model,
     schema: optimizedResumeSchema,
     prompt: `You are an expert resume writer. Optimize this resume for the job description while maintaining a truthful approach. You must not fabricate any information. Use just the resume data provided.
 
@@ -184,16 +187,17 @@ Generate an optimized resume that will pass ATS systems and appeal to hiring man
  * Step 3: Generate cover letter (optional)
  */
 async function generateCoverLetter(
-  apiKey: string,
+  provider: AIProvider,
+  modelId: string,
   jobAnalysis: JobAnalysisResult,
   userResume: Resume,
   optimizedResume: OptimizedResume
 ): Promise<CoverLetterResult> {
-  const openai = createOpenAI({ apiKey });
+  const model = provider.createLanguageModel(modelId);
   const userName = userResume.basics?.name || optimizedResume.basics.name || 'Applicant';
   
   const result = await generateObject({
-    model: openai('gpt-4o-mini'),
+    model,
     schema: coverLetterSchema,
     prompt: `Write a compelling cover letter for this job application.
 
@@ -242,13 +246,14 @@ export async function generateResume(
 
     // Step 1: Analyze the job
     console.log('🔍 Step 1: Analyzing job description...');
-    const jobAnalysis = await analyzeJob(input.apiKey, input.jobDescription);
+    const jobAnalysis = await analyzeJob(input.provider, input.modelId, input.jobDescription);
     console.log(`   ✓ Found job: ${jobAnalysis.jobTitle} at ${jobAnalysis.companyName}`);
 
     // Step 2: Generate optimized resume
     console.log('✨ Step 2: Generating optimized resume...');
     const optimizedResume = await generateOptimizedResume(
-      input.apiKey,
+      input.provider,
+      input.modelId,
       jobAnalysis,
       input.userResume,
       input.personalInstructions
@@ -260,7 +265,8 @@ export async function generateResume(
     if (input.includeCoverLetter) {
       console.log('📝 Step 3: Generating cover letter...');
       const coverLetterResult = await generateCoverLetter(
-        input.apiKey,
+        input.provider,
+        input.modelId,
         jobAnalysis,
         input.userResume,
         optimizedResume
