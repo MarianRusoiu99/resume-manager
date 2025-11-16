@@ -72,14 +72,12 @@ export function CoverLetterEditor({
   content,
   contentJson,
   editable = false,
-  resumeId,
   onSave,
   className,
   showCard = true,
   title = 'Generated Cover Letter',
 }: Readonly<CoverLetterEditorProps>) {
   const [isEditing, setIsEditing] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
   const editorRef = useRef<BlockNoteEditorMethods>(null);
@@ -87,42 +85,6 @@ export function CoverLetterEditor({
   const handleCopy = () => {
     navigator.clipboard.writeText(content);
     toast.success('Cover letter copied to clipboard!');
-  };
-
-  const handleExportPDF = async () => {
-    if (!resumeId) {
-      toast.error('Cannot export: No resume ID provided');
-      return;
-    }
-
-    try {
-      setIsExporting(true);
-      
-      const response = await fetch(`/api/resumes/${resumeId}/export-cover-letter`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to export cover letter');
-      }
-
-      const blob = await response.blob();
-      const url = globalThis.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `cover-letter-${resumeId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      globalThis.URL.revokeObjectURL(url);
-      a.remove();
-      
-      toast.success('Cover letter exported to PDF!');
-    } catch (error) {
-      console.error('Export failed:', error);
-      toast.error('Failed to export cover letter');
-    } finally {
-      setIsExporting(false);
-    }
   };
 
   const handleStartEdit = () => {
@@ -217,7 +179,7 @@ export function CoverLetterEditor({
       )}
       
       {!isEditing && (
-        <>
+        
           <Button
             variant="outline"
             size="sm"
@@ -227,18 +189,6 @@ export function CoverLetterEditor({
             Copy
           </Button>
           
-          {resumeId && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportPDF}
-              disabled={isExporting}
-            >
-              <FileDown className="w-4 h-4 mr-2" />
-              {isExporting ? 'Exporting...' : 'Export PDF'}
-            </Button>
-          )}
-        </>
       )}
     </div>
   );

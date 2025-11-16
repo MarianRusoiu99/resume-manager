@@ -197,43 +197,7 @@ export default function ResumeDetailPage() {
     }
   };
 
-  // TODO: Re-enable handleRestoreVersion after VersionHistory is updated for JSON Resume format
-
-  const handleExportPDF = async () => {
-    try {
-      setIsExportingPDF(true);
-      setError(null);
-
-      const response = await fetch(`/api/resumes/${resumeId}/export`, {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to export PDF');
-      }
-
-      // Get PDF blob
-      const blob = await response.blob();
-      
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `resume-${resumeId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-      
-      toast.success('PDF exported successfully');
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to export PDF';
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setIsExportingPDF(false);
-    }
-  };
+  
 
   const handleSaveCoverLetter = async (markdown: string) => {
     try {
@@ -345,12 +309,7 @@ export default function ResumeDetailPage() {
             >
               {isDuplicating ? 'Duplicating...' : 'Duplicate'}
             </Button>
-            <Button
-              onClick={handleExportPDF}
-              disabled={isExportingPDF}
-            >
-              {isExportingPDF ? 'Exporting...' : 'Export PDF'}
-            </Button>
+
             <Button
               variant="destructive"
               onClick={handleDelete}
