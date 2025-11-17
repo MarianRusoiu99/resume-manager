@@ -16,5 +16,14 @@ export {
 } from './user-template';
 
 export {
-  JOB_ANALYSIS_EXAMPLES
-} from './examples';
+  formatSimpleJobAnalysisPrompt,
+  type SimpleJobAnalysisInput
+} from './simple-template';
+
+// Agent execution
+export {
+  analyzeJob,
+  jobAnalysisSchema,
+  type JobAnalysisResult,
+  type AnalyzeJobInput
+} from './agent';

@@ -5,8 +5,10 @@
  */
 
 // Agent-specific prompts
-export * from './agents/job-analysis';
-export * from './agents/content-optimization';
+export * from './job-analysis';
+export * from './content-optimization';
+export * from './resume-optimization';
+export * from './cover-letter';
 
 // Shared instructions
 export * from './shared/json-instructions';
