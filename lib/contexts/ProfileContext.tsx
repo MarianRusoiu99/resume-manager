@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import type { Resume } from "@/lib/validations/profile";
+import type { Resume } from "@/lib/validations/jsonresume";
 
 interface Profile {
   id: string;
@@ -43,7 +43,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/profiles");
+      const response = await fetch("/api/profile");
       if (!response.ok) {
         throw new Error("Failed to load profiles");
       }

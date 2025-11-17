@@ -52,7 +52,7 @@ export default function CoverLettersPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/cover-letters');
+      const response = await fetch('/api/cover-letter');
       
       if (!response.ok) {
         throw new Error('Failed to fetch cover letters');

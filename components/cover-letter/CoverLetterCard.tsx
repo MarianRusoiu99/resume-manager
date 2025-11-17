@@ -49,7 +49,7 @@ export function CoverLetterCard({
 
   const handleExport = async () => {
     try {
-      const response = await fetch(`/api/cover-letters/${id}/export`, {
+      const response = await fetch(`/api/cover-letter/${id}/export`, {
         method: 'POST',
       });
 
@@ -75,7 +75,7 @@ export function CoverLetterCard({
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`/api/cover-letters/${id}`, {
+      const response = await fetch(`/api/cover-letter/${id}`, {
         method: 'DELETE',
       });
 

@@ -37,7 +37,7 @@ async function extractText(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
   
-  const response = await fetch("/api/resume-parser/extract-text", {
+  const response = await fetch("/api/parser/extract-text", {
     method: "POST",
     body: formData,
   });
@@ -56,7 +56,7 @@ async function extractText(file: File): Promise<string> {
  */
 async function parseWithAI(text: string, model: string): Promise<ParserResult> {
   try {
-    const response = await fetch("/api/resume-parser/parse", {
+    const response = await fetch("/api/parser/parse", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -54,7 +54,7 @@ export function ProfileCard({
         setIsLoadingPreview(true);
 
         // Fetch default template
-        const templatesResponse = await fetch('/api/templates?limit=1');
+        const templatesResponse = await fetch('/api/template?limit=1');
         if (!templatesResponse.ok) return;
 
         const { templates } = await templatesResponse.json();
@@ -87,7 +87,7 @@ export function ProfileCard({
       }
 
       // Fetch default template
-      const templatesResponse = await fetch('/api/templates?limit=1');
+      const templatesResponse = await fetch('/api/template?limit=1');
       if (!templatesResponse.ok) {
         throw new Error('Failed to load template');
       }
@@ -152,7 +152,7 @@ export function ProfileCard({
       icon: <Copy className="h-4 w-4" />,
       onClick: async () => {
         try {
-          const response = await fetch(`/api/profiles/${id}/duplicate`, {
+          const response = await fetch(`/api/profile/${id}/duplicate`, {
             method: 'POST',
           });
 
@@ -179,7 +179,7 @@ export function ProfileCard({
             icon: <Check className="h-4 w-4" />,
             onClick: async () => {
               try {
-                const response = await fetch(`/api/profiles/${id}/default`, {
+                const response = await fetch(`/api/profile/${id}/default`, {
                   method: 'POST',
                 });
 
@@ -208,7 +208,7 @@ export function ProfileCard({
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`/api/profiles/${id}`, {
+      const response = await fetch(`/api/profile/${id}`, {
         method: 'DELETE',
       });
 

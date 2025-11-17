@@ -54,7 +54,7 @@ export function ResumeCard({
         // Fetch template (use templateId if available, otherwise get default)
         let template;
         if (templateId) {
-          const templateResponse = await fetch(`/api/templates/${templateId}`);
+          const templateResponse = await fetch(`/api/template/${templateId}`);
           if (templateResponse.ok) {
             template = await templateResponse.json();
           }
@@ -62,7 +62,7 @@ export function ResumeCard({
 
         // Fallback to default template
         if (!template) {
-          const templatesResponse = await fetch('/api/templates?limit=1');
+          const templatesResponse = await fetch('/api/template?limit=1');
           if (!templatesResponse.ok) return;
 
           const { templates } = await templatesResponse.json();
@@ -93,7 +93,7 @@ export function ResumeCard({
       // Fetch the template
       let template;
       if (templateId) {
-        const templateResponse = await fetch(`/api/templates/${templateId}`);
+        const templateResponse = await fetch(`/api/template/${templateId}`);
         if (templateResponse.ok) {
           template = await templateResponse.json();
         }
@@ -101,7 +101,7 @@ export function ResumeCard({
 
       // Fallback to default template
       if (!template) {
-        const templatesResponse = await fetch('/api/templates?limit=1');
+        const templatesResponse = await fetch('/api/template?limit=1');
         if (!templatesResponse.ok) {
           throw new Error('Failed to load template');
         }
@@ -151,7 +151,7 @@ export function ResumeCard({
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`/api/resumes/${id}`, {
+      const response = await fetch(`/api/resume/${id}`, {
         method: 'DELETE',
       });
 

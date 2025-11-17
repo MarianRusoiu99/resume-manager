@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { PersonalInfo } from "@/lib/validations/profile";
+import { PersonalInfo } from "@/lib/validations/jsonresume";
 import { useAutoSave } from "@/lib/hooks/useAutoSave";
 
 // Temporary form schema that bridges the gap between old UI and JSON Resume

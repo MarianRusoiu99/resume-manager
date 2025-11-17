@@ -146,7 +146,7 @@ export async function analyzeJobAgent(state: WorkflowState): Promise<Partial<Wor
 ```typescript
 // Absolute imports with @/ alias
 import { profileService } from "@/lib/services/profile.service";
-import { Profile } from "@/lib/validations/profile";
+
 import { prisma } from "@/lib/db";
 
 // Barrel exports for clean imports

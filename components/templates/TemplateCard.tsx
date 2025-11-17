@@ -141,7 +141,7 @@ export function TemplateCard({
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`/api/templates/${template.id}`, {
+      const response = await fetch(`/api/template/${template.id}`, {
         method: 'DELETE',
       });
 
@@ -160,7 +160,7 @@ export function TemplateCard({
 
   const handleDuplicate = async () => {
     try {
-      const response = await fetch(`/api/templates/${template.id}/duplicate`, {
+      const response = await fetch(`/api/template/${template.id}/duplicate`, {
         method: 'POST',
       });
 

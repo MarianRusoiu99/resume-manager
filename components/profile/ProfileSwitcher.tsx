@@ -53,7 +53,7 @@ export function ProfileSwitcher({ currentProfileId, onProfileChange }: ProfileSw
 
   const loadProfiles = async () => {
     try {
-      const response = await fetch("/api/profiles");
+      const response = await fetch("/api/profile");
       if (response.ok) {
         const data = await response.json();
         setProfiles(data);
@@ -73,7 +73,7 @@ export function ProfileSwitcher({ currentProfileId, onProfileChange }: ProfileSw
     }
 
     try {
-      const response = await fetch("/api/profiles", {
+      const response = await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -111,7 +111,7 @@ export function ProfileSwitcher({ currentProfileId, onProfileChange }: ProfileSw
     }
 
     try {
-      const response = await fetch(`/api/profiles/${selectedProfileForRename.id}`, {
+      const response = await fetch(`/api/profile/${selectedProfileForRename.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newProfileName }),
@@ -140,7 +140,7 @@ export function ProfileSwitcher({ currentProfileId, onProfileChange }: ProfileSw
 
   const duplicateProfile = async (profileId: string) => {
     try {
-      const response = await fetch(`/api/profiles/${profileId}/duplicate`, {
+      const response = await fetch(`/api/profile/${profileId}/duplicate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -163,7 +163,7 @@ export function ProfileSwitcher({ currentProfileId, onProfileChange }: ProfileSw
 
   const setDefaultProfile = async (profileId: string) => {
     try {
-      const response = await fetch(`/api/profiles/${profileId}/set-default`, {
+      const response = await fetch(`/api/profile/${profileId}/set-default`, {
         method: "POST",
       });
 
@@ -197,7 +197,7 @@ export function ProfileSwitcher({ currentProfileId, onProfileChange }: ProfileSw
     }
 
     try {
-      const response = await fetch(`/api/profiles/${profileId}`, {
+      const response = await fetch(`/api/profile/${profileId}`, {
         method: "DELETE",
       });
 

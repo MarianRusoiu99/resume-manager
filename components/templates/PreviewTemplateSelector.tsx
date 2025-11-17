@@ -42,7 +42,7 @@ export function PreviewTemplateSelector({
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/templates');
+        const response = await fetch('/api/template');
         if (!response.ok) {
           throw new Error('Failed to fetch templates');
         }

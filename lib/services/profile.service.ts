@@ -1,5 +1,4 @@
 import { profileRepository } from "@/lib/repositories/profile.repository";
-import { profileSchema, profileUpdateSchema } from "@/lib/validations/profile";
 import { profileCache } from "@/lib/cache/simple-cache";
 import { ZodError } from "zod";
 import type { Resume } from "@/lib/validations/jsonresume";
@@ -101,8 +100,7 @@ export class ProfileService {
    */
   async createProfile(userId: string, name: string, data: Resume, isDefault: boolean = false) {
     try {
-      // Validate input
-      const validatedData = profileSchema.parse({ resume: data });
+ 
 
       // If this is set as default, unset other defaults
       if (isDefault) {
@@ -113,7 +111,7 @@ export class ProfileService {
       const profile = await profileRepository.create({
         userId,
         name,
-        resume: validatedData.resume,
+        resume: data,
         isDefault,
       });
 
@@ -144,11 +142,6 @@ export class ProfileService {
    */
   async updateProfile(profileId: string, userId: string, data: Partial<{ name: string; resume: Resume; isDefault: boolean; selectedTemplateId: string | null }>) {
     try {
-      // Validate resume data if provided
-      if (data.resume) {
-        profileUpdateSchema.parse({ resume: data.resume });
-      }
-
       // Check if profile exists and belongs to user
       const existing = await profileRepository.findById(profileId, userId);
       if (!existing) {

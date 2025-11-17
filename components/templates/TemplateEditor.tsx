@@ -91,8 +91,8 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       setSaving(true);
 
       const url = isNew
-        ? '/api/templates'
-        : `/api/templates/${template?.id}`;
+        ? '/api/template'
+        : `/api/template/${template?.id}`;
 
       const method = isNew ? 'POST' : 'PATCH';
 

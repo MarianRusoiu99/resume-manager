@@ -179,11 +179,11 @@ resume-optimizer/
 - `POST /api/settings/api-keys/[id]/validate` - Validate API key
 
 ### Resumes
-- `POST /api/resumes/generate` - Generate new resume
-- `GET /api/resumes` - List user's resumes
-- `GET /api/resumes/[id]` - Get resume details
-- `DELETE /api/resumes/[id]` - Delete resume
-- `POST /api/resumes/[id]/export` - Export resume as PDF
+- `POST /api/resume/generate` - Generate new resume
+- `GET /api/resume` - List user's resumes
+- `GET /api/resume/[id]` - Get resume details
+- `DELETE /api/resume/[id]` - Delete resume
+- `POST /api/resume/[id]/export` - Export resume as PDF
 
 ## AI Workflow
 

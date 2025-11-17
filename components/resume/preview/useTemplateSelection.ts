@@ -23,7 +23,7 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
   const loadFromEntity = useCallback(async (): Promise<string | null> => {
     if (!entityId) return null;
     
-    const endpoint = isProfile ? `/api/profiles/${entityId}` : `/api/resumes/${entityId}`;
+    const endpoint = isProfile ? `/api/profile/${entityId}` : `/api/resume/${entityId}`;
     const response = await fetch(endpoint);
     
     if (response.ok) {
@@ -36,7 +36,7 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
 
   // Helper: Load default template
   const loadDefaultTemplate = useCallback(async (): Promise<string | null> => {
-    const response = await fetch('/api/templates?limit=1');
+    const response = await fetch('/api/template?limit=1');
     if (response.ok) {
       const { templates } = await response.json();
       if (templates && templates.length > 0) {
@@ -102,7 +102,7 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
     // Save template selection to the appropriate entity
     if (entityId && templateId) {
       try {
-        const endpoint = isProfile ? `/api/profiles/${entityId}` : `/api/resumes/${entityId}`;
+        const endpoint = isProfile ? `/api/profile/${entityId}` : `/api/resume/${entityId}`;
         const body = isProfile 
           ? { selectedTemplateId: templateId }
           : { templateId };

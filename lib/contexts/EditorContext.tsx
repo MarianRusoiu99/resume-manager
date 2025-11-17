@@ -73,12 +73,12 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
  * ```tsx
  * <EditorProvider
  *   onLoad={async () => {
- *     const res = await fetch(`/api/resumes/${id}`);
+ *     const res = await fetch(`/api/resume/${id}`);
  *     const data = await res.json();
  *     return data.content;
  *   }}
  *   onSave={async (resume) => {
- *     await fetch(`/api/resumes/${id}`, {
+ *     await fetch(`/api/resume/${id}`, {
  *       method: 'PATCH',
  *       body: JSON.stringify({ resume })
  *     });

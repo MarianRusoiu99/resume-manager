@@ -136,7 +136,7 @@
 
 /**
  * @swagger
- * /api/resumes/generate:
+ * /api/resume/generate:
  *   post:
  *     tags:
  *       - Resumes
@@ -196,7 +196,7 @@
 
 /**
  * @swagger
- * /api/resumes/generate-stream:
+ * /api/resume/generate-stream:
  *   post:
  *     tags:
  *       - Resumes
@@ -240,7 +240,7 @@
 
 /**
  * @swagger
- * /api/resumes:
+ * /api/resume:
  *   get:
  *     tags:
  *       - Resumes
@@ -279,7 +279,7 @@
 
 /**
  * @swagger
- * /api/resumes/{id}:
+ * /api/resume/{id}:
  *   get:
  *     tags:
  *       - Resumes
@@ -355,7 +355,7 @@
 
 /**
  * @swagger
- * /api/resumes/{id}/content:
+ * /api/resume/{id}/content:
  *   get:
  *     tags:
  *       - Resumes
@@ -408,7 +408,7 @@
 
 /**
  * @swagger
- * /api/resumes/{id}/duplicate:
+ * /api/resume/{id}/duplicate:
  *   post:
  *     tags:
  *       - Resumes
@@ -436,7 +436,7 @@
 
 /**
  * @swagger
- * /api/resumes/{id}/export:
+ * /api/resume/{id}/export:
  *   get:
  *     tags:
  *       - Resumes
@@ -464,7 +464,7 @@
 
 /**
  * @swagger
- * /api/resumes/{id}/export-cover-letter:
+ * /api/resume/{id}/export-cover-letter:
  *   get:
  *     tags:
  *       - Resumes
@@ -492,7 +492,7 @@
 
 /**
  * @swagger
- * /api/resumes/{id}/preview:
+ * /api/resume/{id}/preview:
  *   get:
  *     tags:
  *       - Resumes
@@ -518,7 +518,7 @@
 
 /**
  * @swagger
- * /api/resumes/{id}/section-order:
+ * /api/resume/{id}/section-order:
  *   put:
  *     tags:
  *       - Resumes
@@ -555,7 +555,7 @@
 
 /**
  * @swagger
- * /api/resumes/{id}/template:
+ * /api/resume/{id}/template:
  *   patch:
  *     tags:
  *       - Resumes
@@ -588,7 +588,7 @@
 
 /**
  * @swagger
- * /api/resumes/{id}/template-customization:
+ * /api/resume/{id}/template-customization:
  *   get:
  *     tags:
  *       - Resumes
@@ -759,7 +759,7 @@
 
 /**
  * @swagger
- * /api/templates:
+ * /api/template:
  *   get:
  *     tags:
  *       - Templates
@@ -789,7 +789,7 @@
 
 /**
  * @swagger
- * /api/templates/{id}:
+ * /api/template/{id}:
  *   get:
  *     tags:
  *       - Templates

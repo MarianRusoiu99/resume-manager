@@ -25,7 +25,7 @@ export function useResumeData({
     if (resumeId) {
       const fetchResume = async () => {
         try {
-          const response = await fetch(`/api/resumes/${resumeId}`);
+          const response = await fetch(`/api/resume/${resumeId}`);
           if (response.ok) {
             const data = await response.json();
             setResume(data.content as Resume);

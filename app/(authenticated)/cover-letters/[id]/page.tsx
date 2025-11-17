@@ -56,7 +56,7 @@ export default function CoverLetterDetailPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/cover-letters/${coverLetterId}`);
+      const response = await fetch(`/api/cover-letter/${coverLetterId}`);
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -84,7 +84,7 @@ export default function CoverLetterDetailPage() {
 
   const handleSaveCoverLetter = async (content: string, contentJson: string) => {
     try {
-      const response = await fetch(`/api/cover-letters/${coverLetterId}`, {
+      const response = await fetch(`/api/cover-letter/${coverLetterId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ export default function CoverLetterDetailPage() {
     try {
       setIsDeleting(true);
       
-      const response = await fetch(`/api/cover-letters/${coverLetterId}`, {
+      const response = await fetch(`/api/cover-letter/${coverLetterId}`, {
         method: 'DELETE',
       });
 

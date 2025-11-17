@@ -31,7 +31,7 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
   useEffect(() => {
     const refreshProfiles = async () => {
       try {
-        const response = await fetch("/api/profiles");
+        const response = await fetch("/api/profile");
         if (response.ok) {
           const data = await response.json();
           setProfiles(data);
@@ -54,7 +54,7 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
   const handleCreateProfile = async () => {
     setIsCreating(true);
     try {
-      const response = await fetch("/api/profiles", {
+      const response = await fetch("/api/profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

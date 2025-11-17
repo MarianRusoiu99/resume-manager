@@ -41,7 +41,7 @@ export default function ResumesPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/resumes/generate');
+      const response = await fetch('/api/resume/generate');
       
       if (!response.ok) {
         throw new Error('Failed to fetch resumes');

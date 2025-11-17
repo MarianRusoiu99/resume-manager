@@ -62,7 +62,7 @@ export function useExportPDF() {
         throw new Error('No template selected');
       }
 
-      const templateResponse = await fetch(`/api/templates/${templateId}`);
+      const templateResponse = await fetch(`/api/template/${templateId}`);
       if (!templateResponse.ok) {
         throw new Error('Failed to fetch template');
       }

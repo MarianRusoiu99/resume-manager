@@ -145,7 +145,7 @@ export default function GeneratePage() {
   useEffect(() => {
     const loadTemplates = async () => {
       try {
-        const response = await fetch('/api/templates');
+        const response = await fetch('/api/template');
         if (response.ok) {
           const data = await response.json();
           setTemplates(data.templates || []);
@@ -164,7 +164,7 @@ export default function GeneratePage() {
   useEffect(() => {
     const loadProfiles = async () => {
       try {
-        const response = await fetch('/api/profiles');
+        const response = await fetch('/api/profile');
         if (response.ok) {
           const data = await response.json();
           setProfiles(data);
@@ -223,7 +223,7 @@ export default function GeneratePage() {
     setProgressPercent(0);
 
     try {
-      const response = await fetch('/api/resumes/generate-stream', {
+      const response = await fetch('/api/resume/generate-stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

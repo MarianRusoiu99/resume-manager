@@ -27,7 +27,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/templates');
+        const response = await fetch('/api/template');
         if (!response.ok) {
           throw new Error('Failed to fetch templates');
         }
@@ -54,7 +54,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
 
     try {
       setIsUpdating(true);
-      const response = await fetch(`/api/resumes/${resumeId}/template`, {
+      const response = await fetch(`/api/resume/${resumeId}/template`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

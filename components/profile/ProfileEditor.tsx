@@ -31,7 +31,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const loadProfile = useCallback(async () => {
     try {
-      const response = await fetch(`/api/profiles/${profileId}`);
+      const response = await fetch(`/api/profile/${profileId}`);
       
       if (!response.ok) {
         throw new Error("Failed to load profile");
@@ -52,7 +52,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const response = await fetch(`/api/profiles/${profileId}`);
+      const response = await fetch(`/api/profile/${profileId}`);
       
       if (response.status === 200) {
         const data = await response.json();
@@ -70,7 +70,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/profiles/${profileId}`, {
+      const response = await fetch(`/api/profile/${profileId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume }),
@@ -91,7 +91,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleProfileNameChange = async (name: string) => {
     try {
-      const response = await fetch(`/api/profiles/${profileId}`, {
+      const response = await fetch(`/api/profile/${profileId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
@@ -113,7 +113,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleTogglePublic = async () => {
     try {
-      const response = await fetch(`/api/profiles/${profileId}/public`, {
+      const response = await fetch(`/api/profile/${profileId}/public`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isPublic: !profile?.isPublic }),

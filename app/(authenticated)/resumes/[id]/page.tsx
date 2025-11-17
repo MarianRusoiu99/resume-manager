@@ -115,7 +115,7 @@ export default function ResumeDetailPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/resumes/${resumeId}`);
+      const response = await fetch(`/api/resume/${resumeId}`);
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -151,7 +151,7 @@ export default function ResumeDetailPage() {
     try {
       setIsDeleting(true);
       
-      const response = await fetch(`/api/resumes/${resumeId}`, {
+      const response = await fetch(`/api/resume/${resumeId}`, {
         method: 'DELETE',
       });
 
@@ -177,7 +177,7 @@ export default function ResumeDetailPage() {
     try {
       setIsDuplicating(true);
       
-      const response = await fetch(`/api/resumes/${resumeId}/duplicate`, {
+      const response = await fetch(`/api/resume/${resumeId}/duplicate`, {
         method: 'POST',
       });
 
@@ -203,7 +203,7 @@ export default function ResumeDetailPage() {
     try {
       setError(null);
 
-      const response = await fetch(`/api/resumes/${resumeId}/cover-letter`, {
+      const response = await fetch(`/api/resume/${resumeId}/cover-letter`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

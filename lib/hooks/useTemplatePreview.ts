@@ -40,7 +40,7 @@ export function useTemplatePreview({ templateId, resumeData }: UseTemplatePrevie
         setError(null);
 
         // Fetch template data from API
-        const templateResponse = await fetch(`/api/templates/${templateId}`);
+        const templateResponse = await fetch(`/api/template/${templateId}`);
         if (!templateResponse.ok) {
           throw new Error('Failed to fetch template');
         }
