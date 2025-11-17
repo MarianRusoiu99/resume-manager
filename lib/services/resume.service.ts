@@ -5,6 +5,7 @@ import { coverLetterService } from '@/lib/services/cover-letter.service';
 import { prisma } from '@/lib/db';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { resumeSchema } from '@/lib/validations/jsonresume';
+import type { OptimizedResume } from '@/lib/ai/agents';
 
 /**
  * Input parameters for resume generation
@@ -633,6 +634,140 @@ export class ResumeService {
     } catch (error) {
       console.error('Error updating resume template:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Generate a standalone cover letter without creating a full resume
+   * 
+   * @param input - Generation parameters
+   * @returns Generated cover letter with database ID
+   */
+  async generateStandaloneCoverLetter(input: {
+    userId: string;
+    jobDescription: string;
+    personalInstructions?: string;
+    modelId?: string;
+    profileId?: string;
+  }): Promise<{
+    success: boolean;
+    coverLetterId?: string;
+    coverLetter?: string;
+    metadata?: {
+      jobTitle: string;
+      companyName: string;
+      tokensUsed: number;
+    };
+    error?: string;
+  }> {
+    try {
+      console.log(`\n📝 ResumeService: Starting standalone cover letter generation for user ${input.userId}`);
+
+      // Validate user profile and resume
+      // Use same validation logic as resume generation
+      let resumeResult;
+      if (input.profileId) {
+        // Use selected profile
+        const profileResult = await profileService.getProfileById(input.profileId, input.userId);
+        if (!profileResult.success || !profileResult.data) {
+          return { success: false, error: profileResult.error || 'Profile not found' };
+        }
+        const profileData = profileResult.data;
+        if (!profileData || typeof profileData !== 'object' || !('resume' in profileData) || !profileData.resume) {
+          return { success: false, error: 'Profile does not contain resume data. Please complete your profile.' };
+        }
+        try {
+          resumeResult = { success: true, resume: resumeSchema.parse(profileData.resume) };
+        } catch (error) {
+          return { success: false, error: 'Invalid profile data format. Please update your profile.' };
+        }
+      } else {
+        // Fallback to default profile
+        resumeResult = await this.getValidatedUserResume(input.userId);
+        if (!resumeResult.success || !resumeResult.resume) {
+          return { success: false, error: resumeResult.error || 'Profile validation failed' };
+        }
+      }
+      const userResume = resumeResult.resume;
+
+      // Resolve provider
+      const providerResult = await this.resolveProvider({
+        userId: input.userId,
+        modelId: input.modelId,
+        profileId: input.profileId,
+      } as GenerateResumeServiceInput);
+      
+      if (!providerResult.success || !providerResult.provider) {
+        return { success: false, error: providerResult.error || 'Provider resolution failed' };
+      }
+      
+      const provider = providerResult.provider;
+      const modelId = providerResult.modelId!;
+
+      console.log(`   Model: ${modelId}`);
+
+      // Step 1: Analyze job to extract title and company
+      const { analyzeJob } = await import('@/lib/ai/agents');
+      const jobAnalysis = await analyzeJob({
+        provider,
+        modelId,
+        jobDescription: input.jobDescription,
+      });
+
+      console.log(`   Job: ${jobAnalysis.jobTitle} at ${jobAnalysis.companyName}`);
+
+      // Step 2: Generate cover letter using user's original resume
+      const { generateCoverLetter } = await import('@/lib/ai/agents');
+      const coverLetterResult = await generateCoverLetter({
+        provider,
+        modelId,
+        jobAnalysis,
+        userResume,
+        optimizedResume: userResume as OptimizedResume, // Use original resume as optimized resume for standalone generation
+      });
+
+      console.log(`   ✓ Cover letter generated (${coverLetterResult.content.length} characters)`);
+
+      // Step 3: Save to database
+      const coverLetterData = {
+        userId: input.userId,
+        content: coverLetterResult.content,
+        jobDescription: input.jobDescription,
+        jobTitle: jobAnalysis.jobTitle,
+        companyName: jobAnalysis.companyName,
+        metadata: {
+          model: modelId,
+          tokens: 0, // We don't track tokens in standalone generation yet
+          generationTime: 0,
+          personalInstructions: input.personalInstructions,
+        },
+      };
+
+      const saveResult = await coverLetterService.createCoverLetter(coverLetterData);
+      
+      if (!saveResult.success || !saveResult.data?.id) {
+        console.error('❌ Failed to save cover letter:', saveResult.error);
+        return { success: false, error: saveResult.error || 'Failed to save cover letter' };
+      }
+
+      console.log(`✅ Cover letter saved with ID: ${saveResult.data.id}`);
+
+      return {
+        success: true,
+        coverLetterId: saveResult.data.id,
+        coverLetter: coverLetterResult.content,
+        metadata: {
+          jobTitle: jobAnalysis.jobTitle,
+          companyName: jobAnalysis.companyName,
+          tokensUsed: 0,
+        },
+      };
+    } catch (error) {
+      console.error('❌ ResumeService: Standalone cover letter generation failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to generate cover letter',
+      };
     }
   }
 }

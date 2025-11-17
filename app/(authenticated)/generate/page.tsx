@@ -137,6 +137,8 @@ export default function GeneratePage() {
   // Cover letter only generation state
   const [coverLetterJobDescription, setCoverLetterJobDescription] = useState('');
   const [coverLetterPersonalInstructions, setCoverLetterPersonalInstructions] = useState('');
+  const [selectedCoverLetterProfileId, setSelectedCoverLetterProfileId] = useState<string>('');
+  const [selectedCoverLetterModelId, setSelectedCoverLetterModelId] = useState<string>('');
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [coverLetterError, setCoverLetterError] = useState<string | null>(null);
   const [generatedCoverLetter, setGeneratedCoverLetter] = useState<string | null>(null);
@@ -171,8 +173,10 @@ export default function GeneratePage() {
           const defaultProfile = data.find((p: Profile) => p.isDefault);
           if (defaultProfile) {
             setSelectedResumeProfileId(defaultProfile.id);
+            setSelectedCoverLetterProfileId(defaultProfile.id);
           } else if (data.length > 0) {
             setSelectedResumeProfileId(data[0].id);
+            setSelectedCoverLetterProfileId(data[0].id);
           }
         }
       } catch (err) {
@@ -192,6 +196,7 @@ export default function GeneratePage() {
           setModels(data.allModels || []);
           if (data.allModels && data.allModels.length > 0) {
             setSelectedResumeModelId(data.allModels[0].id);
+            setSelectedCoverLetterModelId(data.allModels[0].id);
           }
         }
       } catch (err) {
@@ -323,6 +328,21 @@ export default function GeneratePage() {
       return;
     }
 
+    if (profiles.length === 0) {
+      setCoverLetterError('No profiles found. Please create a profile first.');
+      toast.error('No profiles found. Please create a profile first.');
+      return;
+    }
+
+    // Use the selected profile ID, or fall back to the first profile if somehow not set
+    const profileId = selectedCoverLetterProfileId || profiles[0]?.id;
+    
+    if (!profileId) {
+      setCoverLetterError('Please select a profile');
+      toast.error('Please select a profile');
+      return;
+    }
+
     setIsGeneratingCoverLetter(true);
     setCoverLetterError(null);
     setGeneratedCoverLetter(null);
@@ -336,6 +356,8 @@ export default function GeneratePage() {
         body: JSON.stringify({
           jobDescription: coverLetterJobDescription,
           personalInstructions: coverLetterPersonalInstructions.trim() || undefined,
+          profileId: profileId,
+          modelId: selectedCoverLetterModelId || undefined,
         }),
       });
 
@@ -652,36 +674,113 @@ export default function GeneratePage() {
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">
+                      <label htmlFor="coverLetterJobDescription" className="block text-sm font-medium mb-2">
                         Job Description *
                       </label>
                       <Textarea
+                        id="coverLetterJobDescription"
                         value={coverLetterJobDescription}
                         onChange={(e) => setCoverLetterJobDescription(e.target.value)}
                         placeholder="Paste the full job description here (including job title and company name)..."
-                        rows={16}
+                        rows={10}
                         className="w-full"
+                        disabled={isGeneratingCoverLetter}
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Minimum 50 characters ({coverLetterJobDescription.length}/50)
                       </p>
                     </div>
 
+                    {/* Profile Selection */}
+                    {profiles.length > 0 && (
+                      <div>
+                        <label htmlFor="coverLetterProfile" className="block text-sm font-medium mb-2">
+                          Source Profile <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          id="coverLetterProfile"
+                          value={selectedCoverLetterProfileId}
+                          onChange={(e) => setSelectedCoverLetterProfileId(e.target.value)}
+                          className="w-full px-3 py-2 border rounded-md"
+                          disabled={isGeneratingCoverLetter}
+                        >
+                          {profiles.map((profile) => (
+                            <option className='bg-background text-foreground' key={profile.id} value={profile.id}>
+                              {profile.name} {profile.isDefault ? '(Default)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Select which profile to use as the source for your cover letter
+                        </p>
+                      </div>
+                    )}
+
+                    {/* AI Model Selection */}
+                    {models.length > 0 ? (
+                      <div>
+                        <label htmlFor="coverLetterModel" className="block text-sm font-medium mb-2">
+                          AI Model <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          id="coverLetterModel"
+                          value={selectedCoverLetterModelId}
+                          onChange={(e) => setSelectedCoverLetterModelId(e.target.value)}
+                          className="w-full px-3 py-2 border rounded-md"
+                          disabled={isGeneratingCoverLetter}
+                        >
+                          {models.map((model) => (
+                            <option className='bg-background text-foreground' key={model.id} value={model.id}>
+                              {model.name} ({model.providerType})
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {models.find(m => m.id === selectedCoverLetterModelId)?.description}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <p className="text-sm text-yellow-800">
+                          ⚠️ No AI providers configured. Please add an API key in{' '}
+                          <a href="/settings/api-keys" className="underline font-medium">
+                            Settings → API Keys
+                          </a>{' '}
+                          to generate cover letters.
+                        </p>
+                      </div>
+                    )}
+
                     <div>
-                      <label className="block text-sm font-medium mb-2">
+                      <label htmlFor="coverLetterPersonalInstructions" className="block text-sm font-medium mb-2">
                         Personal Instructions (Optional)
                       </label>
                       <Textarea
+                        id="coverLetterPersonalInstructions"
                         value={coverLetterPersonalInstructions}
                         onChange={(e) => setCoverLetterPersonalInstructions(e.target.value)}
                         placeholder="Add any specific instructions for your cover letter (e.g., 'Emphasize my leadership experience', 'Use an enthusiastic tone', 'Mention my passion for AI')..."
                         rows={4}
                         className="w-full"
+                        disabled={isGeneratingCoverLetter}
                       />
                       <p className="text-xs text-gray-500 mt-1">
                         Provide custom guidance to personalize your cover letter
                       </p>
                     </div>
+
+                    {/* Warning if no profiles */}
+                    {profiles.length === 0 && (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <p className="text-sm text-yellow-800">
+                          ⚠️ No profiles found. Please{' '}
+                          <a href="/profile" className="underline font-medium">
+                            create a profile
+                          </a>{' '}
+                          before generating a cover letter.
+                        </p>
+                      </div>
+                    )}
 
                     {coverLetterError && (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -692,7 +791,7 @@ export default function GeneratePage() {
                     <div className="flex gap-3">
                       <Button
                         onClick={handleGenerateCoverLetter}
-                        disabled={isGeneratingCoverLetter}
+                        disabled={isGeneratingCoverLetter || coverLetterJobDescription.length < 50}
                         className="flex-1"
                       >
                         {isGeneratingCoverLetter ? (

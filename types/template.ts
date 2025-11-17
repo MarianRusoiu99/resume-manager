@@ -2,11 +2,12 @@
  * Resume Template Type Definitions
  * Simplified template system using HTML/CSS themes
  */
+import { TemplateCategory } from "@prisma/client";
 
 export interface TemplateMetadata {
   id: string;
   name: string;
-  category: 'professional' | 'modern' | 'creative' | 'ats-optimized' | 'minimal';
+  category: TemplateCategory;
   description: string;
   isPublic: boolean;
   previewUrl?: string;

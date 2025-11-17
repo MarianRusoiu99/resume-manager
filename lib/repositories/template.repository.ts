@@ -5,7 +5,8 @@
 
 import { prisma } from '@/lib/db';
 import type { ResumeTemplate } from '@/types/template';
-import { Prisma } from '@prisma/client';
+import { Prisma, TemplateCategory } from '@prisma/client';
+
 
 export class TemplateRepository {
   /**
@@ -27,7 +28,7 @@ export class TemplateRepository {
     const templates = await prisma.resumeTemplate.findMany({
       where: {
         isPublic: true,
-        category: category as any,
+        category: category as TemplateCategory,
       },
       orderBy: [{ name: 'asc' }],
     });
@@ -51,7 +52,7 @@ export class TemplateRepository {
    */
   async create(data: {
     name: string;
-    category: string;
+    category: TemplateCategory;
     description: string;
     htmlTemplate: string;
     cssStyles: string;
@@ -61,7 +62,7 @@ export class TemplateRepository {
     const template = await prisma.resumeTemplate.create({
       data: {
         name: data.name,
-        category: data.category as any,
+        category: data.category,
         description: data.description,
         htmlTemplate: data.htmlTemplate,
         cssStyles: data.cssStyles,
@@ -80,7 +81,7 @@ export class TemplateRepository {
     id: string,
     data: Partial<{
       name: string;
-      category: string;
+      category: TemplateCategory;
       description: string;
       htmlTemplate: string;
       cssStyles: string;
@@ -91,7 +92,22 @@ export class TemplateRepository {
     const updateData: Prisma.ResumeTemplateUpdateInput = {};
 
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.category !== undefined) updateData.category = data.category as any;
+    if (data.category !== undefined) {
+      // Map lowercase category to Prisma enum
+      const categoryMap: Record<string, string> = {
+        'professional': 'PROFESSIONAL',
+        'modern': 'MODERN',
+        'creative': 'CREATIVE',
+        'ats-optimized': 'ATS_OPTIMIZED',
+        'minimal': 'MINIMAL',
+      };
+      // Accept both enum and string
+      if (typeof data.category === 'string' && categoryMap[data.category]) {
+        updateData.category = categoryMap[data.category];
+      } else {
+        updateData.category = data.category;
+      }
+    }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.htmlTemplate !== undefined) updateData.htmlTemplate = data.htmlTemplate;
     if (data.cssStyles !== undefined) updateData.cssStyles = data.cssStyles;
@@ -162,7 +178,7 @@ export class TemplateRepository {
   private mapToTemplate(template: {
     id: string;
     name: string;
-    category: string;
+    category: TemplateCategory;
     description: string;
     htmlTemplate: string;
     cssStyles: string;
@@ -174,7 +190,7 @@ export class TemplateRepository {
     return {
       id: template.id,
       name: template.name,
-      category: template.category as 'professional' | 'modern' | 'creative' | 'ats-optimized' | 'minimal',
+      category: template.category,
       description: template.description,
       htmlTemplate: template.htmlTemplate,
       cssStyles: template.cssStyles,

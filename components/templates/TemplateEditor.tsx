@@ -46,11 +46,11 @@ interface TemplateEditorProps {
 }
 
 const categories = [
-  'professional',
-  'modern',
-  'creative',
-  'ats-optimized',
-  'minimal',
+  'PROFESSIONAL',
+  'MODERN',
+  'CREATIVE',
+  'ATS-OPTIMIZED',
+  'MINIMAL',
 ] as const;
 
 export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEditorProps>) {
@@ -58,7 +58,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: template?.name || '',
-    category: template?.category || 'professional',
+    category: template?.category?.toLowerCase() || 'professional',
     description: template?.description || '',
     htmlTemplate: template?.htmlTemplate || '',
     cssStyles: template?.cssStyles || '',
@@ -178,11 +178,11 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                    </SelectItem>
-                  ))}
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.toLowerCase()} value={cat.toLowerCase()}>
+                        {cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase()}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
