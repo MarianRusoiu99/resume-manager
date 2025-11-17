@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ProfileCard } from "./ProfileCard";
 import { Button } from "@/components/ui";
@@ -27,13 +27,41 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
   const [isCreating, setIsCreating] = useState(false);
   const router = useRouter();
 
+  // Refresh profiles when the page becomes visible
+  useEffect(() => {
+    const refreshProfiles = async () => {
+      try {
+        const response = await fetch("/api/profiles");
+        if (response.ok) {
+          const data = await response.json();
+          setProfiles(data);
+        }
+      } catch (error) {
+        console.error("Failed to refresh profiles:", error);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshProfiles();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
+
   const handleCreateProfile = async () => {
     setIsCreating(true);
     try {
       const response = await fetch("/api/profiles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: `Profile ${profiles.length + 1}` }),
+        body: JSON.stringify({
+          name: `Profile ${profiles.length + 1}`,
+          resume: { basics: { name: "" } }, // Empty resume that will be filled in later
+          isDefault: profiles.length === 0, // First profile is default
+        }),
       });
 
       if (!response.ok) {
@@ -44,8 +72,11 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
       const data = await response.json();
       toast.success("Profile created successfully");
       
+      // Add the new profile to the local state
+      setProfiles((prev) => [...prev, data]);
+      
       // Navigate to edit the new profile
-      router.push(`/profile/${data.profile.id}`);
+      router.push(`/profile/${data.id}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create profile";
       toast.error(message);

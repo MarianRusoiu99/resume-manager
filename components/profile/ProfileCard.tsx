@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Star, Edit, Copy, Trash2, Check } from 'lucide-react';
+import { Star, Edit, Copy, Trash2, Check, Download } from 'lucide-react';
 import { GalleryCard, type GalleryCardAction } from '@/components/ui/GalleryCard';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { toast } from 'sonner';
@@ -80,12 +80,72 @@ export function ProfileCard({
     generatePreview();
   }, [resumeData]);
 
+  const handleExportPDF = async () => {
+    try {
+      if (!resumeData) {
+        throw new Error('No profile data available');
+      }
+
+      // Fetch default template
+      const templatesResponse = await fetch('/api/templates?limit=1');
+      if (!templatesResponse.ok) {
+        throw new Error('Failed to load template');
+      }
+
+      const { templates } = await templatesResponse.json();
+      if (!templates || templates.length === 0) {
+        throw new Error('No templates available');
+      }
+
+      const template = templates[0];
+
+      // Use universal PDF export endpoint
+      const response = await fetch('/api/export/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resume: resumeData,
+          template: {
+            htmlTemplate: template.htmlTemplate,
+            cssStyles: template.cssStyles,
+          },
+          fileName: `${name.replaceAll(/\s+/g, '_')}.pdf`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export PDF');
+      }
+
+      const blob = await response.blob();
+      const url = globalThis.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name.replaceAll(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      globalThis.URL.revokeObjectURL(url);
+      a.remove();
+
+      toast.success('PDF exported successfully');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to export PDF');
+    }
+  };
+
   // Define actions for dropdown menu
   const actions: GalleryCardAction[] = [
     {
       label: 'Edit',
       icon: <Edit className="h-4 w-4" />,
       onClick: () => onEdit(id),
+    },
+    {
+      label: 'Export PDF',
+      icon: <Download className="h-4 w-4" />,
+      onClick: handleExportPDF,
     },
     {
       label: 'Duplicate',

@@ -132,7 +132,7 @@ export class ResumeService {
       resume: validatedResume,
       metadata: {
         model: validatedResume.meta?.model || 'unknown',
-        tokens: workflowResult.tokensUsed || 0,
+        totalTokens: workflowResult.tokensUsed || 0,
         generatedAt: validatedResume.meta?.lastModified || new Date().toISOString()
       }
     });
@@ -433,7 +433,7 @@ export class ResumeService {
       const normalizedMetadata = {
         generatedAt: storedMetadata.generatedAt || new Date().toISOString(),
         model: storedMetadata.model || 'unknown',
-        totalTokens: (storedMetadata.tokens as number) || (storedMetadata.totalTokens as number) || 0,
+        totalTokens: (storedMetadata.totalTokens as number) || 0,
         processingTime: (storedMetadata.processingTime as number) || 0
       };
       
@@ -544,7 +544,9 @@ export class ResumeService {
       }
 
       // Validate resume data
-      const validatedResume = resumeData; // Skipping validation
+      // Validation is intentionally skipped here because resume data is already validated via Zod schemas in the API route layer (see lib/validations/jsonresume).
+      // This avoids redundant validation and ensures consistent error handling upstream.
+      const validatedResume = resumeData;
 
       // Update the resume in the database
       const updatedResume = await prisma.generatedResume.update({

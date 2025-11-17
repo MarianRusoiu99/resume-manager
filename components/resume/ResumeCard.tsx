@@ -90,8 +90,43 @@ export function ResumeCard({
 
   const handleExport = async () => {
     try {
-      const response = await fetch(`/api/resumes/${id}/export`, {
+      // Fetch the template
+      let template;
+      if (templateId) {
+        const templateResponse = await fetch(`/api/templates/${templateId}`);
+        if (templateResponse.ok) {
+          template = await templateResponse.json();
+        }
+      }
+
+      // Fallback to default template
+      if (!template) {
+        const templatesResponse = await fetch('/api/templates?limit=1');
+        if (!templatesResponse.ok) {
+          throw new Error('Failed to load template');
+        }
+
+        const { templates } = await templatesResponse.json();
+        if (!templates || templates.length === 0) {
+          throw new Error('No templates available');
+        }
+        template = templates[0];
+      }
+
+      // Use universal PDF export endpoint
+      const response = await fetch('/api/export/pdf', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resume: content,
+          template: {
+            htmlTemplate: template.htmlTemplate,
+            cssStyles: template.cssStyles,
+          },
+          fileName: `${jobTitle || 'resume'}.pdf`,
+        }),
       });
 
       if (!response.ok) {

@@ -3,21 +3,7 @@ import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
 import { z } from 'zod';
 import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-helpers';
-import { SimpleCache } from '@/lib/cache/simple-cache';
-
-// Cache for user resumes list (2 minute TTL - shorter than API keys since resumes change more frequently)
-const resumesCache = new SimpleCache<Array<{
-  id: string;
-  userId: string;
-  jobTitle: string | null;
-  companyName: string | null;
-  jobDescription: string;
-  content: Record<string, unknown>;
-  templateId: string | null;
-  metadata: Record<string, unknown>;
-  createdAt: Date;
-  updatedAt: Date;
-}>>(120);
+import { resumesCache } from '@/lib/cache/resumes-cache';
 
 // Request validation schema
 const generateResumeSchema = z.object({

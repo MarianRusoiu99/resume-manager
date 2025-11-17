@@ -1,18 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
-import { SimpleCache } from '@/lib/cache/simple-cache';
-
-// Use the same cache instance as the list endpoint
-const resumesCache = new SimpleCache<Array<{
-  id: string;
-  jobMetadata: Record<string, unknown>;
-  content: Record<string, unknown>;
-  metadata: Record<string, unknown>;
-  isEdited: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}>>(120);
+import { resumesCache } from '@/lib/cache/resumes-cache';
 
 /**
  * GET /api/resumes/[id] - Get a specific resume

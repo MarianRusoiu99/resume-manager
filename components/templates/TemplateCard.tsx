@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Edit, Trash2, Eye, Copy } from 'lucide-react';
+import { Edit, Trash2, Eye, Copy, Download } from 'lucide-react';
 import { GalleryCard, type GalleryCardAction } from '@/components/ui/GalleryCard';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TemplatePreviewModal } from './TemplatePreviewModal';
@@ -101,6 +101,44 @@ export function TemplateCard({
     generatePreview();
   }, [template]);
 
+  const handleExportPDF = async () => {
+    try {
+      // Use universal PDF export endpoint with sample data
+      const response = await fetch('/api/export/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          resume: SAMPLE_RESUME,
+          template: {
+            htmlTemplate: template.htmlTemplate,
+            cssStyles: template.cssStyles,
+          },
+          fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to export PDF');
+      }
+
+      const blob = await response.blob();
+      const url = globalThis.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      globalThis.URL.revokeObjectURL(url);
+      a.remove();
+
+      toast.success('PDF exported successfully');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to export PDF');
+    }
+  };
+
   const handleDelete = async () => {
     try {
       const response = await fetch(`/api/templates/${template.id}`, {
@@ -142,6 +180,11 @@ export function TemplateCard({
       label: 'Preview',
       icon: <Eye className="h-4 w-4" />,
       onClick: () => setShowPreviewModal(true),
+    },
+    {
+      label: 'Export PDF',
+      icon: <Download className="h-4 w-4" />,
+      onClick: handleExportPDF,
     },
     ...(showAdminActions
       ? [

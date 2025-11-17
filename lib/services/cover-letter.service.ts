@@ -1,6 +1,6 @@
 /**
  * Cover Letter Service
- * 
+ *
  * Business logic for managing cover letters
  */
 
@@ -10,13 +10,21 @@ import {
   UpdateCoverLetterInput,
 } from '@/lib/repositories/cover-letter.repository';
 import type { CoverLetterWithResume, CoverLetterListItem } from '@/lib/types/cover-letter';
+import { logger } from '@/lib/utils/logger';
 
-export interface ServiceResult<T> {
+/**
+ * Standard service result interface for business logic operations.
+ */
+interface ServiceResult<T> {
   success: boolean;
   data?: T;
   error?: string;
 }
 
+/**
+ * Service for managing cover letters, including creation, retrieval, updating, and deletion.
+ * All methods return a ServiceResult indicating success, data, or error.
+ */
 export class CoverLetterService {
   /**
    * Create a new cover letter
@@ -28,7 +36,13 @@ export class CoverLetterService {
       const coverLetter = await coverLetterRepository.create(input);
       return { success: true, data: coverLetter };
     } catch (error) {
-      console.error('[CoverLetterService] Create error:', error);
+      logger.error("[CoverLetterService] Create error",{
+        message: '[CoverLetterService] Create error',
+        error,
+        operation: 'createCoverLetter',
+        timestamp: Date.now(),
+      });
+      logger.error('[CoverLetterService] Create error', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to create cover letter',
@@ -36,23 +50,28 @@ export class CoverLetterService {
     }
   }
 
-  /**
-   * Get a specific cover letter by ID
-   */
   async getCoverLetter(
     id: string,
     userId: string
   ): Promise<ServiceResult<CoverLetterWithResume>> {
     try {
       const coverLetter = await coverLetterRepository.findById(id, userId);
-      
+
       if (!coverLetter) {
         return { success: false, error: 'Cover letter not found' };
       }
 
       return { success: true, data: coverLetter };
     } catch (error) {
-      console.error('[CoverLetterService] Get error:', error);
+      logger.error("[CoverLetterService] Get error",{
+        message: '[CoverLetterService] Get error',
+        error,
+        operation: 'getCoverLetter',
+        userId,
+        coverLetterId: id,
+        timestamp: Date.now(),
+      });
+      logger.error('[CoverLetterService] Get error', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to fetch cover letter',
@@ -60,9 +79,6 @@ export class CoverLetterService {
     }
   }
 
-  /**
-   * Get all cover letters for a user
-   */
   async getUserCoverLetters(
     userId: string,
     options?: {
@@ -76,7 +92,14 @@ export class CoverLetterService {
       const result = await coverLetterRepository.findByUserId(userId, options);
       return { success: true, data: result };
     } catch (error) {
-      console.error('[CoverLetterService] List error:', error);
+      logger.error("[CoverLetterService] List error",{
+        message: '[CoverLetterService] List error',
+        error,
+        operation: 'getUserCoverLetters',
+        userId,
+        timestamp: Date.now(),
+      });
+      logger.error('[CoverLetterService] List error', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to fetch cover letters',
@@ -84,9 +107,6 @@ export class CoverLetterService {
     }
   }
 
-  /**
-   * Update a cover letter
-   */
   async updateCoverLetter(
     id: string,
     userId: string,
@@ -102,7 +122,15 @@ export class CoverLetterService {
       const updated = await coverLetterRepository.update(id, userId, data);
       return { success: true, data: updated };
     } catch (error) {
-      console.error('[CoverLetterService] Update error:', error);
+      logger.error("[CoverLetterService] Update error",{
+        message: '[CoverLetterService] Update error',
+        error,
+        operation: 'updateCoverLetter',
+        userId,
+        coverLetterId: id,
+        timestamp: Date.now(),
+      });
+      logger.error('[CoverLetterService] Update error', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update cover letter',
@@ -110,13 +138,7 @@ export class CoverLetterService {
     }
   }
 
-  /**
-   * Delete a cover letter
-   */
-  async deleteCoverLetter(
-    id: string,
-    userId: string
-  ): Promise<ServiceResult<void>> {
+  async deleteCoverLetter(id: string, userId: string): Promise<ServiceResult<void>> {
     try {
       // Check if exists
       const exists = await coverLetterRepository.exists(id, userId);
@@ -127,7 +149,15 @@ export class CoverLetterService {
       await coverLetterRepository.delete(id, userId);
       return { success: true };
     } catch (error) {
-      console.error('[CoverLetterService] Delete error:', error);
+      logger.error("[CoverLetterService] Delete error",{
+        message: '[CoverLetterService] Delete error',
+        error,
+        operation: 'deleteCoverLetter',
+        userId,
+        coverLetterId: id,
+        timestamp: Date.now(),
+      });
+      logger.error('[CoverLetterService] Delete error', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to delete cover letter',

@@ -36,11 +36,6 @@ export default function ResumesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fetch resumes on mount
-  useEffect(() => {
-    fetchResumes();
-  }, []);
-
   const fetchResumes = async () => {
     try {
       setIsLoading(true);
@@ -61,8 +56,29 @@ export default function ResumesPage() {
     }
   };
 
+  // Fetch resumes on mount
+  useEffect(() => {
+    fetchResumes();
+  }, []);
+
+  // Refetch when page becomes visible (e.g., after navigating back from detail page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchResumes();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const handleDelete = (id: string) => {
     // Remove from local state - deletion is handled in ResumeCard
+    // The optimistic update provides instant feedback
     setResumes((prev) => prev.filter((r) => r.id !== id));
   };
 
