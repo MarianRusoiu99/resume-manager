@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '@/lib/db';
-import type { ResumeTemplate } from '@/types/template';
+import type { ResumeTemplate } from '@/lib/templates/template';
 import { Prisma, TemplateCategory } from '@prisma/client';
 
 

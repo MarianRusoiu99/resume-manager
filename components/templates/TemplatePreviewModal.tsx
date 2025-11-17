@@ -6,7 +6,7 @@
  */
 
 import { useEffect } from 'react';
-import type { ResumeTemplate } from '@/types/template';
+import type { ResumeTemplate } from '@/lib/templates/template';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
 

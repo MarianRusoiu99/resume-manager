@@ -5,7 +5,7 @@ import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import "./globals.css";
 import "@/components/ui/theme.css";
-import { ThemeProvider } from "@/lib/theme/context";
+import { ThemeProvider } from "@/lib/contexts/ThemeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

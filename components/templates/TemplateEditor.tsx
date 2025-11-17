@@ -9,7 +9,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import type { ResumeTemplate } from '@/types/template';
+import type { ResumeTemplate } from '@/lib/templates/template';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

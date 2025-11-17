@@ -11,7 +11,7 @@ import { GalleryCard, type GalleryCardAction } from '@/components/ui/GalleryCard
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { TemplatePreviewModal } from './TemplatePreviewModal';
 import { toast } from 'sonner';
-import type { ResumeTemplate } from '@/types/template';
+import type { ResumeTemplate } from '@/lib/templates/template';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 

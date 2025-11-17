@@ -1,5 +1,5 @@
 import { templateRepository } from '@/lib/repositories/template.repository';
-import type { ResumeTemplate } from '@/types/template';
+import type { ResumeTemplate } from '@/lib/templates/template';
 import { z } from 'zod';
 
 // Validation schemas

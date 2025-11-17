@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { ResumeTemplate } from '@/types/template';
+import type { ResumeTemplate } from '@/lib/templates/template';
 import { TemplateCard } from './TemplateCard';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
