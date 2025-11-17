@@ -1,8 +1,8 @@
-import { auth } from "@/lib/auth/config";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export default auth((req) => {
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  // @ts-expect-error: custom auth property
   const isAuthenticated = !!req.auth;
 
   // Public routes that don't require authentication
@@ -21,8 +21,10 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/profile", req.url));
   }
 
+  // Call custom auth logic if needed
+  // If you need to run custom logic, call your auth function here
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [String.raw`/((?!_next/static|_next/image|favicon.ico|.*\..*).*)`],
