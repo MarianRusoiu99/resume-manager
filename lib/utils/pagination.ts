@@ -201,11 +201,7 @@ export function scrollToPage(
 
   console.log(`📄 Moving to page ${pageNumber}`);
   
-  const pageContainer = iframeDocument.getElementById('page-container');
-  if (!pageContainer) {
-    console.error('Page container not found');
-    return;
-  }
+  
   
   // Calculate the translation needed to show the desired page
   // No padding offset needed - content handles its own margins via @page CSS
@@ -214,7 +210,7 @@ export function scrollToPage(
   console.log(`📄 Translating page container by ${translateY}px (page ${pageNumber}, page height: ${pageHeight}px)`);
   
   // Use CSS transform to "scroll" to the page
-  pageContainer.style.transform = `translateY(${translateY}px)`;
+
   
   // Add page break visualization
   addPageBreakVisualization(iframeDocument, pageNumber);
