@@ -106,6 +106,22 @@ export class GeneratedResumeRepository {
   }
 
   /**
+   * Link a cover letter to a resume
+   */
+  async linkCoverLetter(
+    resumeId: string,
+    coverLetterId: string
+  ): Promise<GeneratedResume> {
+    return this.db.generatedResume.update({
+      where: { id: resumeId },
+      data: {
+        coverLetterId,
+        updatedAt: new Date()
+      }
+    });
+  }
+
+  /**
    * Delete a resume
    */
   async delete(id: string): Promise<void> {

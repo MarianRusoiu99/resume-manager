@@ -58,8 +58,10 @@ export interface GenerateResumeServiceResult {
     metadata: Record<string, unknown>;
     createdAt: Date;
   };
-  /** Generated cover letter (if requested) */
+  /** Generated cover letter content (if requested) */
   coverLetter?: string;
+  /** Generated cover letter ID (if requested and saved) */
+  coverLetterId?: string;
   /** Array of error messages (if failed) */
   errors?: string[];
 }
@@ -138,15 +140,13 @@ export class ResumeService {
     });
   }
 
-  private async saveCoverLetter(input: GenerateResumeServiceInput, workflowResult: any, validatedResume: Resume) {
-    const jobTitle = input.jobTitle || 'Position';
-    const companyName = input.companyName || 'Company';
+  private async saveCoverLetter(input: GenerateResumeServiceInput, workflowResult: any, validatedResume: Resume, extractedJobTitle: string, extractedCompanyName: string) {
     return await coverLetterService.createCoverLetter({
       userId: input.userId,
       content: workflowResult.coverLetter,
       jobDescription: input.jobDescription,
-      jobTitle,
-      companyName,
+      jobTitle: extractedJobTitle,
+      companyName: extractedCompanyName,
       metadata: {
         model: typeof validatedResume.meta?.model === 'string' ? validatedResume.meta?.model : 'gpt-4o',
         tokens: workflowResult.tokensUsed || 0,
@@ -209,9 +209,9 @@ export class ResumeService {
       }
 
       // Extract job title and company from AI analysis (if available)
-      const extractedJobTitle = workflowResult.jobAnalysis?.jobTitle || input.jobTitle;
-      const extractedCompanyName = workflowResult.jobAnalysis?.companyName || input.companyName;
-      console.log(`📋 Resume Title: "${extractedJobTitle}" at ${extractedCompanyName || 'Unknown Company'}`);
+      const extractedJobTitle = workflowResult.jobAnalysis?.jobTitle || input.jobTitle || 'Position';
+      const extractedCompanyName = workflowResult.jobAnalysis?.companyName || input.companyName || 'Company';
+      console.log(`📋 Resume Title: "${extractedJobTitle}" at ${extractedCompanyName}`);
 
       // Validate generated resume
       const validatedResume = resumeSchema.parse(workflowResult.resume);
@@ -220,12 +220,18 @@ export class ResumeService {
       const generatedResume = await this.saveGeneratedResume(input, validatedResume, workflowResult, extractedJobTitle, extractedCompanyName);
       console.log(`✅ ResumeService: Saved to database with ID: ${generatedResume.id}`);
 
-      // Save cover letter if generated
+      // Save cover letter if generated and link it to the resume
+      let coverLetterId: string | undefined;
       if (workflowResult.coverLetter) {
         console.log('📝 ResumeService: Saving cover letter separately...');
-        const coverLetterResult = await this.saveCoverLetter(input, workflowResult, validatedResume);
-        if (coverLetterResult.success) {
-          console.log(`✅ ResumeService: Cover letter saved with ID: ${coverLetterResult.data?.id}`);
+        const coverLetterResult = await this.saveCoverLetter(input, workflowResult, validatedResume, extractedJobTitle, extractedCompanyName);
+        if (coverLetterResult.success && coverLetterResult.data?.id) {
+          coverLetterId = coverLetterResult.data.id;
+          console.log(`✅ ResumeService: Cover letter saved with ID: ${coverLetterId}`);
+          
+          // Link the cover letter to the resume
+          await this.repository.linkCoverLetter(generatedResume.id, coverLetterId);
+          console.log(`🔗 ResumeService: Cover letter linked to resume`);
         } else {
           console.error('❌ ResumeService: Failed to save cover letter:', coverLetterResult.error);
         }
@@ -240,6 +246,8 @@ export class ResumeService {
           metadata: generatedResume.metadata as Record<string, unknown>,
           createdAt: generatedResume.createdAt
         },
+        coverLetter: workflowResult.coverLetter,
+        coverLetterId,
       };
     } catch (error) {
       console.error('❌ ResumeService: Error:', error);

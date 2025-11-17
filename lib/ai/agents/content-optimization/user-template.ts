@@ -2,7 +2,7 @@
  * Content Optimization User Prompt Template
  */
 
-export const CONTENT_OPTIMIZATION_USER_TEMPLATE = `Optimize this resume for the target job while maintaining authenticity and ATS compliance.
+export const CONTENT_OPTIMIZATION_USER_TEMPLATE = `Optimize this resume for the target job while maintaining ABSOLUTE AUTHENTICITY and focusing on transferable skills.
 
 JOB INFORMATION:
 Title: {jobTitle}
@@ -16,7 +16,7 @@ REQUIRED SKILLS:
 PREFERRED SKILLS:
 {preferredSkills}
 
-ATS KEYWORDS TO INCORPORATE:
+ATS KEYWORDS TO INCORPORATE (only if genuinely applicable):
 {atsKeywords}
 
 CANDIDATE'S PROFILE:
@@ -28,22 +28,53 @@ Experience Match: {experienceMatch}/10
 RECOMMENDATIONS FOR OPTIMIZATION:
 {recommendations}
 
-CURRENT RESUME:
+CURRENT RESUME (CANDIDATE'S ACTUAL EXPERIENCE):
 {currentResume}
 
-OPTIMIZATION INSTRUCTIONS:
-1. **Professional Summary**: Rewrite to emphasize alignment with job requirements
+⚠️ CRITICAL AUTHENTICITY REQUIREMENTS:
+- DO NOT fabricate, exaggerate, or invent ANY skills, experience, or achievements
+- DO NOT add missing skills to the resume - they are missing for a reason
+- DO NOT create fictional experience with required technologies
+- FOCUS on transferable skills from existing experience
+
+✅ OPTIMIZATION INSTRUCTIONS:
+
+1. **Professional Summary**: 
+   - Rewrite using ONLY real background
+   - Emphasize transferable skills that connect to job requirements
+   - If lacking direct experience, highlight related skills from other domains
+
 2. **Work Experience**: 
-   - Reorder and emphasize experiences relevant to this role
-   - Incorporate ATS keywords naturally in descriptions
-   - Add quantifiable achievements where possible
-   - Use action verbs that match job description language
-3. **Skills Section**: Prioritize skills that match job requirements
-4. **Education & Certifications**: Highlight relevant qualifications
-5. **Projects** (if applicable): Emphasize projects using required technologies
+   - Reorder to show most relevant experience first
+   - Reframe existing accomplishments to show relevance to target role
+   - Identify transferable skills: leadership, communication, problem-solving, etc.
+   - Use ATS keywords ONLY where they genuinely apply to actual experience
+   - Connect past achievements to future job needs
+
+3. **Skills Section**: 
+   - ONLY list skills from matched skills (candidate actually has)
+   - DO NOT add missing skills
+   - Prioritize matched skills that align with job requirements
+   - Group related skills to show breadth
+
+4. **Transferable Skills to Emphasize**:
+   - Project management experience → Leadership roles
+   - Customer service → Client relations, communication
+   - Teaching/Training → Mentoring, presentation skills
+   - Data work → Analysis, attention to detail
+   - Any coordination → Organizational skills
+   - Problem-solving in any domain → Critical thinking
+
+5. **Education & Certifications**: 
+   - Highlight relevant qualifications
+   - ONLY include actual credentials
+
+6. **Projects**: 
+   - Emphasize projects demonstrating transferable problem-solving
+   - Highlight methodologies that apply to target role
 
 Return the optimized resume in JSON Resume format (same structure as input).
-Maintain all authentic information - do not fabricate experience or skills.`;
+Remember: Truthful reframing is powerful. Fabrication is forbidden. Work with what the candidate actually has.`;
 
 export interface ContentOptimizationPromptInput {
   jobTitle: string;

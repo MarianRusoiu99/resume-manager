@@ -81,6 +81,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ API: Resume generated successfully (ID: ${result.resumeId})`);
+    if (result.coverLetterId) {
+      console.log(`📝 API: Cover letter saved with ID: ${result.coverLetterId}`);
+    }
 
     // Invalidate cache after generating a new resume
     const cacheKey = `resumes:${session.user.id}`;
@@ -90,7 +93,8 @@ export async function POST(request: NextRequest) {
       success: true,
       resumeId: result.resumeId,
       resume: result.resume,
-      coverLetter: result.coverLetter
+      coverLetter: result.coverLetter,
+      coverLetterId: result.coverLetterId
     }, { status: 201 });
 
     return rateLimitCheck.addHeaders(response);

@@ -47,6 +47,18 @@ export default function CoverLettersPage() {
     fetchCoverLetters();
   }, []);
 
+  // Auto-refresh when page becomes visible (e.g., after navigating back from generation)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchCoverLetters();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const fetchCoverLetters = async () => {
     try {
       setIsLoading(true);

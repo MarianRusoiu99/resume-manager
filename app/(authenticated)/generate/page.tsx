@@ -716,17 +716,6 @@ export default function GeneratePage() {
                     </div>
                   </div>
                 </Card>
-
-                {/* Info Card */}
-                <Card className="p-6 mt-6 bg-blue-50 border-blue-200">
-                  <h3 className="font-semibold text-blue-900 mb-2">💡 Tips for Best Results</h3>
-                  <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• Complete your profile for personalized content</li>
-                    <li>• Include the full job description for better analysis</li>
-                    <li>• Specify the exact job title and company name</li>
-                    <li>• Review and customize the generated letter before sending</li>
-                  </ul>
-                </Card>
               </div>
 
               {/* Preview/Output */}

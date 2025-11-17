@@ -51,8 +51,8 @@ export interface GenerateResumeResult {
  * 
  * This is the main entry point that orchestrates the entire workflow:
  * 1. Analyze job description
- * 2. Generate optimized resume
- * 3. Generate cover letter (if requested)
+ * 2. Generate optimized resume and cover letter IN PARALLEL (if requested)
+ * 3. Return both results
  */
 export async function generateResume(
   input: GenerateResumeInput
@@ -69,40 +69,56 @@ export async function generateResume(
     });
     console.log(`   ✓ Found job: ${jobAnalysis.jobTitle} at ${jobAnalysis.companyName}`);
 
-    // Step 2: Generate optimized resume
-    console.log('✨ Step 2: Generating optimized resume...');
-    const optimizedResume = await optimizeResume({
-      provider: input.provider,
-      modelId: input.modelId,
-      jobAnalysis,
-      userResume: input.userResume,
-      personalInstructions: input.personalInstructions,
-    });
-    console.log('   ✓ Resume optimized');
-
-    // Step 3: Generate cover letter (if requested)
-    let coverLetter: string | undefined;
+    // Step 2 & 3: Generate optimized resume and cover letter IN PARALLEL
     if (input.includeCoverLetter) {
-      console.log('📝 Step 3: Generating cover letter...');
-      const coverLetterResult = await generateCoverLetter({
+      console.log('✨ Step 2 & 3: Generating resume and cover letter in parallel...');
+      
+      const [optimizedResume, coverLetterResult] = await Promise.all([
+        optimizeResume({
+          provider: input.provider,
+          modelId: input.modelId,
+          jobAnalysis,
+          userResume: input.userResume,
+          personalInstructions: input.personalInstructions,
+        }),
+        generateCoverLetter({
+          provider: input.provider,
+          modelId: input.modelId,
+          jobAnalysis,
+          userResume: input.userResume,
+          optimizedResume: input.userResume as OptimizedResume, // Use original resume for cover letter generation in parallel
+        }),
+      ]);
+      
+      console.log('   ✓ Resume optimized');
+      console.log('   ✓ Cover letter generated');
+      console.log('✅ Resume generation complete!');
+
+      return {
+        success: true,
+        resume: optimizedResume as Resume,
+        coverLetter: coverLetterResult.content,
+        jobAnalysis,
+      };
+    } else {
+      // Only generate resume
+      console.log('✨ Step 2: Generating optimized resume...');
+      const optimizedResume = await optimizeResume({
         provider: input.provider,
         modelId: input.modelId,
         jobAnalysis,
         userResume: input.userResume,
-        optimizedResume,
+        personalInstructions: input.personalInstructions,
       });
-      coverLetter = coverLetterResult.content;
-      console.log('   ✓ Cover letter generated');
+      console.log('   ✓ Resume optimized');
+      console.log('✅ Resume generation complete!');
+
+      return {
+        success: true,
+        resume: optimizedResume as Resume,
+        jobAnalysis,
+      };
     }
-
-    console.log('✅ Resume generation complete!');
-
-    return {
-      success: true,
-      resume: optimizedResume as Resume,
-      coverLetter,
-      jobAnalysis, // Include job analysis for extracting title and company
-    };
   } catch (error) {
     console.error('❌ Resume generation failed:', error);
     return {
