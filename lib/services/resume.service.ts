@@ -158,7 +158,7 @@ export class ResumeService {
   }
   constructor(
     private readonly repository: GeneratedResumeRepository = generatedResumeRepository
-  ) {}
+  ) { }
 
   /**
    * Generate a new resume using AI workflow
@@ -229,7 +229,7 @@ export class ResumeService {
         if (coverLetterResult.success && coverLetterResult.data?.id) {
           coverLetterId = coverLetterResult.data.id;
           console.log(`✅ ResumeService: Cover letter saved with ID: ${coverLetterId}`);
-          
+
           // Link the cover letter to the resume
           await this.repository.linkCoverLetter(generatedResume.id, coverLetterId);
           console.log(`🔗 ResumeService: Cover letter linked to resume`);
@@ -425,18 +425,18 @@ export class ResumeService {
     }
   }
 
-    /**
-   * List all resumes for a user
-   */
+  /**
+ * List all resumes for a user
+ */
   async listResumes(userId: string) {
     const resumes = await this.repository.findByUserId(userId);
-    
+
     return resumes.map(resume => {
       // Parse jobMetadata to extract jobTitle and companyName
       const jobMetadata = resume.jobMetadata as Record<string, unknown> | null;
       const jobTitle = (jobMetadata?.jobTitle as string) || null;
       const companyName = (jobMetadata?.companyName as string) || null;
-      
+
       // Parse and normalize metadata to match frontend expectations
       const storedMetadata = resume.metadata as Record<string, unknown>;
       const normalizedMetadata = {
@@ -445,7 +445,7 @@ export class ResumeService {
         totalTokens: (storedMetadata.totalTokens as number) || 0,
         processingTime: (storedMetadata.processingTime as number) || 0
       };
-      
+
       return {
         id: resume.id,
         userId: resume.userId,
@@ -474,7 +474,7 @@ export class ResumeService {
    */
   async getResume(resumeId: string, userId: string) {
     const resume = await this.repository.findByIdAndUserId(resumeId, userId);
-    
+
     if (!resume) {
       return null;
     }
@@ -501,7 +501,7 @@ export class ResumeService {
       companyName,
       content: resume.resume as Record<string, unknown>,
       metadata: normalizedMetadata,
-  // coverLetter removed (dropped from schema)
+      // coverLetter removed (dropped from schema)
       // Removed: pdfUrl and templateCustomization (simplified template system)
       templateId: resume.templateId,
       createdAt: resume.createdAt,
@@ -516,7 +516,7 @@ export class ResumeService {
     try {
       // Verify ownership
       const resume = await this.repository.findByIdAndUserId(resumeId, userId);
-      
+
       if (!resume) {
         return {
           success: false,
@@ -535,19 +535,19 @@ export class ResumeService {
     }
   }
 
-    /**
-   * Update Resume Content (for manual edits)
-   * 
-   * @param resumeId - Resume ID
-   * @param userId - User ID (for ownership verification)
-   * @param resumeData - Updated resume data (JSON Resume format)
-   * @returns Updated resume or error
-   */
+  /**
+ * Update Resume Content (for manual edits)
+ * 
+ * @param resumeId - Resume ID
+ * @param userId - User ID (for ownership verification)
+ * @param resumeData - Updated resume data (JSON Resume format)
+ * @returns Updated resume or error
+ */
   async updateResumeContent(resumeId: string, userId: string, resumeData: Resume) {
     try {
       // Verify ownership
       const existingResume = await this.repository.findByIdAndUserId(resumeId, userId);
-      
+
       if (!existingResume) {
         throw new Error('Resume not found or access denied');
       }
@@ -567,7 +567,7 @@ export class ResumeService {
       });
 
       // Fetch template if needed
-      const template = updatedResume.templateId 
+      const template = updatedResume.templateId
         ? await prisma.resumeTemplate.findUnique({ where: { id: updatedResume.templateId } })
         : null;
 
@@ -577,7 +577,7 @@ export class ResumeService {
         jobDescription: updatedResume.jobDescription,
         jobMetadata: updatedResume.jobMetadata,
         template,
-  // coverLetter removed (dropped from schema)
+        // coverLetter removed (dropped from schema)
         metadata: updatedResume.metadata,
         createdAt: updatedResume.createdAt,
         updatedAt: updatedResume.updatedAt,
@@ -600,7 +600,7 @@ export class ResumeService {
     try {
       // Verify ownership
       const existingResume = await this.repository.findByIdAndUserId(resumeId, userId);
-      
+
       if (!existingResume) {
         throw new Error('Resume not found or access denied');
       }
@@ -615,7 +615,7 @@ export class ResumeService {
       });
 
       // Fetch template if needed
-      const template = updatedResume.templateId 
+      const template = updatedResume.templateId
         ? await prisma.resumeTemplate.findUnique({ where: { id: updatedResume.templateId } })
         : null;
 
@@ -626,7 +626,7 @@ export class ResumeService {
         jobMetadata: updatedResume.jobMetadata,
         templateId: updatedResume.templateId,
         template,
-  // coverLetter removed (dropped from schema)
+        // coverLetter removed (dropped from schema)
         metadata: updatedResume.metadata,
         createdAt: updatedResume.createdAt,
         updatedAt: updatedResume.updatedAt,
@@ -696,11 +696,11 @@ export class ResumeService {
         modelId: input.modelId,
         profileId: input.profileId,
       } as GenerateResumeServiceInput);
-      
+
       if (!providerResult.success || !providerResult.provider) {
         return { success: false, error: providerResult.error || 'Provider resolution failed' };
       }
-      
+
       const provider = providerResult.provider;
       const modelId = providerResult.modelId!;
 
@@ -722,7 +722,7 @@ export class ResumeService {
         provider,
         modelId,
         jobAnalysis,
-        userResume,
+        userResume: userResume!,
         optimizedResume: userResume as OptimizedResume, // Use original resume as optimized resume for standalone generation
       });
 
@@ -744,7 +744,7 @@ export class ResumeService {
       };
 
       const saveResult = await coverLetterService.createCoverLetter(coverLetterData);
-      
+
       if (!saveResult.success || !saveResult.data?.id) {
         console.error('❌ Failed to save cover letter:', saveResult.error);
         return { success: false, error: saveResult.error || 'Failed to save cover letter' };

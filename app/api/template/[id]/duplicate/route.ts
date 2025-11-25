@@ -37,7 +37,7 @@ export async function POST(
     // Create duplicate with modified name
     const result = await templateService.createTemplate({
       name: `${original.name} (Copy)`,
-      category: original.category,
+      category: original.category.toLowerCase() as any,
       description: original.description,
       htmlTemplate: original.htmlTemplate,
       cssStyles: original.cssStyles,

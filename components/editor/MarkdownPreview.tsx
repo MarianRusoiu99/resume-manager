@@ -33,7 +33,7 @@ export function MarkdownPreview({ content, className }: MarkdownPreviewProps) {
       '[&>*:first-child]:mt-0 [&>*:last-child]:mb-0',
       className
     )}>
-      <ReactMarkdown 
+      <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
           // Custom paragraph rendering to preserve line breaks

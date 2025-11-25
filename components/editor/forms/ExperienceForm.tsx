@@ -4,11 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Experience } from "@/lib/validations/jsonresume";
+import { Work } from "@/lib/validations/jsonresume";
 
 interface ExperienceFormProps {
-  experiences: Experience[];
-  onChange: (experiences: Experience[]) => void;
+  experiences: Work[];
+  onChange: (experiences: Work[]) => void;
 }
 
 export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
@@ -16,7 +16,7 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
   const localExperiences = experiences.length > 0 ? experiences : [];
 
   const addExperience = () => {
-    const newExperience: Experience = {
+    const newExperience: Work = {
       name: "",
       position: "",
       startDate: "",
@@ -31,7 +31,7 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
     onChange(localExperiences.filter((_, i) => i !== index));
   };
 
-  const updateExperience = (index: number, field: keyof Experience, value: string | boolean | string[]) => {
+  const updateExperience = (index: number, field: keyof Work, value: string | boolean | string[]) => {
     const updated = localExperiences.map((exp, i) => {
       if (i === index) {
         return { ...exp, [field]: value };

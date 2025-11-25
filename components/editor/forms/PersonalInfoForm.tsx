@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { PersonalInfo } from "@/lib/validations/jsonresume";
+import { Basics } from "@/lib/validations/jsonresume";
 import { useAutoSave } from "@/lib/hooks/useAutoSave";
 
 // Temporary form schema that bridges the gap between old UI and JSON Resume
@@ -56,16 +56,16 @@ const personalInfoFormSchema = z.object({
 type PersonalInfoFormData = z.infer<typeof personalInfoFormSchema>;
 
 interface PersonalInfoFormProps {
-  initialData?: PersonalInfo;
-  onSave?: (data: PersonalInfo) => void;
+  initialData?: Basics;
+  onSave?: (data: Basics) => void;
   autoSave?: boolean;
 }
 
 // Helper function to convert JSON Resume basics to form data
-function basicsToFormData(basics?: PersonalInfo): PersonalInfoFormData {
+function basicsToFormData(basics?: Basics): PersonalInfoFormData {
   const linkedinProfile = basics?.profiles?.find(p => p.network?.toLowerCase() === 'linkedin');
   const githubProfile = basics?.profiles?.find(p => p.network?.toLowerCase() === 'github');
-  
+
   return {
     name: basics?.name || "",
     email: basics?.email || "",
@@ -78,23 +78,23 @@ function basicsToFormData(basics?: PersonalInfo): PersonalInfoFormData {
 }
 
 // Helper function to convert form data to JSON Resume basics
-function formDataToBasics(formData: PersonalInfoFormData): PersonalInfo {
+function formDataToBasics(formData: PersonalInfoFormData): Basics {
   const profiles = [];
-  
+
   if (formData.linkedin) {
     profiles.push({
       network: "LinkedIn",
       url: formData.linkedin,
     });
   }
-  
+
   if (formData.github) {
     profiles.push({
       network: "GitHub",
       url: formData.github,
     });
   }
-  
+
   return {
     name: formData.name,
     email: formData.email,

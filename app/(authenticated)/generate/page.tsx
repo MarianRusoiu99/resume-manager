@@ -109,11 +109,11 @@ interface GeneratedResume {
 export default function GeneratePage() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
-  
+
   // Common state
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [models, setModels] = useState<Model[]>([]);
-  
+
   // Resume generation state
   const [resumeJobDescription, setResumeJobDescription] = useState('');
   const [generateCoverLetter, setGenerateCoverLetter] = useState(false);
@@ -127,7 +127,7 @@ export default function GeneratePage() {
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
   const [generatedResumeId, setGeneratedResumeId] = useState<string | null>(null);
   const [generatedCoverLetterFromResume, setGeneratedCoverLetterFromResume] = useState<string | null>(null);
-  
+
   // Resume progress streaming state
   const [useStreaming] = useState(true);
   const [progressStep, setProgressStep] = useState('');
@@ -256,43 +256,43 @@ export default function GeneratePage() {
       }
 
       let buffer = '';
-      
+
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) break;
-        
+
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n\n');
         buffer = lines.pop() || '';
-        
+
         for (const line of lines) {
           if (!line.trim()) continue;
-          
+
           const eventMatch = line.match(/^event: (.+)$/m);
           const dataMatch = line.match(/^data: (.+)$/m);
-          
+
           if (eventMatch && dataMatch) {
             const eventType = eventMatch[1];
             const eventData = JSON.parse(dataMatch[1]);
-            
+
             switch (eventType) {
               case 'connected':
                 console.log('Connected to stream');
                 break;
-              
+
               case 'start':
                 setProgressStep('init');
                 setProgressMessage('Starting generation...');
                 setProgressPercent(0);
                 break;
-              
+
               case 'progress':
                 setProgressStep(eventData.step);
                 setProgressMessage(eventData.message);
                 setProgressPercent(eventData.progress);
                 break;
-              
+
               case 'complete':
                 setProgressStep('complete');
                 setProgressMessage('Resume generated successfully!');
@@ -302,7 +302,7 @@ export default function GeneratePage() {
                 setGeneratedCoverLetterFromResume(eventData.coverLetter || null);
                 toast.success('Resume generated successfully!');
                 break;
-              
+
               case 'error':
                 throw new Error(eventData.message || 'Generation failed');
             }
@@ -336,7 +336,7 @@ export default function GeneratePage() {
 
     // Use the selected profile ID, or fall back to the first profile if somehow not set
     const profileId = selectedCoverLetterProfileId || profiles[0]?.id;
-    
+
     if (!profileId) {
       setCoverLetterError('Please select a profile');
       toast.error('Please select a profile');
@@ -552,9 +552,9 @@ export default function GeneratePage() {
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                         <p className="text-sm text-yellow-800">
                           ⚠️ No AI providers configured. Please add an API key in{' '}
-                          <a href="/settings/api-keys" className="underline font-medium">
+                          <Link href="/settings/api-keys" className="underline font-medium">
                             Settings → API Keys
-                          </a>{' '}
+                          </Link>{' '}
                           to generate resumes.
                         </p>
                       </div>
@@ -574,7 +574,7 @@ export default function GeneratePage() {
                           <span className="text-blue-700">{progressPercent}%</span>
                         </div>
                         <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
-                          <div 
+                          <div
                             className="bg-blue-600 h-full transition-all duration-300 ease-out"
                             style={{ width: `${progressPercent}%` }}
                           />
@@ -617,16 +617,16 @@ export default function GeneratePage() {
                         </Button>
                       </Link>
                     </div>
-                    
+
                     <ResumePreview
                       resumeData={generatedResume.content as any}
                       resumeId={generatedResumeId}
-                      onTemplateChange={() => {}}
+                      onTemplateChange={() => { }}
                       showTemplateSelector={true}
                       showCard={true}
                       previewKey={Number(generatedResumeId)}
                     />
-                    
+
                     {/* Cover Letter Section */}
                     {generatedCoverLetterFromResume && (
                       <CoverLetterEditor
@@ -671,7 +671,7 @@ export default function GeneratePage() {
               <div>
                 <Card className="p-6">
                   <h2 className="text-xl font-semibold mb-4">Job Details</h2>
-                  
+
                   <div className="space-y-4">
                     <div>
                       <label htmlFor="coverLetterJobDescription" className="block text-sm font-medium mb-2">
@@ -743,9 +743,9 @@ export default function GeneratePage() {
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                         <p className="text-sm text-yellow-800">
                           ⚠️ No AI providers configured. Please add an API key in{' '}
-                          <a href="/settings/api-keys" className="underline font-medium">
+                          <Link href="/settings/api-keys" className="underline font-medium">
                             Settings → API Keys
-                          </a>{' '}
+                          </Link>{' '}
                           to generate cover letters.
                         </p>
                       </div>
@@ -774,9 +774,9 @@ export default function GeneratePage() {
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                         <p className="text-sm text-yellow-800">
                           ⚠️ No profiles found. Please{' '}
-                          <a href="/profile" className="underline font-medium">
+                          <Link href="/profile" className="underline font-medium">
                             create a profile
-                          </a>{' '}
+                          </Link>{' '}
                           before generating a cover letter.
                         </p>
                       </div>

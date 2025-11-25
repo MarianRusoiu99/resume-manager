@@ -103,7 +103,7 @@ export class TemplateRepository {
       };
       // Accept both enum and string
       if (typeof data.category === 'string' && categoryMap[data.category]) {
-        updateData.category = categoryMap[data.category];
+        updateData.category = categoryMap[data.category] as TemplateCategory;
       } else {
         updateData.category = data.category;
       }

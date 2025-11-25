@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { z } from 'zod';
 import { generateResume } from '@/lib/ai';
+import { OpenAIProvider } from '@/lib/ai/providers/openai';
 import { profileService } from '@/lib/services/profile.service';
 import type { Resume } from '@/lib/validations/jsonresume';
 
@@ -70,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     // Get user's profile (their current resume)
     const profileResult = await profileService.getProfile(session.user.id);
-    
+
     if (!profileResult.data) {
       return NextResponse.json(
         { error: 'Profile not found. Please create a profile first.' },
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
     }
 
     const profileData = profileResult.data;
-    
+
     // Type guard to ensure we have a profile with resume field
     if (!profileData || typeof profileData !== 'object' || !('resume' in profileData)) {
       return NextResponse.json(
@@ -91,9 +92,17 @@ export async function POST(request: NextRequest) {
     // Extract resume from profile
     const userResume = profileData.resume as Resume;
 
+    // Create OpenAI provider instance
+    const provider = new OpenAIProvider({
+      apiKey,
+      type: 'openai',
+      name: 'OpenAI'
+    });
+
     // Generate the resume using simple workflow
     const result = await generateResume({
-      apiKey,
+      provider,
+      modelId: 'gpt-4o', // Default to GPT-4o for simple workflow
       jobDescription,
       userResume,
       includeCoverLetter: generateCoverLetter,

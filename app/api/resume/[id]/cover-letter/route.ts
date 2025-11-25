@@ -37,9 +37,9 @@ export async function PUT(
 
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
+        {
           error: 'Validation failed',
-          details: validationResult.error.issues 
+          details: validationResult.error.issues
         },
         { status: 400 }
       );
@@ -50,7 +50,10 @@ export async function PUT(
     // Check if resume exists and belongs to user
     const existingResume = await prisma.generatedResume.findUnique({
       where: { id: resumeId },
-      select: { userId: true },
+      select: {
+        userId: true,
+        jobDescription: true,
+      },
     });
 
     if (!existingResume) {
@@ -70,8 +73,21 @@ export async function PUT(
     // Update the cover letter
     const updatedResume = await prisma.generatedResume.update({
       where: { id: resumeId },
-      data: { 
-        coverLetter,
+      data: {
+        coverLetter: {
+          upsert: {
+            create: {
+              userId: session.user.id,
+              content: coverLetter,
+              jobDescription: existingResume.jobDescription,
+              metadata: {},
+            },
+            update: {
+              content: coverLetter,
+              updatedAt: new Date(),
+            }
+          }
+        },
         updatedAt: new Date(),
       },
       select: {
@@ -89,8 +105,8 @@ export async function PUT(
   } catch (error) {
     console.error('[Update Cover Letter API] Error:', error);
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Failed to update cover letter' 
+      {
+        error: error instanceof Error ? error.message : 'Failed to update cover letter'
       },
       { status: 500 }
     );
