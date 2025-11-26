@@ -116,8 +116,8 @@ export function renderCompleteDocumentClient(
     html {
       width: 210mm;
       min-height: 297mm;
-      margin: 0;
-      padding: 0;
+      padding: 2cm;
+  margin: 1cm auto;
       background: #fff;
       color: #222;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

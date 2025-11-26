@@ -3,7 +3,7 @@ import type { ResumeTemplate } from '@/lib/templates/template';
 import { z } from 'zod';
 
 // Validation schemas
-const templateCategorySchema = z.enum(['professional', 'modern', 'creative', 'ats-optimized', 'minimal']);
+const templateCategorySchema = z.enum(['PROFESSIONAL', 'MODERN', 'CREATIVE', 'ATS_OPTIMIZED', 'MINIMAL']);
 
 const createTemplateSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),

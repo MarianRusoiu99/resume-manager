@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ProfileCard } from "./ProfileCard";
+import { ResumeImportButton } from "./ResumeImportButton";
 import { Button } from "@/components/ui";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -71,10 +72,10 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
 
       const data = await response.json();
       toast.success("Profile created successfully");
-      
+
       // Add the new profile to the local state
       setProfiles((prev) => [...prev, data]);
-      
+
       // Navigate to edit the new profile
       router.push(`/profile/${data.id}`);
     } catch (error) {
@@ -107,17 +108,54 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
     );
   };
 
+  const handleImportSuccess = async (resume: Resume) => {
+    setIsCreating(true);
+    try {
+      const response = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: `Imported Profile ${profiles.length + 1}`,
+          resume,
+          isDefault: profiles.length === 0,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to create profile");
+      }
+
+      const data = await response.json();
+      toast.success("Profile created from imported resume!");
+
+      // Add the new profile to the local state
+      setProfiles((prev) => [...prev, data]);
+
+      // Navigate to edit the new profile
+      router.push(`/profile/${data.id}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create profile";
+      toast.error(message);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   if (profiles.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
         <h3 className="text-2xl font-semibold mb-2">No profiles yet</h3>
         <p className="text-muted-foreground mb-6">
-          Create your first profile to get started
+          Create your first profile or import an existing resume
         </p>
-        <Button onClick={handleCreateProfile} disabled={isCreating} size="lg">
-          <Plus className="h-5 w-5 mr-2" />
-          {isCreating ? "Creating..." : "Create Profile"}
-        </Button>
+        <div className="flex gap-3">
+          <Button onClick={handleCreateProfile} disabled={isCreating} size="lg">
+            <Plus className="h-5 w-5 mr-2" />
+            {isCreating ? "Creating..." : "Create Profile"}
+          </Button>
+          <ResumeImportButton onImportSuccess={handleImportSuccess} />
+        </div>
       </div>
     );
   }
@@ -128,10 +166,13 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
         <p className="text-muted-foreground">
           {profiles.length} {profiles.length === 1 ? "profile" : "profiles"}
         </p>
-        <Button onClick={handleCreateProfile} disabled={isCreating}>
-          <Plus className="h-4 w-4 mr-2" />
-          {isCreating ? "Creating..." : "New Profile"}
-        </Button>
+        <div className="flex gap-2">
+          <ResumeImportButton onImportSuccess={handleImportSuccess} />
+          <Button onClick={handleCreateProfile} disabled={isCreating}>
+            <Plus className="h-4 w-4 mr-2" />
+            {isCreating ? "Creating..." : "New Profile"}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
