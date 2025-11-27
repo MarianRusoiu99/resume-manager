@@ -730,7 +730,7 @@ export default function GeneratePage() {
                           disabled={isGeneratingCoverLetter}
                         >
                           {models.map((model) => (
-                            <option className='bg-background text-foreground' key={model.id} value={model.id}>
+                            <option className='bg-background text-foreground' key={`${model.providerId}-${model.id}`} value={model.id}>
                               {model.name} ({model.providerType})
                             </option>
                           ))}

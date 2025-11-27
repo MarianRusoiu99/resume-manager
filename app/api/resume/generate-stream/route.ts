@@ -14,6 +14,7 @@ import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-he
 // Request validation schema
 const generateResumeSchema = z.object({
   jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
+  profileId: z.string().optional(),
   templateId: z.string().optional(),
   generateCoverLetter: z.boolean().optional(),
   personalInstructions: z.string().optional(),
@@ -56,9 +57,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { jobDescription, templateId, generateCoverLetter, personalInstructions } = validation.data;
+    const { jobDescription, profileId, templateId, generateCoverLetter, personalInstructions } = validation.data;
 
     console.log(`\n📡 SSE: Resume generation with streaming for user ${session.user.id}`);
+    console.log(`   Profile ID: ${profileId || 'default'}`);
     console.log(`   Cover letter: ${generateCoverLetter ? 'Yes' : 'No'}`);
 
     // Create a readable stream for SSE
@@ -113,6 +115,7 @@ export async function POST(request: NextRequest) {
           const result = await resumeService.generateResumeWithProgress({
             userId: session.user.id,
             jobDescription,
+            profileId,
             templateId,
             generateCoverLetter,
             personalInstructions,

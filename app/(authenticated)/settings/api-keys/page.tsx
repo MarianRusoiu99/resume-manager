@@ -32,7 +32,7 @@ interface ApiProvider {
   name: string;
   provider: string;
   keyPreview: string;
-  models: string[];
+  models: ModelInfo[]; // Changed from string[] to ModelInfo[]
   isActive: boolean;
   createdAt: string;
   lastUsedAt: string | null;
@@ -215,24 +215,21 @@ export default function ApiKeysPage() {
                       </span>
                     )}
                   </div>
-                  
+
                   <p className="text-sm text-muted-foreground mb-3">
                     {config?.name || provider.provider} • {provider.keyPreview}
                   </p>
 
                   <div className="flex flex-wrap gap-2 mb-3">
-                    {provider.models && provider.models.map((model) => {
-                      const modelInfo = config?.models.find((m) => m.id === model);
-                      return (
-                        <span
-                          key={model}
-                          className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700"
-                          title={modelInfo?.description}
-                        >
-                          {modelInfo?.name || model}
-                        </span>
-                      );
-                    })}
+                    {provider.models && provider.models.map((model) => (
+                      <span
+                        key={model.id}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                        title={model.description}
+                      >
+                        {model.name || model.id}
+                      </span>
+                    ))}
                   </div>
 
                   <div className="text-xs text-muted-foreground">
@@ -288,7 +285,7 @@ export default function ApiKeysPage() {
 
         {renderContent()}
       </PageContainer>
-                
+
 
       {/* Add Provider Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>

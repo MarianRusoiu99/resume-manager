@@ -269,7 +269,11 @@ export class ResumeService {
     const fail = (message: string[]) => ({ success: false, errors: message });
 
     const fetchAndValidateProfile = async (): Promise<{ success: true; resume: Resume } | { success: false; error: string }> => {
-      const profileResult = await profileService.getProfile(baseInput.userId);
+      // Use profileId if provided, otherwise get default profile
+      const profileResult = baseInput.profileId
+        ? await profileService.getProfileById(baseInput.profileId, baseInput.userId)
+        : await profileService.getProfile(baseInput.userId);
+
       if (!profileResult.data) return { success: false, error: 'User profile not found. Please complete your profile before generating a resume.' };
 
       const profileData = profileResult.data;
@@ -339,7 +343,16 @@ export class ResumeService {
       onProgress('profile', 'Profile loaded successfully', 10);
       const userResume = profileFetch.resume;
 
+      // Debug: Log profile summary to verify it has real data
+      console.log(`📊 Profile Summary:`);
+      console.log(`   Name: ${userResume.basics?.name || 'Not set'}`);
+      console.log(`   Email: ${userResume.basics?.email || 'Not set'}`);
+      console.log(`   Work Experience: ${userResume.work?.length || 0} entries`);
+      console.log(`   Education: ${userResume.education?.length || 0} entries`);
+      console.log(`   Skills: ${userResume.skills?.length || 0} entries`);
+
       console.log(`\n🚀 ResumeService: Starting resume generation with progress for user ${baseInput.userId}`);
+
       console.log(`   Job: ${baseInput.jobTitle || 'Not specified'} at ${baseInput.companyName || 'Not specified'}`);
 
       onProgress('workflow', 'Starting AI workflow...', 15);

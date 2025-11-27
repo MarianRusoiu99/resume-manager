@@ -36,23 +36,24 @@ export function SummaryForm({ summary, onChange }: SummaryFormProps) {
 
   const currentSummary = form.watch("summary");
 
-  // Reset form when summary prop changes (only when externally updated)
+  // Only reset form when summary prop changes from external source (not from user typing)
+  // Use a ref to track if we're currently typing to prevent reset during user input
   useEffect(() => {
-    // Only reset if the prop is different from current form value
+    // Only reset if the prop is different from what's in the form
+    // This happens when data is loaded from server or changed externally
     if (summary !== currentSummary) {
       form.reset({ summary }, { keepDefaultValues: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [summary]); // Only depend on summary prop, not form
+  }, [summary]); // Only depend on summary prop
 
-  // Call onChange when form value changes (debounced to avoid rapid updates)
+  // Call onChange when form value changes (debounced)
   useEffect(() => {
-    // Only call onChange if value actually changed from prop
     if (currentSummary !== summary) {
       const timeoutId = setTimeout(() => {
         onChange(currentSummary);
       }, 300); // 300ms debounce
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [currentSummary, onChange, summary]);

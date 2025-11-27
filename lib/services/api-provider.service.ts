@@ -37,6 +37,32 @@ export interface ProviderWithModels {
   lastUsedAt: Date | null;
 }
 
+/**
+ * Filter models to only include text/chat models
+ * Excludes image, audio, embedding, and moderation models
+ */
+function filterTextModels(models: AIModel[]): AIModel[] {
+  return models.filter(model => {
+    const modelId = model.id.toLowerCase();
+    const modelName = (model.name || '').toLowerCase();
+
+    // Exclude non-text models
+    const isNonTextModel =
+      modelId.includes('dall-e') ||
+      modelId.includes('whisper') ||
+      modelId.includes('tts') ||
+      modelId.includes('embedding') ||
+      modelId.includes('moderation') ||
+      modelId.includes('vision') ||
+      modelId.startsWith('text-embedding') ||
+      modelName.includes('vision') ||
+      modelName.includes('image') ||
+      modelName.includes('audio');
+
+    return !isNonTextModel;
+  });
+}
+
 class ApiProviderService {
   async addProvider(input: AddApiProviderInput) {
     try {
@@ -60,12 +86,15 @@ class ApiProviderService {
       // Fetch models from the provider API
       let models: AIModel[];
       try {
-        models = await providerInstance.fetchModels();
-        
+        const allModels = await providerInstance.fetchModels();
+
+        // Filter to only text/chat models
+        models = filterTextModels(allModels);
+
         if (!models || models.length === 0) {
           return {
             success: false,
-            error: 'No models available for this API key. Please check your API key permissions.',
+            error: 'No text models available for this API key. Please check your API key permissions.',
           };
         }
       } catch (error) {
@@ -124,14 +153,17 @@ class ApiProviderService {
           const apiKey = decryptApiKey(provider.encryptedKey);
           const providerType = provider.provider.toLowerCase(); // Convert from DB enum to lowercase
           const providerInstance = createProvider(providerType, apiKey);
-          
+
           // Fetch current models from API to get full model details
-          const models = await providerInstance.fetchModels();
-          
+          const allModels = await providerInstance.fetchModels();
+
+          // Filter to only text/chat models
+          const textModels = filterTextModels(allModels);
+
           // Filter to only include models that are stored in the database
           const storedModelIds = provider.models;
-          const filteredModels = models.filter((m) => storedModelIds.includes(m.id));
-          
+          const filteredModels = textModels.filter((m) => storedModelIds.includes(m.id));
+
           const keyPreview = providerInstance.getKeyPreview(apiKey);
 
           providersWithModels.push({
@@ -176,7 +208,7 @@ class ApiProviderService {
         data: providers.map((p) => {
           const providerType = p.provider.toLowerCase(); // Convert from DB enum to lowercase
           const keyPreview = this.getStoredKeyPreview(providerType, p.encryptedKey);
-          
+
           return {
             id: p.id,
             name: p.name,
@@ -198,7 +230,7 @@ class ApiProviderService {
 
   private getStoredKeyPreview(providerType: string, _encryptedKey: string): string {
     const previews: Record<string, string> = {
-      openai: 'sk-proj-...', 
+      openai: 'sk-proj-...',
       anthropic: 'sk-ant-...',
       google: 'AIza...',
     };
@@ -250,10 +282,13 @@ class ApiProviderService {
       }
 
       const activeProviders = result.data.filter((p) => p.isActive);
-      
+
+      // Create unique model entries with composite keys
       const allModels = activeProviders.flatMap((provider) =>
         provider.models.map((model) => ({
           ...model,
+          // Create unique ID by combining provider ID and model ID
+          uniqueId: `${provider.id}-${model.id}`,
           providerId: provider.id,
           providerType: provider.provider, // Already lowercase from getUserProvidersWithModels
           providerName: getProviderName(provider.provider as any),
@@ -293,7 +328,7 @@ class ApiProviderService {
       if (input.apiKey !== undefined) {
         const providerType = provider.provider.toLowerCase(); // Convert from DB enum to lowercase
         const providerInstance = createProvider(providerType, input.apiKey);
-        
+
         if (!providerInstance.validateApiKey(input.apiKey)) {
           return {
             success: false,

@@ -7,7 +7,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 });
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: 'standalone', // Enable for Docker builds
 };
 
 export default withBundleAnalyzer(nextConfig);

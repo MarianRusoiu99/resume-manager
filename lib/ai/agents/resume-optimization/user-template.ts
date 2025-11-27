@@ -7,21 +7,21 @@
 import type { Resume } from '@/lib/validations/jsonresume';
 
 export interface ResumeOptimizationInput {
-  jobTitle: string;
-  companyName: string;
-  keyResponsibilities: string[];
-  requiredSkills: string[];
-  preferredSkills: string[];
-  atsKeywords: string[];
-  currentResume: Resume;
-  personalInstructions?: string;
+   jobTitle: string;
+   companyName: string;
+   keyResponsibilities: string[];
+   requiredSkills: string[];
+   preferredSkills: string[];
+   atsKeywords: string[];
+   currentResume: Resume;
+   personalInstructions?: string;
 }
 
 /**
  * Format resume optimization prompt with job analysis and user resume
  */
 export function formatResumeOptimizationPrompt(input: ResumeOptimizationInput): string {
-  return `Optimize this resume for the target job while maintaining ABSOLUTE AUTHENTICITY and focusing on transferable skills.
+   return `Optimize this resume for the target job while maintaining ABSOLUTE AUTHENTICITY and focusing on transferable skills.
 
 JOB INFORMATION:
 - Job Title: ${input.jobTitle}
@@ -39,8 +39,6 @@ ${input.atsKeywords.join(', ')}
 
 CURRENT RESUME (CANDIDATE'S ACTUAL EXPERIENCE):
 ${JSON.stringify(input.currentResume, null, 2)}
-
-${input.personalInstructions ? `SPECIAL INSTRUCTIONS:\n${input.personalInstructions}\n` : ''}
 
 CRITICAL OPTIMIZATION INSTRUCTIONS:
 

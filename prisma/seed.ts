@@ -91,11 +91,13 @@ async function main() {
 
   // Create default resume templates
   console.log('\n📄 Creating default resume templates...');
-  
+
+  /* 
+  // TODO: Restore template seeding once template files are available
   // Import templates
-  const { modernTemplateHtml, modernTemplateCss } = await import('../lib/templates/modern');
-  const { professionalTemplateHtml, professionalTemplateCss } = await import('../lib/templates/professional');
-  const { minimalTemplateHtml, minimalTemplateCss } = await import('../lib/templates/minimal');
+  // const { modernTemplateHtml, modernTemplateCss } = await import('../lib/templates/modern');
+  // const { professionalTemplateHtml, professionalTemplateCss } = await import('../lib/templates/professional');
+  // const { minimalTemplateHtml, minimalTemplateCss } = await import('../lib/templates/minimal');
   
   const templates = [
     {
@@ -135,6 +137,7 @@ async function main() {
       console.log(`   ✅ Created template: ${template.name} `);
     }
   }
+  */
 
   console.log('');
   console.log('🎉 Database seeding completed successfully!');

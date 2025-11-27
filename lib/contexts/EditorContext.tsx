@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode, useRef } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 
@@ -40,6 +40,10 @@ interface EditorProviderProps {
   onSave: (resume: Resume) => Promise<boolean>;
   /** Auto-load on mount (default: true) */
   autoLoad?: boolean;
+  /** Auto-save on changes (default: true) */
+  autoSave?: boolean;
+  /** Auto-save delay in milliseconds (default: 2000) */
+  autoSaveDelay?: number;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -89,23 +93,27 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
  * </EditorProvider>
  * ```
  */
-export function EditorProvider({ 
-  children, 
+export function EditorProvider({
+  children,
   initialResume,
   onLoad,
   onSave,
-  autoLoad = true
+  autoLoad = true,
+  autoSave = false,  // Disabled by default - use manual save button
+  autoSaveDelay = 2000
 }: EditorProviderProps) {
   const [resume, setResume] = useState<Resume>(initialResume || getEmptyResume());
   const [loading, setLoading] = useState(autoLoad && !!onLoad);
   const [isDirty, setDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * Load data using onLoad callback
    */
   const loadData = useCallback(async () => {
     if (!onLoad) return;
-    
+
     try {
       setLoading(true);
       const data = await onLoad();
@@ -131,6 +139,46 @@ export function EditorProvider({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
+
+  /**
+   * Auto-save when resume changes (debounced)
+   */
+  useEffect(() => {
+    if (!autoSave || !isDirty || isSaving) return;
+
+    // Clear existing timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Set new timeout for autosave
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      console.log('🔄 Autosaving...');
+      setIsSaving(true);
+      try {
+        const success = await onSave(resume);
+        if (success) {
+          setDirty(false);
+          console.log('✅ Autosave successful');
+          // Silent success - no toast for autosave to avoid interrupting user
+        } else {
+          console.error('❌ Autosave failed');
+          toast.error('Failed to auto-save changes');
+        }
+      } catch (error) {
+        console.error('❌ Autosave error:', error);
+        toast.error('Failed to auto-save changes');
+      } finally {
+        setIsSaving(false);
+      }
+    }, autoSaveDelay);
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [resume, isDirty, autoSave, autoSaveDelay, onSave, isSaving]);
 
   /**
    * Update entire resume

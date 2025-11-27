@@ -22,10 +22,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const result = await apiProviderService.getUserProviders(session.user.id);
+    const result = await apiProviderService.getUserProvidersWithModels(session.user.id);
 
     if (!result.success) {
-      console.error('getUserProviders failed:', result.error);
+      console.error('getUserProvidersWithModels failed:', result.error);
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     console.log('Received provider data:', { ...body, apiKey: '[REDACTED]' });
-    
+
     const validatedData = addProviderSchema.parse(body);
     console.log('Validated data:', { ...validatedData, apiKey: '[REDACTED]' });
 
