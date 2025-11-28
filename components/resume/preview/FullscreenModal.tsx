@@ -7,16 +7,12 @@
 
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { RefObject } from 'react';
-import { PaginationControls } from '@/components/ui/pagination-controls';
 import { A4_WIDTH, A4_HEIGHT } from '@/lib/utils/pagination';
 
 interface FullscreenModalProps {
   isOpen: boolean;
   onClose: () => void;
   htmlContent: string | null;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
   fullscreenIframeRef: RefObject<HTMLIFrameElement | null>;
 }
 
@@ -24,9 +20,6 @@ export function FullscreenModal({
   isOpen,
   onClose,
   htmlContent,
-  currentPage,
-  totalPages,
-  onPageChange,
   fullscreenIframeRef,
 }: Readonly<FullscreenModalProps>) {
   if (!htmlContent) return null;
@@ -40,9 +33,9 @@ export function FullscreenModal({
               <div
                 style={{
                   width: A4_WIDTH,
-                  height: A4_HEIGHT,
+                  minHeight: A4_HEIGHT,
                 }}
-                className="shadow-2xl"
+                className="shadow-2xl bg-white"
               >
                 <iframe
                   ref={fullscreenIframeRef}
@@ -52,18 +45,13 @@ export function FullscreenModal({
                   sandbox="allow-same-origin"
                   style={{
                     width: `${A4_WIDTH}px`,
-                    height: `${A4_HEIGHT}px`,
+                    minHeight: `${A4_HEIGHT}px`,
+                    height: '100%',
                   }}
                 />
               </div>
             </div>
           </div>
-          <PaginationControls
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={onPageChange}
-            className="py-4"
-          />
         </div>
       </DialogContent>
     </Dialog>

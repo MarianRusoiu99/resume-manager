@@ -26,9 +26,6 @@ interface PreviewContentProps {
   error: string | null;
   htmlContent: string | null;
   scale: number;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
   iframeRef: RefObject<HTMLIFrameElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
 }
@@ -47,9 +44,6 @@ export function PreviewContent({
   error,
   htmlContent,
   scale,
-  currentPage,
-  totalPages,
-  onPageChange,
   iframeRef,
   containerRef,
 }: Readonly<PreviewContentProps>) {
@@ -67,12 +61,12 @@ export function PreviewContent({
         onRefresh={onRefresh}
       />
 
-      <div className="flex flex-col items-center justify-center w-full min-h-[600px]">
-        <div 
-          className="relative bg-white rounded-lg shadow-lg w-full"
-          style={{ 
-            aspectRatio: '210/297',
-            maxWidth: `${A4_WIDTH}px`,
+      <div className="flex flex-col items-center justify-center w-full h-full overflow-hidden p-4">
+        <div
+          className="relative w-full h-full flex items-center justify-center"
+          style={{
+            maxWidth: '100%',
+            maxHeight: '100%',
           }}
         >
           <PreviewState
@@ -80,9 +74,6 @@ export function PreviewContent({
             error={error}
             htmlContent={htmlContent}
             scale={scale}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={onPageChange}
             iframeRef={iframeRef}
             containerRef={containerRef}
           />

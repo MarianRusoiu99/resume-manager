@@ -6,7 +6,6 @@
 'use client';
 
 import { RefObject } from 'react';
-import { PaginationControls } from '@/components/ui/pagination-controls';
 import { A4_WIDTH, A4_HEIGHT } from '@/lib/utils/pagination';
 
 interface PreviewStateProps {
@@ -14,9 +13,6 @@ interface PreviewStateProps {
   error: string | null;
   htmlContent: string | null;
   scale: number;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
   iframeRef: RefObject<HTMLIFrameElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
 }
@@ -26,9 +22,6 @@ export function PreviewState({
   error,
   htmlContent,
   scale,
-  currentPage,
-  totalPages,
-  onPageChange,
   iframeRef,
   containerRef,
 }: Readonly<PreviewStateProps>) {
@@ -57,40 +50,35 @@ export function PreviewState({
   }
 
   return (
-    <>
-      <div 
-        ref={containerRef}
-        className="absolute inset-0 flex items-center justify-center"
+    <div
+      ref={containerRef}
+      className="flex items-center justify-center w-full h-full"
+    >
+      <div
+        style={{
+          width: A4_WIDTH,
+          height: A4_HEIGHT,
+          transform: `scale(${scale})`,
+          transformOrigin: 'top center',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+        }}
+        className="relative bg-white"
       >
-        <div
+        <iframe
+          ref={iframeRef}
+          srcDoc={htmlContent}
+          className="w-full border-0 bg-white"
+          title="Template Preview"
+          sandbox="allow-same-origin"
           style={{
-            width: A4_WIDTH,
-            height: A4_HEIGHT,
-            transform: `scale(${scale})`,
-            transformOrigin: 'center center',
+            width: `${A4_WIDTH}px`,
+            minHeight: `${A4_HEIGHT}px`,
+            overflow: 'hidden',
           }}
-          className="relative"
-        >
-          <iframe
-            ref={iframeRef}
-            srcDoc={htmlContent}
-            className="w-full h-full border-0"
-            title="Template Preview"
-            sandbox="allow-same-origin"
-            style={{
-              width: `${A4_WIDTH}px`,
-              height: `${A4_HEIGHT}px`,
-              overflow: 'hidden',
-            }}
-          />
-        </div>
+        />
       </div>
-      <PaginationControls
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={onPageChange}
-        className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
-      />
-    </>
+    </div>
   );
 }

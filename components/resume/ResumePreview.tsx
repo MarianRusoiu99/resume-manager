@@ -17,7 +17,7 @@ import { useResumeData } from './preview/useResumeData';
 import { useExportPDF } from './preview/useExportPDF';
 import { usePagination } from './preview/usePagination';
 import { usePreviewScale } from './preview/usePreviewScale';
-import { useIframePagination } from './preview/useIframePagination';
+import { useIframeResize } from './preview/useIframeResize';
 
 // UI Components
 import { PreviewContent } from './preview/PreviewContent';
@@ -88,7 +88,7 @@ export function ResumePreview({
     });
   };
 
-  const { currentPage, totalPages, isFullscreen, setCurrentPage, setTotalPages, toggleFullscreen } = usePagination();
+  const { isFullscreen, toggleFullscreen } = usePagination();
 
   const { scale } = usePreviewScale({
     containerRef,
@@ -104,7 +104,7 @@ export function ResumePreview({
   // Render custom template if provided
   const customHtmlContent = useMemo(() => {
     if (!templateHtml) return null;
-    
+
     try {
       return renderTemplateClientSide({
         htmlTemplate: templateHtml,
@@ -120,15 +120,17 @@ export function ResumePreview({
   // Use custom HTML if provided, otherwise use fetched template
   const htmlContent = customHtmlContent || fetchedHtmlContent;
 
-  // Handle iframe pagination
-  useIframePagination({
+  // Handle iframe resizing
+  useIframeResize({
     iframeRef,
-    fullscreenIframeRef,
     htmlContent,
-    currentPage,
-    setTotalPages,
-    setCurrentPage,
   });
+
+  useIframeResize({
+    iframeRef: fullscreenIframeRef,
+    htmlContent,
+  });
+
 
   if (showCard) {
     return (
@@ -153,9 +155,6 @@ export function ResumePreview({
               error={error}
               htmlContent={htmlContent}
               scale={scale}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
               iframeRef={iframeRef}
               containerRef={containerRef}
             />
@@ -166,9 +165,6 @@ export function ResumePreview({
           isOpen={isFullscreen}
           onClose={toggleFullscreen}
           htmlContent={htmlContent}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
           fullscreenIframeRef={fullscreenIframeRef}
         />
       </>
@@ -191,20 +187,14 @@ export function ResumePreview({
         error={error}
         htmlContent={htmlContent}
         scale={scale}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
         iframeRef={iframeRef}
         containerRef={containerRef}
       />
-      
+
       <FullscreenModal
         isOpen={isFullscreen}
         onClose={toggleFullscreen}
         htmlContent={htmlContent}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
         fullscreenIframeRef={fullscreenIframeRef}
       />
     </>

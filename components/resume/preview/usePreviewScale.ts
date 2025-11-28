@@ -24,8 +24,15 @@ export function usePreviewScale({
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
 
-        const scaleWidth = containerWidth / A4_WIDTH;
-        const scaleHeight = containerHeight / A4_HEIGHT;
+        // Calculate scale to fit both width and height (contain)
+        // Subtract padding/margins if necessary (e.g., 32px for padding)
+        const availableWidth = containerWidth - 32;
+        const availableHeight = containerHeight - 32;
+
+        const scaleWidth = availableWidth / A4_WIDTH;
+        const scaleHeight = availableHeight / A4_HEIGHT;
+
+        // Use the smaller scale to ensure it fits entirely
         const newScale = Math.min(scaleWidth, scaleHeight, 1);
 
         setScale(newScale);

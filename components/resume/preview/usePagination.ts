@@ -6,8 +6,6 @@
 import { useState, useEffect } from 'react';
 
 export function usePagination() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const toggleFullscreen = () => {
@@ -25,18 +23,14 @@ export function usePagination() {
     if (isFullscreen) {
       document.addEventListener('keydown', handleKeyPress);
     }
-    
+
     return () => {
       document.removeEventListener('keydown', handleKeyPress);
     };
   }, [isFullscreen]);
 
   return {
-    currentPage,
-    totalPages,
     isFullscreen,
-    setCurrentPage,
-    setTotalPages,
     toggleFullscreen,
   };
 }
