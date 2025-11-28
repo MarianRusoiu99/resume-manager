@@ -13,7 +13,6 @@ export default function ResumesLoading() {
         title="My Resumes"
         description="View and manage all your generated resumes"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Resumes" },
         ]}
       />

@@ -69,3 +69,4 @@ export { ErrorBoundary } from "./ErrorBoundary";
 export { ConfirmDialog } from "./ConfirmDialog";
 export type { ConfirmDialogProps } from "./ConfirmDialog";
 export { ThemeToggle } from "./ThemeToggle";
+export { PaginationControls } from "./pagination-controls";

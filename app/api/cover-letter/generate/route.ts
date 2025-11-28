@@ -8,17 +8,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { z } from 'zod';
-import { apiKeyService } from '@/lib/services/apikey.service';
-import { profileService } from '@/lib/services/profile.service';
-import { analyzeJobAgent } from '@/lib/ai/workflow/agents/job-analysis.agent';
-import { ChatOpenAI } from '@langchain/openai';
-import type { ResumeGenerationState } from '@/lib/ai/workflow/types';
+import { resumeService } from '@/lib/services/resume.service';
 
 // Validation schema
 const generateCoverLetterSchema = z.object({
   jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
-  jobTitle: z.string().min(1, 'Job title is required'),
-  companyName: z.string().min(1, 'Company name is required'),
+  personalInstructions: z.string().optional(),
+  modelId: z.string().optional(),
+  profileId: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -46,199 +43,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { jobDescription, jobTitle, companyName } = validationResult.data;
+    const { jobDescription, personalInstructions, modelId, profileId } = validationResult.data;
 
-    // Get user's decrypted OpenAI API key
-    const apiKey = await apiKeyService.getDecryptedKey(session.user.id, 'openai');
-    if (!apiKey) {
-      return NextResponse.json(
-        { 
-          error: 'No active API key found. Please add an OpenAI API key in settings.' 
-        },
-        { status: 400 }
-      );
-    }
+    console.log('[Cover Letter API] Generating standalone cover letter...');
 
-    // Get user's profile for personalization
-    const profileResult = await profileService.getProfile(session.user.id);
-    if (!profileResult.data) {
-      return NextResponse.json(
-        { 
-          error: 'Profile not found. Please complete your profile before generating a cover letter.' 
-        },
-        { status: 400 }
-      );
-    }
-
-    const profile = profileResult.data;
-
-    // Type guard for profile data
-    if (!profile || typeof profile !== 'object' || !('personalInfo' in profile)) {
-      return NextResponse.json(
-        { error: 'Invalid profile data' },
-        { status: 400 }
-      );
-    }
-
-    // Build user profile for workflow
-    const userProfile = {
-      personalInfo: {
-        ...(profile.personalInfo as {
-          name: string;
-          email?: string;
-          phone?: string;
-          location?: string;
-          linkedin?: string;
-          github?: string;
-          website?: string;
-        }),
-        email: (profile.personalInfo as { email?: string }).email || session.user.email || '',
-      },
-      summary: (profile.summary as string) || '',
-      experience: ((profile.experience as Array<{
-        company: string;
-        title: string;
-        startDate: string;
-        endDate: string | null;
-        current?: boolean;
-        description: string;
-      }>) || []).map(exp => ({
-        company: exp.company,
-        title: exp.title,
-        startDate: exp.startDate,
-        endDate: exp.endDate || undefined,
-        current: exp.current || !exp.endDate,
-        description: exp.description,
-      })),
-      education: ((profile.education as Array<{
-        school: string;
-        degree: string;
-        field: string;
-        gpa?: string;
-        startDate?: string;
-        endDate: string | null;
-        description?: string;
-      }>) || []).map(edu => ({
-        school: edu.school,
-        degree: edu.degree,
-        field: edu.field,
-        gpa: edu.gpa,
-        startDate: edu.startDate || '',
-        endDate: edu.endDate || undefined,
-        description: edu.description,
-      })),
-      skills: {
-        technical: ((profile.skills as { technical?: string[]; soft?: string[] })?.technical) || [],
-        soft: ((profile.skills as { technical?: string[]; soft?: string[] })?.soft) || [],
-        languages: [],
-      },
-    };
-
-    // Create initial state for job analysis
-    const initialState: ResumeGenerationState = {
+    // Generate cover letter using the service method
+    const result = await resumeService.generateStandaloneCoverLetter({
+      userId: session.user.id,
       jobDescription,
-      jobTitle,
-      companyName,
-      userProfile,
-      messages: [],
-      currentStep: 'analyze_job',
-      errors: [],
-      tokensUsed: 0,
-    };
-
-    console.log('[Cover Letter API] Starting job analysis...');
-    
-    // Step 1: Analyze the job description
-    const jobAnalysisResult = await analyzeJobAgent(initialState, apiKey);
-    
-    if (jobAnalysisResult.errors && jobAnalysisResult.errors.length > 0) {
-      console.error('[Cover Letter API] Job analysis failed:', jobAnalysisResult.errors);
-      return NextResponse.json(
-        { error: jobAnalysisResult.errors.join(', ') },
-        { status: 500 }
-      );
-    }
-
-    if (!jobAnalysisResult.jobAnalysis) {
-      return NextResponse.json(
-        { error: 'Job analysis failed - no results returned' },
-        { status: 500 }
-      );
-    }
-
-    console.log('[Cover Letter API] Job analysis complete');
-    
-    // Step 2: Create simple matching results (for standalone cover letter)
-    const matchingResults = {
-      overallScore: 80,
-      matchingSkills: userProfile.skills.technical.slice(0, 5),
-      missingSkills: [],
-      topExperiences: userProfile.experience.slice(0, 2).map(exp => exp.title),
-    };
-
-    // Step 3: Generate cover letter using AI
-    console.log('[Cover Letter API] Generating cover letter...');
-    
-    const model = new ChatOpenAI({
-      openAIApiKey: apiKey,
-      modelName: 'gpt-4-turbo-preview',
-      temperature: 0.7,
+      personalInstructions,
+      modelId,
+      profileId,
     });
 
-    // Import and use the cover letter agent dynamically
-    const { coverLetterAgent } = await import('@/lib/ai/agents/cover-letter.agent');
-    
-    const coverLetterInput = {
-      jobDescription,
-      jobTitle,
-      companyName,
-      jobAnalysis: {
-        summary: jobAnalysisResult.jobAnalysis.jobSummary,
-        requiredSkills: jobAnalysisResult.jobAnalysis.requirements.required,
-        preferredSkills: jobAnalysisResult.jobAnalysis.requirements.preferred,
-        keyResponsibilities: jobAnalysisResult.jobAnalysis.keyResponsibilities,
-      },
-      userProfile: {
-        personalInfo: userProfile.personalInfo,
-        summary: userProfile.summary,
-        experience: userProfile.experience.map(exp => ({
-          company: exp.company,
-          position: exp.title,
-          startDate: exp.startDate,
-          endDate: exp.endDate || null,
-          description: exp.description,
-          bulletPoints: [],
-        })),
-        education: userProfile.education.map(edu => ({
-          institution: edu.school,
-          degree: edu.degree,
-          field: edu.field,
-        })),
-        skills: {
-          technical: userProfile.skills.technical,
-          soft: userProfile.skills.soft,
-        },
-      },
-      matchingResults,
-    };
+    if (!result.success || !result.coverLetter) {
+      console.error('[Cover Letter API] Generation failed:', result.error);
+      return NextResponse.json(
+        { error: result.error || 'Failed to generate cover letter' },
+        { status: 500 }
+      );
+    }
 
-    const result = await coverLetterAgent(coverLetterInput, model);
-
-    console.log('[Cover Letter API] Cover letter generated successfully');
-    console.log(`[Cover Letter API] Word count: ${result.wordCount}`);
-
-    const totalTokens = (jobAnalysisResult.tokensUsed || 0) + (result.wordCount * 1.3);
+    console.log('[Cover Letter API] Cover letter generated and saved successfully');
 
     return NextResponse.json({
       coverLetter: result.coverLetter,
-      tokensUsed: Math.ceil(totalTokens),
-      metadata: {
-        jobTitle,
-        companyName,
-        wordCount: result.wordCount,
-        tone: result.tone,
-        generatedAt: new Date().toISOString(),
-      },
+      coverLetterId: result.coverLetterId,
+      metadata: result.metadata,
     });
 
   } catch (error) {

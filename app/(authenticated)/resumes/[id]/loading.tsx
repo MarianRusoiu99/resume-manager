@@ -12,7 +12,6 @@ export default function ResumeDetailLoading() {
       <PageHeader
         title="Loading Resume..."
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Resumes", href: "/resumes" },
           { label: "Loading..." },
         ]}

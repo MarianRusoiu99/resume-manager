@@ -1,23 +1,14 @@
-// Base interfaces and types
-export type {
-  AIProvider,
-  AIProviderConfig,
-  AIProviderCapabilities,
-  AIMessage,
-  AICompletionResponse,
-  AICompletionOptions
-} from './providers/base';
+/**
+ * Workflows Module
+ * 
+ * Simple AI workflows using Vercel AI SDK
+ */
 
-// Provider implementations
-export { OpenAIProvider } from './providers/openai';
-
-// Provider registry
-export { AIProviderRegistry, type ProviderType } from './providers/registry';
-
-// Utility functions
 export {
-  getProviderForUser,
-  hasActiveProvider,
-  testUserProvider,
-  getProviderCapabilities
-} from './provider-utils';
+  generateResume,
+  type GenerateResumeInput,
+  type GenerateResumeResult,
+  type JobAnalysisResult,
+  type OptimizedResume,
+  type CoverLetterResult,
+} from './resume-generator';

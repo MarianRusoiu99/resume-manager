@@ -13,7 +13,6 @@ export default function GenerateLoading() {
         title="Generate Resume"
         description="Create an ATS-optimized resume tailored to your target job"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Generate" },
         ]}
       />

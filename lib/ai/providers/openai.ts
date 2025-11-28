@@ -1,121 +1,160 @@
-import OpenAI from 'openai';
-import {
-  AIProvider,
-  AIProviderConfig,
-  AIProviderCapabilities,
-  AIMessage,
-  AICompletionResponse,
-  AICompletionOptions
-} from './base';
+/**
+ * OpenAI Provider Implementation
+ */
 
-export class OpenAIProvider implements AIProvider {
-  readonly name = 'openai';
-  private client: OpenAI;
-  private config: AIProviderConfig;
+import { createOpenAI } from '@ai-sdk/openai';
+import { BaseAIProvider, type AIModel, type ProviderConfig } from './base';
+import type { LanguageModel } from 'ai';
 
-  readonly capabilities: AIProviderCapabilities = {
-    supportsStreaming: true,
-    supportsVision: true,
-    supportsFunctionCalling: true,
-    maxContextLength: 128000, // GPT-4 Turbo
-    defaultModel: 'gpt-4-turbo-preview',
-    availableModels: [
-      'gpt-4-turbo-preview',
-      'gpt-4',
-      'gpt-3.5-turbo',
-      'gpt-3.5-turbo-16k'
-    ]
-  };
+interface OpenAIModelResponse {
+  data: Array<{
+    id: string;
+    object: string;
+    created: number;
+    owned_by: string;
+  }>;
+}
 
-  constructor(config: AIProviderConfig) {
-    this.config = {
-      model: config.model || this.capabilities.defaultModel,
-      temperature: config.temperature ?? 0.7,
-      maxTokens: config.maxTokens ?? 2000,
-      apiKey: config.apiKey
-    };
+/**
+ * OpenAI Provider
+ */
+export class OpenAIProvider extends BaseAIProvider {
+  readonly type = 'openai';
+  readonly name = 'OpenAI';
 
-    this.client = new OpenAI({
-      apiKey: this.config.apiKey
+  private readonly openai: ReturnType<typeof createOpenAI>;
+
+  constructor(config: ProviderConfig) {
+    super(config);
+    this.openai = createOpenAI({
+      apiKey: config.apiKey,
     });
   }
 
-  async complete(
-    messages: AIMessage[],
-    options?: AICompletionOptions
-  ): Promise<AICompletionResponse> {
+  /**
+   * Validate OpenAI API key format
+   * Format: sk-[project-id-optional]<20-100 alphanumeric/underscore/hyphen chars>
+   */
+  validateApiKey(apiKey: string): boolean {
+    // Modern OpenAI keys: sk-proj-... or legacy sk-...
+    return /^sk-[a-zA-Z0-9_-]{20,}$/.test(apiKey);
+  }
+
+  /**
+   * Fetch available models from OpenAI API
+   */
+  async fetchModels(): Promise<AIModel[]> {
     try {
-      const response = await this.client.chat.completions.create({
-        model: this.config.model || this.capabilities.defaultModel,
-        messages: messages.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        })),
-        temperature: options?.temperature ?? this.config.temperature,
-        max_tokens: options?.maxTokens ?? this.config.maxTokens,
-        top_p: options?.topP,
-        frequency_penalty: options?.frequencyPenalty,
-        presence_penalty: options?.presencePenalty,
-        stop: options?.stopSequences
-      });
-
-      const choice = response.choices[0];
-      if (!choice || !choice.message.content) {
-        throw new Error('No response from OpenAI');
-      }
-
-      return {
-        content: choice.message.content,
-        finishReason: this.mapFinishReason(choice.finish_reason),
-        usage: {
-          promptTokens: response.usage?.prompt_tokens || 0,
-          completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0
+      const response = await fetch('https://api.openai.com/v1/models', {
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
         },
-        model: response.model
-      };
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`OpenAI completion failed: ${error.message}`);
-      }
-      throw new Error('OpenAI completion failed: Unknown error');
-    }
-  }
-
-  async validate(): Promise<boolean> {
-    try {
-      // Make a minimal API call to validate the key
-      await this.client.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [{ role: 'user', content: 'test' }],
-        max_tokens: 5
       });
-      return true;
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json() as OpenAIModelResponse;
+
+      // Filter to only GPT models (text generation)
+      const gptModels = data.data
+        .filter((model) => model.id.startsWith('gpt-'))
+        .map((model) => this.mapOpenAIModel(model.id))
+        .sort((a, b) => {
+          // Sort: gpt-4 variants first, then gpt-3.5, then others
+          const order = ['gpt-4', 'gpt-3.5', 'gpt'];
+          const aPrefix = order.find((prefix) => a.id.startsWith(prefix)) || 'zzz';
+          const bPrefix = order.find((prefix) => b.id.startsWith(prefix)) || 'zzz';
+          
+          if (aPrefix !== bPrefix) {
+            return order.indexOf(aPrefix) - order.indexOf(bPrefix);
+          }
+          
+          return a.id.localeCompare(b.id);
+        });
+
+      return gptModels;
     } catch (error) {
-      console.error('OpenAI validation failed:', error);
-      return false;
+      console.error('Error fetching OpenAI models:', error);
+      throw new Error(
+        `Failed to fetch models from OpenAI: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
-  getConfig(): AIProviderConfig {
-    return { ...this.config };
+  /**
+   * Map OpenAI model ID to AIModel format
+   */
+  private mapOpenAIModel(modelId: string): AIModel {
+    // Known model metadata
+    const modelMetadata: Record<string, Partial<AIModel>> = {
+      'gpt-4o': {
+        name: 'GPT-4o',
+        description: 'Most advanced multimodal model',
+        contextWindow: 128000,
+        maxOutputTokens: 4096,
+      },
+      'gpt-4o-mini': {
+        name: 'GPT-4o Mini',
+        description: 'Affordable and intelligent small model',
+        contextWindow: 128000,
+        maxOutputTokens: 16384,
+      },
+      'gpt-4-turbo': {
+        name: 'GPT-4 Turbo',
+        description: 'High-performance GPT-4 variant',
+        contextWindow: 128000,
+        maxOutputTokens: 4096,
+      },
+      'gpt-4': {
+        name: 'GPT-4',
+        description: 'Most capable GPT-4 model',
+        contextWindow: 8192,
+        maxOutputTokens: 4096,
+      },
+      'gpt-3.5-turbo': {
+        name: 'GPT-3.5 Turbo',
+        description: 'Fast and cost-effective',
+        contextWindow: 16385,
+        maxOutputTokens: 4096,
+      },
+    };
+
+    const metadata = modelMetadata[modelId] || {};
+
+    return {
+      id: modelId,
+      name: metadata.name || this.formatModelName(modelId),
+      description: metadata.description,
+      contextWindow: metadata.contextWindow,
+      maxOutputTokens: metadata.maxOutputTokens,
+    };
   }
 
-  private mapFinishReason(
-    reason: string | null | undefined
-  ): 'stop' | 'length' | 'content_filter' | 'tool_calls' {
-    switch (reason) {
-      case 'stop':
-        return 'stop';
-      case 'length':
-        return 'length';
-      case 'content_filter':
-        return 'content_filter';
-      case 'tool_calls':
-      case 'function_call':
-        return 'tool_calls';
-      default:
-        return 'stop';
+  /**
+   * Format model ID into a readable name
+   */
+  private formatModelName(modelId: string): string {
+    return modelId
+      .split('-')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  }
+
+  /**
+   * Create language model instance
+   */
+  createLanguageModel(modelId: string): LanguageModel {
+    return this.openai(modelId);
+  }
+
+  getKeyPreview(apiKey: string): string {
+    // Show project ID if present (sk-proj-xyz...) or first 12 chars
+    if (apiKey.startsWith('sk-proj-')) {
+      const parts = apiKey.split('-');
+      return `sk-proj-${parts[2]?.substring(0, 8) || ''}...`;
     }
+    return super.getKeyPreview(apiKey);
   }
 }

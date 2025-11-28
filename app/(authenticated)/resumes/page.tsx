@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ResumeCard } from '@/components/resume/ResumeCard';
+import type { Resume as JsonResume } from '@/lib/validations/jsonresume';
 
 interface Resume {
   id: string;
@@ -13,36 +14,7 @@ interface Resume {
   jobTitle: string | null;
   companyName: string | null;
   jobDescription: string | null;
-  content: {
-    personalInfo: {
-      name: string;
-      email: string;
-      phone?: string;
-      location?: string;
-      links?: string[];
-    };
-    summary: string;
-    experience: Array<{
-      company: string;
-      position: string;
-      startDate: string;
-      endDate: string | null;
-      description: string;
-      bulletPoints: string[];
-    }>;
-    education: Array<{
-      institution: string;
-      degree: string;
-      field: string;
-      startDate: string;
-      endDate: string | null;
-      gpa?: string;
-    }>;
-    skills: {
-      technical: string[];
-      soft: string[];
-    };
-  };
+  content: JsonResume;
   templateId: string | null;
   customization: Record<string, unknown> | null;
   pdfUrl: string | null;
@@ -63,21 +35,13 @@ export default function ResumesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [resumeToDelete, setResumeToDelete] = useState<string | null>(null);
-
-  // Fetch resumes on mount
-  useEffect(() => {
-    fetchResumes();
-  }, []);
 
   const fetchResumes = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch('/api/resumes/generate');
+      const response = await fetch('/api/resume/generate');
       
       if (!response.ok) {
         throw new Error('Failed to fetch resumes');
@@ -92,48 +56,30 @@ export default function ResumesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    setResumeToDelete(id);
-    setDeleteDialogOpen(true);
-  };
+  // Fetch resumes on mount
+  useEffect(() => {
+    fetchResumes();
+  }, []);
 
-  const confirmDelete = async () => {
-    if (!resumeToDelete) return;
-
-    try {
-      setDeletingId(resumeToDelete);
-      
-      const response = await fetch(`/api/resumes/${resumeToDelete}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete resume');
+  // Refetch when page becomes visible (e.g., after navigating back from detail page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchResumes();
       }
+    };
 
-      // Remove from local state
-      setResumes(resumes.filter(r => r.id !== resumeToDelete));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete resume');
-    } finally {
-      setDeletingId(null);
-      setDeleteDialogOpen(false);
-      setResumeToDelete(null);
-    }
-  };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
-  const cancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setResumeToDelete(null);
-  };
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
+  const handleDelete = (id: string) => {
+    // Remove from local state - deletion is handled in ResumeCard
+    // The optimistic update provides instant feedback
+    setResumes((prev) => prev.filter((r) => r.id !== id));
   };
 
   // Filter resumes based on search term
@@ -165,7 +111,6 @@ export default function ResumesPage() {
         title="My Resumes"
         description="Manage your AI-generated resumes"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Resumes" },
         ]}
       />
@@ -228,83 +173,36 @@ export default function ResumesPage() {
       {filteredResumes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredResumes.map((resume) => (
-            <Card key={resume.id} className="p-6 hover:shadow-lg transition-shadow">
-              {/* Resume Header */}
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-1 line-clamp-1">
-                  {resume.jobTitle || 'Untitled Resume'}
-                </h3>
-                {resume.companyName && (
-                  <p className="text-sm text-gray-600 mb-2">{resume.companyName}</p>
-                )}
-                <p className="text-xs text-gray-500">
-                  Created {formatDate(resume.createdAt)}
-                </p>
-              </div>
-
-              {/* Job Description Preview */}
-              <p className="text-sm text-gray-700 mb-4 line-clamp-3">
-                {resume.jobDescription}
-              </p>
-
-              {/* Metadata */}
-              <div className="mb-4 pb-4 border-b border-gray-200">
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>Model: {resume.metadata.model}</span>
-                  {resume.isEdited && (
-                    <span className="text-blue-600 font-medium">✏️ Edited</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => router.push(`/resumes/${resume.id}`)}
-                  className="flex-1"
-                  size="sm"
-                >
-                  View
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => handleDelete(resume.id)}
-                  disabled={deletingId === resume.id}
-                  size="sm"
-                  className="flex-1"
-                >
-                  {deletingId === resume.id ? 'Deleting...' : 'Delete'}
-                </Button>
-              </div>
-            </Card>
+            <ResumeCard
+              key={resume.id}
+              id={resume.id}
+              jobTitle={resume.jobTitle}
+              companyName={resume.companyName}
+              content={resume.content}
+              templateId={resume.templateId}
+              createdAt={resume.createdAt}
+              onView={(id) => router.push(`/resumes/${id}`)}
+              onEdit={(id) => router.push(`/resumes/${id}/edit`)}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
-      ) : searchTerm && resumes.length > 0 ? (
+      ) : null}
+      
+      {searchTerm && resumes.length > 0 && filteredResumes.length === 0 && (
         <Card className="p-8 text-center">
           <p className="text-gray-600">
             No resumes found matching &quot;{searchTerm}&quot;
           </p>
         </Card>
-      ) : null}
+      )}
 
       {/* Results Count */}
       {resumes.length > 0 && (
         <div className="mt-6 text-center text-sm text-gray-600">
-          Showing {filteredResumes.length} of {resumes.length} resume{resumes.length !== 1 ? 's' : ''}
+          Showing {filteredResumes.length} of {resumes.length} resume{resumes.length === 1 ? '' : 's'}
         </div>
       )}
-
-      {/* Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={deleteDialogOpen}
-        title="Delete Resume"
-        message="Are you sure you want to delete this resume? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-      />
       </PageContainer>
     </>
   );

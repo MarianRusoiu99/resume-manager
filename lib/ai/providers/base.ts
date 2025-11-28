@@ -1,71 +1,89 @@
 /**
- * Base interface for AI providers
- * Supports OpenAI, Anthropic, Google, etc.
+ * Base Provider Interface
+ * Abstract interface for all AI providers
  */
 
-export interface AIProviderConfig {
-  apiKey: string;
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-}
+import type { LanguageModel } from 'ai';
 
-export interface AIProviderCapabilities {
-  supportsStreaming: boolean;
-  supportsVision: boolean;
-  supportsFunctionCalling: boolean;
-  maxContextLength: number;
-  defaultModel: string;
-  availableModels: string[];
-}
-
-export interface AIMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
-
-export interface AICompletionResponse {
-  content: string;
-  finishReason: 'stop' | 'length' | 'content_filter' | 'tool_calls';
-  usage: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
-  model: string;
-}
-
-export interface AICompletionOptions {
-  temperature?: number;
-  maxTokens?: number;
-  stopSequences?: string[];
-  topP?: number;
-  frequencyPenalty?: number;
-  presencePenalty?: number;
+/**
+ * Model information returned from provider APIs
+ */
+export interface AIModel {
+  id: string;
+  name: string;
+  description?: string;
+  contextWindow?: number;
+  maxOutputTokens?: number;
 }
 
 /**
- * Base AIProvider interface that all providers must implement
+ * Provider configuration
+ */
+export interface ProviderConfig {
+  type: string;
+  name: string;
+  apiKey: string;
+}
+
+/**
+ * Base AI Provider Interface
+ * All providers must implement this interface
  */
 export interface AIProvider {
+  /**
+   * Provider type identifier (e.g., 'openai', 'anthropic')
+   */
+  readonly type: string;
+
+  /**
+   * Provider display name (e.g., 'OpenAI', 'Anthropic')
+   */
   readonly name: string;
-  readonly capabilities: AIProviderCapabilities;
 
   /**
-   * Generate a completion from a list of messages
+   * Validate API key format
    */
-  complete(
-    messages: AIMessage[],
-    options?: AICompletionOptions
-  ): Promise<AICompletionResponse>;
+  validateApiKey(apiKey: string): boolean;
 
   /**
-   * Validate that the API key works
+   * Fetch available models from the provider's API
+   * @returns Array of available models
    */
-  validate(): Promise<boolean>;
+  fetchModels(): Promise<AIModel[]>;
 
   /**
-   * Get the current configuration
+   * Create a language model instance for use with Vercel AI SDK
+   * @param modelId - The model ID to use
    */
-  getConfig(): AIProviderConfig;
+  createLanguageModel(modelId: string): LanguageModel;
+
+  /**
+   * Get API key prefix pattern for display (e.g., 'sk-', 'sk-ant-')
+   */
+  getKeyPreview(apiKey: string): string;
+}
+
+/**
+ * Base implementation with common functionality
+ */
+export abstract class BaseAIProvider implements AIProvider {
+  protected apiKey: string;
+
+  constructor(protected config: ProviderConfig) {
+    this.apiKey = config.apiKey;
+  }
+
+  abstract readonly type: string;
+  abstract readonly name: string;
+
+  abstract validateApiKey(apiKey: string): boolean;
+  abstract fetchModels(): Promise<AIModel[]>;
+  abstract createLanguageModel(modelId: string): LanguageModel;
+
+  /**
+   * Default implementation: show first 12 characters + "..."
+   */
+  getKeyPreview(apiKey: string): string {
+    return apiKey.substring(0, 12) + '...';
+  }
 }

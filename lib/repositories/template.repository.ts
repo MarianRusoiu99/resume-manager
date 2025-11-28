@@ -4,8 +4,9 @@
  */
 
 import { prisma } from '@/lib/db';
-import type { ResumeTemplate, TemplateDefinition } from '@/types/template';
-import { Prisma } from '@prisma/client';
+import type { ResumeTemplate } from '@/lib/templates/template';
+import { Prisma, TemplateCategory } from '@prisma/client';
+
 
 export class TemplateRepository {
   /**
@@ -14,7 +15,7 @@ export class TemplateRepository {
   async findAllPublic(): Promise<ResumeTemplate[]> {
     const templates = await prisma.resumeTemplate.findMany({
       where: { isPublic: true },
-      orderBy: [{ atsScore: 'desc' }, { name: 'asc' }],
+      orderBy: [{ name: 'asc' }],
     });
 
     return templates.map((t) => this.mapToTemplate(t));
@@ -27,9 +28,9 @@ export class TemplateRepository {
     const templates = await prisma.resumeTemplate.findMany({
       where: {
         isPublic: true,
-        category,
+        category: category as TemplateCategory,
       },
-      orderBy: [{ atsScore: 'desc' }, { name: 'asc' }],
+      orderBy: [{ name: 'asc' }],
     });
 
     return templates.map((t) => this.mapToTemplate(t));
@@ -51,11 +52,11 @@ export class TemplateRepository {
    */
   async create(data: {
     name: string;
-    category: string;
+    category: TemplateCategory;
     description: string;
-    definition: TemplateDefinition;
+    htmlTemplate: string;
+    cssStyles: string;
     previewUrl?: string;
-    atsScore?: number;
     isPublic?: boolean;
   }): Promise<ResumeTemplate> {
     const template = await prisma.resumeTemplate.create({
@@ -63,9 +64,9 @@ export class TemplateRepository {
         name: data.name,
         category: data.category,
         description: data.description,
-        definition: data.definition as unknown as Prisma.JsonObject,
+        htmlTemplate: data.htmlTemplate,
+        cssStyles: data.cssStyles,
         previewUrl: data.previewUrl,
-        atsScore: data.atsScore ?? 8,
         isPublic: data.isPublic ?? true,
       },
     });
@@ -80,23 +81,37 @@ export class TemplateRepository {
     id: string,
     data: Partial<{
       name: string;
-      category: string;
+      category: TemplateCategory;
       description: string;
-      definition: TemplateDefinition;
+      htmlTemplate: string;
+      cssStyles: string;
       previewUrl: string;
-      atsScore: number;
       isPublic: boolean;
     }>
   ): Promise<ResumeTemplate> {
     const updateData: Prisma.ResumeTemplateUpdateInput = {};
 
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.category !== undefined) updateData.category = data.category;
+    if (data.category !== undefined) {
+      // Map lowercase category to Prisma enum
+      const categoryMap: Record<string, string> = {
+        'professional': 'PROFESSIONAL',
+        'modern': 'MODERN',
+        'creative': 'CREATIVE',
+        'ats-optimized': 'ATS_OPTIMIZED',
+        'minimal': 'MINIMAL',
+      };
+      // Accept both enum and string
+      if (typeof data.category === 'string' && categoryMap[data.category]) {
+        updateData.category = categoryMap[data.category] as TemplateCategory;
+      } else {
+        updateData.category = data.category;
+      }
+    }
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.definition !== undefined)
-      updateData.definition = data.definition as unknown as Prisma.JsonObject;
+    if (data.htmlTemplate !== undefined) updateData.htmlTemplate = data.htmlTemplate;
+    if (data.cssStyles !== undefined) updateData.cssStyles = data.cssStyles;
     if (data.previewUrl !== undefined) updateData.previewUrl = data.previewUrl;
-    if (data.atsScore !== undefined) updateData.atsScore = data.atsScore;
     if (data.isPublic !== undefined) updateData.isPublic = data.isPublic;
 
     const template = await prisma.resumeTemplate.update({
@@ -136,31 +151,51 @@ export class TemplateRepository {
   }
 
   /**
+   * Check if a template is in use by any resumes
+   */
+  async isInUse(templateId: string): Promise<boolean> {
+    const count = await prisma.generatedResume.count({
+      where: { templateId },
+    });
+    return count > 0;
+  }
+
+  /**
+   * Get all unique categories
+   */
+  async getCategories(): Promise<string[]> {
+    const categories = await prisma.resumeTemplate.findMany({
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+    });
+    return categories.map((c) => c.category);
+  }
+
+  /**
    * Map Prisma model to domain model
    */
   private mapToTemplate(template: {
     id: string;
     name: string;
-    category: string;
+    category: TemplateCategory;
     description: string;
-    definition: Prisma.JsonValue;
+    htmlTemplate: string;
+    cssStyles: string;
     previewUrl: string | null;
     isPublic: boolean;
-    version: string;
-    atsScore: number;
     createdAt: Date;
     updatedAt: Date;
   }): ResumeTemplate {
     return {
       id: template.id,
       name: template.name,
-      category: template.category as 'professional' | 'modern' | 'creative' | 'ats-optimized' | 'minimal',
+      category: template.category,
       description: template.description,
-      definition: template.definition as unknown as TemplateDefinition,
+      htmlTemplate: template.htmlTemplate,
+      cssStyles: template.cssStyles,
       previewUrl: template.previewUrl ?? undefined,
       isPublic: template.isPublic,
-      version: template.version,
-      atsScore: template.atsScore,
       createdAt: template.createdAt,
       updatedAt: template.updatedAt,
     };

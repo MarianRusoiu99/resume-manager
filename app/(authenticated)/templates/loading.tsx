@@ -13,7 +13,6 @@ export default function TemplatesLoading() {
         title="Resume Templates"
         description="Choose from our collection of ATS-friendly resume templates"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
           { label: "Templates" },
         ]}
       />

@@ -20,6 +20,10 @@
       "args": [
         "@playwright/mcp@latest"
       ]
-    }
+    },
+    "docs-langchain": {
+      "url": "https://docs.langchain.com/mcp"
+    }  
+
   }
 }

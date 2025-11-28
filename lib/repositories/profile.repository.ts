@@ -1,64 +1,156 @@
 import { prisma } from "@/lib/db";
-import { Profile } from "@/lib/validations/profile";
+import type { Resume } from "@/lib/validations/jsonresume";
 
 export class ProfileRepository {
-  async findByUserId(userId: string) {
-    return prisma.userProfile.findUnique({
+  /**
+   * Find all profiles for a user
+   */
+  async findAllByUserId(userId: string) {
+    return prisma.userProfile.findMany({
       where: { userId },
+      orderBy: [
+        { isDefault: 'desc' }, // Default profile first
+        { createdAt: 'desc' },
+      ],
     });
   }
 
-  async create(userId: string, data: Profile) {
+  /**
+   * Find a specific profile by ID (with user ownership check)
+   */
+  async findById(profileId: string, userId: string) {
+    return prisma.userProfile.findFirst({
+      where: {
+        id: profileId,
+        userId,
+      },
+    });
+  }
+
+  /**
+   * Find default profile for a user
+   */
+  async findDefaultByUserId(userId: string) {
+    return prisma.userProfile.findFirst({
+      where: {
+        userId,
+        isDefault: true,
+      },
+    });
+  }
+
+  /**
+   * Find by userId (for backward compatibility - returns first/default profile)
+   */
+  async findByUserId(userId: string) {
+    return this.findDefaultByUserId(userId);
+  }
+
+  /**
+   * Create a new profile
+   */
+  async create(data: {
+    userId: string;
+    name: string;
+    resume: Resume;
+    isDefault?: boolean;
+  }) {
     return prisma.userProfile.create({
       data: {
-        userId,
-        personalInfo: data.personalInfo,
-        summary: data.summary,
-        experience: data.experience,
-        education: data.education,
-        skills: data.skills,
-        certifications: data.certifications || [],
+        userId: data.userId,
+        name: data.name,
+        resume: data.resume as never,
+        isDefault: data.isDefault ?? false,
       },
     });
   }
 
-  async update(userId: string, data: Partial<Profile>) {
+  /**
+   * Update a profile
+   */
+  async update(
+    profileId: string,
+    userId: string,
+    data: Partial<{
+      name: string;
+      resume: Resume;
+      isDefault: boolean;
+      isPublic: boolean;
+      publicSlug: string | null;
+  // selectedTemplateId removed (dropped from schema)
+    }>
+  ) {
     return prisma.userProfile.update({
-      where: { userId },
+      where: {
+        id: profileId,
+        userId,
+      },
       data: {
-        ...(data.personalInfo && { personalInfo: data.personalInfo }),
-        ...(data.summary !== undefined && { summary: data.summary }),
-        ...(data.experience && { experience: data.experience }),
-        ...(data.education && { education: data.education }),
-        ...(data.skills && { skills: data.skills }),
-        ...(data.certifications !== undefined && {
-          certifications: data.certifications,
-        }),
+        ...(data.name && { name: data.name }),
+        ...(data.resume && { resume: data.resume as never }),
+        ...(data.isDefault !== undefined && { isDefault: data.isDefault }),
+        ...(data.isPublic !== undefined && { isPublic: data.isPublic }),
+        ...(data.publicSlug !== undefined && { publicSlug: data.publicSlug }),
+  // selectedTemplateId removed
       },
     });
   }
 
-  async upsert(userId: string, data: Profile) {
-    const existing = await this.findByUserId(userId);
-
-    if (existing) {
-      return this.update(userId, data);
-    } else {
-      return this.create(userId, data);
-    }
-  }
-
-  async delete(userId: string) {
+  /**
+   * Delete a profile
+   */
+  async delete(profileId: string, userId: string) {
     return prisma.userProfile.delete({
-      where: { userId },
+      where: {
+        id: profileId,
+        userId,
+      },
     });
   }
 
+  /**
+   * Unset all default flags for a user
+   */
+  async unsetAllDefaults(userId: string) {
+    return prisma.userProfile.updateMany({
+      where: {
+        userId,
+        isDefault: true,
+      },
+      data: {
+        isDefault: false,
+      },
+    });
+  }
+
+  /**
+   * Check if user has any profiles
+   */
   async exists(userId: string): Promise<boolean> {
     const count = await prisma.userProfile.count({
       where: { userId },
     });
     return count > 0;
+  }
+
+  /**
+   * Get profile count for a user
+   */
+  async count(userId: string): Promise<number> {
+    return prisma.userProfile.count({
+      where: { userId },
+    });
+  }
+
+  /**
+   * Find profile by public slug (for public sharing)
+   */
+  async findByPublicSlug(slug: string) {
+    return prisma.userProfile.findUnique({
+      where: {
+        publicSlug: slug,
+      },
+    });
   }
 }
 

@@ -10,107 +10,138 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Enums for type safety
+enum TemplateCategory {
+  PROFESSIONAL
+  MODERN
+  CREATIVE
+  ATS_OPTIMIZED
+  MINIMAL
+}
+
+enum ProviderType {
+  OPENAI
+  ANTHROPIC
+  GOOGLE
+  COHERE
+  MISTRAL
+}
+
 // User authentication and account management
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String
-  name          String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  profile       UserProfile?
-  apiKeys       APIKey[]
-  resumes       GeneratedResume[]
-  sessions      Session[]
-  
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profiles     UserProfile[]
+  resumes      GeneratedResume[]
+  coverLetters CoverLetter[]
+  sessions     Session[]
+  apiProviders ApiProvider[]
+
   @@index([email])
   @@index([createdAt])
 }
 
 // User professional profile and experience
+// UPDATED: Support multiple profiles per user with public sharing
 model UserProfile {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  personalInfo    Json     // {name, email, phone, location, linkedin, github, website}
-  summary         String   @db.Text
-  experience      Json     // [{company, title, startDate, endDate, description, achievements}]
-  education       Json     // [{school, degree, field, startDate, endDate, gpa}]
-  skills          Json     // {technical: [], soft: [], languages: []}
-  certifications  Json?    // [{name, issuer, date, url}]
-  languages       Json?    // [{language, proficiency}]
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  @@index([userId])
-  @@index([updatedAt])
-}
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-// Encrypted API keys for AI providers (BYOK model)
-model APIKey {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  provider      String    // 'openai', 'anthropic', etc.
-  encryptedKey  String    // AES-256-GCM encrypted
-  keyHash       String    // For validation without decryption
-  isActive      Boolean   @default(true)
-  lastUsedAt    DateTime?
-  createdAt     DateTime  @default(now())
-  
-  @@index([userId, provider])
-  @@index([userId, isActive])
+  name       String // Profile name (e.g., "Software Engineer", "Product Manager")
+  isDefault  Boolean @default(false) // One default profile per user
+  isPublic   Boolean @default(false) // Public sharing enabled
+  publicSlug String? @unique // Unique slug for public URL
+  resume     Json // JSON Resume v1.0.0 format
+
+  templateId       String? // Remember user's preferred template for this profile
+  selectedTemplate ResumeTemplate? @relation("ProfileTemplates", fields: [templateId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, isDefault])
+  @@index([publicSlug])
+  @@index([updatedAt])
+  @@index([templateId])
 }
 
 // Generated resumes with AI and user edits
+// REFACTORED: Removed templateCustomization and pdfUrl (generate PDF on-demand)
 model GeneratedResume {
-  id              String   @id @default(cuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  jobDescription  String   @db.Text
-  jobMetadata     Json?    // {company, title, url, postedDate}
-  resumeContent   Json     // Structured resume data
-  templateId      String?
-  template        ResumeTemplate? @relation(fields: [templateId], references: [id])
-  templateCustomization Json? // User's template overrides
-  pdfUrl          String?  // URL if stored externally
-  coverLetter     String?  @db.Text
-  
-  isEdited        Boolean  @default(false)
-  aiGeneratedContent Json? // Original AI version for revert
-  sectionOrder    Json?    // Custom section order: ['summary', 'experience', 'education', 'skills', ...]
-  
-  metadata        Json     // {model, tokens, score, generationTime}
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  jobDescription String @db.Text
+  jobMetadata    Json? // {company, title, url, postedDate}
+  resume         Json // JSON Resume v1.0.0 format
+
+  templateId String?
+  template   ResumeTemplate? @relation("ResumeTemplates", fields: [templateId], references: [id], onDelete: SetNull)
+
+  coverLetterId String?      @unique
+  coverLetter   CoverLetter? @relation(fields: [coverLetterId], references: [id], onDelete: SetNull)
+
+  // Relation to standalone cover letters
+
+  metadata  Json // {model, tokens, score, generationTime}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, updatedAt])
-  @@index([templateId])
+}
+
+// Standalone Cover Letters (can be linked to a resume or independent)
+model CoverLetter {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content        String  @db.Text // Markdown formatted cover letter (for preview)
+  jobDescription String  @db.Text
+  jobTitle       String?
+  companyName    String?
+
+  // Optional back-reference to a generated resume that references this cover letter
+  generatedResume GeneratedResume?
+
+  metadata  Json // {model, tokens, generationTime, personalInstructions}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, updatedAt])
 }
 
 // Resume templates (professional layouts)
 model ResumeTemplate {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   name        String
-  category    String   // 'professional', 'modern', 'creative', 'ats-optimized', 'minimal'
+  category    TemplateCategory
   description String
-  definition  Json     // Template configuration JSON
-  previewUrl  String?
-  isPublic    Boolean  @default(true)
-  version     String   @default("1.0.0")
-  atsScore    Int      @default(8) // 1-10 ATS compatibility rating
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  resumes     GeneratedResume[]
-  
+
+  // HTML template with Handlebars placeholders: {{basics.name}}, {{basics.email}}, etc.
+  htmlTemplate String @db.Text
+
+  // CSS styles for the template
+  cssStyles String @db.Text
+
+  previewUrl String?
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  userProfiles     UserProfile[]     @relation("ProfileTemplates")
+  generatedResumes GeneratedResume[] @relation("ResumeTemplates")
+
   @@index([category])
   @@index([isPublic])
 }
@@ -123,6 +154,26 @@ model Session {
   sessionToken String   @unique
   expires      DateTime
   createdAt    DateTime @default(now())
-  
+
   @@index([userId])
+}
+
+// API Provider and Key Management
+model ApiProvider {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String // User-friendly name (e.g., "My OpenAI Key")
+  provider     ProviderType // Provider type enum
+  encryptedKey String       @db.Text // AES-256-GCM encrypted API key
+  models       String[] // Array of available model IDs from the provider
+  isActive     Boolean      @default(true)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  lastUsedAt DateTime?
+
+  @@index([userId, provider])
+  @@index([userId, isActive])
 }

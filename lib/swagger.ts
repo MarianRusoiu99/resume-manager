@@ -496,4 +496,16 @@ Common HTTP status codes:
   apis: ['./app/api/**/*.ts', './lib/swagger-docs.ts'], // Path to the API routes
 };
 
-export const swaggerSpec = swaggerJsdoc(options);
+// Generate spec lazily at runtime to avoid build-time issues
+let cachedSpec: ReturnType<typeof swaggerJsdoc> | null = null;
+
+export function getSwaggerSpec() {
+  if (!cachedSpec) {
+    cachedSpec = swaggerJsdoc(options);
+  }
+  return cachedSpec;
+}
+
+// Deprecated: Use getSwaggerSpec() instead
+// This is kept for backwards compatibility but should not be used
+export const swaggerSpec = typeof window === 'undefined' ? {} : {};

@@ -1,5 +1,6 @@
 import { PrismaClient, GeneratedResume } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Repository for managing generated resumes in the database
@@ -18,25 +19,23 @@ export class GeneratedResumeRepository {
     userId: string;
     jobDescription: string;
     jobMetadata?: Record<string, unknown>;
-    resumeContent: Record<string, unknown>;
+    resume: Resume;
     templateId?: string;
-    templateCustomization?: Record<string, unknown>;
-    pdfUrl?: string;
-    coverLetter?: string;
+  // coverLetter removed (dropped from schema)
     metadata: Record<string, unknown>;
   }): Promise<GeneratedResume> {
     return this.db.generatedResume.create({
       data: {
-        userId: data.userId,
+        user: {
+          connect: { id: data.userId }
+        },
         jobDescription: data.jobDescription,
         jobMetadata: data.jobMetadata as never,
-        resumeContent: data.resumeContent as never,
-        templateId: data.templateId || null,
-        templateCustomization: data.templateCustomization as never,
-        pdfUrl: data.pdfUrl || null,
-        coverLetter: data.coverLetter || null,
-        isEdited: false,
-        aiGeneratedContent: data.resumeContent as never, // Store original AI version
+        resume: data.resume as never,
+        template: data.templateId ? {
+          connect: { id: data.templateId }
+        } : undefined,
+  // coverLetter removed
         metadata: data.metadata as never
       }
     });
@@ -73,15 +72,14 @@ export class GeneratedResumeRepository {
   /**
    * Update resume content
    */
-  async updateContent(
+  async update(
     id: string,
-    resumeContent: Record<string, unknown>
+    resume: Resume
   ): Promise<GeneratedResume> {
     return this.db.generatedResume.update({
       where: { id },
       data: {
-        resumeContent: resumeContent as never,
-        isEdited: true,
+        resume: resume as never,
         updatedAt: new Date()
       }
     });
@@ -92,45 +90,32 @@ export class GeneratedResumeRepository {
    */
   async updateTemplate(
     id: string,
-    templateId?: string,
-    templateCustomization?: Record<string, unknown>
+    templateId?: string
   ): Promise<GeneratedResume> {
     return this.db.generatedResume.update({
       where: { id },
       data: {
-        templateId: templateId || null,
-        templateCustomization: templateCustomization as never,
-        pdfUrl: null, // Clear PDF URL when template changes
+        template: templateId ? {
+          connect: { id: templateId }
+        } : {
+          disconnect: true
+        },
         updatedAt: new Date()
       }
     });
   }
 
   /**
-   * Update template customization only (keeps existing templateId)
+   * Link a cover letter to a resume
    */
-  async updateCustomization(
-    id: string,
-    templateCustomization: Record<string, unknown>
+  async linkCoverLetter(
+    resumeId: string,
+    coverLetterId: string
   ): Promise<GeneratedResume> {
     return this.db.generatedResume.update({
-      where: { id },
+      where: { id: resumeId },
       data: {
-        templateCustomization: templateCustomization as never,
-        pdfUrl: null, // Clear PDF URL to force regeneration with new customization
-        updatedAt: new Date()
-      }
-    });
-  }
-
-  /**
-   * Update PDF URL
-   */
-  async updatePdfUrl(id: string, pdfUrl: string): Promise<GeneratedResume> {
-    return this.db.generatedResume.update({
-      where: { id },
-      data: {
-        pdfUrl,
+        coverLetterId,
         updatedAt: new Date()
       }
     });

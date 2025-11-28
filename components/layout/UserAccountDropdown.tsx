@@ -1,7 +1,8 @@
 "use client";
 
 import { User, LogOut, Moon, Sun, Monitor, ChevronUp } from "lucide-react";
-import { useTheme } from "@/lib/theme/context";
+import { useTheme } from "@/lib/contexts/ThemeContext";
+import { signOut } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,11 +30,11 @@ export function UserAccountDropdown({ user }: UserAccountDropdownProps) {
   const { theme, setTheme } = useTheme();
 
   const handleSignOut = async () => {
-    // Use fetch to call the signout API route
-    await fetch("/api/auth/signout", {
-      method: "POST",
+    // Use NextAuth signOut with proper CSRF handling
+    await signOut({ 
+      callbackUrl: "/login",
+      redirect: true 
     });
-    window.location.href = "/login";
   };
 
   if (!user) {

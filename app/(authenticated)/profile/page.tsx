@@ -1,344 +1,41 @@
-"use client";
+/**
+ * Profiles Gallery Page
+ * Browse and manage all your professional profiles
+ */
 
-import { useState, useEffect, useCallback } from "react";
-import { toast } from "sonner";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PageContainer } from "@/components/layout/PageContainer";
-import { PersonalInfoForm } from "@/components/profile/PersonalInfoForm";
-import { SummaryForm } from "@/components/profile/SummaryForm";
-import { ExperienceForm } from "@/components/profile/ExperienceForm";
-import { EducationForm } from "@/components/profile/EducationForm";
-import SkillsForm from "@/components/profile/SkillsForm";
-import CertificationsForm, { Certification } from "@/components/profile/CertificationsForm";
-import LanguagesForm, { Language } from "@/components/profile/LanguagesForm";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PersonalInfo, Experience, Education } from "@/lib/validations/profile";
+import { ProfileGallery } from "@/components/profile/ProfileGallery";
+import { profileService } from "@/lib/services/profile.service";
+import { auth } from "@/lib/auth/config";
+import { redirect } from "next/navigation";
 
-interface ProfileData {
-  personalInfo?: PersonalInfo;
-  summary?: string;
-  experience?: Experience[];
-  education?: Education[];
-  skills?: {
-    technical: string[];
-    soft: string[];
-    languages: string[];
-  };
-  certifications?: Certification[];
-  languages?: Language[];
-}
+export default async function ProfilesPage() {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
 
-export default function ProfilePage() {
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  const fetchProfile = useCallback(async () => {
-    try {
-      const response = await fetch("/api/profile");
-      
-      if (response.status === 200) {
-        const data = await response.json();
-        setProfile(data);
-      } else if (response.status === 404 || response.status === 400) {
-        // Profile doesn't exist yet
-        setProfile(null);
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      showMessage("error", "Failed to load profile");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  const showMessage = (type: "success" | "error", text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 5000);
-  };
-
-  const handleSavePersonalInfo = async (data: PersonalInfo) => {
-    try {
-      const payload = profile
-        ? { personalInfo: data }
-        : {
-            personalInfo: data,
-            summary: "",
-            experience: [],
-            education: [],
-            skills: { technical: [], soft: [], languages: [] },
-          };
-
-      const response = await fetch("/api/profile", {
-        method: profile ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to save profile");
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      showMessage("success", "Personal information saved successfully!");
-      toast.success("Personal information saved successfully!");
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      showMessage("error", "Failed to save personal information");
-      toast.error("Failed to save personal information");
-    }
-  };
-
-  const handleSaveSection = async (section: string, data: Experience[] | Education[] | string | { technical: string[]; soft: string[]; languages: string[] } | Certification[] | Language[]) => {
-    setSaving(true);
-    try {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [section]: data }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to save ${section}`);
-      }
-
-      const updatedProfile = await response.json();
-      setProfile(updatedProfile);
-      const sectionName = section.charAt(0).toUpperCase() + section.slice(1);
-      showMessage("success", `${sectionName} saved successfully!`);
-      toast.success(`${sectionName} saved successfully!`);
-    } catch (error) {
-      console.error(`Error saving ${section}:`, error);
-      showMessage("error", `Failed to save ${section}`);
-      toast.error(`Failed to save ${section}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
-            <div className="h-64 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
+  const result = await profileService.getProfiles(session.user.id);
+  
+  if (!result.success || !result.data || !Array.isArray(result.data)) {
+    throw new Error(result.error || "Failed to load profiles");
   }
 
   return (
     <>
       <PageHeader
-        title="Professional Profile"
-        description="Build your professional profile to generate optimized resumes"
+        title="Professional Profiles"
+        description="Manage your professional profiles for targeted resume generation"
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: "Profile" },
+          { label: "Profiles" },
         ]}
       />
       <PageContainer>
-        {/* Success/Error Message */}
-        {message && (
-          <div
-            className={`mb-6 p-4 rounded-md ${
-              message.type === "success"
-                ? "bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                : "bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-400"
-            }`}
-          >
-            {message.text}
-          </div>
-        )}
-
-        {/* Profile Sections */}
-        <div className="space-y-6">
-          {/* Personal Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Your contact details and links</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PersonalInfoForm
-                initialData={profile?.personalInfo}
-                onSave={handleSavePersonalInfo}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Summary Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Professional Summary</CardTitle>
-              <CardDescription>A brief overview of your experience and goals</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SummaryForm
-                summary={profile?.summary || ""}
-                onChange={(summary) => setProfile(prev => prev ? { ...prev, summary } : null)}
-              />
-              <div className="mt-4 flex justify-end">
-                <Button onClick={() => handleSaveSection("summary", profile?.summary || "")}>
-                  Save Summary
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Experience Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Work Experience</CardTitle>
-              <CardDescription>Your professional work history</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ExperienceForm
-                experiences={profile?.experience || []}
-                onChange={(experience) => setProfile(prev => prev ? { ...prev, experience } : null)}
-              />
-              <div className="mt-4 flex justify-end">
-                <Button onClick={() => handleSaveSection("experience", profile?.experience || [])}>
-                  Save Experience
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Education Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Education</CardTitle>
-              <CardDescription>Your educational background</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <EducationForm
-                education={profile?.education || []}
-                onChange={(education) => setProfile(prev => prev ? { ...prev, education } : null)}
-              />
-              <div className="mt-4 flex justify-end">
-                <Button onClick={() => handleSaveSection("education", profile?.education || [])}>
-                  Save Education
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Skills Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Skills</CardTitle>
-              <CardDescription>Your technical and soft skills</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SkillsForm
-                skills={profile?.skills || { technical: [], soft: [], languages: [] }}
-                onChange={(skills) => setProfile(prev => prev ? { ...prev, skills } : null)}
-              />
-              <div className="mt-4 flex justify-end">
-                <Button onClick={() => handleSaveSection("skills", profile?.skills || { technical: [], soft: [], languages: [] })}>
-                  Save Skills
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Certifications Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Certifications</CardTitle>
-              <CardDescription>Your professional certifications and licenses</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CertificationsForm
-                certifications={profile?.certifications || []}
-                onChange={(certifications) => setProfile(prev => prev ? { ...prev, certifications } : null)}
-              />
-              <div className="mt-4 flex justify-end">
-                <Button onClick={() => handleSaveSection("certifications", profile?.certifications || [])}>
-                  Save Certifications
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Languages Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Languages</CardTitle>
-              <CardDescription>Languages you speak and your proficiency levels</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <LanguagesForm
-                languages={profile?.languages || []}
-                onChange={(languages) => setProfile(prev => prev ? { ...prev, languages } : null)}
-              />
-              <div className="mt-4 flex justify-end">
-                <Button onClick={() => handleSaveSection("languages", profile?.languages || [])}>
-                  Save Languages
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Profile Completion Indicator */}
-        <div className="mt-8 p-6 bg-blue-50 rounded-lg">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">
-            Profile Completion
-          </h3>
-          <div className="flex items-center space-x-4">
-            <div className="flex-1 bg-blue-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full"
-                style={{ 
-                  width: `${Math.min(100,
-                    (profile?.personalInfo ? 25 : 0) +
-                    (profile?.summary ? 15 : 0) +
-                    ((profile?.experience && profile.experience.length > 0) ? 30 : 0) +
-                    ((profile?.education && profile.education.length > 0) ? 20 : 0) +
-                    ((profile?.skills && profile.skills.technical.length > 0) ? 10 : 0) +
-                    ((profile?.certifications && profile.certifications.length > 0) ? 5 : 0) +
-                    ((profile?.languages && profile.languages.length > 0) ? 5 : 0)
-                  )}%`
-                }}
-              ></div>
-            </div>
-            <span className="text-sm font-medium text-blue-900">
-              {Math.min(100,
-                (profile?.personalInfo ? 25 : 0) +
-                (profile?.summary ? 15 : 0) +
-                ((profile?.experience && profile.experience.length > 0) ? 30 : 0) +
-                ((profile?.education && profile.education.length > 0) ? 20 : 0) +
-                ((profile?.skills && profile.skills.technical.length > 0) ? 10 : 0) +
-                ((profile?.certifications && profile.certifications.length > 0) ? 5 : 0) +
-                ((profile?.languages && profile.languages.length > 0) ? 5 : 0)
-              )}%
-            </span>
-          </div>
-          <p className="mt-2 text-sm text-blue-800">
-            Complete all sections to generate optimized resumes. Core sections: {
-              (profile?.personalInfo ? 25 : 0) +
-              ((profile?.experience && profile.experience.length > 0) ? 30 : 0) +
-              ((profile?.education && profile.education.length > 0) ? 20 : 0)
-            }% | Optional: {
-              (profile?.summary ? 15 : 0) +
-              ((profile?.skills && profile.skills.technical.length > 0) ? 10 : 0) +
-              ((profile?.certifications && profile.certifications.length > 0) ? 5 : 0) +
-              ((profile?.languages && profile.languages.length > 0) ? 5 : 0)
-            }%
-          </p>
-        </div>
+        <ProfileGallery initialProfiles={result.data} />
       </PageContainer>
     </>
   );
 }
+
