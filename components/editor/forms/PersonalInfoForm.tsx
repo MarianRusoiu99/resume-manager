@@ -276,9 +276,6 @@ export function PersonalInfoForm({
           </div>
         </div>
 
-       
-      
-     
       </form>
     </Form>
   );
