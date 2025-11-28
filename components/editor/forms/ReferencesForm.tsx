@@ -29,9 +29,9 @@ export function ReferencesForm({ references, onChange }: ReferencesFormProps) {
     onChange(referencesList.filter((_, i) => i !== index));
   };
 
-  const handleReferenceChange = (index: number, field: keyof Reference, value: string) => {
+  const handleReferenceChange = (index: number, field: keyof NonNullable<Reference>, value: string) => {
     const updated = referencesList.map((ref, i) => {
-      if (i === index) {
+      if (i === index && ref) {
         return { ...ref, [field]: value };
       }
       return ref;
@@ -41,7 +41,7 @@ export function ReferencesForm({ references, onChange }: ReferencesFormProps) {
 
   return (
     <div className="space-y-6">
-      {referencesList.map((ref, index) => (
+      {referencesList.filter(ref => ref).map((ref, index) => (
         <div key={index} className="border rounded-md p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Reference {index + 1}</h3>
@@ -59,7 +59,7 @@ export function ReferencesForm({ references, onChange }: ReferencesFormProps) {
             <Label htmlFor={`reference-name-${index}`}>Reference Name *</Label>
             <Input
               id={`reference-name-${index}`}
-              value={ref.name || ""}
+              value={ref!.name || ""}
               onChange={(e) => handleReferenceChange(index, "name", e.target.value)}
               placeholder="John Doe"
             />
@@ -69,7 +69,7 @@ export function ReferencesForm({ references, onChange }: ReferencesFormProps) {
             <Label htmlFor={`reference-reference-${index}`}>Reference Statement *</Label>
             <Textarea
               id={`reference-reference-${index}`}
-              value={ref.reference || ""}
+              value={ref!.reference || ""}
               onChange={(e) => handleReferenceChange(index, "reference", e.target.value)}
               placeholder="John is an excellent developer with strong problem-solving skills..."
               rows={4}

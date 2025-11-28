@@ -32,9 +32,9 @@ export function PublicationsForm({ publications, onChange }: PublicationsFormPro
     onChange(publicationsList.filter((_, i) => i !== index));
   };
 
-  const handlePublicationChange = (index: number, field: keyof Publication, value: string) => {
+  const handlePublicationChange = (index: number, field: keyof NonNullable<Publication>, value: string) => {
     const updated = publicationsList.map((pub, i) => {
-      if (i === index) {
+      if (i === index && pub) {
         return { ...pub, [field]: value };
       }
       return pub;
@@ -44,7 +44,7 @@ export function PublicationsForm({ publications, onChange }: PublicationsFormPro
 
   return (
     <div className="space-y-6">
-      {publicationsList.map((pub, index) => (
+      {publicationsList.filter(pub => pub).map((pub, index) => (
         <div key={index} className="border rounded-md p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Publication {index + 1}</h3>
@@ -63,7 +63,7 @@ export function PublicationsForm({ publications, onChange }: PublicationsFormPro
               <Label htmlFor={`publication-name-${index}`}>Publication Name *</Label>
               <Input
                 id={`publication-name-${index}`}
-                value={pub.name || ""}
+                value={pub!.name || ""}
                 onChange={(e) => handlePublicationChange(index, "name", e.target.value)}
                 placeholder="Research Paper Title"
               />
@@ -73,7 +73,7 @@ export function PublicationsForm({ publications, onChange }: PublicationsFormPro
               <Label htmlFor={`publication-publisher-${index}`}>Publisher *</Label>
               <Input
                 id={`publication-publisher-${index}`}
-                value={pub.publisher || ""}
+                value={pub!.publisher || ""}
                 onChange={(e) => handlePublicationChange(index, "publisher", e.target.value)}
                 placeholder="Journal Name or Publisher"
               />
@@ -86,7 +86,7 @@ export function PublicationsForm({ publications, onChange }: PublicationsFormPro
               <Input
                 id={`publication-releaseDate-${index}`}
                 type="date"
-                value={pub.releaseDate || ""}
+                value={pub!.releaseDate || ""}
                 onChange={(e) => handlePublicationChange(index, "releaseDate", e.target.value)}
               />
             </div>
@@ -95,7 +95,7 @@ export function PublicationsForm({ publications, onChange }: PublicationsFormPro
               <Label htmlFor={`publication-url-${index}`}>URL</Label>
               <Input
                 id={`publication-url-${index}`}
-                value={pub.url || ""}
+                value={pub!.url || ""}
                 onChange={(e) => handlePublicationChange(index, "url", e.target.value)}
                 placeholder="https://publication-url.com"
               />
@@ -106,7 +106,7 @@ export function PublicationsForm({ publications, onChange }: PublicationsFormPro
             <Label htmlFor={`publication-summary-${index}`}>Summary</Label>
             <Textarea
               id={`publication-summary-${index}`}
-              value={pub.summary || ""}
+              value={pub!.summary || ""}
               onChange={(e) => handlePublicationChange(index, "summary", e.target.value)}
               placeholder="Brief description of the publication and its significance"
               rows={3}

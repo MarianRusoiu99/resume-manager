@@ -4,9 +4,37 @@
  */
 
 import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { resumeSchema } from "@/lib/validations/jsonresume";
+
+/**
+ * Default API Configuration
+ * 
+ * IMPORTANT: This is a fallback configuration for development/testing purposes.
+ * In production, always use the OPENAI_API_KEY environment variable.
+ * 
+ * To override, set OPENAI_API_KEY in your environment or .env file.
+ */
+const DEFAULT_CONFIG = {
+    // Replace with your development API key or leave empty to require environment variable
+    apiKey: process.env.OPENAI_API_KEY || '',
+    defaultModel: 'gpt-4o-mini',
+    defaultVisionModel: 'gpt-4o',
+};
+
+// Create OpenAI client with configuration
+const getOpenAIClient = () => {
+    if (!DEFAULT_CONFIG.apiKey) {
+        throw new Error(
+            'No OpenAI API key configured. Please set OPENAI_API_KEY environment variable or configure DEFAULT_CONFIG.apiKey in resume-parser.ts'
+        );
+    }
+
+    return createOpenAI({
+        apiKey: DEFAULT_CONFIG.apiKey,
+    });
+};
 
 const EXTRACTION_PROMPT = `You are a resume parser. Extract ALL information from the provided resume and convert it to JSON Resume format.
 
@@ -116,8 +144,9 @@ export async function parseResumeFromText(
     text: string
 ): Promise<Resume> {
     try {
+        const openaiClient = getOpenAIClient();
         const { text: responseText } = await generateText({
-            model: openai("gpt-4o-mini"),
+            model: openaiClient(DEFAULT_CONFIG.defaultModel),
             system: EXTRACTION_PROMPT,
             prompt: `Extract resume data from this text:\n\n${text}`,
             temperature: 0.1,
@@ -163,8 +192,9 @@ export async function parseResumeFromImage(
     mimeType: string
 ): Promise<Resume> {
     try {
+        const openaiClient = getOpenAIClient();
         const { text: responseText } = await generateText({
-            model: openai("gpt-4o"),
+            model: openaiClient(DEFAULT_CONFIG.defaultVisionModel),
             messages: [
                 {
                     role: "system",

@@ -18,49 +18,49 @@ export default function SkillsForm({ skills = [], onChange, errors }: SkillsForm
   const handleAddSkill = () => {
     const trimmedName = newSkillName.trim();
     if (!trimmedName) return;
-    
+
     const newSkill: Skill = {
       name: trimmedName,
       level: newSkillLevel.trim() || undefined,
       keywords: [],
     };
-    
-    onChange([...skills, newSkill]);
+
+    onChange([...skills.filter((s): s is NonNullable<Skill> => !!s), newSkill]);
     setNewSkillName('');
     setNewSkillLevel('');
   };
 
   const handleRemoveSkill = (index: number) => {
-    onChange(skills.filter((_, i) => i !== index));
+    onChange(skills.filter((_, i) => i !== index).filter((s): s is NonNullable<Skill> => !!s));
   };
 
   const handleUpdateSkill = (index: number, updates: Partial<Skill>) => {
-    const updated = skills.map((skill, i) => 
+    const updated = skills.map((skill, i) =>
       i === index ? { ...skill, ...updates } : skill
     );
-    onChange(updated);
+    onChange(updated.filter((s): s is NonNullable<Skill> => !!s));
   };
 
   const handleAddKeyword = (skillIndex: number, keyword: string) => {
     const trimmedKeyword = keyword.trim();
     if (!trimmedKeyword) return;
-    
+
     const skill = skills[skillIndex];
-    const keywords = skill.keywords || [];
-    
+    const keywords = skill!.keywords || [];
+
     if (!keywords.includes(trimmedKeyword)) {
       handleUpdateSkill(skillIndex, {
         keywords: [...keywords, trimmedKeyword]
       });
     }
-    
+
     setNewKeyword(prev => ({ ...prev, [skillIndex]: '' }));
   };
 
   const handleRemoveKeyword = (skillIndex: number, keywordIndex: number) => {
     const skill = skills[skillIndex];
-    const keywords = skill.keywords || [];
-    
+    const keywords = skill!.keywords || [];
+
     handleUpdateSkill(skillIndex, {
       keywords: keywords.filter((_, i) => i !== keywordIndex)
     });
@@ -119,9 +119,9 @@ export default function SkillsForm({ skills = [], onChange, errors }: SkillsForm
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
                   <h4 className="font-medium text-gray-900">
-                    {skill.name}
-                    {skill.level && (
-                      <span className="ml-2 text-sm text-gray-500">({skill.level})</span>
+                    {skill!.name}
+                    {skill!.level && (
+                      <span className="ml-2 text-sm text-gray-500">({skill!.level})</span>
                     )}
                   </h4>
                 </div>
@@ -144,9 +144,9 @@ export default function SkillsForm({ skills = [], onChange, errors }: SkillsForm
                   <Input
                     type="text"
                     value={newKeyword[skillIndex] || ''}
-                    onChange={(e) => setNewKeyword(prev => ({ 
-                      ...prev, 
-                      [skillIndex]: e.target.value 
+                    onChange={(e) => setNewKeyword(prev => ({
+                      ...prev,
+                      [skillIndex]: e.target.value
                     }))}
                     placeholder="e.g., JavaScript, React, Node.js"
                     className="flex-1"
@@ -166,7 +166,7 @@ export default function SkillsForm({ skills = [], onChange, errors }: SkillsForm
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(skill.keywords || []).map((keyword, keywordIndex) => (
+                  {(skill!.keywords || []).map((keyword, keywordIndex) => (
                     <span
                       key={keywordIndex}
                       className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"

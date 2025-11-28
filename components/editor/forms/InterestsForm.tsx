@@ -29,9 +29,9 @@ export function InterestsForm({ interests, onChange }: InterestsFormProps) {
     onChange(interestsList.filter((_, i) => i !== index));
   };
 
-  const handleInterestChange = (index: number, field: keyof Interest, value: string | string[]) => {
+  const handleInterestChange = (index: number, field: keyof NonNullable<Interest>, value: string | string[]) => {
     const updated = interestsList.map((interest, i) => {
-      if (i === index) {
+      if (i === index && interest) {
         return { ...interest, [field]: value };
       }
       return interest;
@@ -46,7 +46,7 @@ export function InterestsForm({ interests, onChange }: InterestsFormProps) {
 
   return (
     <div className="space-y-6">
-      {interestsList.map((interest, index) => (
+      {interestsList.filter(interest => interest).map((interest, index) => (
         <div key={index} className="border rounded-md p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Interest {index + 1}</h3>
@@ -64,7 +64,7 @@ export function InterestsForm({ interests, onChange }: InterestsFormProps) {
             <Label htmlFor={`interest-name-${index}`}>Interest Name *</Label>
             <Input
               id={`interest-name-${index}`}
-              value={interest.name || ""}
+              value={interest!.name || ""}
               onChange={(e) => handleInterestChange(index, "name", e.target.value)}
               placeholder="Photography, Hiking, Open Source, etc."
             />
@@ -74,7 +74,7 @@ export function InterestsForm({ interests, onChange }: InterestsFormProps) {
             <Label htmlFor={`interest-keywords-${index}`}>Related Keywords (one per line)</Label>
             <Textarea
               id={`interest-keywords-${index}`}
-              value={(interest.keywords || []).join("\n")}
+              value={(interest!.keywords || []).join("\n")}
               onChange={(e) => handleKeywordsChange(index, e.target.value)}
               placeholder="Landscape&#10;Wildlife&#10;Portrait"
               rows={4}

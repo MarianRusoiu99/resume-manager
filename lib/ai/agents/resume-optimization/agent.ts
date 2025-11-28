@@ -16,7 +16,7 @@ import type { JobAnalysisResult } from '../job-analysis/agent';
  */
 export const optimizedResumeSchema = z.object({
   basics: z.object({
-    name: z.string(),
+    name: z.string().optional(),
     label: z.string().optional(),
     email: z.string().optional(),
     phone: z.string().optional(),
@@ -27,10 +27,10 @@ export const optimizedResumeSchema = z.object({
       countryCode: z.string().optional(),
       region: z.string().optional(),
     }).optional(),
-  }),
+  }).optional(),
   work: z.array(z.object({
-    name: z.string(),
-    position: z.string(),
+    name: z.string().optional(),
+    position: z.string().optional(),
     startDate: z.string().optional(),
     endDate: z.string().optional(),
     summary: z.string().optional(),
@@ -38,7 +38,7 @@ export const optimizedResumeSchema = z.object({
     url: z.string().optional(),
   })).optional(),
   education: z.array(z.object({
-    institution: z.string(),
+    institution: z.string().optional(),
     area: z.string().optional(),
     studyType: z.string().optional(),
     startDate: z.string().optional(),
@@ -46,12 +46,12 @@ export const optimizedResumeSchema = z.object({
     score: z.string().optional(),
   })).optional(),
   skills: z.array(z.object({
-    name: z.string(),
+    name: z.string().optional(),
     level: z.string().optional(),
     keywords: z.array(z.string()).optional(),
   })).optional(),
   projects: z.array(z.object({
-    name: z.string(),
+    name: z.string().optional(),
     description: z.string().optional(),
     highlights: z.array(z.string()).optional(),
     startDate: z.string().optional(),
@@ -78,7 +78,7 @@ export interface OptimizeResumeInput {
  */
 export async function optimizeResume(input: OptimizeResumeInput): Promise<OptimizedResume> {
   const model = input.provider.createLanguageModel(input.modelId);
-  
+
   const result = await generateObject({
     model,
     schema: optimizedResumeSchema,

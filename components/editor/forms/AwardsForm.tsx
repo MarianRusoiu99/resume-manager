@@ -31,9 +31,9 @@ export function AwardsForm({ awards, onChange }: AwardsFormProps) {
     onChange(awardsList.filter((_, i) => i !== index));
   };
 
-  const handleAwardChange = (index: number, field: keyof Award, value: string) => {
+  const handleAwardChange = (index: number, field: keyof NonNullable<Award>, value: string) => {
     const updated = awardsList.map((award, i) => {
-      if (i === index) {
+      if (i === index && award) {
         return { ...award, [field]: value };
       }
       return award;
@@ -43,7 +43,7 @@ export function AwardsForm({ awards, onChange }: AwardsFormProps) {
 
   return (
     <div className="space-y-6">
-      {awardsList.map((award, index) => (
+      {awardsList.filter(award => award).map((award, index) => (
         <div key={index} className="border rounded-md p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-semibold">Award {index + 1}</h3>
@@ -62,7 +62,7 @@ export function AwardsForm({ awards, onChange }: AwardsFormProps) {
               <Label htmlFor={`award-title-${index}`}>Award Title *</Label>
               <Input
                 id={`award-title-${index}`}
-                value={award.title || ""}
+                value={award!.title || ""}
                 onChange={(e) => handleAwardChange(index, "title", e.target.value)}
                 placeholder="Employee of the Year"
               />
@@ -72,7 +72,7 @@ export function AwardsForm({ awards, onChange }: AwardsFormProps) {
               <Label htmlFor={`award-awarder-${index}`}>Awarded By *</Label>
               <Input
                 id={`award-awarder-${index}`}
-                value={award.awarder || ""}
+                value={award!.awarder || ""}
                 onChange={(e) => handleAwardChange(index, "awarder", e.target.value)}
                 placeholder="Company Name"
               />
@@ -84,7 +84,7 @@ export function AwardsForm({ awards, onChange }: AwardsFormProps) {
             <Input
               id={`award-date-${index}`}
               type="date"
-              value={award.date || ""}
+              value={award!.date || ""}
               onChange={(e) => handleAwardChange(index, "date", e.target.value)}
             />
           </div>
@@ -93,7 +93,7 @@ export function AwardsForm({ awards, onChange }: AwardsFormProps) {
             <Label htmlFor={`award-summary-${index}`}>Summary</Label>
             <Textarea
               id={`award-summary-${index}`}
-              value={award.summary || ""}
+              value={award!.summary || ""}
               onChange={(e) => handleAwardChange(index, "summary", e.target.value)}
               placeholder="Brief description of the award and what it recognizes"
               rows={3}

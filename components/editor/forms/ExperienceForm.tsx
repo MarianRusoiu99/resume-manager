@@ -31,9 +31,9 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
     onChange(localExperiences.filter((_, i) => i !== index));
   };
 
-  const updateExperience = (index: number, field: keyof Work, value: string | boolean | string[]) => {
+  const updateExperience = (index: number, field: keyof NonNullable<Work>, value: string | boolean | string[]) => {
     const updated = localExperiences.map((exp, i) => {
-      if (i === index) {
+      if (i === index && exp) {
         return { ...exp, [field]: value };
       }
       return exp;
@@ -64,7 +64,7 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
               <Label htmlFor={`name-${index}`}>Company *</Label>
               <Input
                 id={`name-${index}`}
-                value={experience.name || ""}
+                value={experience!.name || ""}
                 onChange={(e) => updateExperience(index, "name", e.target.value)}
                 required
               />
@@ -74,7 +74,7 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
               <Label htmlFor={`position-${index}`}>Job Title *</Label>
               <Input
                 id={`position-${index}`}
-                value={experience.position || ""}
+                value={experience!.position || ""}
                 onChange={(e) => updateExperience(index, "position", e.target.value)}
                 required
               />
@@ -85,7 +85,7 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
               <Input
                 id={`start-${index}`}
                 type="month"
-                value={experience.startDate || ""}
+                value={experience!.startDate || ""}
                 onChange={(e) => updateExperience(index, "startDate", e.target.value)}
                 required
               />
@@ -96,7 +96,7 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
               <Input
                 id={`end-${index}`}
                 type="month"
-                value={experience.endDate || ""}
+                value={experience!.endDate || ""}
                 onChange={(e) => updateExperience(index, "endDate", e.target.value)}
                 placeholder="Leave empty if current"
               />
@@ -106,7 +106,7 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
               <Label htmlFor={`summary-${index}`}>Summary</Label>
               <Textarea
                 id={`summary-${index}`}
-                value={experience.summary || ""}
+                value={experience!.summary || ""}
                 onChange={(e) => updateExperience(index, "summary", e.target.value)}
                 rows={3}
                 placeholder="Brief description of your role..."
@@ -118,7 +118,7 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
               <Label htmlFor={`highlights-${index}`}>Key Achievements</Label>
               <Textarea
                 id={`highlights-${index}`}
-                value={experience.highlights?.join("\n") || ""}
+                value={experience!.highlights?.join("\n") || ""}
                 onChange={(e) => {
                   const highlightsArray = e.target.value.split("\n").filter(h => h.trim());
                   updateExperience(index, "highlights", highlightsArray);

@@ -38,8 +38,8 @@ export interface GenerateCoverLetterInput {
  */
 export async function generateCoverLetter(input: GenerateCoverLetterInput): Promise<CoverLetterResult> {
   const model = input.provider.createLanguageModel(input.modelId);
-  const userName = input.userResume.basics?.name || input.optimizedResume.basics.name || 'Applicant';
-  
+  const userName = input.userResume.basics?.name || input.optimizedResume.basics?.name || 'Applicant';
+
   const result = await generateObject({
     model,
     schema: coverLetterSchema,

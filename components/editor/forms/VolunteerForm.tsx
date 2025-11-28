@@ -10,7 +10,7 @@ import { Trash2, Plus } from "lucide-react";
 
 interface VolunteerFormProps {
   volunteer: Volunteer[];
-  onChange: (volunteer: Volunteer[]) => void;
+  onChange: (volunteer: NonNullable<Volunteer>[]) => void;
 }
 
 export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
@@ -27,21 +27,21 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
       summary: "",
       highlights: [],
     };
-    onChange([...volunteerList, newVolunteer]);
+    onChange([...volunteerList.filter((v): v is NonNullable<Volunteer> => !!v), newVolunteer]);
   };
 
   const handleRemoveVolunteer = (index: number) => {
-    onChange(volunteerList.filter((_, i) => i !== index));
+    onChange(volunteerList.filter((_, i) => i !== index).filter((v): v is NonNullable<Volunteer> => !!v));
   };
 
-  const handleVolunteerChange = (index: number, field: keyof Volunteer, value: string | string[]) => {
+  const handleVolunteerChange = (index: number, field: keyof NonNullable<Volunteer>, value: string | string[]) => {
     const updated = volunteerList.map((vol, i) => {
-      if (i === index) {
+      if (i === index && vol) {
         return { ...vol, [field]: value };
       }
       return vol;
     });
-    onChange(updated);
+    onChange(updated.filter((v): v is NonNullable<Volunteer> => !!v));
   };
 
   const handleHighlightsChange = (index: number, value: string) => {
@@ -70,7 +70,7 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
               <Label htmlFor={`volunteer-organization-${index}`}>Organization *</Label>
               <Input
                 id={`volunteer-organization-${index}`}
-                value={vol.organization || ""}
+                value={vol!.organization || ""}
                 onChange={(e) => handleVolunteerChange(index, "organization", e.target.value)}
                 placeholder="Red Cross"
               />
@@ -80,7 +80,7 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
               <Label htmlFor={`volunteer-position-${index}`}>Position *</Label>
               <Input
                 id={`volunteer-position-${index}`}
-                value={vol.position || ""}
+                value={vol!.position || ""}
                 onChange={(e) => handleVolunteerChange(index, "position", e.target.value)}
                 placeholder="Volunteer Coordinator"
               />
@@ -91,7 +91,7 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
             <Label htmlFor={`volunteer-url-${index}`}>Website URL</Label>
             <Input
               id={`volunteer-url-${index}`}
-              value={vol.url || ""}
+              value={vol!.url || ""}
               onChange={(e) => handleVolunteerChange(index, "url", e.target.value)}
               placeholder="https://organization-website.org"
             />
@@ -103,7 +103,7 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
               <Input
                 id={`volunteer-startDate-${index}`}
                 type="date"
-                value={vol.startDate || ""}
+                value={vol!.startDate || ""}
                 onChange={(e) => handleVolunteerChange(index, "startDate", e.target.value)}
               />
             </div>
@@ -113,7 +113,7 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
               <Input
                 id={`volunteer-endDate-${index}`}
                 type="date"
-                value={vol.endDate || ""}
+                value={vol!.endDate || ""}
                 onChange={(e) => handleVolunteerChange(index, "endDate", e.target.value)}
               />
             </div>
@@ -123,7 +123,7 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
             <Label htmlFor={`volunteer-summary-${index}`}>Summary</Label>
             <Textarea
               id={`volunteer-summary-${index}`}
-              value={vol.summary || ""}
+              value={vol!.summary || ""}
               onChange={(e) => handleVolunteerChange(index, "summary", e.target.value)}
               placeholder="Brief description of your volunteer work"
               rows={3}
@@ -134,7 +134,7 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
             <Label htmlFor={`volunteer-highlights-${index}`}>Highlights (one per line)</Label>
             <Textarea
               id={`volunteer-highlights-${index}`}
-              value={(vol.highlights || []).join("\n")}
+              value={(vol!.highlights || []).join("\n")}
               onChange={(e) => handleHighlightsChange(index, e.target.value)}
               placeholder="Organized fundraising events&#10;Managed team of 15 volunteers"
               rows={4}

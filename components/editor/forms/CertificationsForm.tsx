@@ -53,7 +53,7 @@ export default function CertificationsForm({
     onChange(certifications.filter((_, i) => i !== index));
   };
 
-  const startEdit = (cert: Certificate, index: number) => {
+  const startEdit = (cert: NonNullable<Certificate>, index: number) => {
     setNewEntry({
       name: cert.name || '',
       issuer: cert.issuer || '',
@@ -92,7 +92,7 @@ export default function CertificationsForm({
 
       {/* List of existing certifications */}
       <div className="space-y-3">
-        {certifications.map((cert, index) => (
+        {certifications.filter(cert => cert).map((cert, index) => (
           <Card key={index} className="p-4">
             {editingIndex === index ? (
               <div className="space-y-3">
@@ -164,19 +164,19 @@ export default function CertificationsForm({
               <div>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{cert.name}</h4>
-                    <p className="text-sm text-gray-600">{cert.issuer}</p>
-                    {cert.date && (
+                    <h4 className="font-medium text-gray-900">{cert!.name}</h4>
+                    <p className="text-sm text-gray-600">{cert!.issuer}</p>
+                    {cert!.date && (
                       <p className="text-sm text-gray-500 mt-1">
-                        Issued: {new Date(cert.date + '-01').toLocaleDateString('en-US', {
+                        Issued: {new Date(cert!.date + '-01').toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                         })}
                       </p>
                     )}
-                    {cert.url && (
+                    {cert!.url && (
                       <a
-                        href={cert.url}
+                        href={cert!.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-blue-600 hover:text-blue-800 mt-1 inline-block"
@@ -188,7 +188,7 @@ export default function CertificationsForm({
                   <div className="flex space-x-2 ml-4">
                     <Button
                       type="button"
-                      onClick={() => startEdit(cert, index)}
+                      onClick={() => startEdit(cert!, index)}
                       variant="secondary"
                       size="sm"
                     >

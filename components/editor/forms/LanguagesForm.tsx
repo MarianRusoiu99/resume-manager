@@ -85,7 +85,7 @@ export default function LanguagesForm({
     onChange(languages.filter((_, i) => i !== index));
   };
 
-  const startEdit = (lang: Language, index: number) => {
+  const startEdit = (lang: NonNullable<Language>, index: number) => {
     form.reset({
       language: lang.language || '',
       fluency: lang.fluency || '',
@@ -140,7 +140,7 @@ export default function LanguagesForm({
 
       {/* List of existing languages */}
       <div className="space-y-3">
-        {languages.map((lang, index) => (
+        {languages.filter(lang => lang).map((lang, index) => (
           <Card key={index}>
             {editingIndex === index ? (
               <CardContent className="pt-6">
@@ -214,20 +214,20 @@ export default function LanguagesForm({
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3">
-                      <h4 className="font-medium">{lang.language}</h4>
+                      <h4 className="font-medium">{lang!.language}</h4>
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${getFluencyColor(
-                          lang.fluency || ''
+                          lang!.fluency || ''
                         )}`}
                       >
-                        {getFluencyLabel(lang.fluency || '')}
+                        {getFluencyLabel(lang!.fluency || '')}
                       </span>
                     </div>
                   </div>
                   <div className="flex space-x-2 ml-4">
                     <Button
                       type="button"
-                      onClick={() => startEdit(lang, index)}
+                      onClick={() => startEdit(lang!, index)}
                       variant="secondary"
                       size="sm"
                     >

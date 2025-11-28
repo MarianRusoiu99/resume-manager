@@ -32,9 +32,9 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
     onChange(localEducation.filter((_, i) => i !== index));
   };
 
-  const updateEducation = (index: number, field: keyof Education, value: string | string[]) => {
+  const updateEducation = (index: number, field: keyof NonNullable<Education>, value: string | string[]) => {
     const updated = localEducation.map((edu, i) => {
-      if (i === index) {
+      if (i === index && edu) {
         return { ...edu, [field]: value };
       }
       return edu;
@@ -44,7 +44,7 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
 
   return (
     <div className="space-y-6">
-      {localEducation.map((edu, index) => (
+      {localEducation.filter(edu => edu).map((edu, index) => (
         <div
           key={index}
           className="p-4 border border-gray-200 rounded-lg space-y-4 relative"
@@ -65,7 +65,7 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
               <Label htmlFor={`institution-${index}`}>School/University *</Label>
               <Input
                 id={`institution-${index}`}
-                value={edu.institution || ""}
+                value={edu!.institution || ""}
                 onChange={(e) => updateEducation(index, "institution", e.target.value)}
                 required
               />
@@ -75,7 +75,7 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
               <Label htmlFor={`studyType-${index}`}>Degree *</Label>
               <Input
                 id={`studyType-${index}`}
-                value={edu.studyType || ""}
+                value={edu!.studyType || ""}
                 onChange={(e) => updateEducation(index, "studyType", e.target.value)}
                 placeholder="e.g., Bachelor of Science"
                 required
@@ -86,7 +86,7 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
               <Label htmlFor={`area-${index}`}>Field of Study</Label>
               <Input
                 id={`area-${index}`}
-                value={edu.area || ""}
+                value={edu!.area || ""}
                 onChange={(e) => updateEducation(index, "area", e.target.value)}
                 placeholder="e.g., Computer Science"
               />
@@ -96,7 +96,7 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
               <Label htmlFor={`score-${index}`}>GPA</Label>
               <Input
                 id={`score-${index}`}
-                value={edu.score || ""}
+                value={edu!.score || ""}
                 onChange={(e) => updateEducation(index, "score", e.target.value)}
                 placeholder="e.g., 3.8/4.0"
               />
@@ -107,7 +107,7 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
               <Input
                 id={`start-date-${index}`}
                 type="month"
-                value={edu.startDate || ""}
+                value={edu!.startDate || ""}
                 onChange={(e) => updateEducation(index, "startDate", e.target.value)}
               />
             </div>
@@ -117,7 +117,7 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
               <Input
                 id={`end-date-${index}`}
                 type="month"
-                value={edu.endDate || ""}
+                value={edu!.endDate || ""}
                 onChange={(e) => updateEducation(index, "endDate", e.target.value)}
               />
             </div>
@@ -126,7 +126,7 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
               <Label htmlFor={`courses-${index}`}>Relevant Courses</Label>
               <Textarea
                 id={`courses-${index}`}
-                value={edu.courses?.join(", ") || ""}
+                value={edu!.courses?.join(", ") || ""}
                 onChange={(e) => {
                   const coursesArray = e.target.value.split(",").map(c => c.trim()).filter(c => c);
                   updateEducation(index, "courses", coursesArray);
