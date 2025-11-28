@@ -38,7 +38,7 @@ export async function POST(
       userId: session.user.id,
       jobDescription: originalResume.jobDescription,
       jobMetadata: originalResume.jobMetadata as Record<string, unknown>,
-      resume: ((originalResume as any).resumeContent || originalResume.resume) as Resume,
+      resume: (originalResume.resume || (originalResume as { resumeContent?: unknown }).resumeContent) as Resume,
       templateId: originalResume.templateId || undefined,
       metadata: {
         ...(originalResume.metadata as Record<string, unknown>),

@@ -108,14 +108,14 @@ IMPORTANT:
 - If a field is not present, omit it (don't use null or empty strings)`;
 
 // Helper function to normalize dates to JSON Resume format
-function normalizeDates(data: any): any {
+function normalizeDates(data: unknown): unknown {
     if (!data || typeof data !== 'object') return data;
 
     if (Array.isArray(data)) {
         return data.map(normalizeDates);
     }
 
-    const normalized: any = {};
+    const normalized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(data)) {
         if ((key === 'startDate' || key === 'endDate' || key === 'date') && typeof value === 'string') {
             // Try to extract year from various formats

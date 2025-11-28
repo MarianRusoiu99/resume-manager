@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 import type { OptimizedResume } from '@/lib/ai/agents';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Input parameters for resume generation
@@ -88,12 +89,12 @@ export class ResumeService {
       const userResume = resumeSchema.parse(profileData.resume);
       return { success: true, resume: userResume };
     } catch (error) {
-      console.error('Profile resume validation failed:', error);
+      logger.error('Profile resume validation failed', error);
       return { success: false, error: 'Invalid profile data format. Please update your profile.' };
     }
   }
 
-  private async resolveProvider(input: GenerateResumeServiceInput): Promise<{ success: boolean; provider?: any; modelId?: string; providerType?: string; error?: string }> {
+  private async resolveProvider(input: GenerateResumeServiceInput): Promise<{ success: boolean; provider?: import('@/lib/ai/providers').AIProvider; modelId?: string; providerType?: string; error?: string }> {
     if (input.modelId) {
       try {
         const { apiProviderService } = await import('@/lib/services/api-provider.service');
@@ -123,7 +124,8 @@ export class ResumeService {
     }
   }
 
-  private async saveGeneratedResume(input: GenerateResumeServiceInput, validatedResume: Resume, workflowResult: any, extractedJobTitle: string, extractedCompanyName: string) {
+  private async saveGeneratedResume(input: GenerateResumeServiceInput, validatedResume: Resume, workflowResult: unknown, extractedJobTitle: string, extractedCompanyName: string) {
+    const result = workflowResult as { tokensUsed?: number };
     return await this.repository.create({
       userId: input.userId,
       jobDescription: input.jobDescription,
@@ -135,22 +137,26 @@ export class ResumeService {
       resume: validatedResume,
       metadata: {
         model: validatedResume.meta?.model || 'unknown',
-        totalTokens: workflowResult.tokensUsed || 0,
+        totalTokens: result.tokensUsed || 0,
         generatedAt: validatedResume.meta?.lastModified || new Date().toISOString()
       }
     });
   }
 
-  private async saveCoverLetter(input: GenerateResumeServiceInput, workflowResult: any, validatedResume: Resume, extractedJobTitle: string, extractedCompanyName: string) {
+  private async saveCoverLetter(input: GenerateResumeServiceInput, workflowResult: unknown, validatedResume: Resume, extractedJobTitle: string, extractedCompanyName: string) {
+    const result = workflowResult as { coverLetter?: string; tokensUsed?: number };
+    if (!result.coverLetter) {
+      throw new Error('Cover letter content is missing from workflow result');
+    }
     return await coverLetterService.createCoverLetter({
       userId: input.userId,
-      content: workflowResult.coverLetter,
+      content: result.coverLetter,
       jobDescription: input.jobDescription,
       jobTitle: extractedJobTitle,
       companyName: extractedCompanyName,
       metadata: {
         model: typeof validatedResume.meta?.model === 'string' ? validatedResume.meta?.model : 'gpt-4o',
-        tokens: workflowResult.tokensUsed || 0,
+        tokens: result.tokensUsed || 0,
         generationTime: 0,
         personalInstructions: input.personalInstructions,
       },
@@ -175,9 +181,12 @@ export class ResumeService {
       }
       const userResume = resumeResult.resume;
 
-      console.log(`\n🚀 ResumeService: Starting resume generation for user ${input.userId}`);
-      console.log(`   Job: ${input.jobTitle || 'Not specified'} at ${input.companyName || 'Not specified'}`);
-      console.log(`   Model ID: ${input.modelId || 'default (env OPENAI_API_KEY)'}`);
+      logger.info('Starting resume generation', {
+        userId: input.userId,
+        jobTitle: input.jobTitle || 'Not specified',
+        companyName: input.companyName || 'Not specified',
+        modelId: input.modelId || 'default (env OPENAI_API_KEY)'
+      });
 
       // Resolve provider
       const providerResult = await this.resolveProvider(input);
@@ -199,42 +208,43 @@ export class ResumeService {
       });
 
       if (!workflowResult.success || !workflowResult.resume) {
-        console.error('❌ ResumeService: Workflow failed');
+        logger.error('Resume generation workflow failed');
         return { success: false, errors: [workflowResult.error || 'Failed to generate resume'] };
       }
 
-      console.log('✅ ResumeService: Workflow completed successfully');
-      console.log(`   Tokens used: ${workflowResult.tokensUsed || 0}`);
-      if (workflowResult.coverLetter) {
-        console.log(`   Cover letter: Generated (${workflowResult.coverLetter.length} characters)`);
-      }
+      logger.info('Workflow completed successfully', {
+        tokensUsed: workflowResult.tokensUsed || 0,
+        coverLetterGenerated: !!workflowResult.coverLetter,
+        coverLetterLength: workflowResult.coverLetter?.length
+      });
 
       // Extract job title and company from AI analysis (if available)
       const extractedJobTitle = workflowResult.jobAnalysis?.jobTitle || input.jobTitle || 'Position';
       const extractedCompanyName = workflowResult.jobAnalysis?.companyName || input.companyName || 'Company';
-      console.log(`📋 Resume Title: "${extractedJobTitle}" at ${extractedCompanyName}`);
+      logger.debug('Resume title extracted', { jobTitle: extractedJobTitle, companyName: extractedCompanyName });
 
       // Validate generated resume
       const validatedResume = resumeSchema.parse(workflowResult.resume);
 
       // Store in database
       const generatedResume = await this.saveGeneratedResume(input, validatedResume, workflowResult, extractedJobTitle, extractedCompanyName);
-      console.log(`✅ ResumeService: Saved to database with ID: ${generatedResume.id}`);
+      logger.info('Resume saved to database', { resumeId: generatedResume.id });
 
       // Save cover letter if generated and link it to the resume
       let coverLetterId: string | undefined;
       if (workflowResult.coverLetter) {
-        console.log('📝 ResumeService: Saving cover letter separately...');
+        logger.debug('Saving cover letter separately');
         const coverLetterResult = await this.saveCoverLetter(input, workflowResult, validatedResume, extractedJobTitle, extractedCompanyName);
         if (coverLetterResult.success && coverLetterResult.data?.id) {
           coverLetterId = coverLetterResult.data.id;
-          console.log(`✅ ResumeService: Cover letter saved with ID: ${coverLetterId}`);
-
+          logger.info('Cover letter saved', { coverLetterId });
           // Link the cover letter to the resume
-          await this.repository.linkCoverLetter(generatedResume.id, coverLetterId);
-          console.log(`🔗 ResumeService: Cover letter linked to resume`);
+          if (coverLetterId) {
+            await this.repository.linkCoverLetter(generatedResume.id, coverLetterId);
+            logger.debug('Cover letter linked to resume');
+          }
         } else {
-          console.error('❌ ResumeService: Failed to save cover letter:', coverLetterResult.error);
+          logger.error('Failed to save cover letter', { error: coverLetterResult.error });
         }
       }
 
@@ -251,7 +261,7 @@ export class ResumeService {
         coverLetterId,
       };
     } catch (error) {
-      console.error('❌ ResumeService: Error:', error);
+      logger.error('Resume generation error', error);
       return { success: false, errors: [error instanceof Error ? error.message : 'Unknown error occurred'] };
     }
   }
@@ -288,7 +298,7 @@ export class ResumeService {
       return { success: true, resume: profileData.resume as Resume };
     };
 
-    const resolveProviderForProgress = async (): Promise<{ provider: any; modelId: string; providerType: string } | { error: string }> => {
+    const resolveProviderForProgress = async (): Promise<{ provider: import('@/lib/ai/providers').AIProvider; modelId: string; providerType: string } | { error: string }> => {
       if (baseInput.modelId) {
         try {
           const { apiProviderService } = await import('@/lib/services/api-provider.service');
@@ -344,16 +354,20 @@ export class ResumeService {
       const userResume = profileFetch.resume;
 
       // Debug: Log profile summary to verify it has real data
-      console.log(`📊 Profile Summary:`);
-      console.log(`   Name: ${userResume.basics?.name || 'Not set'}`);
-      console.log(`   Email: ${userResume.basics?.email || 'Not set'}`);
-      console.log(`   Work Experience: ${userResume.work?.length || 0} entries`);
-      console.log(`   Education: ${userResume.education?.length || 0} entries`);
-      console.log(`   Skills: ${userResume.skills?.length || 0} entries`);
+      logger.debug('Profile summary', {
+        name: userResume.basics?.name || 'Not set',
+        email: userResume.basics?.email || 'Not set',
+        workExperience: userResume.work?.length || 0,
+        education: userResume.education?.length || 0,
+        skills: userResume.skills?.length || 0
+      });
 
-      console.log(`\n🚀 ResumeService: Starting resume generation with progress for user ${baseInput.userId}`);
+      logger.info('Starting resume generation with progress', { userId: baseInput.userId });
 
-      console.log(`   Job: ${baseInput.jobTitle || 'Not specified'} at ${baseInput.companyName || 'Not specified'}`);
+      logger.debug('Job details', {
+        jobTitle: baseInput.jobTitle || 'Not specified',
+        companyName: baseInput.companyName || 'Not specified'
+      });
 
       onProgress('workflow', 'Starting AI workflow...', 15);
 
@@ -365,7 +379,7 @@ export class ResumeService {
 
       const provider = providerResult.provider;
       const modelId = providerResult.modelId;
-      console.log(`   Using provider: ${providerResult.providerType} (model: ${modelId})`);
+      logger.info('Using AI provider', { providerType: providerResult.providerType, modelId });
 
       const workflowResult = await generateResume({
         provider,
@@ -378,22 +392,22 @@ export class ResumeService {
       });
 
       if (!workflowResult.success || !workflowResult.resume) {
-        console.error('❌ ResumeService: Workflow failed');
+        logger.error('Resume generation workflow failed');
         return fail([workflowResult.error || 'Failed to generate resume']);
       }
 
-      console.log('✅ ResumeService: Workflow completed successfully');
-      console.log(`   Tokens used: ${workflowResult.tokensUsed || 0}`);
-      if (workflowResult.coverLetter) {
-        console.log(`   Cover letter: Generated (${workflowResult.coverLetter.length} characters)`);
-      }
+      logger.info('Workflow completed successfully', {
+        tokensUsed: workflowResult.tokensUsed || 0,
+        coverLetterGenerated: !!workflowResult.coverLetter,
+        coverLetterLength: workflowResult.coverLetter?.length
+      });
 
       onProgress('save', 'Saving resume to database...', 95);
 
       const extractedJobTitle = workflowResult.jobAnalysis?.jobTitle || baseInput.jobTitle;
       const extractedCompanyName = workflowResult.jobAnalysis?.companyName || baseInput.companyName;
 
-      console.log(`📋 Resume Title: "${extractedJobTitle}" at ${extractedCompanyName || 'Unknown Company'}`);
+      logger.debug('Resume title extracted', { jobTitle: extractedJobTitle, companyName: extractedCompanyName || 'Unknown Company' });
 
       const validatedResume = workflowResult.resume;
 
@@ -413,7 +427,7 @@ export class ResumeService {
         }
       });
 
-      console.log(`✅ ResumeService: Saved to database with ID: ${generatedResume.id}`);
+      logger.info('Resume saved to database', { resumeId: generatedResume.id });
 
       onProgress('complete', 'Resume generated successfully!', 100);
 
@@ -429,7 +443,7 @@ export class ResumeService {
         coverLetter: workflowResult.coverLetter
       };
     } catch (error) {
-      console.error('❌ ResumeService: Error:', error);
+      logger.error('Resume generation with progress error', error);
       onProgress('error', error instanceof Error ? error.message : 'Unknown error occurred', 0);
       return {
         success: false,
@@ -540,7 +554,7 @@ export class ResumeService {
       await this.repository.delete(resumeId);
       return { success: true };
     } catch (error) {
-      console.error('Error deleting resume:', error);
+      logger.error('Error deleting resume', error);
       return {
         success: false,
         error: 'Failed to delete resume'
@@ -596,7 +610,7 @@ export class ResumeService {
         updatedAt: updatedResume.updatedAt,
       };
     } catch (error) {
-      console.error('Error updating resume content:', error);
+      logger.error('Error updating resume content', error);
       throw error;
     }
   }
@@ -645,7 +659,7 @@ export class ResumeService {
         updatedAt: updatedResume.updatedAt,
       };
     } catch (error) {
-      console.error('Error updating resume template:', error);
+      logger.error('Error updating resume template', error);
       throw error;
     }
   }
@@ -674,7 +688,7 @@ export class ResumeService {
     error?: string;
   }> {
     try {
-      console.log(`\n📝 ResumeService: Starting standalone cover letter generation for user ${input.userId}`);
+      logger.info('Starting standalone cover letter generation', { userId: input.userId });
 
       // Validate user profile and resume
       // Use same validation logic as resume generation
@@ -717,7 +731,7 @@ export class ResumeService {
       const provider = providerResult.provider;
       const modelId = providerResult.modelId!;
 
-      console.log(`   Model: ${modelId}`);
+      logger.debug('Using AI model', { modelId });
 
       // Step 1: Analyze job to extract title and company
       const { analyzeJob } = await import('@/lib/ai/agents');
@@ -727,7 +741,7 @@ export class ResumeService {
         jobDescription: input.jobDescription,
       });
 
-      console.log(`   Job: ${jobAnalysis.jobTitle} at ${jobAnalysis.companyName}`);
+      logger.debug('Job analysis complete', { jobTitle: jobAnalysis.jobTitle, companyName: jobAnalysis.companyName });
 
       // Step 2: Generate cover letter using user's original resume
       const { generateCoverLetter } = await import('@/lib/ai/agents');
@@ -739,7 +753,7 @@ export class ResumeService {
         optimizedResume: userResume as OptimizedResume, // Use original resume as optimized resume for standalone generation
       });
 
-      console.log(`   ✓ Cover letter generated (${coverLetterResult.content.length} characters)`);
+      logger.debug('Cover letter generated', { length: coverLetterResult.content.length });
 
       // Step 3: Save to database
       const coverLetterData = {
@@ -759,11 +773,11 @@ export class ResumeService {
       const saveResult = await coverLetterService.createCoverLetter(coverLetterData);
 
       if (!saveResult.success || !saveResult.data?.id) {
-        console.error('❌ Failed to save cover letter:', saveResult.error);
+        logger.error('Failed to save cover letter', { error: saveResult.error });
         return { success: false, error: saveResult.error || 'Failed to save cover letter' };
       }
 
-      console.log(`✅ Cover letter saved with ID: ${saveResult.data.id}`);
+      logger.info('Cover letter saved', { coverLetterId: saveResult.data.id });
 
       return {
         success: true,
@@ -776,7 +790,7 @@ export class ResumeService {
         },
       };
     } catch (error) {
-      console.error('❌ ResumeService: Standalone cover letter generation failed:', error);
+      logger.error('Standalone cover letter generation failed', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to generate cover letter',

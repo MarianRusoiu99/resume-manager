@@ -4,7 +4,11 @@
 
 import type { CoverLetter } from '@prisma/client';
 
-export interface CoverLetterListItem extends CoverLetter { }
+// Re-export for convenience
+export type { CoverLetter };
+
+// Type alias for backward compatibility
+export type CoverLetterListItem = CoverLetter;
 
 export interface CoverLetterWithResume extends CoverLetter {
     generatedResume?: {

@@ -213,7 +213,7 @@ class ApiProviderService {
             id: p.id,
             name: p.name,
             provider: providerType, // Use lowercase
-            providerName: getProviderName(providerType as any),
+            providerName: getProviderName(providerType),
             keyPreview,
             models: p.models, // Return stored model IDs
             isActive: p.isActive,
@@ -291,7 +291,7 @@ class ApiProviderService {
           uniqueId: `${provider.id}-${model.id}`,
           providerId: provider.id,
           providerType: provider.provider, // Already lowercase from getUserProvidersWithModels
-          providerName: getProviderName(provider.provider as any),
+          providerName: getProviderName(provider.provider),
         }))
       );
 

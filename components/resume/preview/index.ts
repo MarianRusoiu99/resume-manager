@@ -9,7 +9,6 @@ export { useResumeData } from './useResumeData';
 export { useExportPDF } from './useExportPDF';
 export { usePagination } from './usePagination';
 export { usePreviewScale } from './usePreviewScale';
-export { useIframePagination } from './useIframePagination';
 
 // UI Components
 export { PreviewHeader } from './PreviewHeader';

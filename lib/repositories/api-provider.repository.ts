@@ -28,7 +28,7 @@ class ApiProviderRepository {
     return prisma.apiProvider.create({
       data: {
         ...data,
-        provider: data.provider.toUpperCase() as any, // Convert to uppercase to match enum
+        provider: data.provider.toUpperCase() as 'OPENAI' | 'ANTHROPIC' | 'GOOGLE' | 'COHERE' | 'MISTRAL',
       },
     });
   }
@@ -67,7 +67,7 @@ class ApiProviderRepository {
     return prisma.apiProvider.findMany({
       where: {
         userId,
-        provider: provider.toUpperCase() as any, // Convert to uppercase to match enum
+        provider: provider.toUpperCase() as 'OPENAI' | 'ANTHROPIC' | 'GOOGLE' | 'COHERE' | 'MISTRAL',
         isActive: true,
       },
       orderBy: {

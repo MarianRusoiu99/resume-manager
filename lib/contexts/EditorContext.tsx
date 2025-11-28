@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, ReactNode, useRef } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
+import { logger } from "@/lib/utils/logger";
 
 /**
  * Unified Editor Context Interface
@@ -125,7 +126,7 @@ export function EditorProvider({
         setResume(getEmptyResume());
       }
     } catch (error) {
-      console.error("Error loading data:", error);
+      logger.error('Error loading editor data', error);
       toast.error("Failed to load data");
     } finally {
       setLoading(false);
@@ -159,14 +160,14 @@ export function EditorProvider({
         const success = await onSave(resume);
         if (success) {
           setDirty(false);
-          console.log('✅ Autosave successful');
+          logger.debug('Autosave successful');
           // Silent success - no toast for autosave to avoid interrupting user
         } else {
-          console.error('❌ Autosave failed');
+          logger.error('Autosave failed');
           toast.error('Failed to auto-save changes');
         }
       } catch (error) {
-        console.error('❌ Autosave error:', error);
+        logger.error('Autosave error', error);
         toast.error('Failed to auto-save changes');
       } finally {
         setIsSaving(false);
@@ -210,7 +211,7 @@ export function EditorProvider({
       }
       return success;
     } catch (error) {
-      console.error("Error saving:", error);
+      logger.error('Error saving editor data', error);
       toast.error("Failed to save changes");
       return false;
     }

@@ -64,11 +64,11 @@ export function isProviderSupported(providerType: string): providerType is Suppo
 /**
  * Get provider display name
  */
-export function getProviderName(providerType: SupportedProvider): string {
-  const names: Record<SupportedProvider, string> = {
+export function getProviderName(providerType: string): string {
+  const names: Record<string, string> = {
     openai: 'OpenAI',
     anthropic: 'Anthropic',
     google: 'Google AI',
   };
-  return names[providerType];
+  return names[providerType] || providerType.charAt(0).toUpperCase() + providerType.slice(1);
 }
