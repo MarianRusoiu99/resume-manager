@@ -45,17 +45,15 @@ export function PreviewHeader({
         )}
       </div>
       <div className="flex items-center gap-2">
-        {resumeId && !templateHtml && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExportPDF}
-            disabled={isExportingPDF}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isExportingPDF ? 'Exporting...' : 'Download PDF'}
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onExportPDF}
+          disabled={isExportingPDF}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {isExportingPDF ? 'Exporting...' : 'Download PDF'}
+        </Button>
         <Button
           variant="ghost"
           size="sm"

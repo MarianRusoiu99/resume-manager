@@ -16,7 +16,7 @@ interface ExportPDFParams {
 }
 
 export function useExportPDF() {
-  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(true);
 
   /**
    * Export PDF by calling universal server-side API
