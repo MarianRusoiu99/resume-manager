@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Form,
@@ -16,7 +15,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Basics } from "@/lib/validations/jsonresume";
-
 
 // Temporary form schema that bridges the gap between old UI and JSON Resume
 const personalInfoFormSchema = z.object({
@@ -57,7 +55,7 @@ type PersonalInfoFormData = z.infer<typeof personalInfoFormSchema>;
 
 interface PersonalInfoFormProps {
   initialData?: Basics;
-  onSave?: (data: Basics) => void;
+  onChange?: (data: Basics) => void;
 }
 
 // Helper function to convert JSON Resume basics to form data
@@ -108,14 +106,14 @@ function formDataToBasics(formData: PersonalInfoFormData): Basics {
 
 export function PersonalInfoForm({
   initialData,
-  onSave,
+  onChange,
 }: PersonalInfoFormProps) {
-  const [isSaving, setIsSaving] = useState(false);
   const prevInitialDataRef = useRef<string>("");
 
   const form = useForm<PersonalInfoFormData>({
     resolver: zodResolver(personalInfoFormSchema),
     defaultValues: basicsToFormData(initialData),
+    mode: "onChange",
   });
 
   // Reset form when initialData changes (using JSON comparison to avoid unnecessary resets)
@@ -126,37 +124,35 @@ export function PersonalInfoForm({
       form.reset(basicsToFormData(initialData));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialData]); // Only depend on initialData, comparison handled internally
+  }, [initialData]);
 
-  const saveData = async (data: PersonalInfoFormData) => {
-    const isValid = await form.trigger();
-    if (!isValid || !onSave) return;
+  // Watch for changes and propagate to parent
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      if (onChange) {
+        // Debounce could be added here if needed, but for text inputs, 
+        // the parent context usually handles debouncing or we can add a small delay.
+        // For now, let's use a small timeout to avoid too many updates
+        const timeoutId = setTimeout(() => {
+          // Validate before sending? Or send partial data?
+          // Usually we want to send data even if invalid so user doesn't lose it,
+          // but for strict types we might want to validate.
+          // schema transform trim() might need to be handled carefully.
 
-    setIsSaving(true);
-    try {
-      const basicsData = formDataToBasics(data);
-      await onSave(basicsData);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-
-  const onSubmit = async (data: PersonalInfoFormData) => {
-    if (!onSave) return;
-
-    setIsSaving(true);
-    try {
-      const basicsData = formDataToBasics(data);
-      await onSave(basicsData);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+          // We cast value to PersonalInfoFormData because watch returns Partial<T>
+          const data = value as PersonalInfoFormData;
+          const basicsData = formDataToBasics(data);
+          onChange(basicsData);
+        }, 500);
+        return () => clearTimeout(timeoutId);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, onChange]);
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form className="space-y-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             control={form.control}
@@ -275,7 +271,6 @@ export function PersonalInfoForm({
             />
           </div>
         </div>
-
       </form>
     </Form>
   );

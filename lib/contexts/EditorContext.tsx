@@ -17,6 +17,10 @@ export interface EditorContextType {
   resume: Resume;
   /** Loading state */
   loading: boolean;
+  /** Saving state */
+  isSaving: boolean;
+  /** Last saved timestamp */
+  lastSavedAt: Date | null;
   /** Update entire resume */
   updateResume: (resume: Resume) => void;
   /** Update a specific field in the resume */
@@ -107,6 +111,7 @@ export function EditorProvider({
   const [loading, setLoading] = useState(autoLoad && !!onLoad);
   const [isDirty, setDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
@@ -160,6 +165,7 @@ export function EditorProvider({
         const success = await onSave(resume);
         if (success) {
           setDirty(false);
+          setLastSavedAt(new Date());
           logger.debug('Autosave successful');
           // Silent success - no toast for autosave to avoid interrupting user
         } else {
@@ -201,10 +207,12 @@ export function EditorProvider({
    * Save resume using onSave callback
    */
   const save = useCallback(async (): Promise<boolean> => {
+    setIsSaving(true);
     try {
       const success = await onSave(resume);
       if (success) {
         setDirty(false);
+        setLastSavedAt(new Date());
         toast.success("Changes saved successfully!");
       } else {
         toast.error("Failed to save changes");
@@ -214,6 +222,8 @@ export function EditorProvider({
       logger.error('Error saving editor data', error);
       toast.error("Failed to save changes");
       return false;
+    } finally {
+      setIsSaving(false);
     }
   }, [resume, onSave]);
 
@@ -228,6 +238,8 @@ export function EditorProvider({
     () => ({
       resume,
       loading,
+      isSaving,
+      lastSavedAt,
       updateResume,
       updateField,
       save,
@@ -235,7 +247,7 @@ export function EditorProvider({
       isDirty,
       setDirty,
     }),
-    [resume, loading, updateResume, updateField, save, reload, isDirty]
+    [resume, loading, isSaving, lastSavedAt, updateResume, updateField, save, reload, isDirty]
   );
 
   return (

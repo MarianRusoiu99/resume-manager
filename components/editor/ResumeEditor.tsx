@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button, Input } from "@/components/ui";
-import { 
-  Save, 
-  User, 
-  Briefcase, 
-  GraduationCap, 
-  Code, 
+import {
+  Save,
+  User,
+  Briefcase,
+  GraduationCap,
+  Code,
   FolderOpen,
   MoreHorizontal,
   Edit2,
@@ -52,17 +52,16 @@ interface ResumeEditorProps {
   readonly onTogglePublic?: () => Promise<void>;
 }
 
-export function ResumeEditor({ 
-  id, 
-  displayName: initialDisplayName, 
+export function ResumeEditor({
+  id,
+  displayName: initialDisplayName,
   isPublic: initialIsPublic,
   publicSlug: initialPublicSlug,
   onDisplayNameChange,
   onTogglePublic,
 }: ResumeEditorProps) {
-  const { resume, updateField, save, isDirty } = useEditor();
+  const { resume, updateField, save, isDirty, isSaving, lastSavedAt } = useEditor();
   const [activeTab, setActiveTab] = useState("basics");
-  const [isSaving, setIsSaving] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [displayName, setDisplayName] = useState(initialDisplayName || "");
   const [showShareDialog, setShowShareDialog] = useState(false);
@@ -82,21 +81,10 @@ export function ResumeEditor({
   }, [initialPublicSlug]);
 
   const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const success = await save();
-      if (success) {
-        toast.success("Changes saved successfully");
-      } else {
-        toast.error("Failed to save changes");
-      }
-    } finally {
-      setIsSaving(false);
-    }
+    await save();
   };
 
-  const handlePersonalInfoSave = async (data?: Basics) => {
-    if (!data) return;
+  const handlePersonalInfoChange = (data: Basics) => {
     updateField('basics', data);
   };
 
@@ -117,7 +105,7 @@ export function ResumeEditor({
       toast.error("Name cannot be empty");
       return;
     }
-    
+
     if (onDisplayNameChange) {
       await onDisplayNameChange(displayName);
       setIsEditingName(false);
@@ -160,9 +148,9 @@ export function ResumeEditor({
               <Button size="sm" variant="ghost" onClick={handleSaveDisplayName}>
                 <Check className="h-4 w-4" />
               </Button>
-              <Button 
-                size="sm" 
-                variant="ghost" 
+              <Button
+                size="sm"
+                variant="ghost"
                 onClick={() => {
                   setDisplayName(initialDisplayName || "");
                   setIsEditingName(false);
@@ -192,7 +180,7 @@ export function ResumeEditor({
             <span className="text-xs text-muted-foreground">(Unsaved changes)</span>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* Share Button */}
           {id && onTogglePublic && (
@@ -204,6 +192,13 @@ export function ResumeEditor({
               <Share2 className="h-4 w-4 mr-2" />
               Share
             </Button>
+          )}
+
+          {/* Last Saved Indicator */}
+          {lastSavedAt && (
+            <span className="text-xs text-muted-foreground mr-2">
+              Saved {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
           )}
 
           {/* Save */}
@@ -259,7 +254,7 @@ export function ResumeEditor({
                 </p>
                 <PersonalInfoForm
                   initialData={resume.basics}
-                  onSave={handlePersonalInfoSave}
+                  onChange={handlePersonalInfoChange}
                 />
               </div>
 
@@ -465,15 +460,15 @@ export function ResumeEditor({
         </div>
 
         {/* Live Preview */}
-          <div className="w-1/2 border-l bg-muted/20 overflow-hidden">
-            <ResumePreview
-              resumeData={resume}
-              profileId={id}
-              showTemplateSelector
-              showCard={false}
-              className="h-full"
-            />
-          </div>
+        <div className="w-1/2 border-l bg-muted/20 overflow-hidden">
+          <ResumePreview
+            resumeData={resume}
+            profileId={id}
+            showTemplateSelector
+            showCard={false}
+            className="h-full"
+          />
+        </div>
       </div>
 
       {/* Share Dialog */}
