@@ -12,6 +12,7 @@ import {
   getProviderName,
   type AIModel,
 } from '@/lib/ai/providers';
+import { logger } from '@/lib/utils/logger';
 
 export interface AddApiProviderInput {
   userId: string;
@@ -131,7 +132,7 @@ class ApiProviderService {
         },
       };
     } catch (error) {
-      console.error('Error adding API provider:', error);
+      logger.error('Error adding API provider', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to add provider',
@@ -177,7 +178,7 @@ class ApiProviderService {
             lastUsedAt: provider.lastUsedAt,
           });
         } catch (error) {
-          console.error(`Failed to fetch models for provider ${provider.id}:`, error);
+          logger.error(`Failed to fetch models for provider ${provider.id}`, error);
           // Return provider with empty models array on error
           providersWithModels.push({
             id: provider.id,
@@ -194,7 +195,7 @@ class ApiProviderService {
 
       return { success: true, data: providersWithModels };
     } catch (error) {
-      console.error('Error getting user providers:', error);
+      logger.error('Error getting user providers', error);
       return { success: false, error: 'Failed to fetch providers' };
     }
   }
@@ -223,7 +224,7 @@ class ApiProviderService {
         }),
       };
     } catch (error) {
-      console.error('Error getting user providers:', error);
+      logger.error('Error getting user providers', error);
       return { success: false, error: 'Failed to fetch providers' };
     }
   }
@@ -262,7 +263,7 @@ class ApiProviderService {
         },
       };
     } catch (error) {
-      console.error('Error getting provider instance:', error);
+      logger.error('Error getting provider instance', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to get provider',
@@ -303,7 +304,7 @@ class ApiProviderService {
         },
       };
     } catch (error) {
-      console.error('Error getting available models:', error);
+      logger.error('Error getting available models', error);
       return { success: false, error: 'Failed to fetch models' };
     }
   }
@@ -347,7 +348,7 @@ class ApiProviderService {
 
       return { success: true, message: 'Provider updated successfully' };
     } catch (error) {
-      console.error('Error updating provider:', error);
+      logger.error('Error updating provider', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update provider',
@@ -360,7 +361,7 @@ class ApiProviderService {
       await apiProviderRepository.delete(providerId, userId);
       return { success: true, message: 'Provider deleted successfully' };
     } catch (error) {
-      console.error('Error deleting provider:', error);
+      logger.error('Error deleting provider', error);
       return { success: false, error: 'Failed to delete provider' };
     }
   }
@@ -373,7 +374,7 @@ class ApiProviderService {
         message: `Provider ${isActive ? 'enabled' : 'disabled'} successfully`,
       };
     } catch (error) {
-      console.error('Error toggling provider:', error);
+      logger.error('Error toggling provider', error);
       return { success: false, error: 'Failed to toggle provider' };
     }
   }

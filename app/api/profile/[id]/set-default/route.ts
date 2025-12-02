@@ -1,43 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth/config';
-import { profileService } from '@/lib/services/profile.service';
-
 /**
  * POST /api/profile/[id]/set-default - Set a profile as default
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
 
-    const { id } = await params;
+import { NextResponse } from 'next/server';
+import { profileService } from '@/lib/services/profile.service';
+import { createApiHandler } from '@/lib/api-handler';
 
-    const result = await profileService.setDefaultProfile(
-      id,
-      session.user.id
-    );
+export const POST = createApiHandler(async (request, { params }, session) => {
+  const { id } = await params;
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      );
-    }
+  const result = await profileService.setDefaultProfile(
+    id,
+    session.user.id
+  );
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error setting default profile:', error);
+  if (!result.success) {
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { error: result.error },
+      { status: 400 }
     );
   }
-}
+
+  return NextResponse.json({ success: true });
+});

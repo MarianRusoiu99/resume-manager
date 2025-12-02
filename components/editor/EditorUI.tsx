@@ -26,7 +26,7 @@ export interface EditorUIProps {
     /** Show resume parser (only for profile editing) */
     showParser?: boolean;
     /** Custom parser component */
-    parserComponent?: React.ReactNode; 
+    parserComponent?: React.ReactNode;
 }
 
 
@@ -36,7 +36,7 @@ export interface EditorUIProps {
  * Renders all resume editing sections using the editor context.
  * Can be used for both profile and individual resume editing.
  */
-export function EditorUI({ showParser, parserComponent}: EditorUIProps) {
+export function EditorUI({ showParser, parserComponent }: EditorUIProps) {
     const { resume, updateField, save, isDirty } = useEditor();
 
     // Warn user about unsaved changes when navigating away
@@ -76,7 +76,7 @@ export function EditorUI({ showParser, parserComponent}: EditorUIProps) {
         updateField('languages', languages);
     };
 
-    
+
 
     return (
         <Tabs defaultValue="basics" className="w-full">
@@ -144,7 +144,7 @@ export function EditorUI({ showParser, parserComponent}: EditorUIProps) {
                     <CardContent>
                         <PersonalInfoForm
                             initialData={resume.basics}
-                            onSave={handlePersonalInfoSave}
+                            onChange={handlePersonalInfoSave}
                         />
                     </CardContent>
                 </Card>

@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Project } from "@/lib/validations/jsonresume";
-import { Trash2, Plus } from "lucide-react";
+import { useListForm } from "@/hooks/use-list-form";
+import { FormList } from "@/components/ui/form-list";
 
 interface ProjectsFormProps {
   projects: Project[];
@@ -13,11 +13,10 @@ interface ProjectsFormProps {
 }
 
 export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
-  // Use projects directly from props - controlled component pattern
-  const projectsList = projects;
-
-  const handleAddProject = () => {
-    const newProject: Project = {
+  const { items, addItem, removeItem, updateItem } = useListForm<Project>({
+    initialItems: projects,
+    onChange,
+    newItemTemplate: {
       name: "",
       description: "",
       highlights: [],
@@ -25,57 +24,25 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
       startDate: "",
       endDate: "",
       url: "",
-    };
-    onChange([...projectsList, newProject]);
-  };
-
-  const handleRemoveProject = (index: number) => {
-    onChange(projectsList.filter((_, i) => i !== index));
-  };
-
-  const handleProjectChange = (index: number, field: keyof NonNullable<Project>, value: string | string[]) => {
-    const updated = projectsList.map((project, i) => {
-      if (i === index && project) {
-        return { ...project, [field]: value };
-      }
-      return project;
-    });
-    onChange(updated);
-  };
-
-  const handleHighlightsChange = (index: number, value: string) => {
-    const items = value.split("\n").filter((item) => item.trim() !== "");
-    handleProjectChange(index, "highlights", items);
-  };
-
-  const handleKeywordsChange = (index: number, value: string) => {
-    const items = value.split("\n").filter((item) => item.trim() !== "");
-    handleProjectChange(index, "keywords", items);
-  };
+    },
+  });
 
   return (
-    <div className="space-y-6">
-      {projectsList.filter(project => project).map((project, index) => (
-        <div key={index} className="border rounded-md p-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Project {index + 1}</h3>
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={() => handleRemoveProject(index)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-
+    <FormList
+      items={items}
+      onAdd={addItem}
+      onRemove={removeItem}
+      addButtonText="Add Project"
+      emptyMessage="No projects added yet. Click 'Add Project' to showcase your work."
+      renderItem={(project, index) => (
+        <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor={`project-name-${index}`}>Project Name *</Label>
               <Input
                 id={`project-name-${index}`}
-                value={project!.name}
-                onChange={(e) => handleProjectChange(index, "name", e.target.value)}
+                value={project.name || ""}
+                onChange={(e) => updateItem(index, "name", e.target.value)}
                 placeholder="Personal Portfolio Website"
               />
             </div>
@@ -84,8 +51,8 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
               <Label htmlFor={`project-url-${index}`}>URL</Label>
               <Input
                 id={`project-url-${index}`}
-                value={project!.url || ""}
-                onChange={(e) => handleProjectChange(index, "url", e.target.value)}
+                value={project.url || ""}
+                onChange={(e) => updateItem(index, "url", e.target.value)}
                 placeholder="https://project-url.com"
               />
             </div>
@@ -95,8 +62,8 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
             <Label htmlFor={`project-description-${index}`}>Description</Label>
             <Textarea
               id={`project-description-${index}`}
-              value={project!.description || ""}
-              onChange={(e) => handleProjectChange(index, "description", e.target.value)}
+              value={project.description || ""}
+              onChange={(e) => updateItem(index, "description", e.target.value)}
               placeholder="Brief description of the project"
               rows={3}
             />
@@ -108,8 +75,8 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
               <Input
                 id={`project-startDate-${index}`}
                 type="date"
-                value={project!.startDate || ""}
-                onChange={(e) => handleProjectChange(index, "startDate", e.target.value)}
+                value={project.startDate || ""}
+                onChange={(e) => updateItem(index, "startDate", e.target.value)}
               />
             </div>
 
@@ -118,8 +85,8 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
               <Input
                 id={`project-endDate-${index}`}
                 type="date"
-                value={project!.endDate || ""}
-                onChange={(e) => handleProjectChange(index, "endDate", e.target.value)}
+                value={project.endDate || ""}
+                onChange={(e) => updateItem(index, "endDate", e.target.value)}
               />
             </div>
           </div>
@@ -128,8 +95,11 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
             <Label htmlFor={`project-highlights-${index}`}>Highlights (one per line)</Label>
             <Textarea
               id={`project-highlights-${index}`}
-              value={(project!.highlights || []).join("\n")}
-              onChange={(e) => handleHighlightsChange(index, e.target.value)}
+              value={(project.highlights || []).join("\n")}
+              onChange={(e) => {
+                const items = e.target.value.split("\n").filter((item) => item.trim() !== "");
+                updateItem(index, "highlights", items);
+              }}
               placeholder="Feature 1&#10;Feature 2"
               rows={4}
             />
@@ -139,18 +109,17 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
             <Label htmlFor={`project-keywords-${index}`}>Tech Stack (one per line)</Label>
             <Textarea
               id={`project-keywords-${index}`}
-              value={(project!.keywords || []).join("\n")}
-              onChange={(e) => handleKeywordsChange(index, e.target.value)}
+              value={(project.keywords || []).join("\n")}
+              onChange={(e) => {
+                const items = e.target.value.split("\n").filter((item) => item.trim() !== "");
+                updateItem(index, "keywords", items);
+              }}
               placeholder="React&#10;TypeScript&#10;Node.js"
               rows={4}
             />
           </div>
         </div>
-      ))}
-
-      <Button type="button" onClick={handleAddProject} variant="outline" className="w-full">
-        <Plus className="mr-2 h-4 w-4" /> Add Project
-      </Button>
-    </div>
+      )}
+    />
   );
 }

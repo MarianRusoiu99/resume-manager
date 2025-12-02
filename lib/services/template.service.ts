@@ -1,6 +1,7 @@
 import { templateRepository } from '@/lib/repositories/template.repository';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { z } from 'zod';
+import { logger } from '@/lib/utils/logger';
 
 // Validation schemas
 const templateCategorySchema = z.enum(['PROFESSIONAL', 'MODERN', 'CREATIVE', 'ATS_OPTIMIZED', 'MINIMAL']);
@@ -39,7 +40,7 @@ export class TemplateService {
         data: templates,
       };
     } catch (error) {
-      console.error('Error fetching templates:', error);
+      logger.error('Error fetching templates', error);
       return {
         success: false,
         error: 'Failed to fetch templates',
@@ -62,7 +63,7 @@ export class TemplateService {
         data: templates,
       };
     } catch (error) {
-      console.error('Error fetching templates by category:', error);
+      logger.error('Error fetching templates by category', error);
       return {
         success: false,
         error: 'Failed to fetch templates',
@@ -80,7 +81,7 @@ export class TemplateService {
   }> {
     try {
       const template = await templateRepository.findById(id);
-      
+
       if (!template) {
         return {
           success: false,
@@ -93,7 +94,7 @@ export class TemplateService {
         data: template,
       };
     } catch (error) {
-      console.error('Error fetching template:', error);
+      logger.error('Error fetching template', error);
       return {
         success: false,
         error: 'Failed to fetch template',
@@ -128,7 +129,7 @@ export class TemplateService {
         };
       }
 
-      console.error('Error creating template:', error);
+      logger.error('Error creating template', error);
       return {
         success: false,
         error: 'Failed to create template',
@@ -175,7 +176,7 @@ export class TemplateService {
         };
       }
 
-      console.error('Error updating template:', error);
+      logger.error('Error updating template', error);
       return {
         success: false,
         error: 'Failed to update template',
@@ -216,7 +217,7 @@ export class TemplateService {
         success: true,
       };
     } catch (error) {
-      console.error('Error deleting template:', error);
+      logger.error('Error deleting template', error);
       return {
         success: false,
         error: 'Failed to delete template',
@@ -239,7 +240,7 @@ export class TemplateService {
         data: categories,
       };
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      logger.error('Error fetching categories', error);
       return {
         success: false,
         error: 'Failed to fetch categories',
@@ -259,7 +260,7 @@ export class TemplateService {
     // Check for unclosed tags
     const openTags = htmlTemplate.match(/{{\s*#/g)?.length || 0;
     const closeTags = htmlTemplate.match(/{{\s*\//g)?.length || 0;
-    
+
     if (openTags !== closeTags) {
       errors.push('Mismatched Handlebars block helpers (# and /)');
     }

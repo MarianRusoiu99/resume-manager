@@ -2,6 +2,7 @@ import { profileRepository } from "@/lib/repositories/profile.repository";
 import { profileCache } from "@/lib/cache/simple-cache";
 import { ZodError } from "zod";
 import type { Resume } from "@/lib/validations/jsonresume";
+import { logger } from "@/lib/utils/logger";
 
 export class ProfileService {
   private getCacheKey(userId: string): string {
@@ -26,15 +27,15 @@ export class ProfileService {
 
       // Fetch from database
       const profiles = await profileRepository.findAllByUserId(userId);
-      
+
       // Cache the result
       if (profiles) {
         profileCache.set(cacheKey, profiles);
       }
-      
+
       return { success: true, data: profiles };
     } catch (error) {
-      console.error("Error fetching profiles:", error);
+      logger.error("Error fetching profiles", error);
       return {
         success: false,
         error: "Failed to fetch profiles",
@@ -56,7 +57,7 @@ export class ProfileService {
 
       // Fetch from database
       const profile = await profileRepository.findById(profileId, userId);
-      
+
       if (!profile) {
         return {
           success: false,
@@ -66,10 +67,10 @@ export class ProfileService {
 
       // Cache the result
       profileCache.set(cacheKey, profile);
-      
+
       return { success: true, data: profile };
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      logger.error("Error fetching profile", error);
       return {
         success: false,
         error: "Failed to fetch profile",
@@ -84,10 +85,10 @@ export class ProfileService {
     try {
       // Fetch default profile
       const profile = await profileRepository.findDefaultByUserId(userId);
-      
+
       return { success: true, data: profile };
     } catch (error) {
-      console.error("Error fetching default profile:", error);
+      logger.error("Error fetching default profile", error);
       return {
         success: false,
         error: "Failed to fetch profile",
@@ -100,7 +101,7 @@ export class ProfileService {
    */
   async createProfile(userId: string, name: string, data: Resume, isDefault: boolean = false) {
     try {
- 
+
 
       // If this is set as default, unset other defaults
       if (isDefault) {
@@ -129,7 +130,7 @@ export class ProfileService {
         };
       }
 
-      console.error("Error creating profile:", error);
+      logger.error("Error creating profile", error);
       return {
         success: false,
         error: "Failed to create profile",
@@ -175,7 +176,7 @@ export class ProfileService {
         };
       }
 
-      console.error("Error updating profile:", error);
+      logger.error("Error updating profile", error);
       return {
         success: false,
         error: "Failed to update profile",
@@ -215,16 +216,16 @@ export class ProfileService {
       }
 
       await profileRepository.delete(profileId, userId);
-      
+
       // Invalidate cache
       const cacheKey = this.getCacheKey(userId);
       const profileCacheKey = this.getProfileCacheKey(profileId);
       profileCache.delete(cacheKey);
       profileCache.delete(profileCacheKey);
-      
+
       return { success: true };
     } catch (error) {
-      console.error("Error deleting profile:", error);
+      logger.error("Error deleting profile", error);
       return {
         success: false,
         error: "Failed to delete profile",
@@ -256,7 +257,7 @@ export class ProfileService {
 
       return { success: true };
     } catch (error) {
-      console.error("Error setting default profile:", error);
+      logger.error("Error setting default profile", error);
       return {
         success: false,
         error: "Failed to set default profile",
@@ -278,7 +279,7 @@ export class ProfileService {
       }
 
       const duplicateName = newName || `${profile.name} (Copy)`;
-      
+
       const newProfile = await profileRepository.create({
         userId,
         name: duplicateName,
@@ -292,7 +293,7 @@ export class ProfileService {
 
       return { success: true, data: newProfile };
     } catch (error) {
-      console.error("Error duplicating profile:", error);
+      logger.error("Error duplicating profile", error);
       return {
         success: false,
         error: "Failed to duplicate profile",
