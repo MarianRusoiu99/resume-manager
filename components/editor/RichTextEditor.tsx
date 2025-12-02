@@ -25,7 +25,7 @@ type BlockNoteEditorWrapperProps = {
 // Dynamically import BlockNote Editor to avoid SSR issues
 const BlockNoteEditorComponent = dynamic<BlockNoteEditorWrapperProps & { ref?: React.Ref<BlockNoteEditorMethods> }>(
   () => import('./BlockNoteEditorWrapper.client').then((mod) => mod.BlockNoteEditorWrapper),
-  { 
+  {
     ssr: false,
     loading: () => (
       <div className="min-h-[200px] p-4 flex items-center justify-center text-foreground">
@@ -80,54 +80,54 @@ export const RichTextEditor = forwardRef<BlockNoteEditorMethods, RichTextEditorP
       },
     }), []);
 
-  // Handle content changes from the editor
-  const handleChange = useCallback((value: string) => {
-    setCurrentMarkdown(value);
-    setHasChanges(true);
-    onChange?.(value);
-  }, [onChange]);
+    // Handle content changes from the editor
+    const handleChange = useCallback((value: string) => {
+      setCurrentMarkdown(value);
+      setHasChanges(true);
+      onChange?.(value);
+    }, [onChange]);
 
-  // Handle save
-  const handleSave = useCallback(() => {
-    if (onSave) {
-      onSave(currentMarkdown);
-      setHasChanges(false);
-    }
-  }, [currentMarkdown, onSave]);
+    // Handle save
+    const handleSave = useCallback(() => {
+      if (onSave) {
+        onSave(currentMarkdown);
+        setHasChanges(false);
+      }
+    }, [currentMarkdown, onSave]);
 
-  return (
-    <div className={cn('border rounded-md overflow-hidden', className)}>
-      {showSaveButton && onSave && (
-        <div className="flex items-center justify-end gap-2 p-2 border-b bg-muted/30">
-          <Button
-            type="button"
-            variant={hasChanges ? 'default' : 'ghost'}
-            size="sm"
-            onClick={handleSave}
-            disabled={!hasChanges}
-            title="Save (Ctrl+S)"
-            className="h-8"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save
-          </Button>
+    return (
+      <div className={cn('border rounded-md overflow-hidden', className)}>
+        {showSaveButton && onSave && (
+          <div className="flex items-center justify-end gap-2 p-2 border-b bg-muted/30">
+            <Button
+              type="button"
+              variant={hasChanges ? 'default' : 'ghost'}
+              size="sm"
+              onClick={handleSave}
+              disabled={!hasChanges}
+              title="Save (Ctrl+S)"
+              className="h-8"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Save
+            </Button>
+          </div>
+        )}
+
+        <div className={cn(
+          'prose prose-sm max-w-none',
+          readOnly && 'bg-muted/20'
+        )}>
+          <BlockNoteEditorComponent
+            ref={editorRef}
+            markdown={initialValue}
+            jsonContent={initialJsonValue}
+            onChange={handleChange}
+            readOnly={readOnly}
+            placeholder={placeholder}
+            className="min-h-[200px] p-4"
+          />
         </div>
-      )}
-
-      <div className={cn(
-        'prose prose-sm max-w-none',
-        readOnly && 'bg-muted/20'
-      )}>
-        <BlockNoteEditorComponent
-          ref={editorRef}
-          markdown={initialValue}
-          jsonContent={initialJsonValue}
-          onChange={handleChange}
-          readOnly={readOnly}
-          placeholder={placeholder}
-          className="min-h-[200px] p-4"
-        />
       </div>
-    </div>
-  );
-});
+    );
+  });

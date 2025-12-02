@@ -17,7 +17,7 @@ import {
   ChevronUp,
   Briefcase,
 } from "lucide-react"
-import { useTheme } from "@/lib/contexts/ThemeContext"
+import { useTheme } from "@/contexts/ThemeContext"
 import { signOut } from "next-auth/react"
 
 import {

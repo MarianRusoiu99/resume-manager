@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useEditor } from "@/lib/contexts/EditorContext";
+import { useEditor } from "@/contexts/EditorContext";
 import { PersonalInfoForm } from "@/components/editor/forms/PersonalInfoForm";
 import { SummaryForm } from "@/components/editor/forms/SummaryForm";
 import { ExperienceForm } from "@/components/editor/forms/ExperienceForm";

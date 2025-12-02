@@ -1,7 +1,7 @@
 "use client";
 
 import { User, LogOut, Moon, Sun, Monitor, ChevronUp } from "lucide-react";
-import { useTheme } from "@/lib/contexts/ThemeContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { signOut } from "next-auth/react";
 import {
   DropdownMenu,

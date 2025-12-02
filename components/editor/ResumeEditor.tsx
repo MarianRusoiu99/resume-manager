@@ -17,7 +17,7 @@ import {
   Copy,
   Share2
 } from "lucide-react";
-import { useEditor } from "@/lib/contexts/EditorContext";
+import { useEditor } from "@/contexts/EditorContext";
 import { PersonalInfoForm } from "@/components/editor/forms/PersonalInfoForm";
 import { SummaryForm } from "@/components/editor/forms/SummaryForm";
 import { ExperienceForm } from "@/components/editor/forms/ExperienceForm";

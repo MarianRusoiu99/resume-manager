@@ -9,7 +9,7 @@ import { useRef, useMemo } from 'react';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useTemplatePreview } from '@/lib/hooks/useTemplatePreview';
+import { useTemplatePreview } from '@/hooks/useTemplatePreview';
 
 // Custom hooks
 import { useTemplateSelection } from './preview/useTemplateSelection';
