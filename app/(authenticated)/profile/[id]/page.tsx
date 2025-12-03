@@ -1,17 +1,13 @@
 import { ProfileEditor } from "@/components/profile/ProfileEditor";
-import { auth } from "@/lib/auth/config";
-import { redirect } from "next/navigation";
+import { verifySession } from "@/lib/auth/dal";
 
 interface ProfilePageProps {
   params: Promise<{ id: string }>;
 }
 
 export default async function ProfilePage({ params }: ProfilePageProps) {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  // Use DAL for auth - will redirect if not authenticated
+  await verifySession();
 
   const { id } = await params;
 

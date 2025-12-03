@@ -1,63 +1,26 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { useActionState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { registerAction } from '@/app/actions/auth';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [state, action, pending] = useActionState(registerAction, undefined);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      return;
+  // Redirect on successful registration
+  useEffect(() => {
+    if (state?.success) {
+      router.push('/login?registered=true');
     }
-
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || "Registration failed");
-        return;
-      }
-
-      // Redirect to login page after successful registration
-      router.push("/login?registered=true");
-    } catch (error) {
-      setError("An error occurred. Please try again.");
-      console.error("Registration error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [state?.success, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -71,7 +34,7 @@ export default function RegisterPage() {
             Create your account
           </CardTitle>
           <CardDescription className="text-center">
-            Already have an account?{" "}
+            Already have an account?{' '}
             <Link
               href="/login"
               className="font-medium text-primary hover:underline"
@@ -82,10 +45,10 @@ export default function RegisterPage() {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
+          <form action={action} className="space-y-4">
+            {state?.message && !state.success && (
               <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription>{state.message}</AlertDescription>
               </Alert>
             )}
 
@@ -95,10 +58,14 @@ export default function RegisterPage() {
                 id="name"
                 name="name"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
                 placeholder="John Doe"
+                aria-describedby={state?.errors?.name ? 'name-error' : undefined}
               />
+              {state?.errors?.name && (
+                <p id="name-error" className="text-sm text-destructive">
+                  {state.errors.name[0]}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -109,10 +76,14 @@ export default function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
+                aria-describedby={state?.errors?.email ? 'email-error' : undefined}
               />
+              {state?.errors?.email && (
+                <p id="email-error" className="text-sm text-destructive">
+                  {state.errors.email[0]}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -123,35 +94,26 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                aria-describedby={state?.errors?.password ? 'password-error' : undefined}
               />
+              {state?.errors?.password && (
+                <div id="password-error" className="text-sm text-destructive">
+                  <p>Password must:</p>
+                  <ul className="list-disc list-inside">
+                    {state.errors.password.map((error) => (
+                      <li key={error}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters
+                Must be at least 8 characters with a letter and number
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? "Creating account..." : "Create account"}
+            <Button type="submit" disabled={pending} className="w-full">
+              {pending ? 'Creating account...' : 'Create account'}
             </Button>
           </form>
         </CardContent>

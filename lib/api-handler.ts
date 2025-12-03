@@ -1,8 +1,9 @@
-import { auth } from "@/lib/auth/config";
+import { getSession, getVerifiedSession } from "@/lib/auth/dal";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
-import { z, ZodError, ZodSchema } from "zod";
+import { ZodError, ZodSchema } from "zod";
 import { errorCodeToStatus, ServiceErrorCode } from "@/lib/types/service-result";
+import { applyRateLimit, getClientIdentifier, addRateLimitHeaders, RateLimitConfigs, type RateLimitConfig } from "@/lib/middleware/rate-limit";
 
 type ApiHandlerContext = {
     params: Promise<Record<string, string>>;
@@ -30,8 +31,10 @@ interface ApiHandlerOptions<TBody = unknown> {
     isPublic?: boolean;
     /** Zod schema for request body validation */
     bodySchema?: ZodSchema<TBody>;
-    /** Rate limit configuration key */
-    rateLimit?: string;
+    /** Rate limit configuration key or custom config */
+    rateLimit?: keyof typeof RateLimitConfigs | RateLimitConfig;
+    /** Verify user exists in database (use for write operations) */
+    verifyUser?: boolean;
 }
 
 /**
@@ -51,16 +54,40 @@ export function createApiHandler<T = unknown, TBody = unknown>(
         const reqLogger = logger.forRequest(requestId);
 
         try {
-            // Authentication check
+            // Authentication check via DAL
             let session = null;
             if (!options.isPublic) {
-                session = await auth();
-                if (!session?.user?.id) {
+                // Use verified session for write operations to catch stale sessions
+                session = options.verifyUser 
+                    ? await getVerifiedSession()
+                    : await getSession();
+                    
+                if (!session?.userId) {
                     reqLogger.warn(`Unauthorized access attempt to ${method} ${url}`);
                     return NextResponse.json(
-                        { error: "Unauthorized", requestId },
+                        { 
+                            error: options.verifyUser 
+                                ? "Session expired. Please log out and log back in." 
+                                : "Unauthorized", 
+                            requestId 
+                        },
                         { status: 401 }
                     );
+                }
+            }
+
+            // Apply rate limiting if configured
+            if (options.rateLimit) {
+                const rateLimitConfig = typeof options.rateLimit === 'string'
+                    ? RateLimitConfigs[options.rateLimit]
+                    : options.rateLimit;
+                
+                const identifier = getClientIdentifier(request, session?.userId);
+                const rateLimitResponse = applyRateLimit(identifier, rateLimitConfig);
+                
+                if (rateLimitResponse) {
+                    reqLogger.warn(`Rate limited: ${method} ${url}`, { userId: session?.userId });
+                    return rateLimitResponse;
                 }
             }
 
@@ -78,20 +105,38 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                 }
             }
 
+            // Map DAL session to expected Session format
+            const apiSession = session ? {
+                user: {
+                    id: session.userId,
+                    email: session.email,
+                    name: session.name,
+                }
+            } : null;
+
             // Execute handler
-            const response = await handler(
+            let response = await handler(
                 request, 
                 context, 
-                session as unknown as Session,
+                apiSession as unknown as Session,
                 body
             );
+
+            // Add rate limit headers if configured
+            if (options.rateLimit) {
+                const rateLimitConfig = typeof options.rateLimit === 'string'
+                    ? RateLimitConfigs[options.rateLimit]
+                    : options.rateLimit;
+                const identifier = getClientIdentifier(request, session?.userId);
+                response = addRateLimitHeaders(response, identifier, rateLimitConfig) as NextResponse;
+            }
 
             // Log success
             const duration = Date.now() - startTime;
             reqLogger.info(`API Request ${method} ${url}`, {
                 duration,
                 status: response.status,
-                userId: session?.user?.id,
+                userId: session?.userId,
             });
 
             return response;

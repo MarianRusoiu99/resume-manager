@@ -6,15 +6,15 @@
 import { templateRepository } from '@/lib/repositories/template.repository';
 import { Page } from '@/components/layout/Page';
 import { TemplateGallery } from '@/components/templates/TemplateGallery';
-import { auth } from '@/lib/auth/config';
+import { getSession } from '@/lib/auth/dal';
 
 export default async function TemplatesPage() {
   const templates = await templateRepository.findAllPublic();
-  const session = await auth();
+  const session = await getSession();
 
   // For now, enable admin actions for all logged-in users
   // In production, you might want to check for admin role
-  const showAdminActions = !!session?.user?.id;
+  const showAdminActions = !!session?.userId;
 
   return (
     <Page

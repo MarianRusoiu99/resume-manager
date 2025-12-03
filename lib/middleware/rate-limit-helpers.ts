@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth/config';
+import { getSession } from '@/lib/auth/dal';
 import {
   applyRateLimit,
   getClientIdentifier,
@@ -31,9 +31,9 @@ export function withRateLimit(
   config: RateLimitConfig = RateLimitConfigs.general
 ) {
   return async (request: NextRequest): Promise<Response> => {
-    // Get user ID if authenticated
-    const session = await auth();
-    const userId = session?.user?.id;
+    // Get user ID if authenticated via DAL
+    const session = await getSession();
+    const userId = session?.userId;
 
     // Get client identifier
     const identifier = getClientIdentifier(request, userId);
@@ -77,9 +77,9 @@ export async function checkRateLimit(
   identifier: string;
   addHeaders: (response: Response) => Response;
 }> {
-  // Get user ID if authenticated
-  const session = await auth();
-  const userId = session?.user?.id;
+  // Get user ID if authenticated via DAL
+  const session = await getSession();
+  const userId = session?.userId;
 
   // Get client identifier
   const identifier = getClientIdentifier(request, userId);
@@ -104,16 +104,16 @@ export function withAuthRateLimit(
   config: RateLimitConfig = RateLimitConfigs.general
 ) {
   return async (request: NextRequest): Promise<Response> => {
-    // Check authentication first
-    const session = await auth();
-    if (!session?.user?.id) {
+    // Check authentication first via DAL
+    const session = await getSession();
+    if (!session?.userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
+    const userId = session.userId;
     const identifier = `user:${userId}`;
 
     // Check rate limit
@@ -133,4 +133,4 @@ export function withAuthRateLimit(
 /**
  * Export rate limit configs for easy access
  */
-export { RateLimitConfigs };
+export { RateLimitConfigs } from './rate-limit';

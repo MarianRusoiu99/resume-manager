@@ -1,6 +1,7 @@
 /**
  * API Key Encryption Wrapper
  * Provides encryption/decryption specifically for API keys
+ * with secure memory handling
  */
 
 import { encrypt, decrypt } from './crypto';
@@ -18,6 +19,10 @@ export function encryptApiKey(apiKey: string): string {
 
 /**
  * Decrypt an API key for use
+ * 
+ * SECURITY NOTE: The decrypted key should be used immediately
+ * and not stored in variables longer than necessary.
+ * Consider using the callback pattern for sensitive operations.
  */
 export function decryptApiKey(encryptedKey: string): string {
   if (!encryptedKey || encryptedKey.trim() === '') {
@@ -25,6 +30,29 @@ export function decryptApiKey(encryptedKey: string): string {
   }
   
   return decrypt(encryptedKey);
+}
+
+/**
+ * Decrypt and use an API key in a secure callback pattern
+ * This helps ensure the key is not stored longer than necessary
+ * 
+ * @example
+ * await withDecryptedKey(encryptedKey, async (apiKey) => {
+ *   // Use apiKey here
+ *   await callExternalApi(apiKey);
+ * });
+ */
+export async function withDecryptedKey<T>(
+  encryptedKey: string,
+  callback: (apiKey: string) => Promise<T>
+): Promise<T> {
+  const apiKey = decryptApiKey(encryptedKey);
+  try {
+    return await callback(apiKey);
+  } finally {
+    // Note: In JavaScript, we can't truly zero memory, but this pattern
+    // helps limit the scope of the plaintext key
+  }
 }
 
 /**
@@ -47,12 +75,17 @@ export function validateApiKeyFormat(apiKey: string, provider: string): boolean 
 }
 
 /**
- * Create a preview of the API key (first characters + "...")
+ * Create a preview of the API key (provider prefix only for security)
+ * Does NOT expose any actual key characters
  */
-export function createKeyPreview(apiKey: string, length = 12): string {
-  if (apiKey.length <= length) {
-    return apiKey;
-  }
+export function createKeyPreview(provider: string): string {
+  const previews: Record<string, string> = {
+    openai: 'sk-****',
+    anthropic: 'sk-ant-****',
+    google: 'AIza****',
+    cohere: 'co-****',
+    mistral: 'mk-****',
+  };
   
-  return apiKey.substring(0, length) + '...';
+  return previews[provider.toLowerCase()] || '****';
 }

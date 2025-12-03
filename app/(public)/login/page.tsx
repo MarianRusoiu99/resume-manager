@@ -1,117 +1,140 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { useActionState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { loginAction } from '@/app/actions/auth';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
+
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/profile';
+  const registered = searchParams.get('registered');
+
+  const [state, action, pending] = useActionState(loginAction, undefined);
+
+  // Redirect on successful login
+  useEffect(() => {
+    if (state?.success) {
+      router.push(callbackUrl);
+      router.refresh();
+    }
+  }, [state?.success, callbackUrl, router]);
+
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">
+          Sign in to Resume Optimizer
+        </CardTitle>
+        <CardDescription className="text-center">
+          Or{' '}
+          <Link
+            href="/register"
+            className="font-medium text-primary hover:underline"
+          >
+            create a new account
+          </Link>
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        <form action={action} className="space-y-4">
+          {registered && (
+            <Alert>
+              <AlertDescription>
+                Account created successfully. Please sign in.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {state?.message && !state.success && (
+            <Alert variant="destructive">
+              <AlertDescription>{state.message}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email address</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              placeholder="you@example.com"
+              aria-describedby={state?.errors?.email ? 'email-error' : undefined}
+            />
+            {state?.errors?.email && (
+              <p id="email-error" className="text-sm text-destructive">
+                {state.errors.email[0]}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              placeholder="••••••••"
+              aria-describedby={state?.errors?.password ? 'password-error' : undefined}
+            />
+            {state?.errors?.password && (
+              <p id="password-error" className="text-sm text-destructive">
+                {state.errors.password[0]}
+              </p>
+            )}
+          </div>
+
+          <Button type="submit" disabled={pending} className="w-full">
+            {pending ? 'Signing in...' : 'Sign in'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LoginFormSkeleton() {
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">
+          Sign in to Resume Optimizer
+        </CardTitle>
+        <CardDescription className="text-center">Loading...</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="animate-pulse space-y-4">
+          <div className="h-10 bg-muted rounded" />
+          <div className="h-10 bg-muted rounded" />
+          <div className="h-10 bg-muted rounded" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        setError("Invalid email or password");
-      } else {
-        router.push("/profile");
-        router.refresh();
-      }
-    } catch (error) {
-      setError("An error occurred. Please try again.");
-      console.error("Login error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
 
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">
-            Sign in to Resume Optimizer
-          </CardTitle>
-          <CardDescription className="text-center">
-            Or{" "}
-            <Link
-              href="/register"
-              className="font-medium text-primary hover:underline"
-            >
-              create a new account
-            </Link>
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email address</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <Suspense fallback={<LoginFormSkeleton />}>
+        <LoginForm />
+      </Suspense>
     </div>
   );
 }

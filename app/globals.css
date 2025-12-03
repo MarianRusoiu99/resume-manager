@@ -1,10 +1,11 @@
 @import "tailwindcss";
 
+/* stylelint-disable-next-line at-rule-no-unknown */
 @plugin "tailwindcss-animate";
+/* stylelint-disable-next-line at-rule-no-unknown */
 @plugin "@tailwindcss/typography";
+/* stylelint-disable-next-line at-rule-no-unknown */
 @import "../components/ui/theme.css";
-
-@custom-variant dark (&:is(.dark *));
 
 :root {
   /* Fallback tokens (will be overridden by theme.css) */

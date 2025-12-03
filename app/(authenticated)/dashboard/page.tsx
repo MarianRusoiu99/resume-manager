@@ -3,12 +3,13 @@ import { PageContainer } from "@/components/layout/PageContainer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { FileText, Sparkles, User, Plus } from "lucide-react";
-import { auth } from "@/lib/auth/config";
+import { FileText, Sparkles, User } from "lucide-react";
+import { verifySession } from "@/lib/auth/dal";
 
 export default async function DashboardPage() {
-  const session = await auth();
-  const user = session?.user;
+  // Use DAL for auth - will redirect if not authenticated
+  const session = await verifySession();
+  const user = { name: session.name, email: session.email };
 
   return (
     <>
