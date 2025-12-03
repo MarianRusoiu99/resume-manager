@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
+import { apiFetch } from "@/lib/utils/api-client";
 
 interface Profile {
   userId: string;
@@ -40,7 +41,7 @@ export function useProfileSave() {
     setIsSaving(true);
 
     try {
-      const response = await fetch("/api/profile", {
+      const response = await apiFetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

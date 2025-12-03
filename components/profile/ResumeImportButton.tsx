@@ -20,12 +20,13 @@ import { FileText, Image, FileType, ClipboardPaste, Upload, ChevronDown, Loader2
 import { toast } from "sonner";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import type { Resume } from "@/lib/validations/jsonresume";
+import { apiFetch } from "@/lib/utils/api-client";
 
 interface ResumeImportButtonProps {
     onImportSuccess: (resume: Resume) => void;
 }
 
-export function ResumeImportButton({ onImportSuccess }: ResumeImportButtonProps) {
+export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportButtonProps>) {
     const [isUploading, setIsUploading] = useState(false);
     const [showJsonDialog, setShowJsonDialog] = useState(false);
     const [jsonText, setJsonText] = useState("");
@@ -56,7 +57,7 @@ export function ResumeImportButton({ onImportSuccess }: ResumeImportButtonProps)
         formData.append("fileType", currentFileType);
 
         try {
-            const response = await fetch("/api/resume/import", {
+            const response = await apiFetch("/api/resume/import", {
                 method: "POST",
                 body: formData,
             });
@@ -116,6 +117,7 @@ export function ResumeImportButton({ onImportSuccess }: ResumeImportButtonProps)
             setShowJsonDialog(false);
             setJsonText("");
         } catch (error) {
+            console.error("JSON parse error:", error);
             toast.error("Invalid JSON format. Please check your input.");
         }
     };
@@ -124,11 +126,11 @@ export function ResumeImportButton({ onImportSuccess }: ResumeImportButtonProps)
         try {
             const clipboardText = await navigator.clipboard.readText();
             setJsonText(clipboardText);
-            setShowJsonDialog(true);
         } catch (error) {
-            // If clipboard access fails, just open the dialog
-            setShowJsonDialog(true);
+            console.debug("Clipboard access failed:", error);
             toast.info("Please paste your JSON Resume manually");
+        } finally {
+            setShowJsonDialog(true);
         }
     };
 

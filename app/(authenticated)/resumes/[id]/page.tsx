@@ -11,6 +11,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Edit } from 'lucide-react';
+import { apiFetch } from '@/lib/utils/api-client';
 
 interface Resume {
   id: string;
@@ -105,17 +106,16 @@ export default function ResumeDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
-  const [pdfPreviewKey, setPdfPreviewKey] = useState(Date.now());
+  const [pdfPreviewKey] = useState(Date.now());
 
   const fetchResume = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/resume/${resumeId}`);
+      const response = await apiFetch(`/api/resume/${resumeId}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -151,7 +151,7 @@ export default function ResumeDetailPage() {
     try {
       setIsDeleting(true);
 
-      const response = await fetch(`/api/resume/${resumeId}`, {
+      const response = await apiFetch(`/api/resume/${resumeId}`, {
         method: 'DELETE',
       });
 
@@ -177,7 +177,7 @@ export default function ResumeDetailPage() {
     try {
       setIsDuplicating(true);
 
-      const response = await fetch(`/api/resume/${resumeId}/duplicate`, {
+      const response = await apiFetch(`/api/resume/${resumeId}/duplicate`, {
         method: 'POST',
       });
 
@@ -203,7 +203,7 @@ export default function ResumeDetailPage() {
     try {
       setError(null);
 
-      const response = await fetch(`/api/resume/${resumeId}/cover-letter`, {
+      const response = await apiFetch(`/api/resume/${resumeId}/cover-letter`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -236,8 +236,6 @@ export default function ResumeDetailPage() {
       toast.error(errorMsg);
     }
   };
-
-  // TODO: Re-enable formatDate if needed after VersionHistory is updated for JSON Resume format
 
   if (isLoading) {
     return (
@@ -360,18 +358,6 @@ export default function ResumeDetailPage() {
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
         />
-
-        {/* TODO: Re-enable after VersionHistory is updated for JSON Resume format
-      {isVersionHistoryOpen && resume.content && (
-        <VersionHistory
-          currentContent={resume.content}
-          aiGeneratedContent={(resume.aiGeneratedContent || resume.content)}
-          onClose={() => setIsVersionHistoryOpen(false)}
-          onRestore={handleRestoreVersion}
-        />
-      )}
-      */}
-
       </PageContainer>
     </>
   );

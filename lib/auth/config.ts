@@ -59,7 +59,20 @@ export const authConfig: NextAuthConfig = {
     }
   },
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
+    // Session expires after 24 hours (or use shorter time for dev)
+    maxAge: process.env.NODE_ENV === 'development' 
+      ? 60 * 60 * 2  // 2 hours in development
+      : 60 * 60 * 24, // 24 hours in production
+    // Update session every 15 minutes to extend it on activity
+    updateAge: 60 * 15,
+  },
+  // JWT token configuration
+  jwt: {
+    // Token expires same as session
+    maxAge: process.env.NODE_ENV === 'development' 
+      ? 60 * 60 * 2  // 2 hours in development
+      : 60 * 60 * 24, // 24 hours in production
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   trustHost: true, // Required for NextAuth v5 to prevent CSRF errors

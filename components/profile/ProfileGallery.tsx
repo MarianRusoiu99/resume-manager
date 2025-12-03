@@ -10,6 +10,7 @@ import { Plus, User } from "lucide-react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createProfile } from "@/app/actions/profile";
+import { apiFetch } from "@/lib/utils/api-client";
 
 interface Profile {
   id: string;
@@ -25,7 +26,7 @@ interface ProfileGalleryProps {
   initialProfiles: Profile[];
 }
 
-export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
+export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps>) {
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -34,7 +35,7 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
   useEffect(() => {
     const refreshProfiles = async () => {
       try {
-        const response = await fetch("/api/profile");
+        const response = await apiFetch("/api/profile");
         if (response.ok) {
           const data = await response.json();
           setProfiles(data);

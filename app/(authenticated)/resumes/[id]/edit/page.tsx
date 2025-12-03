@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/utils/api-client";
 
 /**
  * Resume Edit Page - Full-screen editor like profile editor
@@ -26,7 +27,7 @@ export default function ResumeEditPage() {
   useEffect(() => {
     const loadJobTitle = async () => {
       try {
-        const response = await fetch(`/api/resume/${resumeId}`);
+        const response = await apiFetch(`/api/resume/${resumeId}`);
         if (response.ok) {
           const data = await response.json();
           setJobTitle(data.jobMetadata?.jobTitle || "");
@@ -43,7 +44,7 @@ export default function ResumeEditPage() {
    */
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const response = await fetch(`/api/resume/${resumeId}`);
+      const response = await apiFetch(`/api/resume/${resumeId}`);
       
       if (!response.ok) {
         throw new Error("Failed to load resume");
@@ -62,7 +63,7 @@ export default function ResumeEditPage() {
    */
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/resume/${resumeId}`, {
+      const response = await apiFetch(`/api/resume/${resumeId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume }),
@@ -86,7 +87,7 @@ export default function ResumeEditPage() {
    */
   const handleSaveJobTitle = async (newTitle: string) => {
     try {
-      const response = await fetch(`/api/resume/${resumeId}`, {
+      const response = await apiFetch(`/api/resume/${resumeId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 

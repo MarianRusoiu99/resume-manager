@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import type { TemplateBase } from '@/lib/types/template';
+import { apiFetch } from '@/lib/utils/api-client';
 
 interface TemplateDropdownProps {
   currentTemplateId: string | null;
@@ -24,7 +25,7 @@ export function TemplateDropdown({
   currentTemplateId, 
   resumeId, 
   onTemplateChange 
-}: TemplateDropdownProps) {
+}: Readonly<TemplateDropdownProps>) {
   const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -61,7 +62,7 @@ export function TemplateDropdown({
 
     try {
       setIsUpdating(true);
-      const response = await fetch(`/api/resume/${resumeId}/template`, {
+      const response = await apiFetch(`/api/resume/${resumeId}/template`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

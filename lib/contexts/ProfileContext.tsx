@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useSession } from "next-auth/react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
+import { apiFetch } from "@/lib/utils/api-client";
 
 interface Profile {
   id: string;
@@ -48,7 +49,7 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/profile");
+      const response = await apiFetch("/api/profile");
       if (!response.ok) {
         throw new Error("Failed to load profiles");
       }
