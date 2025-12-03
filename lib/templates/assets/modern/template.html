@@ -1,0 +1,207 @@
+<main>
+<header>
+  <h1>{{basics.name}}</h1>
+  {{#if basics.label}}<h2>{{basics.label}}</h2>{{/if}}
+  <div class="contact">
+    {{#if basics.phone}}<span class="contact-item">{{basics.phone}}</span>{{/if}}
+    {{#if basics.email}}<span class="contact-item"><a href="mailto:{{basics.email}}">{{basics.email}}</a></span>{{/if}}
+    {{#if basics.url}}<span class="contact-item"><a href="{{basics.url}}">{{basics.url}}</a></span>{{/if}}
+    {{#if basics.profiles}}
+      {{#each basics.profiles}}<span class="contact-item"><a href="{{url}}">{{network}}{{#if username}} ({{username}}){{/if}}</a></span>{{/each}}
+    {{/if}}
+  </div>
+</header>
+
+{{#if basics.summary}}
+<section>
+  <h3>Summary</h3>
+  <article>
+    <p>{{basics.summary}}</p>
+  </article>
+</section>
+{{/if}}
+
+{{#if work}}
+<section>
+  <h3>Experience</h3>
+  {{#each work}}
+  <article>
+    <div class="article-header">
+      <div class="title-company">
+        <strong>{{position}}</strong>
+        <span class="company">{{name}}</span>
+      </div>
+      {{#if startDate}}
+        <time>{{startDate}}{{#if endDate}} – {{endDate}}{{else}} – Present{{/if}}</time>
+      {{/if}}
+    </div>
+    {{#if summary}}<p>{{summary}}</p>{{/if}}
+    {{#if highlights}}
+      <ul>
+        {{#each highlights}}<li>{{this}}</li>{{/each}}
+      </ul>
+    {{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if volunteer}}
+<section>
+  <h3>Volunteer</h3>
+  {{#each volunteer}}
+  <article>
+    <div class="article-header">
+      <div class="title-company">
+        <strong>{{position}}</strong>
+        <span class="company">{{organization}}</span>
+      </div>
+      {{#if startDate}}<time>{{startDate}}{{#if endDate}} – {{endDate}}{{else}} – Present{{/if}}</time>{{/if}}
+    </div>
+    {{#if summary}}<p>{{summary}}</p>{{/if}}
+    {{#if highlights}}
+      <ul>{{#each highlights}}<li>{{this}}</li>{{/each}}</ul>
+    {{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if projects}}
+<section>
+  <h3>Projects</h3>
+  {{#each projects}}
+  <article>
+    <div class="article-header">
+      <strong>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/if}}</strong>
+      {{#if startDate}}<time>{{startDate}}{{#if endDate}} – {{endDate}}{{/if}}</time>{{/if}}
+    </div>
+    {{#if description}}<p>{{description}}</p>{{/if}}
+    {{#if highlights}}
+      <ul>{{#each highlights}}<li>{{this}}</li>{{/each}}</ul>
+    {{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if education}}
+<section>
+  <h3>Education</h3>
+  {{#each education}}
+  <article>
+    <div class="article-header">
+      <div class="title-company">
+        <strong>{{studyType}}{{#if area}} in {{area}}{{/if}}</strong>
+        <span class="company">{{institution}}</span>
+      </div>
+      {{#if startDate}}<time>{{startDate}}{{#if endDate}} – {{endDate}}{{/if}}</time>{{/if}}
+    </div>
+    {{#if score}}<div class="meta">GPA: {{score}}</div>{{/if}}
+    {{#if courses}}
+      <ul>{{#each courses}}<li>{{this}}</li>{{/each}}</ul>
+    {{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if skills}}
+<section>
+  <h3>Skills</h3>
+  <article class="skills-grid">
+    {{#each skills}}
+      <div class="skill-group">
+        <strong>{{name}}</strong>{{#if level}} <span class="level">{{level}}</span>{{/if}}
+        {{#if keywords}}
+          <div class="keywords">
+            {{#each keywords}}<span class="keyword">{{this}}</span>{{/each}}
+          </div>
+        {{/if}}
+      </div>
+    {{/each}}
+  </article>
+</section>
+{{/if}}
+
+{{#if languages}}
+<section>
+  <h3>Languages</h3>
+  <article>
+    <div class="inline-list">
+      {{#each languages}}<span class="inline-item">{{language}}{{#if fluency}} <span class="level">({{fluency}})</span>{{/if}}</span>{{/each}}
+    </div>
+  </article>
+</section>
+{{/if}}
+
+{{#if interests}}
+<section>
+  <h3>Interests</h3>
+  <article>
+    <div class="inline-list">
+      {{#each interests}}<span class="inline-item">{{name}}</span>{{/each}}
+    </div>
+  </article>
+</section>
+{{/if}}
+
+{{#if awards}}
+<section>
+  <h3>Awards</h3>
+  {{#each awards}}
+  <article>
+    <div class="article-header">
+      <strong>{{title}}</strong>
+      <time>{{date}}</time>
+    </div>
+    {{#if awarder}}<div class="meta">{{awarder}}</div>{{/if}}
+    {{#if summary}}<p>{{summary}}</p>{{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if certificates}}
+<section>
+  <h3>Certificates</h3>
+  {{#each certificates}}
+  <article>
+    <div class="article-header">
+      <strong>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/if}}</strong>
+      <time>{{date}}</time>
+    </div>
+    {{#if issuer}}<div class="meta">{{issuer}}</div>{{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if publications}}
+<section>
+  <h3>Publications</h3>
+  {{#each publications}}
+  <article>
+    <div class="article-header">
+      <strong>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/if}}</strong>
+      {{#if releaseDate}}<time>{{releaseDate}}</time>{{/if}}
+    </div>
+    {{#if publisher}}<div class="meta">{{publisher}}</div>{{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if references}}
+<section>
+  <h3>References</h3>
+  {{#each references}}
+  <article>
+    <strong>{{name}}</strong>
+    {{#if reference}}<p class="quote">{{reference}}</p>{{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+</main>

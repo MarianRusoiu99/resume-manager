@@ -36,19 +36,19 @@ export interface EditorContextType {
 }
 
 interface EditorProviderProps {
-  children: ReactNode;
+  readonly children: ReactNode;
   /** Initial resume data (optional) */
-  initialResume?: Resume;
+  readonly initialResume?: Resume;
   /** Load data callback - called on mount */
-  onLoad?: () => Promise<Resume | null>;
+  readonly onLoad?: () => Promise<Resume | null>;
   /** Save data callback - called when save() is invoked */
-  onSave: (resume: Resume) => Promise<boolean>;
+  readonly onSave: (resume: Resume) => Promise<boolean>;
   /** Auto-load on mount (default: true) */
-  autoLoad?: boolean;
+  readonly autoLoad?: boolean;
   /** Auto-save on changes (default: true) */
-  autoSave?: boolean;
+  readonly autoSave?: boolean;
   /** Auto-save delay in milliseconds (default: 2000) */
-  autoSaveDelay?: number;
+  readonly autoSaveDelay?: number;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -109,7 +109,7 @@ export function EditorProvider({
 }: EditorProviderProps) {
   const [resume, setResume] = useState<Resume>(initialResume || getEmptyResume());
   const [loading, setLoading] = useState(autoLoad && !!onLoad);
-  const [isDirty, setDirty] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -125,7 +125,7 @@ export function EditorProvider({
       const data = await onLoad();
       if (data) {
         setResume(data);
-        setDirty(false);
+        setIsDirty(false);
       } else {
         // No data found, use empty resume
         setResume(getEmptyResume());
@@ -164,7 +164,7 @@ export function EditorProvider({
       try {
         const success = await onSave(resume);
         if (success) {
-          setDirty(false);
+          setIsDirty(false);
           setLastSavedAt(new Date());
           logger.debug('Autosave successful');
           // Silent success - no toast for autosave to avoid interrupting user
@@ -192,7 +192,7 @@ export function EditorProvider({
    */
   const updateResume = useCallback((newResume: Resume) => {
     setResume(newResume);
-    setDirty(true);
+    setIsDirty(true);
   }, []);
 
   /**
@@ -200,7 +200,7 @@ export function EditorProvider({
    */
   const updateField = useCallback(<K extends keyof Resume>(field: K, value: Resume[K]) => {
     setResume(prev => ({ ...prev, [field]: value }));
-    setDirty(true);
+    setIsDirty(true);
   }, []);
 
   /**
@@ -211,7 +211,7 @@ export function EditorProvider({
     try {
       const success = await onSave(resume);
       if (success) {
-        setDirty(false);
+        setIsDirty(false);
         setLastSavedAt(new Date());
         toast.success("Changes saved successfully!");
       } else {
@@ -245,7 +245,7 @@ export function EditorProvider({
       save,
       reload,
       isDirty,
-      setDirty,
+      setDirty: setIsDirty,
     }),
     [resume, loading, isSaving, lastSavedAt, updateResume, updateField, save, reload, isDirty]
   );

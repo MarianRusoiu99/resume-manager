@@ -2,7 +2,7 @@ import { verifySession } from '@/lib/auth/dal';
 import { cookies } from 'next/headers';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
-import { ProfileProvider } from '@/contexts/ProfileContext';
+import { ProfileProvider } from '@/lib/contexts';
 
 export default async function AuthenticatedLayout({
   children,

@@ -1,0 +1,115 @@
+/**
+ * Classic Resume Template Styles
+ * 
+ * Traditional serif-based design with clean typography.
+ * Best for: Corporate, legal, academic, and traditional industries.
+ */
+
+/* Template-specific base overrides */
+html, body {
+  color: #111;
+}
+
+/* Main content area */
+main {
+  padding: 16mm;
+  font-family: "Times New Roman", Georgia, serif;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #111;
+}
+
+/* Header */
+header h1 {
+  font-size: 28px;
+  margin-bottom: 3px;
+  font-weight: 700;
+}
+
+header h2 {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 5px;
+  font-weight: 400;
+}
+
+header .contact {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+header a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Section headings */
+section > h3 {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  margin-top: 12px;
+  margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #222;
+}
+
+/* Article block */
+article {
+  margin-bottom: 8px;
+}
+
+article strong,
+article span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+article time {
+  display: block;
+  font-size: 11px;
+  color: #444;
+  margin-top: 1px;
+}
+
+article > p {
+  margin-top: 4px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+/* Lists */
+ul {
+  margin-left: 16px;
+  margin-top: 4px;
+}
+
+li {
+  margin-bottom: 3px;
+  font-size: 11.5px;
+}
+
+/* Skill keywords */
+.keyword {
+  display: inline-block;
+  background: #f4f4f4;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 10px;
+  color: #333;
+  margin-right: 5px;
+  margin-top: 3px;
+}
+
+/* Meta text */
+.meta {
+  font-size: 11px;
+  color: #555;
+}
+
+/* Print adjustments */
+@media print {
+  main {
+    padding: 14mm;
+  }
+}

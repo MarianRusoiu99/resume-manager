@@ -12,13 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-}
+import type { TemplateBase } from '@/lib/types/template';
 
 interface TemplateDropdownProps {
   currentTemplateId: string | null;
@@ -31,7 +25,7 @@ export function TemplateDropdown({
   resumeId, 
   onTemplateChange 
 }: TemplateDropdownProps) {
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isOpen, setIsOpen] = useState(false);

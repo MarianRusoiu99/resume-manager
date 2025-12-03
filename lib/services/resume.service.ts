@@ -146,11 +146,24 @@ export class ResumeService {
     resumesCache.delete(this.getCacheKey(userId));
   }
 
-  private async getValidatedUserResume(userId: string): Promise<ServiceResult<Resume>> {
-    const profileResult = await profileService.getProfile(userId);
+  /**
+   * Fetch and validate user's resume from profile
+   * Supports both default profile and specific profile ID
+   */
+  private async fetchAndValidateUserResume(
+    userId: string,
+    profileId?: string,
+    skipValidation = false
+  ): Promise<ServiceResult<Resume>> {
+    // Use profileId if provided, otherwise get default profile
+    const profileResult = profileId
+      ? await profileService.getProfileById(profileId, userId)
+      : await profileService.getProfile(userId);
+
     if (!profileResult.success || !profileResult.data) {
       return failure('User profile not found. Please complete your profile before generating a resume.', 'NOT_FOUND');
     }
+
     const profileData = profileResult.data;
     if (!profileData || typeof profileData !== 'object' || !('resume' in profileData)) {
       return failure('Profile structure is invalid. Please update your profile.', 'VALIDATION_ERROR');
@@ -158,6 +171,12 @@ export class ResumeService {
     if (!profileData.resume) {
       return failure('Profile does not contain resume data. Please complete your profile.', 'VALIDATION_ERROR');
     }
+
+    // Skip validation for streaming (validation happens elsewhere) or validate with Zod
+    if (skipValidation) {
+      return success(profileData.resume as Resume);
+    }
+
     try {
       const userResume = resumeSchema.parse(profileData.resume);
       return success(userResume);
@@ -167,45 +186,55 @@ export class ResumeService {
     }
   }
 
-  private async resolveProvider(input: GenerateResumeServiceInput): Promise<ServiceResult<{ provider: import('@/lib/ai/providers').AIProvider; modelId: string; providerType: string }>> {
-    if (input.modelId) {
-      try {
-        const { apiProviderService } = await import('@/lib/services/api-provider.service');
-        const modelsResult = await apiProviderService.getAvailableModels(input.userId);
-        if (!modelsResult.success) {
-          return failure('No API providers configured. Please add one in Settings → API Keys', 'NOT_FOUND');
-        }
-        const modelInfo = modelsResult.data.allModels.find(m => m.id === input.modelId);
-        if (!modelInfo) {
-          return failure(`Model ${input.modelId} not found in your configured providers`, 'NOT_FOUND');
-        }
-        const providerResult = await apiProviderService.getProviderInstance(modelInfo.providerId, input.userId);
-        if (!providerResult.success) {
-          return failure(providerResult.error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
-        }
-        return success({ provider: providerResult.data.provider, modelId: input.modelId, providerType: providerResult.data.providerType });
-      } catch (error) {
-        return failure(error instanceof Error ? error.message : 'Failed to get AI provider', 'INTERNAL_ERROR');
-      }
-    } else {
-      // No model specified - get the first available model from user's providers
-      const { apiProviderService } = await import('@/lib/services/api-provider.service');
-      const modelsResult = await apiProviderService.getAvailableModels(input.userId);
+  /**
+   * Resolve AI provider and model for generation
+   */
+  private async resolveProvider(
+    userId: string,
+    modelId?: string
+  ): Promise<ServiceResult<{ provider: import('@/lib/ai/providers').AIProvider; modelId: string; providerType: string }>> {
+    const { apiProviderService } = await import('@/lib/services/api-provider.service');
+    
+    try {
+      const modelsResult = await apiProviderService.getAvailableModels(userId);
       if (!modelsResult.success || modelsResult.data.allModels.length === 0) {
         return failure('No AI provider configured. Please add an API key in Settings → API Keys', 'NOT_FOUND');
       }
-      // Use the first available model
-      const firstModel = modelsResult.data.allModels[0];
-      const providerResult = await apiProviderService.getProviderInstance(firstModel.providerId, input.userId);
+
+      // Find specific model or use first available
+      const targetModel = modelId
+        ? modelsResult.data.allModels.find(m => m.id === modelId)
+        : modelsResult.data.allModels[0];
+
+      if (!targetModel) {
+        return failure(`Model ${modelId} not found in your configured providers`, 'NOT_FOUND');
+      }
+
+      const providerResult = await apiProviderService.getProviderInstance(targetModel.providerId, userId);
       if (!providerResult.success) {
         return failure(providerResult.error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
       }
-      return success({ provider: providerResult.data.provider, modelId: firstModel.id, providerType: providerResult.data.providerType });
+
+      return success({
+        provider: providerResult.data.provider,
+        modelId: targetModel.id,
+        providerType: providerResult.data.providerType
+      });
+    } catch (error) {
+      return failure(error instanceof Error ? error.message : 'Failed to get AI provider', 'INTERNAL_ERROR');
     }
   }
 
-  private async saveGeneratedResume(input: GenerateResumeServiceInput, validatedResume: Resume, workflowResult: unknown, extractedJobTitle: string, extractedCompanyName: string) {
-    const result = workflowResult as { tokensUsed?: number };
+  /**
+   * Save generated resume to database
+   */
+  private async saveGeneratedResume(
+    input: GenerateResumeServiceInput,
+    validatedResume: Resume,
+    workflowResult: { tokensUsed?: number },
+    extractedJobTitle: string,
+    extractedCompanyName: string
+  ) {
     return await this.repository.create({
       userId: input.userId,
       jobDescription: input.jobDescription,
@@ -217,10 +246,30 @@ export class ResumeService {
       resume: validatedResume,
       metadata: {
         model: validatedResume.meta?.model || 'unknown',
-        totalTokens: result.tokensUsed || 0,
+        totalTokens: workflowResult.tokensUsed || 0,
         generatedAt: validatedResume.meta?.lastModified || new Date().toISOString()
       }
     });
+  }
+
+  /**
+   * Build success response from generated resume
+   */
+  private buildGeneratedResumeResponse(generatedResume: {
+    id: string;
+    resume: unknown;
+    metadata: unknown;
+    createdAt: Date;
+  }): GeneratedResumeData {
+    return {
+      resumeId: generatedResume.id,
+      resume: {
+        id: generatedResume.id,
+        content: generatedResume.resume as Record<string, unknown>,
+        metadata: generatedResume.metadata as Record<string, unknown>,
+        createdAt: generatedResume.createdAt
+      }
+    };
   }
 
   constructor(
@@ -236,7 +285,7 @@ export class ResumeService {
   async generateResume(input: GenerateResumeServiceInput): Promise<ServiceResult<GeneratedResumeData>> {
     try {
       // Validate user profile and resume
-      const resumeResult = await this.getValidatedUserResume(input.userId);
+      const resumeResult = await this.fetchAndValidateUserResume(input.userId, input.profileId);
       if (!resumeResult.success) {
         return failure(resumeResult.error, 'VALIDATION_ERROR');
       }
@@ -250,7 +299,7 @@ export class ResumeService {
       });
 
       // Resolve provider
-      const providerResult = await this.resolveProvider(input);
+      const providerResult = await this.resolveProvider(input.userId, input.modelId);
       if (!providerResult.success) {
         return failure(providerResult.error, 'INTERNAL_ERROR');
       }
@@ -290,15 +339,7 @@ export class ResumeService {
       // Invalidate cache after generating new resume
       this.invalidateCache(input.userId);
 
-      return success({
-        resumeId: generatedResume.id,
-        resume: {
-          id: generatedResume.id,
-          content: generatedResume.resume as unknown as Record<string, unknown>,
-          metadata: generatedResume.metadata as Record<string, unknown>,
-          createdAt: generatedResume.createdAt
-        },
-      });
+      return success(this.buildGeneratedResumeResponse(generatedResume));
     } catch (error) {
       logger.error('Resume generation error', error);
       return failure(error instanceof Error ? error.message : 'Unknown error occurred', 'INTERNAL_ERROR');
@@ -313,68 +354,6 @@ export class ResumeService {
    */
   async generateResumeWithProgress(input: GenerateResumeWithProgressInput): Promise<ServiceResult<GeneratedResumeData>> {
     const { onProgress, ...baseInput } = input;
-
-    const fetchAndValidateProfile = async (): Promise<ServiceResult<Resume>> => {
-      // Use profileId if provided, otherwise get default profile
-      const profileResult = baseInput.profileId
-        ? await profileService.getProfileById(baseInput.profileId, baseInput.userId)
-        : await profileService.getProfile(baseInput.userId);
-
-      if (!profileResult.success || !profileResult.data) {
-        return failure('User profile not found. Please complete your profile before generating a resume.', 'NOT_FOUND');
-      }
-
-      const profileData = profileResult.data;
-      if (!profileData || typeof profileData !== 'object' || !('resume' in profileData)) {
-        return failure('Profile structure is invalid. Please update your profile.', 'VALIDATION_ERROR');
-      }
-      if (!profileData.resume) {
-        return failure('Profile does not contain resume data. Please complete your profile.', 'VALIDATION_ERROR');
-      }
-
-      // Rely on runtime type; JSON resume validation happens elsewhere
-      return success(profileData.resume as Resume);
-    };
-
-    const resolveProviderForProgress = async (): Promise<ServiceResult<{ provider: import('@/lib/ai/providers').AIProvider; modelId: string; providerType: string }>> => {
-      if (baseInput.modelId) {
-        try {
-          const { apiProviderService } = await import('@/lib/services/api-provider.service');
-          const modelsResult = await apiProviderService.getAvailableModels(baseInput.userId);
-          if (!modelsResult.success) {
-            return failure('No API providers configured. Please add one in Settings → API Keys', 'NOT_FOUND');
-          }
-
-          const modelInfo = modelsResult.data.allModels.find(m => m.id === baseInput.modelId);
-          if (!modelInfo) {
-            return failure(`Model ${baseInput.modelId} not found in your configured providers`, 'NOT_FOUND');
-          }
-
-          const providerResult = await apiProviderService.getProviderInstance(modelInfo.providerId, baseInput.userId);
-          if (!providerResult.success) {
-            return failure(providerResult.error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
-          }
-
-          return success({ provider: providerResult.data.provider, modelId: baseInput.modelId, providerType: providerResult.data.providerType });
-        } catch (err) {
-          return failure(err instanceof Error ? err.message : 'Failed to get AI provider', 'INTERNAL_ERROR');
-        }
-      }
-
-      // No model specified - get the first available model from user's providers
-      const { apiProviderService } = await import('@/lib/services/api-provider.service');
-      const modelsResult = await apiProviderService.getAvailableModels(baseInput.userId);
-      if (!modelsResult.success || modelsResult.data.allModels.length === 0) {
-        return failure('No AI provider configured. Please add an API key in Settings → API Keys', 'NOT_FOUND');
-      }
-      // Use the first available model
-      const firstModel = modelsResult.data.allModels[0];
-      const providerResult = await apiProviderService.getProviderInstance(firstModel.providerId, baseInput.userId);
-      if (!providerResult.success) {
-        return failure(providerResult.error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
-      }
-      return success({ provider: providerResult.data.provider, modelId: firstModel.id, providerType: providerResult.data.providerType });
-    };
 
     const scheduleProgressUpdates = (startTime: number) => {
       onProgress('job-analysis', 'Analyzing job description...', 20);
@@ -399,14 +378,19 @@ export class ResumeService {
     try {
       onProgress('init', 'Initializing resume generation...', 0);
 
+      // Fetch and validate profile using shared method (skip validation for streaming)
       onProgress('profile', 'Fetching your profile data...', 5);
-      const profileFetch = await fetchAndValidateProfile();
-      if (!profileFetch.success) {
-        return failure(profileFetch.error, profileFetch.code);
+      const profileResult = await this.fetchAndValidateUserResume(
+        baseInput.userId,
+        baseInput.profileId,
+        true // skipValidation - validation happens at workflow level
+      );
+      if (!profileResult.success) {
+        return failure(profileResult.error, profileResult.code);
       }
 
       onProgress('profile', 'Profile loaded successfully', 10);
-      const userResume = profileFetch.data;
+      const userResume = profileResult.data;
 
       // Debug: Log profile summary to verify it has real data
       logger.debug('Profile summary', {
@@ -429,7 +413,8 @@ export class ResumeService {
       const startTime = Date.now();
       scheduleProgressUpdates(startTime);
 
-      const providerResult = await resolveProviderForProgress();
+      // Resolve provider using shared method
+      const providerResult = await this.resolveProvider(baseInput.userId, baseInput.modelId);
       if (!providerResult.success) {
         return failure(providerResult.error, providerResult.code);
       }
@@ -457,28 +442,21 @@ export class ResumeService {
 
       onProgress('save', 'Saving resume to database...', 95);
 
-      const extractedJobTitle = workflowResult.jobTitle || baseInput.jobTitle;
-      const extractedCompanyName = workflowResult.companyName || baseInput.companyName;
+      const extractedJobTitle = workflowResult.jobTitle || baseInput.jobTitle || 'Position';
+      const extractedCompanyName = workflowResult.companyName || baseInput.companyName || 'Company';
 
-      logger.debug('Resume title extracted', { jobTitle: extractedJobTitle, companyName: extractedCompanyName || 'Unknown Company' });
+      logger.debug('Resume title extracted', { jobTitle: extractedJobTitle, companyName: extractedCompanyName });
 
       const validatedResume = workflowResult.resume;
 
-      const generatedResume = await this.repository.create({
-        userId: baseInput.userId,
-        jobDescription: baseInput.jobDescription,
-        jobMetadata: {
-          jobTitle: extractedJobTitle,
-          companyName: extractedCompanyName
-        },
-        templateId: baseInput.templateId ?? undefined,
-        resume: validatedResume,
-        metadata: {
-          model: validatedResume.meta?.model || 'unknown',
-          tokens: workflowResult.tokensUsed || 0,
-          generatedAt: validatedResume.meta?.lastModified || new Date().toISOString()
-        }
-      });
+      // Save using shared method
+      const generatedResume = await this.saveGeneratedResume(
+        baseInput,
+        validatedResume,
+        { tokensUsed: workflowResult.tokensUsed },
+        extractedJobTitle,
+        extractedCompanyName
+      );
 
       logger.info('Resume saved to database', { resumeId: generatedResume.id });
 
@@ -487,15 +465,7 @@ export class ResumeService {
 
       onProgress('complete', 'Resume generated successfully!', 100);
 
-      return success({
-        resumeId: generatedResume.id,
-        resume: {
-          id: generatedResume.id,
-          content: generatedResume.resume as unknown as Record<string, unknown>,
-          metadata: generatedResume.metadata as Record<string, unknown>,
-          createdAt: generatedResume.createdAt
-        },
-      });
+      return success(this.buildGeneratedResumeResponse(generatedResume));
     } catch (error) {
       logger.error('Resume generation with progress error', error);
       onProgress('error', error instanceof Error ? error.message : 'Unknown error occurred', 0);
@@ -717,39 +687,15 @@ export class ResumeService {
     try {
       logger.info('Starting standalone cover letter generation', { userId: input.userId });
 
-      // Validate user profile and resume
-      // Use same validation logic as resume generation
-      let userResume: Resume;
-      if (input.profileId) {
-        // Use selected profile
-        const profileResult = await profileService.getProfileById(input.profileId, input.userId);
-        if (!profileResult.success) {
-          return failure(profileResult.error, 'NOT_FOUND');
-        }
-        const profileData = profileResult.data;
-        if (!profileData || typeof profileData !== 'object' || !('resume' in profileData) || !profileData.resume) {
-          return failure('Profile does not contain resume data. Please complete your profile.', 'VALIDATION_ERROR');
-        }
-        try {
-          userResume = resumeSchema.parse(profileData.resume);
-        } catch {
-          return failure('Invalid profile data format. Please update your profile.', 'VALIDATION_ERROR');
-        }
-      } else {
-        // Fallback to default profile
-        const resumeResult = await this.getValidatedUserResume(input.userId);
-        if (!resumeResult.success) {
-          return failure(resumeResult.error, 'VALIDATION_ERROR');
-        }
-        userResume = resumeResult.data;
+      // Fetch and validate user resume using shared method
+      const resumeResult = await this.fetchAndValidateUserResume(input.userId, input.profileId);
+      if (!resumeResult.success) {
+        return failure(resumeResult.error, resumeResult.code);
       }
+      const userResume = resumeResult.data;
 
-      // Resolve provider
-      const providerResult = await this.resolveProvider({
-        userId: input.userId,
-        modelId: input.modelId,
-        profileId: input.profileId,
-      } as GenerateResumeServiceInput);
+      // Resolve provider using shared method
+      const providerResult = await this.resolveProvider(input.userId, input.modelId);
 
       if (!providerResult.success) {
         return failure(providerResult.error, 'INTERNAL_ERROR');
@@ -766,7 +712,7 @@ export class ResumeService {
         provider,
         modelId,
         jobDescription: input.jobDescription,
-        userResume: userResume!,
+        userResume,
       });
 
       logger.debug('Cover letter generated', { 

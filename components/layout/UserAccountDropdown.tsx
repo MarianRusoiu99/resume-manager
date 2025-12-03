@@ -1,7 +1,7 @@
 "use client";
 
 import { User, LogOut, Moon, Sun, Monitor, ChevronUp } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "@/lib/contexts";
 import { signOut } from "next-auth/react";
 import {
   DropdownMenu,
@@ -20,14 +20,24 @@ import {
 } from "@/components/ui/sidebar";
 
 interface UserAccountDropdownProps {
-  user: {
-    name?: string | null;
-    email?: string | null;
+  readonly user: {
+    readonly name?: string | null;
+    readonly email?: string | null;
   };
 }
 
 export function UserAccountDropdown({ user }: UserAccountDropdownProps) {
   const { theme, setTheme } = useTheme();
+
+  const getThemeIcon = () => {
+    if (theme === "light") {
+      return <Sun className="mr-2 h-4 w-4" />;
+    }
+    if (theme === "dark") {
+      return <Moon className="mr-2 h-4 w-4" />;
+    }
+    return <Monitor className="mr-2 h-4 w-4" />;
+  };
 
   const handleSignOut = async () => {
     // Use NextAuth signOut with proper CSRF handling
@@ -62,13 +72,7 @@ export function UserAccountDropdown({ user }: UserAccountDropdownProps) {
             <DropdownMenuSeparator />
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
-                {theme === "light" ? (
-                  <Sun className="mr-2 h-4 w-4" />
-                ) : theme === "dark" ? (
-                  <Moon className="mr-2 h-4 w-4" />
-                ) : (
-                  <Monitor className="mr-2 h-4 w-4" />
-                )}
+                {getThemeIcon()}
                 Theme
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent>

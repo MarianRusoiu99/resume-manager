@@ -1,6 +1,6 @@
 import { TabsContent } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { useEditor } from "@/contexts/EditorContext";
+import { useEditor } from "@/lib/contexts";
 import { PersonalInfoForm } from "@/components/editor/forms/PersonalInfoForm";
 import { SummaryForm } from "@/components/editor/forms/SummaryForm";
 import { ExperienceForm } from "@/components/editor/forms/ExperienceForm";
@@ -19,8 +19,8 @@ import { ImportFromJSON } from "@/components/editor/ImportFromJSON";
 import type { Basics, Skill, Certificate, Language } from "@/lib/validations/jsonresume";
 
 interface ProfileEditorContentProps {
-    showParser?: boolean;
-    parserComponent?: React.ReactNode;
+    readonly showParser?: boolean;
+    readonly parserComponent?: React.ReactNode;
 }
 
 export function ProfileEditorContent({ showParser, parserComponent }: ProfileEditorContentProps) {

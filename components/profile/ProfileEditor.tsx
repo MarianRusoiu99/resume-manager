@@ -1,6 +1,6 @@
 "use client";
 
-import { EditorProvider } from "@/contexts/EditorContext";
+import { EditorProvider } from "@/lib/contexts";
 import { ResumeEditor } from "@/components/editor/ResumeEditor";
 import { Button } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";

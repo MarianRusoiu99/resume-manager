@@ -1,0 +1,217 @@
+/**
+ * Modern Resume Template Styles
+ * 
+ * Clean sans-serif design with blue accent colors and modern typography.
+ * Best for: Tech, startups, design, and progressive companies.
+ */
+
+/* Template-specific base overrides */
+html, body {
+  color: #1a1a1a;
+}
+
+/* Main content area */
+main {
+  padding: 18mm 20mm;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #1a1a1a;
+}
+
+/* Header */
+header {
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #2563eb;
+}
+
+header h1 {
+  font-size: 32px;
+  margin: 0 0 4px 0;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.5px;
+}
+
+header h2 {
+  font-size: 16px;
+  color: #2563eb;
+  margin: 0 0 8px 0;
+  font-weight: 500;
+}
+
+header .contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 11px;
+  color: #4b5563;
+}
+
+header .contact-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+header a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+header a:hover {
+  text-decoration: underline;
+}
+
+/* Section headings */
+section > h3 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 14px;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #2563eb;
+}
+
+/* Article block */
+article {
+  margin-bottom: 10px;
+}
+
+.article-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2px;
+}
+
+.title-company {
+  display: flex;
+  flex-direction: column;
+}
+
+article strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.company {
+  font-size: 11px;
+  color: #4b5563;
+  font-weight: 400;
+}
+
+article time {
+  font-size: 10px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+article > p {
+  margin-top: 4px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  color: #374151;
+}
+
+/* Lists */
+ul {
+  margin: 4px 0 0 16px;
+  padding: 0;
+}
+
+li {
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: #374151;
+}
+
+li::marker {
+  color: #2563eb;
+}
+
+/* Skills */
+.skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.skill-group {
+  flex: 1 1 45%;
+  min-width: 140px;
+}
+
+.skill-group strong {
+  font-size: 11px;
+}
+
+.level {
+  font-size: 10px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.keywords {
+  margin-top: 4px;
+}
+
+.keyword {
+  display: inline-block;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 9px;
+  color: #1e40af;
+  margin-right: 4px;
+  margin-top: 2px;
+}
+
+/* Inline lists */
+.inline-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.inline-item {
+  font-size: 11px;
+  color: #374151;
+}
+
+/* Meta text */
+.meta {
+  font-size: 10px;
+  color: #6b7280;
+}
+
+/* Quote for references */
+.quote {
+  font-style: italic;
+  color: #4b5563;
+  border-left: 2px solid #2563eb;
+  padding-left: 8px;
+  margin: 4px 0;
+}
+
+/* Links in content */
+article a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+article a:hover {
+  text-decoration: underline;
+}
+
+/* Print adjustments */
+@media print {
+  main {
+    padding: 16mm 18mm;
+  }
+}

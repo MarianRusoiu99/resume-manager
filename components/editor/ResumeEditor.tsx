@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { Button, Input } from "@/components/ui";
 import { Copy } from "lucide-react";
-import { useEditor } from "@/contexts/EditorContext";
+import { useEditor } from "@/lib/contexts";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ResumePreview } from "../resume/ResumePreview";
