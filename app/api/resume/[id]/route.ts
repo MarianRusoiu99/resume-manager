@@ -1,6 +1,19 @@
+/**
+ * Resume Detail API Routes
+ * 
+ * GET /api/resume/[id] - Get a specific resume
+ *   - Used for initial data fetching in components
+ * 
+ * PATCH /api/resume/[id] - Update resume content or template
+ *   - Used for content updates (no server action equivalent yet)
+ * 
+ * DELETE /api/resume/[id] - Delete a specific resume
+ *   - @deprecated Prefer using deleteResume server action from '@/app/actions/resume'
+ *   - Kept for backward compatibility
+ */
+
 import { NextResponse } from 'next/server';
 import { resumeService } from '@/lib/services/resume.service';
-import { resumesCache } from '@/lib/cache/resumes-cache';
 import { createApiHandler } from '@/lib/api-handler';
 
 /**
@@ -10,16 +23,16 @@ export const GET = createApiHandler(async (request, { params }, session) => {
   const { id } = await params;
 
   // Get resume (with ownership verification)
-  const resume = await resumeService.getResume(id, session.user.id);
+  const result = await resumeService.getResume(id, session.user.id);
 
-  if (!resume) {
+  if (!result.success) {
     return NextResponse.json(
-      { error: 'Resume not found' },
-      { status: 404 }
+      { error: result.error },
+      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
     );
   }
 
-  return NextResponse.json(resume);
+  return NextResponse.json(result.data);
 });
 
 /**
@@ -28,12 +41,15 @@ export const GET = createApiHandler(async (request, { params }, session) => {
 export const DELETE = createApiHandler(async (request, { params }, session) => {
   const { id } = await params;
 
-  // Delete resume (with ownership verification)
-  await resumeService.deleteResume(id, session.user.id);
+  // Delete resume (with ownership verification) - cache invalidation handled in service
+  const result = await resumeService.deleteResume(id, session.user.id);
 
-  // Invalidate cache after deleting a resume
-  const cacheKey = `resumes:${session.user.id}`;
-  resumesCache.delete(cacheKey);
+  if (!result.success) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
+    );
+  }
 
   return NextResponse.json(
     { success: true, message: 'Resume deleted successfully' }
@@ -49,30 +65,38 @@ export const PATCH = createApiHandler(async (request, { params }, session) => {
 
   // Handle template update separately if only templateId is provided
   if (body.templateId !== undefined && !body.resume) {
-    const updatedResume = await resumeService.updateResumeTemplate(
+    const result = await resumeService.updateResumeTemplate(
       id,
       session.user.id,
       body.templateId
     );
 
-    // Invalidate cache after updating
-    const cacheKey = `resumes:${session.user.id}`;
-    resumesCache.delete(cacheKey);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.code === 'NOT_FOUND' ? 404 : 500 }
+      );
+    }
 
-    return NextResponse.json(updatedResume);
+    // Cache invalidation handled in service
+    return NextResponse.json(result.data);
   }
 
   // Update the resume content
-  const updatedResume = await resumeService.updateResumeContent(
+  const result = await resumeService.updateResumeContent(
     id,
     session.user.id,
     body.resume
   );
 
-  // Invalidate cache after updating
-  const cacheKey = `resumes:${session.user.id}`;
-  resumesCache.delete(cacheKey);
+  if (!result.success) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
+    );
+  }
 
-  return NextResponse.json(updatedResume);
+  // Cache invalidation handled in service
+  return NextResponse.json(result.data);
 });
 

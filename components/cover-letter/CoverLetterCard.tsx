@@ -5,11 +5,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Edit, Trash2, Download, Eye, FileText, Briefcase } from 'lucide-react';
 import { GalleryCard, type GalleryCardAction } from '@/components/ui/GalleryCard';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { toast } from 'sonner';
+import { deleteCoverLetter } from '@/app/actions/cover-letter';
 
 interface CoverLetterCardProps {
   id: string;
@@ -33,6 +34,7 @@ export function CoverLetterCard({
   onDelete,
 }: Readonly<CoverLetterCardProps>) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const getDisplayTitle = (): string => {
     if (jobTitle && companyName) {
@@ -73,23 +75,17 @@ export function CoverLetterCard({
     }
   };
 
-  const handleDelete = async () => {
-    try {
-      const response = await fetch(`/api/cover-letter/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete cover letter');
+  const handleDelete = () => {
+    startTransition(async () => {
+      const result = await deleteCoverLetter(id);
+      if (result.success) {
+        toast.success('Cover letter deleted successfully');
+        onDelete(id);
+      } else {
+        toast.error(result.error || 'Failed to delete cover letter');
       }
-
-      toast.success('Cover letter deleted successfully');
-      onDelete(id);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete cover letter');
-    } finally {
       setShowDeleteDialog(false);
-    }
+    });
   };
 
   const actions: GalleryCardAction[] = [

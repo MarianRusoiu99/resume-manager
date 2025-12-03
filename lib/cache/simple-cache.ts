@@ -87,13 +87,11 @@ class SimpleCache<T> {
 
 // Create cache instances for different data types
 export const profileCache = new SimpleCache<unknown>(300); // 5 minutes
-export const apiKeyCache = new SimpleCache<unknown>(600); // 10 minutes
 
 // Clean up expired entries every minute
 if (typeof setInterval !== 'undefined') {
   setInterval(() => {
     profileCache.cleanup();
-    apiKeyCache.cleanup();
   }, 60000);
 }
 

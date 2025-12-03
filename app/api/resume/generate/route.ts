@@ -1,6 +1,11 @@
 /**
+ * Resume Generation API Routes
+ * 
  * POST /api/resume/generate - Generate a new resume
+ *   - Uses streaming for progress updates via generate-stream endpoint
+ * 
  * GET /api/resume/generate - Get all resumes for the user
+ *   - Used for initial data fetching in components
  */
 
 import { NextResponse, NextRequest } from 'next/server';
@@ -54,6 +59,7 @@ export const POST = createApiHandler(async (request, context, session) => {
   });
 
   // Generate resume (job title and company name will be extracted from description)
+  // Cache invalidation is handled in the service
   const result = await resumeService.generateResume({
     userId: session.user.id,
     jobDescription,
@@ -80,10 +86,6 @@ export const POST = createApiHandler(async (request, context, session) => {
     logger.info(`API: Cover letter saved`, { coverLetterId: result.data.coverLetterId });
   }
 
-  // Invalidate cache after generating a new resume
-  const cacheKey = `resumes:${session.user.id}`;
-  resumesCache.delete(cacheKey);
-
   const response = NextResponse.json({
     success: true,
     resumeId: result.data.resumeId,
@@ -103,7 +105,14 @@ export const GET = createApiHandler(async (request, context, session) => {
 
   if (!resumes) {
     // Cache miss - fetch from database
-    resumes = await resumeService.getUserResumes(session.user.id);
+    const result = await resumeService.getUserResumes(session.user.id);
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 500 }
+      );
+    }
+    resumes = result.data;
     // Store in cache
     resumesCache.set(cacheKey, resumes);
   }

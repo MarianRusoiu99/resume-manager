@@ -1,5 +1,9 @@
 /**
+ * Profile Set Default API Route
+ * 
  * POST /api/profile/[id]/set-default - Set a profile as default
+ *   - @deprecated Prefer using setDefaultProfile server action from '@/app/actions/profile'
+ *   - Kept for backward compatibility
  */
 
 import { NextResponse } from 'next/server';

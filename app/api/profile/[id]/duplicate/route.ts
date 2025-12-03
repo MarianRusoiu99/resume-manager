@@ -1,5 +1,9 @@
 /**
+ * Profile Duplicate API Route
+ * 
  * POST /api/profile/[id]/duplicate - Duplicate a profile
+ *   - @deprecated Prefer using duplicateProfile server action from '@/app/actions/profile'
+ *   - Kept for backward compatibility
  */
 
 import { NextResponse } from 'next/server';

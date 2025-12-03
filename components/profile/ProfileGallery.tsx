@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ProfileCard } from "./ProfileCard";
 import { ResumeImportButton } from "./ResumeImportButton";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
+import { createProfile } from "@/app/actions/profile";
 
 interface Profile {
   id: string;
@@ -25,7 +26,7 @@ interface ProfileGalleryProps {
 
 export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   // Refresh profiles when the page becomes visible
@@ -52,38 +53,32 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  const handleCreateProfile = async () => {
-    setIsCreating(true);
-    try {
-      const response = await fetch("/api/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: `Profile ${profiles.length + 1}`,
-          resume: { basics: { name: "" } }, // Empty resume that will be filled in later
-          isDefault: profiles.length === 0, // First profile is default
-        }),
-      });
+  const handleCreateProfile = () => {
+    startTransition(async () => {
+      const result = await createProfile(
+        `Profile ${profiles.length + 1}`,
+        { basics: { name: "" } } as Resume,
+        profiles.length === 0 // First profile is default
+      );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create profile");
+      if (result.success) {
+        toast.success("Profile created successfully");
+        // Add the new profile to the local state
+        setProfiles((prev) => [...prev, {
+          id: result.data.id,
+          userId: result.data.userId,
+          name: result.data.name,
+          isDefault: result.data.isDefault,
+          resume: result.data.resume as Resume | null,
+          createdAt: result.data.createdAt.toISOString(),
+          updatedAt: result.data.updatedAt.toISOString(),
+        }]);
+        // Navigate to edit the new profile
+        router.push(`/profile/${result.data.id}`);
+      } else {
+        toast.error(result.error || "Failed to create profile");
       }
-
-      const data = await response.json();
-      toast.success("Profile created successfully");
-
-      // Add the new profile to the local state
-      setProfiles((prev) => [...prev, data]);
-
-      // Navigate to edit the new profile
-      router.push(`/profile/${data.id}`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create profile";
-      toast.error(message);
-    } finally {
-      setIsCreating(false);
-    }
+    });
   };
 
   const handleEdit = (id: string) => {
@@ -108,38 +103,32 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
     );
   };
 
-  const handleImportSuccess = async (resume: Resume) => {
-    setIsCreating(true);
-    try {
-      const response = await fetch("/api/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: `Imported Profile ${profiles.length + 1}`,
-          resume,
-          isDefault: profiles.length === 0,
-        }),
-      });
+  const handleImportSuccess = (resume: Resume) => {
+    startTransition(async () => {
+      const result = await createProfile(
+        `Imported Profile ${profiles.length + 1}`,
+        resume,
+        profiles.length === 0
+      );
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create profile");
+      if (result.success) {
+        toast.success("Profile created from imported resume!");
+        // Add the new profile to the local state
+        setProfiles((prev) => [...prev, {
+          id: result.data.id,
+          userId: result.data.userId,
+          name: result.data.name,
+          isDefault: result.data.isDefault,
+          resume: result.data.resume as Resume | null,
+          createdAt: result.data.createdAt.toISOString(),
+          updatedAt: result.data.updatedAt.toISOString(),
+        }]);
+        // Navigate to edit the new profile
+        router.push(`/profile/${result.data.id}`);
+      } else {
+        toast.error(result.error || "Failed to create profile");
       }
-
-      const data = await response.json();
-      toast.success("Profile created from imported resume!");
-
-      // Add the new profile to the local state
-      setProfiles((prev) => [...prev, data]);
-
-      // Navigate to edit the new profile
-      router.push(`/profile/${data.id}`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create profile";
-      toast.error(message);
-    } finally {
-      setIsCreating(false);
-    }
+    });
   };
 
   if (profiles.length === 0) {
@@ -150,9 +139,9 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
           Create your first profile or import an existing resume
         </p>
         <div className="flex gap-3">
-          <Button onClick={handleCreateProfile} disabled={isCreating} size="lg">
+          <Button onClick={handleCreateProfile} disabled={isPending} size="lg">
             <Plus className="h-5 w-5 mr-2" />
-            {isCreating ? "Creating..." : "Create Profile"}
+            {isPending ? "Creating..." : "Create Profile"}
           </Button>
           <ResumeImportButton onImportSuccess={handleImportSuccess} />
         </div>
@@ -168,9 +157,9 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
         </p>
         <div className="flex gap-2">
           <ResumeImportButton onImportSuccess={handleImportSuccess} />
-          <Button onClick={handleCreateProfile} disabled={isCreating}>
+          <Button onClick={handleCreateProfile} disabled={isPending}>
             <Plus className="h-4 w-4 mr-2" />
-            {isCreating ? "Creating..." : "New Profile"}
+            {isPending ? "Creating..." : "New Profile"}
           </Button>
         </div>
       </div>

@@ -5,13 +5,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { Star, Edit, Copy, Trash2, Check, Download } from 'lucide-react';
 import { GalleryCard, type GalleryCardAction } from '@/components/ui/GalleryCard';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
+import { deleteProfile, duplicateProfile, setDefaultProfile } from '@/app/actions/profile';
 
 interface ProfileCardProps {
   id: string;
@@ -37,6 +38,7 @@ export function ProfileCard({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | undefined>(undefined);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   // Extract metadata from resume data
   const email = resumeData?.basics?.email || 'No email';
@@ -150,26 +152,18 @@ export function ProfileCard({
     {
       label: 'Duplicate',
       icon: <Copy className="h-4 w-4" />,
-      onClick: async () => {
-        try {
-          const response = await fetch(`/api/profile/${id}/duplicate`, {
-            method: 'POST',
-          });
-
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to duplicate profile');
+      onClick: () => {
+        startTransition(async () => {
+          const result = await duplicateProfile(id);
+          if (result.success) {
+            toast.success('Profile duplicated successfully');
+            onDuplicate(result.data.id);
+          } else {
+            toast.error(result.error || 'Failed to duplicate profile');
           }
-
-          const data = await response.json();
-          toast.success('Profile duplicated successfully');
-          onDuplicate(data.profile.id);
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : 'Failed to duplicate profile';
-          toast.error(message);
-        }
+        });
       },
+      disabled: isPending,
     },
     ...(isDefault
       ? []
@@ -177,25 +171,18 @@ export function ProfileCard({
           {
             label: 'Set as Default',
             icon: <Check className="h-4 w-4" />,
-            onClick: async () => {
-              try {
-                const response = await fetch(`/api/profile/${id}/default`, {
-                  method: 'POST',
-                });
-
-                if (!response.ok) {
-                  const error = await response.json();
-                  throw new Error(error.error || 'Failed to set default profile');
+            onClick: () => {
+              startTransition(async () => {
+                const result = await setDefaultProfile(id);
+                if (result.success) {
+                  toast.success('Default profile updated');
+                  onSetDefault(id);
+                } else {
+                  toast.error(result.error || 'Failed to set default profile');
                 }
-
-                toast.success('Default profile updated');
-                onSetDefault(id);
-              } catch (error) {
-                const message =
-                  error instanceof Error ? error.message : 'Failed to set default profile';
-                toast.error(message);
-              }
+              });
             },
+            disabled: isPending,
           },
         ]),
     {
@@ -206,25 +193,17 @@ export function ProfileCard({
     },
   ];
 
-  const handleDelete = async () => {
-    try {
-      const response = await fetch(`/api/profile/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete profile');
+  const handleDelete = () => {
+    startTransition(async () => {
+      const result = await deleteProfile(id);
+      if (result.success) {
+        toast.success('Profile deleted successfully');
+        onDelete(id);
+      } else {
+        toast.error(result.error || 'Failed to delete profile');
       }
-
-      toast.success('Profile deleted successfully');
-      onDelete(id);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete profile';
-      toast.error(message);
-    } finally {
       setShowDeleteDialog(false);
-    }
+    });
   };
 
   return (

@@ -1,6 +1,12 @@
 /**
+ * Profile API Routes
+ * 
  * GET /api/profile - Get all profiles for the current user
+ *   - Used for initial data fetching in components
+ * 
  * POST /api/profile - Create a new profile
+ *   - @deprecated Prefer using createProfile server action from '@/app/actions/profile'
+ *   - Kept for backward compatibility and potential external API access
  */
 
 import { NextResponse } from 'next/server';

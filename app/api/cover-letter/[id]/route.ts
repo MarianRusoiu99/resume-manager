@@ -1,8 +1,16 @@
 /**
- * Cover Letter Detail API
+ * Cover Letter Detail API Routes
+ * 
  * GET /api/cover-letter/[id] - Get a specific cover letter
+ *   - Used for initial data fetching in components
+ * 
  * PUT /api/cover-letter/[id] - Update a cover letter
+ *   - @deprecated Prefer using updateCoverLetter server action from '@/app/actions/cover-letter'
+ *   - Kept for backward compatibility
+ * 
  * DELETE /api/cover-letter/[id] - Delete a cover letter
+ *   - @deprecated Prefer using deleteCoverLetter server action from '@/app/actions/cover-letter'
+ *   - Kept for backward compatibility
  */
 
 import { NextResponse } from 'next/server';

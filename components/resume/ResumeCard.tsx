@@ -5,13 +5,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { Edit, Trash2, Download, Eye } from 'lucide-react';
 import { GalleryCard, type GalleryCardAction } from '@/components/ui/GalleryCard';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
+import { deleteResume } from '@/app/actions/resume';
 
 interface ResumeCardProps {
   id: string;
@@ -39,6 +40,7 @@ export function ResumeCard({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | undefined>(undefined);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const title = jobTitle || 'Untitled Resume';
   const subtitle = companyName || 'No company specified';
@@ -149,23 +151,17 @@ export function ResumeCard({
     }
   };
 
-  const handleDelete = async () => {
-    try {
-      const response = await fetch(`/api/resume/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete resume');
+  const handleDelete = () => {
+    startTransition(async () => {
+      const result = await deleteResume(id);
+      if (result.success) {
+        toast.success('Resume deleted successfully');
+        onDelete(id);
+      } else {
+        toast.error(result.error || 'Failed to delete resume');
       }
-
-      toast.success('Resume deleted successfully');
-      onDelete(id);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete resume');
-    } finally {
       setShowDeleteDialog(false);
-    }
+    });
   };
 
   const actions: GalleryCardAction[] = [
