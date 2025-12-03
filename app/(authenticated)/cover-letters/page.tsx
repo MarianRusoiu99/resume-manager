@@ -46,10 +46,7 @@ export default function CoverLettersPage() {
     error,
     refetch,
     mutate,
-  } = useFetch<CoverLettersResponse>(API.COVER_LETTER.LIST, {
-    refetchOnFocus: true,
-    transform: (data) => data as CoverLettersResponse,
-  });
+  } = useFetch<CoverLettersResponse>(API.COVER_LETTER.LIST);
 
   const coverLetters = data?.coverLetters ?? [];
 

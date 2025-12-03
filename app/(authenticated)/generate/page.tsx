@@ -58,8 +58,6 @@ export default function GeneratePage() {
 
   // Resume generation state
   const [resumeJobDescription, setResumeJobDescription] = useState('');
-  const [generateCoverLetter, setGenerateCoverLetter] = useState(false);
-  const [resumePersonalInstructions, setResumePersonalInstructions] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedResumeProfileId, setSelectedResumeProfileId] = useState<string>('');
   const [selectedResumeModelId, setSelectedResumeModelId] = useState<string>('');
@@ -68,7 +66,6 @@ export default function GeneratePage() {
   const [resumeError, setResumeError] = useState<string | null>(null);
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
   const [generatedResumeId, setGeneratedResumeId] = useState<string | null>(null);
-  const [generatedCoverLetterFromResume, setGeneratedCoverLetterFromResume] = useState<string | null>(null);
 
   // Resume progress streaming state
   const [useStreaming] = useState(true);
@@ -163,7 +160,6 @@ export default function GeneratePage() {
     setIsGeneratingResume(true);
     setResumeError(null);
     setGeneratedResume(null);
-    setGeneratedCoverLetterFromResume(null);
     setProgressStep('');
     setProgressMessage('');
     setProgressPercent(0);
@@ -178,8 +174,6 @@ export default function GeneratePage() {
           jobDescription: resumeJobDescription,
           profileId: selectedResumeProfileId,
           modelId: selectedResumeModelId || undefined,
-          generateCoverLetter,
-          personalInstructions: resumePersonalInstructions.trim() || undefined,
           templateId: selectedTemplateId || undefined,
         }),
       });
@@ -240,7 +234,6 @@ export default function GeneratePage() {
                 setProgressPercent(100);
                 setGeneratedResume(eventData.resume);
                 setGeneratedResumeId(eventData.resumeId);
-                setGeneratedCoverLetterFromResume(eventData.coverLetter || null);
                 toast.success('Resume generated successfully!');
                 break;
 
@@ -330,10 +323,6 @@ export default function GeneratePage() {
     setGeneratedCoverLetter(content);
   };
 
-  const handleSaveCoverLetterFromResume = async (content: string) => {
-    setGeneratedCoverLetterFromResume(content);
-  };
-
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <Tabs defaultValue={tabParam === 'cover-letter' ? 'cover-letter' : 'resume'} className="h-full flex flex-col">
@@ -401,42 +390,6 @@ export default function GeneratePage() {
                         </select>
                         <p className="text-xs text-gray-500 mt-1">
                           Select which profile to use as the source for your resume
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Cover Letter Option */}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="coverLetter"
-                        checked={generateCoverLetter}
-                        onChange={(e) => setGenerateCoverLetter(e.target.checked)}
-                        className="w-4 h-4 text-foreground border-gray-300 rounded"
-                        disabled={isGeneratingResume}
-                      />
-                      <label htmlFor="coverLetter" className="text-sm cursor-pointer">
-                        Generate cover letter (optional)
-                      </label>
-                    </div>
-
-                    {/* Personal Instructions (for cover letter) */}
-                    {generateCoverLetter && (
-                      <div>
-                        <label htmlFor="resumePersonalInstructions" className="block text-sm font-medium mb-2">
-                          Personal Instructions (Optional)
-                        </label>
-                        <textarea
-                          id="resumePersonalInstructions"
-                          value={resumePersonalInstructions}
-                          onChange={(e) => setResumePersonalInstructions(e.target.value)}
-                          placeholder="Add specific instructions for your cover letter (e.g., 'Emphasize my leadership experience', 'Use an enthusiastic tone')..."
-                          rows={3}
-                          className="w-full px-3 py-2 border rounded-md text-sm"
-                          disabled={isGeneratingResume}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Provide custom guidance to personalize your cover letter
                         </p>
                       </div>
                     )}
@@ -585,16 +538,6 @@ export default function GeneratePage() {
                       showCard={true}
                       previewKey={Number(generatedResumeId)}
                     />
-
-                    {/* Cover Letter Section */}
-                    {generatedCoverLetterFromResume && (
-                      <CoverLetterEditor
-                        content={generatedCoverLetterFromResume}
-                        editable={true}
-                        resumeId={generatedResumeId}
-                        onSave={handleSaveCoverLetterFromResume}
-                      />
-                    )}
                   </div>
                 ) : (
                   <Card className="p-6 text-center">

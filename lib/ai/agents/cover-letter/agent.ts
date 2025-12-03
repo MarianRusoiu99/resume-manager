@@ -4,7 +4,7 @@
  * Generates personalized cover letters for job applications
  */
 
-import { generateObject } from 'ai';
+import { generateText } from 'ai';
 import { z } from 'zod';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { AIProvider } from '@/lib/ai/providers';
@@ -35,14 +35,16 @@ export interface GenerateCoverLetterInput {
  * 
  * Generates a personalized cover letter that connects the candidate's
  * experience to the job requirements in a compelling narrative.
+ * 
+ * Uses generateText instead of generateObject for broader model compatibility
+ * (GPT-4 doesn't support json_schema response format).
  */
 export async function generateCoverLetter(input: GenerateCoverLetterInput): Promise<CoverLetterResult> {
   const model = input.provider.createLanguageModel(input.modelId);
   const userName = input.userResume.basics?.name || input.optimizedResume.basics?.name || 'Applicant';
 
-  const result = await generateObject({
+  const result = await generateText({
     model,
-    schema: coverLetterSchema,
     system: COVER_LETTER_SYSTEM_PROMPT,
     prompt: formatCoverLetterPrompt({
       applicantName: userName,
@@ -54,5 +56,9 @@ export async function generateCoverLetter(input: GenerateCoverLetterInput): Prom
     }),
   });
 
-  return result.object;
+  // Return the generated text as the cover letter content
+  return {
+    content: result.text.trim(),
+    tone: 'professional', // Default tone since we're using text generation
+  };
 }

@@ -17,8 +17,7 @@ const generateResumeSchema = z.object({
   jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
   profileId: z.string().optional(),
   templateId: z.string().optional(),
-  generateCoverLetter: z.boolean().optional(),
-  personalInstructions: z.string().optional(),
+  modelId: z.string().optional(),
 });
 
 /**
@@ -58,12 +57,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { jobDescription, profileId, templateId, generateCoverLetter, personalInstructions } = validation.data;
+    const { jobDescription, profileId, templateId, modelId } = validation.data;
 
     logger.info('SSE: Resume generation started', {
       userId: session.user.id,
       profileId: profileId || 'default',
-      generateCoverLetter: !!generateCoverLetter,
     });
 
     // Create a readable stream for SSE
@@ -120,8 +118,7 @@ export async function POST(request: NextRequest) {
             jobDescription,
             profileId,
             templateId,
-            generateCoverLetter,
-            personalInstructions,
+            modelId,
             onProgress,
           });
 
@@ -139,7 +136,6 @@ export async function POST(request: NextRequest) {
             success: true,
             resumeId: result.data.resumeId,
             resume: result.data.resume,
-            coverLetter: result.data.coverLetter,
           });
 
           logger.info('SSE: Resume generation complete', { resumeId: result.data.resumeId });

@@ -47,7 +47,7 @@ export function useFetch<T>(
   const {
     initialData,
     immediate = true,
-    refetchOnFocus = true,
+    refetchOnFocus = false,
     transform,
     deps = [],
   } = options;
@@ -56,6 +56,9 @@ export function useFetch<T>(
   const [isLoading, setIsLoading] = useState(immediate && !!url);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  // Store transform in a ref to avoid dependency issues
+  const transformRef = useRef(transform);
+  transformRef.current = transform;
 
   const fetchData = useCallback(async () => {
     if (!url) return;
@@ -79,8 +82,8 @@ export function useFetch<T>(
 
       let result = await response.json();
       
-      if (transform) {
-        result = transform(result);
+      if (transformRef.current) {
+        result = transformRef.current(result);
       }
 
       setData(result);
@@ -92,7 +95,10 @@ export function useFetch<T>(
     } finally {
       setIsLoading(false);
     }
-  }, [url, transform]);
+  }, [url]);
+
+  // Serialize deps for stable comparison
+  const depsKey = JSON.stringify(deps);
 
   // Initial fetch
   useEffect(() => {
@@ -103,7 +109,8 @@ export function useFetch<T>(
     return () => {
       abortControllerRef.current?.abort();
     };
-  }, [url, immediate, fetchData, ...deps]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, immediate, fetchData, depsKey]);
 
   // Refetch on visibility change
   useEffect(() => {

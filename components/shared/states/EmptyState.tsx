@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { type ReactNode } from "react";
+import { type ReactNode, isValidElement } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, FolderOpen, type LucideIcon } from "lucide-react";
@@ -31,6 +31,23 @@ interface EmptyStateProps {
   withCard?: boolean;
   /** Additional class names */
   className?: string;
+}
+
+/**
+ * Helper function to check if a value is a valid React component (function or forwardRef)
+ */
+function isReactComponent(value: unknown): value is LucideIcon {
+  if (typeof value === 'function') return true;
+  // Check for forwardRef components (like Lucide icons)
+  if (
+    value !== null &&
+    typeof value === 'object' &&
+    '$$typeof' in value &&
+    typeof (value as { render?: unknown }).render === 'function'
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /**
@@ -68,11 +85,17 @@ export function EmptyState({
 }: EmptyStateProps) {
   // Handle both LucideIcon components and ReactNode icons
   const renderIcon = () => {
-    if (typeof IconProp === "function") {
+    // Check if it's already a valid React element (JSX)
+    if (isValidElement(IconProp)) {
+      return IconProp;
+    }
+    // Check if it's a React component (function or forwardRef like Lucide icons)
+    if (isReactComponent(IconProp)) {
       const Icon = IconProp as LucideIcon;
       return <Icon className="h-12 w-12 text-muted-foreground/50" />;
     }
-    return IconProp;
+    // Fallback to default icon
+    return <FolderOpen className="h-12 w-12 text-muted-foreground/50" />;
   };
 
   const hasActions = action || secondaryAction || secondaryActions.length > 0;

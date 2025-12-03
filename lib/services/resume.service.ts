@@ -1,7 +1,6 @@
 import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
 import { generateResume } from '@/lib/ai';
 import { profileService } from '@/lib/services/profile.service';
-import { coverLetterService } from '@/lib/services/cover-letter.service';
 import { resumesCache } from '@/lib/cache/resumes-cache';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { resumeSchema } from '@/lib/validations/jsonresume';
@@ -23,10 +22,6 @@ export interface GenerateResumeServiceInput {
   companyName?: string;
   /** Optional template ID to apply */
   templateId?: string;
-  /** Whether to generate a cover letter */
-  generateCoverLetter?: boolean;
-  /** Optional personal instructions for cover letter */
-  personalInstructions?: string;
   /** Optional AI model ID to use for generation */
   modelId?: string;
   /** Optional profile ID to use (defaults to user's default profile) */
@@ -62,8 +57,6 @@ export interface ResumeData {
 export interface GeneratedResumeData {
   resumeId: string;
   resume: ResumeData;
-  coverLetter?: string;
-  coverLetterId?: string;
 }
 
 /**
@@ -224,25 +217,6 @@ export class ResumeService {
     });
   }
 
-  private async saveCoverLetter(input: GenerateResumeServiceInput, workflowResult: unknown, validatedResume: Resume, extractedJobTitle: string, extractedCompanyName: string) {
-    const result = workflowResult as { coverLetter?: string; tokensUsed?: number };
-    if (!result.coverLetter) {
-      throw new Error('Cover letter content is missing from workflow result');
-    }
-    return await coverLetterService.createCoverLetter({
-      userId: input.userId,
-      content: result.coverLetter,
-      jobDescription: input.jobDescription,
-      jobTitle: extractedJobTitle,
-      companyName: extractedCompanyName,
-      metadata: {
-        model: typeof validatedResume.meta?.model === 'string' ? validatedResume.meta?.model : 'gpt-4o',
-        tokens: result.tokensUsed || 0,
-        generationTime: 0,
-        personalInstructions: input.personalInstructions,
-      },
-    });
-  }
   constructor(
     private readonly repository: GeneratedResumeRepository = generatedResumeRepository
   ) { }
@@ -283,8 +257,7 @@ export class ResumeService {
         modelId,
         jobDescription: input.jobDescription,
         userResume,
-        includeCoverLetter: input.generateCoverLetter,
-        personalInstructions: input.personalInstructions,
+        includeCoverLetter: false,
         userId: input.userId
       });
 
@@ -295,8 +268,6 @@ export class ResumeService {
 
       logger.info('Workflow completed successfully', {
         tokensUsed: workflowResult.tokensUsed || 0,
-        coverLetterGenerated: !!workflowResult.coverLetter,
-        coverLetterLength: workflowResult.coverLetter?.length
       });
 
       // Extract job title and company from AI analysis (if available)
@@ -314,24 +285,6 @@ export class ResumeService {
       // Invalidate cache after generating new resume
       this.invalidateCache(input.userId);
 
-      // Save cover letter if generated and link it to the resume
-      let coverLetterId: string | undefined;
-      if (workflowResult.coverLetter) {
-        logger.debug('Saving cover letter separately');
-        const coverLetterResult = await this.saveCoverLetter(input, workflowResult, validatedResume, extractedJobTitle, extractedCompanyName);
-        if (coverLetterResult.success && coverLetterResult.data?.id) {
-          coverLetterId = coverLetterResult.data.id;
-          logger.info('Cover letter saved', { coverLetterId });
-          // Link the cover letter to the resume
-          if (coverLetterId) {
-            await this.repository.linkCoverLetter(generatedResume.id, coverLetterId);
-            logger.debug('Cover letter linked to resume');
-          }
-        } else {
-          logger.error('Failed to save cover letter', { error: coverLetterResult.success ? undefined : coverLetterResult.error });
-        }
-      }
-
       return success({
         resumeId: generatedResume.id,
         resume: {
@@ -340,8 +293,6 @@ export class ResumeService {
           metadata: generatedResume.metadata as Record<string, unknown>,
           createdAt: generatedResume.createdAt
         },
-        coverLetter: workflowResult.coverLetter,
-        coverLetterId,
       });
     } catch (error) {
       logger.error('Resume generation error', error);
@@ -480,8 +431,7 @@ export class ResumeService {
         modelId,
         jobDescription: baseInput.jobDescription,
         userResume,
-        includeCoverLetter: baseInput.generateCoverLetter,
-        personalInstructions: baseInput.personalInstructions,
+        includeCoverLetter: false,
         userId: baseInput.userId
       });
 
@@ -492,8 +442,6 @@ export class ResumeService {
 
       logger.info('Workflow completed successfully', {
         tokensUsed: workflowResult.tokensUsed || 0,
-        coverLetterGenerated: !!workflowResult.coverLetter,
-        coverLetterLength: workflowResult.coverLetter?.length
       });
 
       onProgress('save', 'Saving resume to database...', 95);
@@ -536,7 +484,6 @@ export class ResumeService {
           metadata: generatedResume.metadata as Record<string, unknown>,
           createdAt: generatedResume.createdAt
         },
-        coverLetter: workflowResult.coverLetter
       });
     } catch (error) {
       logger.error('Resume generation with progress error', error);
@@ -825,6 +772,7 @@ export class ResumeService {
       logger.debug('Cover letter generated', { length: coverLetterResult.content.length });
 
       // Step 3: Save to database
+      const { coverLetterService } = await import('@/lib/services/cover-letter.service');
       const coverLetterData = {
         userId: input.userId,
         content: coverLetterResult.content,

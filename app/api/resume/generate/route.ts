@@ -22,8 +22,6 @@ const generateResumeSchema = z.object({
   profileId: z.string().optional(), // User profile to use as base
   templateId: z.string().optional(),
   modelId: z.string().optional(), // AI model to use
-  generateCoverLetter: z.boolean().optional(),
-  personalInstructions: z.string().optional(),
 });
 
 export const POST = createApiHandler(async (request, context, session) => {
@@ -50,12 +48,11 @@ export const POST = createApiHandler(async (request, context, session) => {
     );
   }
 
-  const { jobDescription, profileId, templateId, modelId, generateCoverLetter, personalInstructions } = validation.data;
+  const { jobDescription, profileId, templateId, modelId } = validation.data;
 
   logger.info(`API: Resume generation request`, {
     userId: session.user.id,
     model: modelId || 'default',
-    coverLetter: generateCoverLetter
   });
 
   // Generate resume (job title and company name will be extracted from description)
@@ -66,8 +63,6 @@ export const POST = createApiHandler(async (request, context, session) => {
     profileId,
     templateId,
     modelId,
-    generateCoverLetter,
-    personalInstructions
   });
 
   if (!result.success) {
@@ -82,16 +77,11 @@ export const POST = createApiHandler(async (request, context, session) => {
   }
 
   logger.info(`API: Resume generated successfully`, { resumeId: result.data.resumeId });
-  if (result.data.coverLetterId) {
-    logger.info(`API: Cover letter saved`, { coverLetterId: result.data.coverLetterId });
-  }
 
   const response = NextResponse.json({
     success: true,
     resumeId: result.data.resumeId,
     resume: result.data.resume,
-    coverLetter: result.data.coverLetter,
-    coverLetterId: result.data.coverLetterId
   }, { status: 201 });
 
   return rateLimitCheck.addHeaders(response) as NextResponse;

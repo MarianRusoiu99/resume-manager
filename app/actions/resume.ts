@@ -67,8 +67,6 @@ export const generateResume = withServerAction(
         options?: {
             jobTitle?: string;
             companyName?: string;
-            generateCoverLetter?: boolean;
-            personalInstructions?: string;
         }
     ) => {
         const input: GenerateResumeServiceInput = {
@@ -78,8 +76,6 @@ export const generateResume = withServerAction(
             modelId,
             jobTitle: options?.jobTitle,
             companyName: options?.companyName,
-            generateCoverLetter: options?.generateCoverLetter,
-            personalInstructions: options?.personalInstructions,
         };
 
         const result = await resumeService.generateResume(input);

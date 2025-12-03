@@ -21,16 +21,18 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      // Scripts: self + inline (required for Next.js)
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-      // Styles: self + inline (required for styled components and dynamic styles)
-      "style-src 'self' 'unsafe-inline'",
+      // Scripts: self + inline (required for Next.js) + Monaco CDN
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net",
+      // Styles: self + inline (required for styled components and dynamic styles) + Monaco CDN
+      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
       // Images: self + data URIs (for inline images) + https (for external images)
       "img-src 'self' data: https:",
-      // Fonts: self + Google Fonts
-      "font-src 'self' https://fonts.gstatic.com",
-      // Connections: self + OpenAI API + other allowed APIs
-      "connect-src 'self' https://api.openai.com https://fonts.googleapis.com",
+      // Fonts: self + Google Fonts + Monaco CDN
+      "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
+      // Connections: self + OpenAI API + other allowed APIs + Monaco CDN
+      "connect-src 'self' https://api.openai.com https://fonts.googleapis.com https://cdn.jsdelivr.net",
+      // Workers: self + blob (required for Monaco Editor web workers)
+      "worker-src 'self' blob:",
       // Frames: none (prevent embedding in iframes)
       "frame-ancestors 'none'",
       // Forms: self only
