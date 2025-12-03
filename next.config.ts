@@ -72,6 +72,18 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   output: 'standalone', // Enable for Docker builds
   
+  // Transpile packages that use CSS imports in node_modules
+  // Required for BlockNote and Mantine dependencies in Docker builds
+  transpilePackages: [
+    '@blocknote/core',
+    '@blocknote/react',
+    '@blocknote/mantine',
+    '@mantine/core',
+    '@mantine/hooks',
+    '@tiptap/extension-gapcursor',
+    '@tiptap/extension-history',
+  ],
+  
   // Apply security headers to all routes
   async headers() {
     return [
