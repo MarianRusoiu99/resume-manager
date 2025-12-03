@@ -51,14 +51,14 @@ export const PUBLIC_API_ROUTES = [
  * Check if a path is a public route
  */
 export function isPublicRoute(pathname: string): boolean {
-  return PUBLIC_ROUTES.some(route => pathname === route);
+  return (PUBLIC_ROUTES as readonly string[]).includes(pathname);
 }
 
 /**
- * Check if a path is an auth route (login/register)
+ * Check if the pathname is an auth route (login/register)
  */
 export function isAuthRoute(pathname: string): boolean {
-  return AUTH_ROUTES.some(route => pathname === route);
+  return (AUTH_ROUTES as readonly string[]).includes(pathname);
 }
 
 /**

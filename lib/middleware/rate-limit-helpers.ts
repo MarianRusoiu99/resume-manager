@@ -133,4 +133,4 @@ export function withAuthRateLimit(
 /**
  * Export rate limit configs for easy access
  */
-export { RateLimitConfigs };
+export { RateLimitConfigs } from './rate-limit';

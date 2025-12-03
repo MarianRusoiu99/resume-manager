@@ -15,8 +15,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import {
-  PUBLIC_ROUTES,
-  AUTH_ROUTES,
   DEFAULT_LOGIN_REDIRECT,
   DEFAULT_AUTH_REDIRECT,
   shouldSkipProxy,
@@ -96,6 +94,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - Files with extensions (images, fonts, etc.)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
+    String.raw`/((?!_next/static|_next/image|favicon.ico|.*\..*).*)`,
   ],
 };

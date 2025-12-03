@@ -13,7 +13,7 @@ import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-he
 import { logger } from '@/lib/utils/logger';
 import { profileService } from '@/lib/services/profile.service';
 import { apiProviderService } from '@/lib/services/api-provider.service';
-import { resumeSchema, type Resume } from '@/lib/validations/jsonresume';
+import { resumeSchema } from '@/lib/validations/jsonresume';
 import { generateResume } from '@/lib/ai';
 import { getWorkflow, createCustomWorkflow } from '@/lib/ai/workflow';
 import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';

@@ -12,7 +12,6 @@
 import { signIn, signOut } from '@/lib/auth/config';
 import { prisma } from '@/lib/db';
 import { hashPassword } from '@/lib/auth/password';
-import { redirect } from 'next/navigation';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import {
   loginSchema,

@@ -1,7 +1,7 @@
 import { getSession, getVerifiedSession } from "@/lib/auth/dal";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
-import { z, ZodError, ZodSchema } from "zod";
+import { ZodError, ZodSchema } from "zod";
 import { errorCodeToStatus, ServiceErrorCode } from "@/lib/types/service-result";
 import { applyRateLimit, getClientIdentifier, addRateLimitHeaders, RateLimitConfigs, type RateLimitConfig } from "@/lib/middleware/rate-limit";
 

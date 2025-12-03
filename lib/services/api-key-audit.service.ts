@@ -49,7 +49,7 @@ class ApiKeyAuditService {
           userId: context.userId,
           ipAddress: context.ipAddress || null,
           userAgent: context.userAgent ? context.userAgent.substring(0, 500) : null,
-          metadata: metadata ? JSON.parse(JSON.stringify(metadata)) : undefined,
+          metadata: metadata as object ?? undefined,
           success,
           errorMessage: errorMessage || null,
         },

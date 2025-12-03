@@ -136,14 +136,21 @@ export const requireUserId = cache(async (): Promise<string> => {
 
 /**
  * Check if user has a specific role.
- * Extend this when you add role-based access control.
+ * 
+ * Note: Role-based access control is not yet implemented.
+ * This function currently returns true for all authenticated users.
+ * When roles are added to the User schema, this should be updated to
+ * check against the user's actual roles.
+ * 
+ * @param requiredRole - The role to check for (currently unused)
+ * @returns true if user is authenticated, false otherwise
  */
-export const checkRole = cache(async (requiredRole: string): Promise<boolean> => {
+export const checkRole = cache(async (_requiredRole: string): Promise<boolean> => {
   const session = await getSession();
   if (!session) return false;
   
-  // TODO: Implement role checking when roles are added to the schema
-  // For now, return true for authenticated users
+  // Role checking not yet implemented - return true for authenticated users
+  // Future implementation: query user.roles and check if requiredRole is included
   return true;
 });
 
