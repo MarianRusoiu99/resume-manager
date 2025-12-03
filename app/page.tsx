@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth/config";
+import { getSession } from "@/lib/auth/dal";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export default async function Home() {
-  const session = await auth();
+  // Use DAL to check session (doesn't redirect if not authenticated)
+  const session = await getSession();
 
   // If logged in, redirect to dashboard
   if (session) {

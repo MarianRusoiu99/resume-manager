@@ -7,7 +7,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { auth } from '@/lib/auth/config';
+import { getSession } from '@/lib/auth/dal';
 import { z } from 'zod';
 import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-helpers';
 import { logger } from '@/lib/utils/logger';
@@ -79,9 +79,9 @@ export async function POST(request: NextRequest) {
       return rateLimitCheck.response!;
     }
 
-    // Check authentication
-    const session = await auth();
-    if (!session?.user?.id) {
+    // Check authentication via DAL
+    const session = await getSession();
+    if (!session?.userId) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { 'Content-Type': 'application/json' } }
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { jobDescription, profileId, templateId, modelId, workflowType, customSteps } = validation.data;
-    const userId = session.user.id;
+    const userId = session.userId;
 
     logger.info('SSE: Resume generation started', {
       userId,

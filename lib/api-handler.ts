@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth/config";
+import { getSession } from "@/lib/auth/dal";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
 import { z, ZodError, ZodSchema } from "zod";
@@ -51,11 +51,11 @@ export function createApiHandler<T = unknown, TBody = unknown>(
         const reqLogger = logger.forRequest(requestId);
 
         try {
-            // Authentication check
+            // Authentication check via DAL
             let session = null;
             if (!options.isPublic) {
-                session = await auth();
-                if (!session?.user?.id) {
+                session = await getSession();
+                if (!session?.userId) {
                     reqLogger.warn(`Unauthorized access attempt to ${method} ${url}`);
                     return NextResponse.json(
                         { error: "Unauthorized", requestId },
@@ -78,11 +78,20 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                 }
             }
 
+            // Map DAL session to expected Session format
+            const apiSession = session ? {
+                user: {
+                    id: session.userId,
+                    email: session.email,
+                    name: session.name,
+                }
+            } : null;
+
             // Execute handler
             const response = await handler(
                 request, 
                 context, 
-                session as unknown as Session,
+                apiSession as unknown as Session,
                 body
             );
 
@@ -91,7 +100,7 @@ export function createApiHandler<T = unknown, TBody = unknown>(
             reqLogger.info(`API Request ${method} ${url}`, {
                 duration,
                 status: response.status,
-                userId: session?.user?.id,
+                userId: session?.userId,
             });
 
             return response;

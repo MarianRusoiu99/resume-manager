@@ -2,7 +2,7 @@
  * Server Action Wrapper
  * 
  * Provides a unified wrapper for all server actions that:
- * - Handles authentication consistently
+ * - Handles authentication consistently via DAL
  * - Adds structured logging
  * - Provides consistent error handling
  * - Integrates with audit logging
@@ -18,7 +18,7 @@
  * ```
  */
 
-import { auth } from '@/lib/auth/config';
+import { getSession } from '@/lib/auth/dal';
 import { logger } from '@/lib/utils';
 import { auditLog } from '@/lib/services/audit-log.service';
 import { revalidatePath } from 'next/cache';
@@ -76,19 +76,19 @@ export function withServerAction<TArgs extends unknown[], TResult>(
     const startTime = Date.now();
 
     try {
-      // Authentication check
-      const session = await auth();
+      // Authentication check via DAL
+      const session = await getSession();
       
-      if (!options.isPublic && !session?.user?.id) {
+      if (!options.isPublic && !session?.userId) {
         logger.warn(`Unauthorized ${actionName} attempt`);
         return { success: false, error: 'Unauthorized' };
       }
 
       const actionSession: ActionSession = {
         user: {
-          id: session?.user?.id || '',
-          email: session?.user?.email,
-          name: session?.user?.name,
+          id: session?.userId || '',
+          email: session?.email,
+          name: session?.name,
         },
       };
 
@@ -112,9 +112,9 @@ export function withServerAction<TArgs extends unknown[], TResult>(
       }
 
       // Audit log if configured
-      if (options.auditAction && session?.user?.id) {
+      if (options.auditAction && session?.userId) {
         const resourceId = extractResourceId(result);
-        auditLog.success(options.auditAction, session.user.id, {
+        auditLog.success(options.auditAction, session.userId, {
           resourceType: options.resourceType,
           resourceId,
           metadata: { duration },
@@ -133,10 +133,10 @@ export function withServerAction<TArgs extends unknown[], TResult>(
 
       // Audit log failure if configured
       if (options.auditAction) {
-        const session = await auth().catch(() => null);
+        const session = await getSession().catch(() => null);
         auditLog.failure(
           options.auditAction,
-          session?.user?.id,
+          session?.userId,
           errorMessage,
           {
             resourceType: options.resourceType,

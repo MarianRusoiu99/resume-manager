@@ -6,18 +6,14 @@
 import { Page } from "@/components/layout/Page";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
 import { profileService } from "@/lib/services/profile.service";
-import { auth } from "@/lib/auth/config";
-import { redirect } from "next/navigation";
+import { verifySession } from "@/lib/auth/dal";
 import type { Resume } from "@/lib/validations/jsonresume";
 
 export default async function ProfilesPage() {
-  const session = await auth();
-  
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  // Use DAL for auth - will redirect if not authenticated
+  const session = await verifySession();
 
-  const result = await profileService.getProfiles(session.user.id);
+  const result = await profileService.getProfiles(session.userId);
   
   if (!result.success) {
     throw new Error(result.error);
