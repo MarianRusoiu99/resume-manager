@@ -16,6 +16,7 @@ import {
   Monitor,
   ChevronUp,
   Briefcase,
+  LayoutDashboard,
 } from "lucide-react"
 import { useTheme } from "@/contexts/ThemeContext"
 import { signOut } from "next-auth/react"
@@ -49,6 +50,11 @@ import {
 
 // Navigation items (flat structure, no grouping)
 const navigationItems = [
+  {
+    title: "Dashboard",
+    url: "/dashboard",
+    icon: LayoutDashboard,
+  },
   {
     title: "Profile",
     url: "/profile",

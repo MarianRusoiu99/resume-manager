@@ -25,7 +25,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { GalleryCardPreview } from '@/components/ui/GalleryCardPreview';
+import { GalleryCardPreview } from '@/components/shared/GalleryCardPreview';
 
 /**
  * Action item for dropdown menu
@@ -53,44 +53,44 @@ export interface GalleryCardMetadata {
 export interface GalleryCardProps {
   /** Unique identifier */
   id: string;
-  
+
   /** Main title */
   title: string;
-  
+
   /** Subtitle/description */
   subtitle?: string;
-  
+
   /** Route to navigate when card is clicked */
   href: string;
-  
+
   /** Preview HTML content for thumbnail */
   previewHtml?: string;
-  
+
   /** Loading state for preview */
   isPreviewLoading?: boolean;
-  
+
   /** Fallback icon when no preview available */
   previewFallbackIcon?: ReactNode;
-  
+
   /** Badges to display (e.g., "Default", "Draft") */
   badges?: Array<{
     label: string;
     variant?: 'default' | 'secondary' | 'destructive' | 'outline';
     icon?: ReactNode;
   }>;
-  
+
   /** Metadata items to display at bottom */
   metadata?: GalleryCardMetadata[];
-  
+
   /** Actions for dropdown menu */
   actions?: GalleryCardAction[];
-  
+
   /** Custom class name */
   className?: string;
-  
+
   /** Disable card click navigation */
   disableNavigation?: boolean;
-  
+
   /** Layout orientation: horizontal (preview left) or vertical (preview top) */
   layout?: 'horizontal' | 'vertical';
 }
@@ -139,9 +139,8 @@ export function GalleryCard({
   // Square card with horizontal layout (preview left, content right)
   return (
     <Card
-      className={`group hover:shadow-lg transition-shadow ${
-        disableNavigation ? '' : 'cursor-pointer'
-      } relative overflow-hidden aspect-[3/2] flex ${className}`}
+      className={`group hover:shadow-lg transition-shadow ${disableNavigation ? '' : 'cursor-pointer'
+        } relative overflow-hidden aspect-[3/2] flex ${className}`}
       onClick={handleCardClick}
     >
       {/* Preview Area - Left Half (50%) */}

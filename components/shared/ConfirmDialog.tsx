@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Button } from './button';
+import { Button } from "@/components/ui/button";
 
 export interface ConfirmDialogProps {
   isOpen: boolean;

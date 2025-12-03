@@ -3,8 +3,7 @@
  * Browse and manage all your professional profiles
  */
 
-import { PageHeader } from "@/components/layout/PageHeader";
-import { PageContainer } from "@/components/layout/PageContainer";
+import { Page } from "@/components/layout/Page";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
 import { profileService } from "@/lib/services/profile.service";
 import { auth } from "@/lib/auth/config";
@@ -40,18 +39,13 @@ export default async function ProfilesPage() {
   }));
 
   return (
-    <>
-      <PageHeader
-        title="Professional Profiles"
-        description="Manage your professional profiles for targeted resume generation"
-        breadcrumbs={[
-          { label: "Profiles" },
-        ]}
-      />
-      <PageContainer>
-        <ProfileGallery initialProfiles={profiles} />
-      </PageContainer>
-    </>
+    <Page
+      title="Professional Profiles"
+      description="Manage your professional profiles for targeted resume generation"
+      breadcrumbs={[{ label: "Profiles" }]}
+    >
+      <ProfileGallery initialProfiles={profiles} />
+    </Page>
   );
 }
 

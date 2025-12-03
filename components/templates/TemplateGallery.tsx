@@ -9,15 +9,16 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { TemplateCard } from './TemplateCard';
+import { Gallery, type GalleryFilterOption } from '@/components/shared/Gallery';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, FileText } from 'lucide-react';
 
 interface TemplateGalleryProps {
   templates: ResumeTemplate[];
   showAdminActions?: boolean;
 }
 
-const categories = [
+const categoryFilters: GalleryFilterOption[] = [
   { value: 'all', label: 'All Templates' },
   { value: 'professional', label: 'Professional' },
   { value: 'modern', label: 'Modern' },
@@ -35,50 +36,42 @@ export function TemplateGallery({ templates, showAdminActions = false }: Templat
       ? templates
       : templates.filter((t) => t.category === selectedCategory);
 
+  const headerActions = showAdminActions ? (
+    <Button onClick={() => router.push('/templates/new')}>
+      <Plus className="mr-2 h-4 w-4" />
+      Create Template
+    </Button>
+  ) : null;
+
   return (
-    <div>
-      {/* Header with Create Button */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex flex-wrap gap-2">
-          {categories.map((category) => (
-            <button
-              key={category.value}
-              onClick={() => setSelectedCategory(category.value)}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedCategory === category.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {category.label}
-            </button>
-          ))}
-        </div>
-
-        {showAdminActions && (
-          <Button onClick={() => router.push('/templates/new')}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Template
-          </Button>
-        )}
-      </div>
-
-      {/* Template Grid */}
-      {filteredTemplates.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          No templates found in this category
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredTemplates.map((template) => (
-            <TemplateCard 
-              key={template.id} 
-              template={template}
-              showAdminActions={showAdminActions}
-            />
-          ))}
-        </div>
+    <Gallery
+      items={filteredTemplates}
+      getItemKey={(template) => template.id}
+      emptyState={{
+        icon: FileText,
+        title: "No templates found",
+        description: selectedCategory === 'all'
+          ? "No templates are available"
+          : `No templates found in the "${selectedCategory}" category`,
+        action: showAdminActions
+          ? {
+              label: "Create Template",
+              onClick: () => router.push('/templates/new'),
+              icon: <Plus className="h-4 w-4" />,
+            }
+          : undefined,
+      }}
+      filters={categoryFilters}
+      selectedFilter={selectedCategory}
+      onFilterChange={setSelectedCategory}
+      headerActions={headerActions}
+      renderItem={(template) => (
+        <TemplateCard
+          key={template.id}
+          template={template}
+          showAdminActions={showAdminActions}
+        />
       )}
-    </div>
+    />
   );
 }

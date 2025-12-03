@@ -1,12 +1,9 @@
 "use client";
 
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { SimpleFormField } from "@/components/ui/simple-form-field";
 import type { Publication } from "@/lib/validations/jsonresume";
-import { Trash2, Plus } from "lucide-react";
+import { useListForm } from "@/hooks/use-list-form";
+import { FormList } from "@/components/ui/form-list";
 
 interface PublicationsFormProps {
   publications: Publication[];
@@ -14,110 +11,75 @@ interface PublicationsFormProps {
 }
 
 export function PublicationsForm({ publications, onChange }: PublicationsFormProps) {
-  // Use publications directly from props - controlled component pattern
-  const publicationsList = publications;
-
-  const handleAddPublication = () => {
-    const newPublication: Publication = {
+  const { items, addItem, removeItem, updateItem } = useListForm<Publication>({
+    initialItems: publications,
+    onChange,
+    newItemTemplate: {
       name: "",
       publisher: "",
       releaseDate: "",
       url: "",
       summary: "",
-    };
-    onChange([...publicationsList, newPublication]);
-  };
-
-  const handleRemovePublication = (index: number) => {
-    onChange(publicationsList.filter((_, i) => i !== index));
-  };
-
-  const handlePublicationChange = (index: number, field: keyof NonNullable<Publication>, value: string) => {
-    const updated = publicationsList.map((pub, i) => {
-      if (i === index && pub) {
-        return { ...pub, [field]: value };
-      }
-      return pub;
-    });
-    onChange(updated);
-  };
+    },
+  });
 
   return (
-    <div className="space-y-6">
-      {publicationsList.filter(pub => pub).map((pub, index) => (
-        <div key={index} className="border rounded-md p-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Publication {index + 1}</h3>
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={() => handleRemovePublication(index)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+    <FormList
+      items={items}
+      onAdd={addItem}
+      onRemove={removeItem}
+      addButtonText="Add Publication"
+      emptyMessage="No publications added yet. Click 'Add Publication' to showcase your work."
+      renderItem={(pub, index) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SimpleFormField
+            id={`publication-name-${index}`}
+            label="Publication Name"
+            value={pub.name || ""}
+            onChange={(value) => updateItem(index, "name", value)}
+            placeholder="Research Paper Title"
+            required
+          />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`publication-name-${index}`}>Publication Name *</Label>
-              <Input
-                id={`publication-name-${index}`}
-                value={pub!.name || ""}
-                onChange={(e) => handlePublicationChange(index, "name", e.target.value)}
-                placeholder="Research Paper Title"
-              />
-            </div>
+          <SimpleFormField
+            id={`publication-publisher-${index}`}
+            label="Publisher"
+            value={pub.publisher || ""}
+            onChange={(value) => updateItem(index, "publisher", value)}
+            placeholder="Journal Name or Publisher"
+            required
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`publication-publisher-${index}`}>Publisher *</Label>
-              <Input
-                id={`publication-publisher-${index}`}
-                value={pub!.publisher || ""}
-                onChange={(e) => handlePublicationChange(index, "publisher", e.target.value)}
-                placeholder="Journal Name or Publisher"
-              />
-            </div>
-          </div>
+          <SimpleFormField
+            id={`publication-releaseDate-${index}`}
+            label="Release Date"
+            value={pub.releaseDate || ""}
+            onChange={(value) => updateItem(index, "releaseDate", value)}
+            type="date"
+          />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`publication-releaseDate-${index}`}>Release Date</Label>
-              <Input
-                id={`publication-releaseDate-${index}`}
-                type="date"
-                value={pub!.releaseDate || ""}
-                onChange={(e) => handlePublicationChange(index, "releaseDate", e.target.value)}
-              />
-            </div>
+          <SimpleFormField
+            id={`publication-url-${index}`}
+            label="URL"
+            value={pub.url || ""}
+            onChange={(value) => updateItem(index, "url", value)}
+            type="url"
+            placeholder="https://publication-url.com"
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`publication-url-${index}`}>URL</Label>
-              <Input
-                id={`publication-url-${index}`}
-                value={pub!.url || ""}
-                onChange={(e) => handlePublicationChange(index, "url", e.target.value)}
-                placeholder="https://publication-url.com"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor={`publication-summary-${index}`}>Summary</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormField
               id={`publication-summary-${index}`}
-              value={pub!.summary || ""}
-              onChange={(e) => handlePublicationChange(index, "summary", e.target.value)}
-              placeholder="Brief description of the publication and its significance"
+              label="Summary"
+              value={pub.summary || ""}
+              onChange={(value) => updateItem(index, "summary", value)}
+              type="textarea"
               rows={3}
+              placeholder="Brief description of the publication and its significance"
             />
           </div>
         </div>
-      ))}
-
-      <Button type="button" onClick={handleAddPublication} variant="outline" className="w-full">
-        <Plus className="mr-2 h-4 w-4" /> Add Publication
-      </Button>
-    </div>
+      )}
+    />
   );
 }

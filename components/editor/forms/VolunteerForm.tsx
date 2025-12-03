@@ -1,8 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { SimpleFormField, SimpleFormFieldList } from "@/components/ui/simple-form-field";
 import type { Volunteer } from "@/lib/validations/jsonresume";
 import { useListForm } from "@/hooks/use-list-form";
 import { FormList } from "@/components/ui/form-list";
@@ -35,83 +33,75 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
       addButtonText="Add Volunteer Experience"
       emptyMessage="No volunteer experience added yet. Click 'Add Volunteer Experience' to get started."
       renderItem={(vol, index) => (
-        <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`volunteer-organization-${index}`}>Organization *</Label>
-              <Input
-                id={`volunteer-organization-${index}`}
-                value={vol.organization || ""}
-                onChange={(e) => updateItem(index, "organization", e.target.value)}
-                placeholder="Red Cross"
-              />
-            </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SimpleFormField
+            id={`volunteer-organization-${index}`}
+            label="Organization"
+            value={vol.organization || ""}
+            onChange={(value) => updateItem(index, "organization", value)}
+            placeholder="Red Cross"
+            required
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`volunteer-position-${index}`}>Position *</Label>
-              <Input
-                id={`volunteer-position-${index}`}
-                value={vol.position || ""}
-                onChange={(e) => updateItem(index, "position", e.target.value)}
-                placeholder="Volunteer Coordinator"
-              />
-            </div>
-          </div>
+          <SimpleFormField
+            id={`volunteer-position-${index}`}
+            label="Position"
+            value={vol.position || ""}
+            onChange={(value) => updateItem(index, "position", value)}
+            placeholder="Volunteer Coordinator"
+            required
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`volunteer-url-${index}`}>Website URL</Label>
-            <Input
+          <div className="sm:col-span-2">
+            <SimpleFormField
               id={`volunteer-url-${index}`}
+              label="Website URL"
               value={vol.url || ""}
-              onChange={(e) => updateItem(index, "url", e.target.value)}
+              onChange={(value) => updateItem(index, "url", value)}
+              type="url"
               placeholder="https://organization-website.org"
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`volunteer-startDate-${index}`}>Start Date</Label>
-              <Input
-                id={`volunteer-startDate-${index}`}
-                type="date"
-                value={vol.startDate || ""}
-                onChange={(e) => updateItem(index, "startDate", e.target.value)}
-              />
-            </div>
+          <SimpleFormField
+            id={`volunteer-startDate-${index}`}
+            label="Start Date"
+            value={vol.startDate || ""}
+            onChange={(value) => updateItem(index, "startDate", value)}
+            type="date"
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`volunteer-endDate-${index}`}>End Date</Label>
-              <Input
-                id={`volunteer-endDate-${index}`}
-                type="date"
-                value={vol.endDate || ""}
-                onChange={(e) => updateItem(index, "endDate", e.target.value)}
-              />
-            </div>
-          </div>
+          <SimpleFormField
+            id={`volunteer-endDate-${index}`}
+            label="End Date"
+            value={vol.endDate || ""}
+            onChange={(value) => updateItem(index, "endDate", value)}
+            type="date"
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`volunteer-summary-${index}`}>Summary</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormField
               id={`volunteer-summary-${index}`}
+              label="Summary"
               value={vol.summary || ""}
-              onChange={(e) => updateItem(index, "summary", e.target.value)}
-              placeholder="Brief description of your volunteer work"
+              onChange={(value) => updateItem(index, "summary", value)}
+              type="textarea"
               rows={3}
+              placeholder="Brief description of your volunteer work"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={`volunteer-highlights-${index}`}>Highlights (one per line)</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormFieldList
               id={`volunteer-highlights-${index}`}
-              value={(vol.highlights || []).join("\n")}
-              onChange={(e) => {
-                const highlights = e.target.value.split("\n").filter((item) => item.trim() !== "");
-                updateItem(index, "highlights", highlights);
-              }}
-              placeholder="Organized fundraising events&#10;Managed team of 15 volunteers"
+              label="Highlights"
+              value={vol.highlights || []}
+              onChange={(value) => updateItem(index, "highlights", value)}
+              separator="newline"
+              type="textarea"
               rows={4}
+              placeholder="Organized fundraising events&#10;Managed team of 15 volunteers"
+              description="One highlight per line"
             />
           </div>
         </div>

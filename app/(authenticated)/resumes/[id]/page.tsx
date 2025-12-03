@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Edit } from 'lucide-react';
@@ -116,7 +116,7 @@ export default function ResumeDetailPage() {
       setError(null);
 
       const response = await fetch(`/api/resume/${resumeId}`);
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error('Resume not found');
@@ -134,7 +134,7 @@ export default function ResumeDetailPage() {
     }
   };
 
-  
+
 
   useEffect(() => {
     if (resumeId) {
@@ -150,7 +150,7 @@ export default function ResumeDetailPage() {
   const confirmDelete = async () => {
     try {
       setIsDeleting(true);
-      
+
       const response = await fetch(`/api/resume/${resumeId}`, {
         method: 'DELETE',
       });
@@ -176,7 +176,7 @@ export default function ResumeDetailPage() {
   const handleDuplicate = async () => {
     try {
       setIsDuplicating(true);
-      
+
       const response = await fetch(`/api/resume/${resumeId}/duplicate`, {
         method: 'POST',
       });
@@ -187,7 +187,7 @@ export default function ResumeDetailPage() {
 
       const data = await response.json();
       toast.success('Resume duplicated successfully');
-      
+
       // Redirect to the duplicated resume
       router.push(`/resumes/${data.resume.id}`);
     } catch (err) {
@@ -197,7 +197,7 @@ export default function ResumeDetailPage() {
     }
   };
 
-  
+
 
   const handleSaveCoverLetter = async (markdown: string) => {
     try {
@@ -219,7 +219,7 @@ export default function ResumeDetailPage() {
       }
 
       const data = await response.json();
-      
+
       // Update local state
       if (resume) {
         setResume({
@@ -228,7 +228,7 @@ export default function ResumeDetailPage() {
           updatedAt: data.resume.updatedAt,
         });
       }
-      
+
       toast.success('Cover letter saved successfully');
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to save cover letter';
@@ -300,8 +300,8 @@ export default function ResumeDetailPage() {
                 Edit Resume
               </Button>
             </Link>
-  
-      
+
+
             <Button
               onClick={handleDuplicate}
               variant="secondary"
@@ -321,47 +321,47 @@ export default function ResumeDetailPage() {
         </div>
 
         {/* Resume HTML Preview */}
-      <ResumePreview
-        resumeData={resume.content}
-        resumeId={resumeId}
-        showCard={true}
-        showTemplateSelector={true}
-        previewKey={pdfPreviewKey}
-        className="mb-6 no-print"
-      />
-
-      {/* Job Description */}
-      <Card className="p-6 mb-6 no-print">
-        <h2 className="text-lg font-semibold mb-3">Job Description</h2>
-        <p className=" whitespace-pre-wrap">{resume.jobDescription}</p>
-      </Card>
-
-      {/* Cover Letter (if generated) */}
-      {resume.coverLetter && (
-        <CoverLetterEditor
-          content={resume.coverLetter}
-          editable={true}
+        <ResumePreview
+          resumeData={resume.content}
           resumeId={resumeId}
-          onSave={handleSaveCoverLetter}
+          showCard={true}
+          showTemplateSelector={true}
+          previewKey={pdfPreviewKey}
           className="mb-6 no-print"
         />
-      )}
 
-      
+        {/* Job Description */}
+        <Card className="p-6 mb-6 no-print">
+          <h2 className="text-lg font-semibold mb-3">Job Description</h2>
+          <p className=" whitespace-pre-wrap">{resume.jobDescription}</p>
+        </Card>
 
-      {/* Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={deleteDialogOpen}
-        title="Delete Resume"
-        message="Are you sure you want to delete this resume? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-      />
+        {/* Cover Letter (if generated) */}
+        {resume.coverLetter && (
+          <CoverLetterEditor
+            content={resume.coverLetter}
+            editable={true}
+            resumeId={resumeId}
+            onSave={handleSaveCoverLetter}
+            className="mb-6 no-print"
+          />
+        )}
 
-      {/* TODO: Re-enable after VersionHistory is updated for JSON Resume format
+
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={deleteDialogOpen}
+          title="Delete Resume"
+          message="Are you sure you want to delete this resume? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="danger"
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
+
+        {/* TODO: Re-enable after VersionHistory is updated for JSON Resume format
       {isVersionHistoryOpen && resume.content && (
         <VersionHistory
           currentContent={resume.content}

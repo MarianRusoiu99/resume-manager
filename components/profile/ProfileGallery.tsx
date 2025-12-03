@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { ProfileCard } from "./ProfileCard";
 import { ResumeImportButton } from "./ResumeImportButton";
 import { Button } from "@/components/ui";
-import { Plus } from "lucide-react";
+import { Gallery } from "@/components/shared/Gallery";
+import { Plus, User } from "lucide-react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createProfile } from "@/app/actions/profile";
@@ -131,54 +132,51 @@ export function ProfileGallery({ initialProfiles }: ProfileGalleryProps) {
     });
   };
 
-  if (profiles.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <h3 className="text-2xl font-semibold mb-2">No profiles yet</h3>
-        <p className="text-muted-foreground mb-6">
-          Create your first profile or import an existing resume
-        </p>
-        <div className="flex gap-3">
-          <Button onClick={handleCreateProfile} disabled={isPending} size="lg">
-            <Plus className="h-5 w-5 mr-2" />
-            {isPending ? "Creating..." : "Create Profile"}
-          </Button>
-          <ResumeImportButton onImportSuccess={handleImportSuccess} />
-        </div>
-      </div>
-    );
-  }
+  // Header actions for the gallery
+  const headerActions = (
+    <div className="flex gap-2">
+      <ResumeImportButton onImportSuccess={handleImportSuccess} />
+      <Button onClick={handleCreateProfile} disabled={isPending}>
+        <Plus className="h-4 w-4 mr-2" />
+        {isPending ? "Creating..." : "New Profile"}
+      </Button>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <p className="text-muted-foreground">
-          {profiles.length} {profiles.length === 1 ? "profile" : "profiles"}
-        </p>
-        <div className="flex gap-2">
+    <Gallery
+      items={profiles}
+      getItemKey={(profile) => profile.id}
+      emptyState={{
+        icon: User,
+        title: "No profiles yet",
+        description: "Create your first profile or import an existing resume",
+        action: {
+          label: isPending ? "Creating..." : "Create Profile",
+          onClick: handleCreateProfile,
+          icon: <Plus className="h-5 w-5" />,
+          disabled: isPending,
+        },
+        secondaryAction: (
           <ResumeImportButton onImportSuccess={handleImportSuccess} />
-          <Button onClick={handleCreateProfile} disabled={isPending}>
-            <Plus className="h-4 w-4 mr-2" />
-            {isPending ? "Creating..." : "New Profile"}
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {profiles.map((profile) => (
-          <ProfileCard
-            key={profile.id}
-            id={profile.id}
-            name={profile.name}
-            isDefault={profile.isDefault}
-            resumeData={profile.resume}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onDuplicate={handleDuplicate}
-            onSetDefault={handleSetDefault}
-          />
-        ))}
-      </div>
-    </div>
+        ),
+      }}
+      headerActions={headerActions}
+      showCount
+      countLabel={{ singular: "profile", plural: "profiles" }}
+      renderItem={(profile) => (
+        <ProfileCard
+          key={profile.id}
+          id={profile.id}
+          name={profile.name}
+          isDefault={profile.isDefault}
+          resumeData={profile.resume}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onDuplicate={handleDuplicate}
+          onSetDefault={handleSetDefault}
+        />
+      )}
+    />
   );
 }

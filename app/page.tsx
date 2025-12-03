@@ -3,14 +3,14 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 
 export default async function Home() {
   const session = await auth();
 
   // If logged in, redirect to dashboard
   if (session) {
-    redirect("/profile");
+    redirect("/dashboard");
   }
 
   return (
@@ -18,7 +18,7 @@ export default async function Home() {
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
         <div className="text-center mb-16 mt-8">

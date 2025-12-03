@@ -39,13 +39,13 @@ export function FormList<T>({
             {items.map((item, index) => (
                 <div
                     key={index}
-                    className="p-4 border border-gray-200 rounded-lg space-y-4 relative group"
+                    className="p-4 border rounded-lg space-y-4 relative group bg-card text-card-foreground"
                 >
                     <div className="absolute top-4 right-4">
                         <button
                             type="button"
                             onClick={() => onRemove(index)}
-                            className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
+                            className="text-destructive hover:text-destructive/80 text-sm font-medium transition-colors"
                         >
                             Remove
                         </button>

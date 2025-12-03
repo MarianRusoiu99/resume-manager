@@ -1,14 +1,13 @@
 /**
  * Cover Letter Card Component
- * Displays cover letter information using GalleryCard
+ * Displays cover letter information using EntityCard
  */
 
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Edit, Trash2, Download, Eye, FileText, Briefcase } from 'lucide-react';
-import { GalleryCard, type GalleryCardAction } from '@/components/ui/GalleryCard';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useTransition } from 'react';
+import { Edit, Download, Eye, FileText, Briefcase } from 'lucide-react';
+import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import { toast } from 'sonner';
 import { deleteCoverLetter } from '@/app/actions/cover-letter';
 
@@ -33,7 +32,6 @@ export function CoverLetterCard({
   onEdit,
   onDelete,
 }: Readonly<CoverLetterCardProps>) {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const getDisplayTitle = (): string => {
@@ -75,42 +73,21 @@ export function CoverLetterCard({
     }
   };
 
-  const handleDelete = () => {
-    startTransition(async () => {
-      const result = await deleteCoverLetter(id);
-      if (result.success) {
-        toast.success('Cover letter deleted successfully');
-        onDelete(id);
-      } else {
-        toast.error(result.error || 'Failed to delete cover letter');
-      }
-      setShowDeleteDialog(false);
+  const handleDelete = async () => {
+    return new Promise<void>((resolve, reject) => {
+      startTransition(async () => {
+        const result = await deleteCoverLetter(id);
+        if (result.success) {
+          toast.success('Cover letter deleted successfully');
+          onDelete(id);
+          resolve();
+        } else {
+          toast.error(result.error || 'Failed to delete cover letter');
+          reject(new Error(result.error || 'Failed to delete'));
+        }
+      });
     });
   };
-
-  const actions: GalleryCardAction[] = [
-    {
-      label: 'View',
-      icon: <Eye className="h-4 w-4" />,
-      onClick: () => onView(id),
-    },
-    {
-      label: 'Edit',
-      icon: <Edit className="h-4 w-4" />,
-      onClick: () => onEdit(id),
-    },
-    {
-      label: 'Export PDF',
-      icon: <Download className="h-4 w-4" />,
-      onClick: handleExport,
-    },
-    {
-      label: 'Delete',
-      icon: <Trash2 className="h-4 w-4" />,
-      onClick: () => setShowDeleteDialog(true),
-      variant: 'destructive',
-    },
-  ];
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -130,35 +107,34 @@ export function CoverLetterCard({
   );
 
   return (
-    <>
-      <GalleryCard
-        id={id}
-        title={getDisplayTitle()}
-        subtitle={content.substring(0, 100) + '...'}
-        href={`/cover-letters/${id}`}
-        previewFallbackIcon={previewFallback}
-        metadata={[
-          { label: 'Created', value: formatDate(createdAt) },
-        ]}
-        actions={actions}
-        badges={[
-          {
-            label: 'Cover Letter',
-            variant: 'secondary',
-            icon: <Briefcase className="h-3 w-3" />,
-          },
-        ]}
-      />
-
-      <ConfirmDialog
-        isOpen={showDeleteDialog}
-        onCancel={() => setShowDeleteDialog(false)}
-        onConfirm={handleDelete}
-        title="Delete Cover Letter"
-        message={`Are you sure you want to delete the cover letter "${getDisplayTitle()}"? This action cannot be undone.`}
-        confirmText="Delete"
-        variant="danger"
-      />
-    </>
+    <EntityCard
+      id={id}
+      title={getDisplayTitle()}
+      subtitle={content.substring(0, 100) + '...'}
+      href={`/cover-letters/${id}`}
+      previewFallbackIcon={previewFallback}
+      metadata={[{ label: 'Created', value: formatDate(createdAt) }]}
+      badges={[
+        {
+          label: 'Cover Letter',
+          variant: 'secondary',
+          icon: <Briefcase className="h-3 w-3" />,
+        },
+      ]}
+      actions={[
+        createCardAction.view(() => onView(id)),
+        createCardAction.edit(() => onEdit(id)),
+        {
+          label: 'Export PDF',
+          icon: <Download className="h-4 w-4" />,
+          onClick: handleExport,
+        },
+      ]}
+      onDelete={handleDelete}
+      deleteDialog={{
+        title: 'Delete Cover Letter',
+        message: `Are you sure you want to delete the cover letter "${getDisplayTitle()}"? This action cannot be undone.`,
+      }}
+    />
   );
 }

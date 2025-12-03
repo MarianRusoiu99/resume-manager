@@ -1,8 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { SimpleFormField, SimpleFormFieldList } from "@/components/ui/simple-form-field";
 import type { Project } from "@/lib/validations/jsonresume";
 import { useListForm } from "@/hooks/use-list-form";
 import { FormList } from "@/components/ui/form-list";
@@ -35,87 +33,78 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
       addButtonText="Add Project"
       emptyMessage="No projects added yet. Click 'Add Project' to showcase your work."
       renderItem={(project, index) => (
-        <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`project-name-${index}`}>Project Name *</Label>
-              <Input
-                id={`project-name-${index}`}
-                value={project.name || ""}
-                onChange={(e) => updateItem(index, "name", e.target.value)}
-                placeholder="Personal Portfolio Website"
-              />
-            </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SimpleFormField
+            id={`project-name-${index}`}
+            label="Project Name"
+            value={project.name || ""}
+            onChange={(value) => updateItem(index, "name", value)}
+            placeholder="Personal Portfolio Website"
+            required
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`project-url-${index}`}>URL</Label>
-              <Input
-                id={`project-url-${index}`}
-                value={project.url || ""}
-                onChange={(e) => updateItem(index, "url", e.target.value)}
-                placeholder="https://project-url.com"
-              />
-            </div>
-          </div>
+          <SimpleFormField
+            id={`project-url-${index}`}
+            label="URL"
+            value={project.url || ""}
+            onChange={(value) => updateItem(index, "url", value)}
+            type="url"
+            placeholder="https://project-url.com"
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`project-description-${index}`}>Description</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormField
               id={`project-description-${index}`}
+              label="Description"
               value={project.description || ""}
-              onChange={(e) => updateItem(index, "description", e.target.value)}
-              placeholder="Brief description of the project"
+              onChange={(value) => updateItem(index, "description", value)}
+              type="textarea"
               rows={3}
+              placeholder="Brief description of the project"
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`project-startDate-${index}`}>Start Date</Label>
-              <Input
-                id={`project-startDate-${index}`}
-                type="date"
-                value={project.startDate || ""}
-                onChange={(e) => updateItem(index, "startDate", e.target.value)}
-              />
-            </div>
+          <SimpleFormField
+            id={`project-startDate-${index}`}
+            label="Start Date"
+            value={project.startDate || ""}
+            onChange={(value) => updateItem(index, "startDate", value)}
+            type="date"
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`project-endDate-${index}`}>End Date</Label>
-              <Input
-                id={`project-endDate-${index}`}
-                type="date"
-                value={project.endDate || ""}
-                onChange={(e) => updateItem(index, "endDate", e.target.value)}
-              />
-            </div>
-          </div>
+          <SimpleFormField
+            id={`project-endDate-${index}`}
+            label="End Date"
+            value={project.endDate || ""}
+            onChange={(value) => updateItem(index, "endDate", value)}
+            type="date"
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`project-highlights-${index}`}>Highlights (one per line)</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormFieldList
               id={`project-highlights-${index}`}
-              value={(project.highlights || []).join("\n")}
-              onChange={(e) => {
-                const items = e.target.value.split("\n").filter((item) => item.trim() !== "");
-                updateItem(index, "highlights", items);
-              }}
-              placeholder="Feature 1&#10;Feature 2"
+              label="Highlights"
+              value={project.highlights || []}
+              onChange={(value) => updateItem(index, "highlights", value)}
+              separator="newline"
+              type="textarea"
               rows={4}
+              placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
+              description="One highlight per line"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={`project-keywords-${index}`}>Tech Stack (one per line)</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormFieldList
               id={`project-keywords-${index}`}
-              value={(project.keywords || []).join("\n")}
-              onChange={(e) => {
-                const items = e.target.value.split("\n").filter((item) => item.trim() !== "");
-                updateItem(index, "keywords", items);
-              }}
+              label="Tech Stack"
+              value={project.keywords || []}
+              onChange={(value) => updateItem(index, "keywords", value)}
+              separator="newline"
+              type="textarea"
+              rows={3}
               placeholder="React&#10;TypeScript&#10;Node.js"
-              rows={4}
+              description="One technology per line"
             />
           </div>
         </div>
