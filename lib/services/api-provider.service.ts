@@ -400,6 +400,33 @@ class ApiProviderService {
       return failure(error instanceof Error ? error.message : 'API key validation failed', 'EXTERNAL_SERVICE_ERROR');
     }
   }
+
+  /**
+   * Get the first active provider for a user with decrypted API key
+   * Used for features that need an API key but don't have a specific model selected
+   */
+  async getFirstActiveProvider(userId: string): Promise<ServiceResult<{ apiKey: string; providerType: string; providerId: string }>> {
+    try {
+      const providers = await apiProviderRepository.findByUserId(userId, true);
+      const activeProvider = providers.find(p => p.isActive);
+
+      if (!activeProvider) {
+        return failure('No active API provider configured. Please add one in Settings → API Keys', 'NOT_FOUND');
+      }
+
+      const apiKey = decryptApiKey(activeProvider.encryptedKey);
+      const providerType = activeProvider.provider.toLowerCase();
+
+      return success({
+        apiKey,
+        providerType,
+        providerId: activeProvider.id,
+      });
+    } catch (error) {
+      logger.error('Error getting first active provider', error);
+      return failure(error instanceof Error ? error.message : 'Failed to get provider', 'INTERNAL_ERROR');
+    }
+  }
 }
 
 export const apiProviderService = new ApiProviderService();

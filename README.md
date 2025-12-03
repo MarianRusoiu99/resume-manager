@@ -79,7 +79,8 @@ Resume Optimizer is an intelligent platform that helps you land your dream job b
 | `NEXTAUTH_SECRET` | Secret for session encryption | Yes |
 | `NEXTAUTH_URL` | Base URL (e.g., http://localhost:3000) | Yes |
 | `ENCRYPTION_KEY` | 32-char key for encrypting API keys | Yes |
-| `OPENAI_API_KEY` | (Optional) Default OpenAI key | No |
+
+> **Note**: API keys for AI providers (OpenAI, Anthropic, Google, etc.) are managed through the in-app Settings → API Keys page. No environment variables needed for AI providers.
 
 ## 🤝 Contributing
 

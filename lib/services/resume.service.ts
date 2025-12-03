@@ -188,12 +188,19 @@ export class ResumeService {
         return failure(error instanceof Error ? error.message : 'Failed to get AI provider', 'INTERNAL_ERROR');
       }
     } else {
-      const apiKey = process.env.OPENAI_API_KEY || '';
-      if (!apiKey) {
-        return failure('No AI provider configured. Please add an API key in Settings or set OPENAI_API_KEY environment variable.', 'NOT_FOUND');
+      // No model specified - get the first available model from user's providers
+      const { apiProviderService } = await import('@/lib/services/api-provider.service');
+      const modelsResult = await apiProviderService.getAvailableModels(input.userId);
+      if (!modelsResult.success || modelsResult.data.allModels.length === 0) {
+        return failure('No AI provider configured. Please add an API key in Settings → API Keys', 'NOT_FOUND');
       }
-      const { createProvider } = await import('@/lib/ai/providers');
-      return success({ provider: createProvider('openai', apiKey), modelId: 'gpt-4o-mini', providerType: 'openai' });
+      // Use the first available model
+      const firstModel = modelsResult.data.allModels[0];
+      const providerResult = await apiProviderService.getProviderInstance(firstModel.providerId, input.userId);
+      if (!providerResult.success) {
+        return failure(providerResult.error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
+      }
+      return success({ provider: providerResult.data.provider, modelId: firstModel.id, providerType: providerResult.data.providerType });
     }
   }
 
@@ -239,7 +246,7 @@ export class ResumeService {
         userId: input.userId,
         jobTitle: input.jobTitle || 'Not specified',
         companyName: input.companyName || 'Not specified',
-        modelId: input.modelId || 'default (env OPENAI_API_KEY)'
+        modelId: input.modelId || 'auto-selected'
       });
 
       // Resolve provider
@@ -354,12 +361,19 @@ export class ResumeService {
         }
       }
 
-      const apiKey = process.env.OPENAI_API_KEY || '';
-      if (!apiKey) {
-        return failure('No AI provider configured. Please add an API key in Settings or set OPENAI_API_KEY environment variable.', 'NOT_FOUND');
+      // No model specified - get the first available model from user's providers
+      const { apiProviderService } = await import('@/lib/services/api-provider.service');
+      const modelsResult = await apiProviderService.getAvailableModels(baseInput.userId);
+      if (!modelsResult.success || modelsResult.data.allModels.length === 0) {
+        return failure('No AI provider configured. Please add an API key in Settings → API Keys', 'NOT_FOUND');
       }
-      const { createProvider } = await import('@/lib/ai/providers');
-      return success({ provider: createProvider('openai', apiKey), modelId: 'gpt-4o-mini', providerType: 'openai' });
+      // Use the first available model
+      const firstModel = modelsResult.data.allModels[0];
+      const providerResult = await apiProviderService.getProviderInstance(firstModel.providerId, baseInput.userId);
+      if (!providerResult.success) {
+        return failure(providerResult.error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
+      }
+      return success({ provider: providerResult.data.provider, modelId: firstModel.id, providerType: providerResult.data.providerType });
     };
 
     const scheduleProgressUpdates = (startTime: number) => {

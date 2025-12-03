@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { parseResumeFromText, parseResumeFromImage } from "@/lib/ai/resume-parser";
 import mammoth from "mammoth";
 import { createApiHandler } from "@/lib/api-handler";
+import { apiProviderService } from "@/lib/services/api-provider.service";
 
 export const POST = createApiHandler(async (request, context, session) => {
     const formData = await request.formData();
@@ -25,6 +26,16 @@ export const POST = createApiHandler(async (request, context, session) => {
         );
     }
 
+    // Get API key from user's configured providers
+    const providerResult = await apiProviderService.getFirstActiveProvider(session.user.id);
+    if (!providerResult.success) {
+        return NextResponse.json(
+            { error: providerResult.error },
+            { status: 400 }
+        );
+    }
+    const { apiKey } = providerResult.data;
+
     let resumeData;
 
     if (fileType === "pdf") {
@@ -35,18 +46,18 @@ export const POST = createApiHandler(async (request, context, session) => {
         const base64 = buffer.toString("base64");
 
         // Use Vision API to extract from PDF (treating it as an image)
-        resumeData = await parseResumeFromImage(base64, "application/pdf");
+        resumeData = await parseResumeFromImage(base64, "application/pdf", apiKey);
     } else if (fileType === "image") {
         // Parse Image using Vision API
         const arrayBuffer = await file.arrayBuffer();
         const base64 = Buffer.from(arrayBuffer).toString("base64");
-        resumeData = await parseResumeFromImage(base64, file.type);
+        resumeData = await parseResumeFromImage(base64, file.type, apiKey);
     } else if (fileType === "word") {
         // Parse Word document
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
         const result = await mammoth.extractRawText({ buffer });
-        resumeData = await parseResumeFromText(result.value);
+        resumeData = await parseResumeFromText(result.value, apiKey);
     } else {
         return NextResponse.json(
             { error: "Unsupported file type" },

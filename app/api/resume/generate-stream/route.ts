@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-helpers';
 import { logger } from '@/lib/utils/logger';
 import { profileService } from '@/lib/services/profile.service';
+import { apiProviderService } from '@/lib/services/api-provider.service';
 import { resumeSchema, type Resume } from '@/lib/validations/jsonresume';
 import { generateResume } from '@/lib/ai';
 import { getWorkflow, createCustomWorkflow } from '@/lib/ai/workflow';
@@ -53,13 +54,18 @@ async function resolveProvider(userId: string, modelId?: string) {
     return { provider: providerResult.data.provider, modelId, providerType: providerResult.data.providerType };
   }
 
-  // Fallback to environment API key
-  const apiKey = process.env.OPENAI_API_KEY || '';
-  if (!apiKey) {
-    throw new Error('No AI provider configured. Please add an API key in Settings or set OPENAI_API_KEY environment variable.');
+  // No model specified - get the first available model from user's providers
+  const modelsResult = await apiProviderService.getAvailableModels(userId);
+  if (!modelsResult.success || modelsResult.data.allModels.length === 0) {
+    throw new Error('No AI provider configured. Please add an API key in Settings → API Keys');
   }
-  const { createProvider } = await import('@/lib/ai/providers');
-  return { provider: createProvider('openai', apiKey), modelId: 'gpt-4o-mini', providerType: 'openai' };
+  // Use the first available model
+  const firstModel = modelsResult.data.allModels[0];
+  const providerResult = await apiProviderService.getProviderInstance(firstModel.providerId, userId);
+  if (!providerResult.success) {
+    throw new Error(providerResult.error || 'Failed to get AI provider configuration');
+  }
+  return { provider: providerResult.data.provider, modelId: firstModel.id, providerType: providerResult.data.providerType };
 }
 
 /**
