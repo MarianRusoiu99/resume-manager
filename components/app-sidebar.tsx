@@ -108,7 +108,7 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       {/* Header - Simple branding without team switcher */}
-      <SidebarHeader className="border-b p-4" >
+      <SidebarHeader className="p-4" >
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
@@ -158,7 +158,7 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
       </SidebarContent>
 
       {/* Footer - User Account with Theme & Logout */}
-      <SidebarFooter className="border-t p-4">
+      <SidebarFooter className="p-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>

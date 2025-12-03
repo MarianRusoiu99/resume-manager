@@ -16,7 +16,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, breadcrumbs }: PageHeaderProps) {
   return (
-    <header className="flex flex-col gap-4 border-b bg-background px-6 py-4">
+    <header className="flex flex-col gap-4 bg-background px-6 py-4">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="-ml-2" />
         <Separator orientation="vertical" className="h-6" />
