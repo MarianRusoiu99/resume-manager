@@ -5,8 +5,8 @@
  * DELETE /api/cover-letter/[id] - Delete a cover letter
  */
 
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth/config';
+import { NextResponse } from 'next/server';
+import { createApiHandler } from '@/lib/api-handler';
 import { coverLetterService } from '@/lib/services/cover-letter.service';
 import { z } from 'zod';
 
@@ -19,62 +19,28 @@ const updateSchema = z.object({
   resumeId: z.string().optional().nullable(),
 });
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export const GET = createApiHandler(async (request, { params }, session) => {
+  const { id } = await params;
+  const result = await coverLetterService.getCoverLetter(id, session.user.id);
 
-    const { id } = await params;
-    const result = await coverLetterService.getCoverLetter(id, session.user.id);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.error === 'Cover letter not found' ? 404 : 500 }
-      );
-    }
-
-    return NextResponse.json(result.data);
-  } catch (error) {
-    console.error('[Cover Letter Detail API] GET Error:', error);
+  if (!result.success) {
     return NextResponse.json(
-      { error: 'Failed to fetch cover letter' },
-      { status: 500 }
+      { error: result.error },
+      { status: result.error === 'Cover letter not found' ? 404 : 500 }
     );
   }
-}
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  return NextResponse.json(result.data);
+});
 
+export const PUT = createApiHandler(
+  async (request, { params }, session, body) => {
     const { id } = await params;
-    const body = await request.json();
-    
-    // Validate input
-    const validation = updateSchema.safeParse(body);
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: validation.error.issues },
-        { status: 400 }
-      );
-    }
 
     const result = await coverLetterService.updateCoverLetter(
       id,
       session.user.id,
-      validation.data
+      body!
     );
 
     if (!result.success) {
@@ -85,41 +51,20 @@ export async function PUT(
     }
 
     return NextResponse.json(result.data);
-  } catch (error) {
-    console.error('[Cover Letter Detail API] PUT Error:', error);
+  },
+  { bodySchema: updateSchema }
+);
+
+export const DELETE = createApiHandler(async (request, { params }, session) => {
+  const { id } = await params;
+  const result = await coverLetterService.deleteCoverLetter(id, session.user.id);
+
+  if (!result.success) {
     return NextResponse.json(
-      { error: 'Failed to update cover letter' },
-      { status: 500 }
+      { error: result.error },
+      { status: result.error === 'Cover letter not found' ? 404 : 500 }
     );
   }
-}
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const { id } = await params;
-    const result = await coverLetterService.deleteCoverLetter(id, session.user.id);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.error === 'Cover letter not found' ? 404 : 500 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('[Cover Letter Detail API] DELETE Error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete cover letter' },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json({ success: true });
+});

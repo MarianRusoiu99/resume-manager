@@ -1,6 +1,12 @@
 /**
  * Logging utility for server-side operations
  * Provides structured logging with different severity levels
+ * 
+ * Features:
+ * - Structured JSON logging for production
+ * - Pretty console output for development
+ * - Context attachment for request tracking
+ * - Performance timing utilities
  */
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
@@ -15,6 +21,32 @@ interface LogContext {
 
 class Logger {
   private isDevelopment = process.env.NODE_ENV === 'development';
+  private baseContext: LogContext = {};
+
+  /**
+   * Create a new logger instance with base context
+   */
+  constructor(context: LogContext = {}) {
+    this.baseContext = context;
+  }
+
+  /**
+   * Create a child logger with additional context
+   * Useful for attaching request-specific data
+   */
+  withContext(context: LogContext): Logger {
+    return new Logger({ ...this.baseContext, ...context });
+  }
+
+  /**
+   * Create a request-scoped logger with request ID and user ID
+   */
+  forRequest(requestId?: string, userId?: string): Logger {
+    return this.withContext({
+      requestId: requestId || this.generateRequestId(),
+      userId,
+    });
+  }
 
   /**
    * Log an informational message
@@ -59,24 +91,35 @@ class Logger {
    */
   private log(level: LogLevel, message: string, context?: LogContext): void {
     const timestamp = new Date().toISOString();
+    const mergedContext = { ...this.baseContext, ...context };
+    
     const logEntry = {
       timestamp,
       level,
       message,
-      ...context,
+      ...mergedContext,
     };
 
     // In development, use pretty console output
     if (this.isDevelopment) {
       const color = this.getColor(level);
+      const contextStr = Object.keys(mergedContext).length > 0 
+        ? ` ${JSON.stringify(mergedContext)}`
+        : '';
       console.log(
-        `${color}[${level.toUpperCase()}]${this.resetColor} ${timestamp} - ${message}`,
-        context ? context : ''
+        `${color}[${level.toUpperCase()}]${this.resetColor} ${timestamp} - ${message}${contextStr}`
       );
     } else {
       // In production, use JSON format for log aggregation
       console.log(JSON.stringify(logEntry));
     }
+  }
+
+  /**
+   * Generate a unique request ID
+   */
+  private generateRequestId(): string {
+    return `req_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
   }
 
   /**
@@ -124,4 +167,30 @@ export async function withTiming<T>(
     logger.error(`${operation} failed`, error, { ...context, duration });
     throw error;
   }
+}
+
+/**
+ * Create a timed logger for tracking operation duration
+ */
+export function createTimedLogger(operation: string, context?: LogContext) {
+  const startTime = Date.now();
+  const log = logger.withContext({ operation, ...context });
+  
+  return {
+    info: (message: string, extraContext?: LogContext) => {
+      log.info(message, { ...extraContext, elapsed: Date.now() - startTime });
+    },
+    warn: (message: string, extraContext?: LogContext) => {
+      log.warn(message, { ...extraContext, elapsed: Date.now() - startTime });
+    },
+    error: (message: string, error?: Error | unknown, extraContext?: LogContext) => {
+      log.error(message, error, { ...extraContext, elapsed: Date.now() - startTime });
+    },
+    complete: (message?: string, extraContext?: LogContext) => {
+      log.info(message || `${operation} completed`, { 
+        ...extraContext, 
+        duration: Date.now() - startTime 
+      });
+    },
+  };
 }

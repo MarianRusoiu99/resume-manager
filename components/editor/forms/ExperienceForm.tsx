@@ -1,8 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { SimpleFormField, SimpleFormFieldList } from "@/components/ui/simple-form-field";
 import { Work } from "@/lib/validations/jsonresume";
 import { useListForm } from "@/hooks/use-list-form";
 import { FormList } from "@/components/ui/form-list";
@@ -35,73 +33,65 @@ export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
       emptyMessage="No experience entries yet. Click 'Add Experience' to get started."
       renderItem={(experience, index) => (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor={`name-${index}`}>Company *</Label>
-            <Input
-              id={`name-${index}`}
-              value={experience.name || ""}
-              onChange={(e) => updateItem(index, "name", e.target.value)}
-              required
-            />
-          </div>
+          <SimpleFormField
+            id={`name-${index}`}
+            label="Company"
+            value={experience.name || ""}
+            onChange={(value) => updateItem(index, "name", value)}
+            required
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`position-${index}`}>Job Title *</Label>
-            <Input
-              id={`position-${index}`}
-              value={experience.position || ""}
-              onChange={(e) => updateItem(index, "position", e.target.value)}
-              required
-            />
-          </div>
+          <SimpleFormField
+            id={`position-${index}`}
+            label="Job Title"
+            value={experience.position || ""}
+            onChange={(value) => updateItem(index, "position", value)}
+            required
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`start-${index}`}>Start Date *</Label>
-            <Input
-              id={`start-${index}`}
-              type="month"
-              value={experience.startDate || ""}
-              onChange={(e) => updateItem(index, "startDate", e.target.value)}
-              required
-            />
-          </div>
+          <SimpleFormField
+            id={`start-${index}`}
+            label="Start Date"
+            value={experience.startDate || ""}
+            onChange={(value) => updateItem(index, "startDate", value)}
+            type="month"
+            required
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`end-${index}`}>End Date</Label>
-            <Input
-              id={`end-${index}`}
-              type="month"
-              value={experience.endDate || ""}
-              onChange={(e) => updateItem(index, "endDate", e.target.value)}
-              placeholder="Leave empty if current"
-            />
-          </div>
+          <SimpleFormField
+            id={`end-${index}`}
+            label="End Date"
+            value={experience.endDate || ""}
+            onChange={(value) => updateItem(index, "endDate", value)}
+            type="month"
+            placeholder="Leave empty if current"
+          />
 
-          <div className="sm:col-span-2 space-y-2">
-            <Label htmlFor={`summary-${index}`}>Summary</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormField
               id={`summary-${index}`}
+              label="Summary"
               value={experience.summary || ""}
-              onChange={(e) => updateItem(index, "summary", e.target.value)}
+              onChange={(value) => updateItem(index, "summary", value)}
+              type="textarea"
               rows={3}
               placeholder="Brief description of your role..."
+              description="Describe your key responsibilities"
             />
-            <p className="text-sm text-muted-foreground">Describe your key responsibilities</p>
           </div>
 
-          <div className="sm:col-span-2 space-y-2">
-            <Label htmlFor={`highlights-${index}`}>Key Achievements</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormFieldList
               id={`highlights-${index}`}
-              value={experience.highlights?.join("\n") || ""}
-              onChange={(e) => {
-                const highlightsArray = e.target.value.split("\n").filter(h => h.trim());
-                updateItem(index, "highlights", highlightsArray);
-              }}
+              label="Key Achievements"
+              value={experience.highlights || []}
+              onChange={(value) => updateItem(index, "highlights", value)}
+              separator="newline"
+              type="textarea"
               rows={4}
               placeholder="• Achievement 1&#10;• Achievement 2&#10;• Achievement 3"
+              description="One achievement per line"
             />
-            <p className="text-sm text-muted-foreground">One achievement per line</p>
           </div>
         </div>
       )}

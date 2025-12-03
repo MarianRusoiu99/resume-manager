@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button, Input } from "@/components/ui";
 import {
@@ -63,22 +63,25 @@ export function ResumeEditor({
   const { resume, updateField, save, isDirty, isSaving, lastSavedAt } = useEditor();
   const [activeTab, setActiveTab] = useState("basics");
   const [isEditingName, setIsEditingName] = useState(false);
-  const [displayName, setDisplayName] = useState(initialDisplayName || "");
+  // Use props directly as source of truth, only track local editing state when actively editing
+  const [localDisplayName, setLocalDisplayName] = useState("");
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [isPublic, setIsPublic] = useState(initialIsPublic || false);
-  const [publicSlug, setPublicSlug] = useState(initialPublicSlug || "");
+  
+  // Derive display values from props (parent is source of truth)
+  const displayName = isEditingName ? localDisplayName : (initialDisplayName || "");
+  const isPublic = initialIsPublic || false;
+  const publicSlug = initialPublicSlug || "";
 
-  useEffect(() => {
-    if (initialDisplayName) setDisplayName(initialDisplayName);
-  }, [initialDisplayName]);
+  // When starting to edit, copy prop value to local state
+  const startEditing = () => {
+    setLocalDisplayName(initialDisplayName || "");
+    setIsEditingName(true);
+  };
 
-  useEffect(() => {
-    if (initialIsPublic !== undefined) setIsPublic(initialIsPublic);
-  }, [initialIsPublic]);
-
-  useEffect(() => {
-    if (initialPublicSlug) setPublicSlug(initialPublicSlug);
-  }, [initialPublicSlug]);
+  const cancelEditing = () => {
+    setIsEditingName(false);
+    setLocalDisplayName("");
+  };
 
   const handleSave = async () => {
     await save();
@@ -101,13 +104,13 @@ export function ResumeEditor({
   };
 
   const handleSaveDisplayName = async () => {
-    if (!displayName.trim()) {
+    if (!localDisplayName.trim()) {
       toast.error("Name cannot be empty");
       return;
     }
 
     if (onDisplayNameChange) {
-      await onDisplayNameChange(displayName);
+      await onDisplayNameChange(localDisplayName);
       setIsEditingName(false);
     }
   };
@@ -115,7 +118,7 @@ export function ResumeEditor({
   const handleTogglePublic = async () => {
     if (onTogglePublic) {
       await onTogglePublic();
-      setIsPublic(!isPublic);
+      // Parent will update initialIsPublic prop, which updates isPublic
     }
   };
 
@@ -133,13 +136,12 @@ export function ResumeEditor({
           {isEditingName ? (
             <div className="flex items-center gap-2">
               <Input
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
+                value={localDisplayName}
+                onChange={(e) => setLocalDisplayName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleSaveDisplayName();
                   if (e.key === "Escape") {
-                    setDisplayName(initialDisplayName || "");
-                    setIsEditingName(false);
+                    cancelEditing();
                   }
                 }}
                 className="text-lg font-semibold h-8"
@@ -151,10 +153,7 @@ export function ResumeEditor({
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => {
-                  setDisplayName(initialDisplayName || "");
-                  setIsEditingName(false);
-                }}
+                onClick={cancelEditing}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -168,7 +167,7 @@ export function ResumeEditor({
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => setIsEditingName(true)}
+                  onClick={startEditing}
                   className="h-6 w-6 p-0"
                 >
                   <Edit2 className="h-3 w-3" />

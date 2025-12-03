@@ -1125,9 +1125,9 @@ export async function middleware(req: NextRequest) {
 
 ### Infrastructure Security
 
-- [ ] Content Security Policy (CSP)
-- [ ] Security headers
-- [ ] HTTPS enforcement
+- [x] Content Security Policy (CSP)
+- [x] Security headers (X-Frame-Options, X-Content-Type-Options, etc.)
+- [x] HSTS (Strict-Transport-Security)
 - [ ] Certificate pinning
 - [ ] DDoS protection
 - [ ] WAF (Web Application Firewall)
@@ -1137,7 +1137,8 @@ export async function middleware(req: NextRequest) {
 ### Monitoring & Logging
 
 - [x] Structured logging
-- [ ] Audit logging
+- [x] Audit logging (AuditLog model + service)
+- [x] Health check endpoints (/api/health, /api/health/live, /api/health/ready)
 - [ ] Security event monitoring
 - [ ] Anomaly detection
 - [ ] Log retention policy

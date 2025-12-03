@@ -63,6 +63,13 @@ export const POST = createApiHandler(async (request, context, session) => {
   // Get user's profile (their current resume)
   const profileResult = await profileService.getProfile(session.user.id);
 
+  if (!profileResult.success) {
+    return NextResponse.json(
+      { error: profileResult.error },
+      { status: 404 }
+    );
+  }
+
   if (!profileResult.data) {
     return NextResponse.json(
       { error: 'Profile not found. Please create a profile first.' },

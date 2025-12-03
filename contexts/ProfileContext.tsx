@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import type { Resume } from "@/lib/validations/jsonresume";
+import { logger } from "@/lib/utils/logger";
 
 interface Profile {
   id: string;
@@ -57,7 +58,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
         setActiveProfileIdState(defaultProfile.id);
       }
     } catch (err) {
-      console.error("Failed to load profiles:", err);
+      logger.error("Failed to load profiles", err);
       setError(err instanceof Error ? err.message : "Failed to load profiles");
     } finally {
       setLoading(false);

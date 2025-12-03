@@ -65,19 +65,19 @@ export const POST = createApiHandler(async (request, context, session) => {
   });
 
   if (!result.success) {
-    logger.error('API: Resume generation failed', { errors: result.errors });
+    logger.error('API: Resume generation failed', { error: result.error });
     return NextResponse.json(
       {
         error: 'Resume generation failed',
-        details: result.errors
+        details: result.error
       },
       { status: 500 }
     );
   }
 
-  logger.info(`API: Resume generated successfully`, { resumeId: result.resumeId });
-  if (result.coverLetterId) {
-    logger.info(`API: Cover letter saved`, { coverLetterId: result.coverLetterId });
+  logger.info(`API: Resume generated successfully`, { resumeId: result.data.resumeId });
+  if (result.data.coverLetterId) {
+    logger.info(`API: Cover letter saved`, { coverLetterId: result.data.coverLetterId });
   }
 
   // Invalidate cache after generating a new resume
@@ -86,10 +86,10 @@ export const POST = createApiHandler(async (request, context, session) => {
 
   const response = NextResponse.json({
     success: true,
-    resumeId: result.resumeId,
-    resume: result.resume,
-    coverLetter: result.coverLetter,
-    coverLetterId: result.coverLetterId
+    resumeId: result.data.resumeId,
+    resume: result.data.resume,
+    coverLetter: result.data.coverLetter,
+    coverLetterId: result.data.coverLetterId
   }, { status: 201 });
 
   return rateLimitCheck.addHeaders(response) as NextResponse;

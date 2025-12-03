@@ -10,6 +10,7 @@ import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
 import { z } from 'zod';
 import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-helpers';
+import { logger } from '@/lib/utils/logger';
 
 // Request validation schema
 const generateResumeSchema = z.object({
@@ -59,9 +60,11 @@ export async function POST(request: NextRequest) {
 
     const { jobDescription, profileId, templateId, generateCoverLetter, personalInstructions } = validation.data;
 
-    console.log(`\n📡 SSE: Resume generation with streaming for user ${session.user.id}`);
-    console.log(`   Profile ID: ${profileId || 'default'}`);
-    console.log(`   Cover letter: ${generateCoverLetter ? 'Yes' : 'No'}`);
+    logger.info('SSE: Resume generation started', {
+      userId: session.user.id,
+      profileId: profileId || 'default',
+      generateCoverLetter: !!generateCoverLetter,
+    });
 
     // Create a readable stream for SSE
     const encoder = new TextEncoder();
@@ -73,14 +76,14 @@ export async function POST(request: NextRequest) {
         // Helper function to send SSE messages (only if controller is open)
         const sendEvent = (event: string, data: unknown) => {
           if (isControllerClosed) {
-            console.warn(`📡 SSE: Attempted to send ${event} after stream closed`);
+            logger.warn(`SSE: Attempted to send ${event} after stream closed`);
             return;
           }
           try {
             const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
             controller.enqueue(encoder.encode(message));
           } catch (error) {
-            console.error(`📡 SSE: Error sending ${event}:`, error);
+            logger.error(`SSE: Error sending ${event}`, error);
             isControllerClosed = true;
           }
         };
@@ -99,7 +102,7 @@ export async function POST(request: NextRequest) {
 
           // Progress callback function
           const onProgress = (step: string, message: string, progress: number) => {
-            console.log(`📡 SSE Progress: ${step} - ${message} (${progress}%)`);
+            logger.debug(`SSE Progress: ${step} - ${message} (${progress}%)`);
             sendEvent('progress', {
               step,
               message,
@@ -125,7 +128,7 @@ export async function POST(request: NextRequest) {
           if (!result.success) {
             sendEvent('error', {
               error: 'Resume generation failed',
-              details: result.errors,
+              details: result.error,
             });
             closeController();
             return;
@@ -134,17 +137,17 @@ export async function POST(request: NextRequest) {
           // Send completion event
           sendEvent('complete', {
             success: true,
-            resumeId: result.resumeId,
-            resume: result.resume,
-            coverLetter: result.coverLetter,
+            resumeId: result.data.resumeId,
+            resume: result.data.resume,
+            coverLetter: result.data.coverLetter,
           });
 
-          console.log(`✅ SSE: Resume generation complete (ID: ${result.resumeId})`);
+          logger.info('SSE: Resume generation complete', { resumeId: result.data.resumeId });
 
           // Close the stream
           closeController();
         } catch (error) {
-          console.error('❌ SSE: Error during generation:', error);
+          logger.error('SSE: Error during generation', error);
           sendEvent('error', {
             error: error instanceof Error ? error.message : 'Unknown error occurred'
           });
@@ -153,7 +156,7 @@ export async function POST(request: NextRequest) {
       },
 
       cancel() {
-        console.log('📡 SSE: Client disconnected');
+        logger.debug('SSE: Client disconnected');
       },
     });
 
@@ -168,7 +171,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ SSE: Error setting up stream:', error);
+    logger.error('SSE: Error setting up stream', error);
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Failed to start generation'

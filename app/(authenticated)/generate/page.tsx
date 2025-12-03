@@ -13,6 +13,7 @@ import { Button, Card, Textarea, Tabs, TabsList, TabsTrigger, TabsContent } from
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { ExternalLink } from 'lucide-react';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 interface Template {
   id: string;
@@ -37,67 +38,7 @@ interface Model {
 
 interface GeneratedResume {
   id: string;
-  content: {
-    basics?: {
-      name?: string;
-      email?: string;
-      phone?: string;
-      url?: string;
-      summary?: string;
-      location?: {
-        address?: string;
-        city?: string;
-        region?: string;
-        postalCode?: string;
-        countryCode?: string;
-      };
-      profiles?: Array<{
-        network?: string;
-        username?: string;
-        url?: string;
-      }>;
-    };
-    work?: Array<{
-      name?: string;
-      position?: string;
-      url?: string;
-      startDate?: string;
-      endDate?: string;
-      summary?: string;
-      highlights?: string[];
-    }>;
-    education?: Array<{
-      institution?: string;
-      url?: string;
-      area?: string;
-      studyType?: string;
-      startDate?: string;
-      endDate?: string;
-      score?: string;
-      courses?: string[];
-    }>;
-    skills?: Array<{
-      name?: string;
-      level?: string;
-      keywords?: string[];
-    }>;
-    certificates?: Array<{
-      name?: string;
-      date?: string;
-      issuer?: string;
-      url?: string;
-    }>;
-    projects?: Array<{
-      name?: string;
-      description?: string;
-      highlights?: string[];
-      keywords?: string[];
-      startDate?: string;
-      endDate?: string;
-      url?: string;
-    }>;
-    [key: string]: unknown;
-  };
+  content: Resume;
   metadata: {
     generatedAt: string;
     model?: string;
@@ -113,6 +54,7 @@ export default function GeneratePage() {
   // Common state
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [models, setModels] = useState<Model[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Resume generation state
   const [resumeJobDescription, setResumeJobDescription] = useState('');
@@ -162,13 +104,19 @@ export default function GeneratePage() {
     loadTemplates();
   }, []);
 
-  // Load profiles on mount
+  // Load profiles and models on mount
   useEffect(() => {
-    const loadProfiles = async () => {
+    const loadData = async () => {
+      setIsLoadingData(true);
       try {
-        const response = await fetch('/api/profile');
-        if (response.ok) {
-          const data = await response.json();
+        // Load profiles and models in parallel
+        const [profilesRes, modelsRes] = await Promise.all([
+          fetch('/api/profile'),
+          fetch('/api/settings/api-providers/models'),
+        ]);
+
+        if (profilesRes.ok) {
+          const data = await profilesRes.json();
           setProfiles(data);
           const defaultProfile = data.find((p: Profile) => p.isDefault);
           if (defaultProfile) {
@@ -179,20 +127,9 @@ export default function GeneratePage() {
             setSelectedCoverLetterProfileId(data[0].id);
           }
         }
-      } catch (err) {
-        console.error('Failed to load profiles:', err);
-      }
-    };
-    loadProfiles();
-  }, []);
 
-  // Load available models from configured API providers
-  useEffect(() => {
-    const loadModels = async () => {
-      try {
-        const response = await fetch('/api/settings/api-providers/models');
-        if (response.ok) {
-          const data = await response.json();
+        if (modelsRes.ok) {
+          const data = await modelsRes.json();
           setModels(data.allModels || []);
           if (data.allModels && data.allModels.length > 0) {
             setSelectedResumeModelId(data.allModels[0].id);
@@ -200,11 +137,15 @@ export default function GeneratePage() {
           }
         }
       } catch (err) {
-        console.error('Failed to load models:', err);
+        console.error('Failed to load data:', err);
+      } finally {
+        setIsLoadingData(false);
       }
     };
-    loadModels();
+    loadData();
   }, []);
+
+
 
   const handleGenerateResume = async () => {
     if (resumeJobDescription.length < 50) {
@@ -526,7 +467,17 @@ export default function GeneratePage() {
                     )}
 
                     {/* AI Model Selection */}
-                    {models.length > 0 ? (
+                    {isLoadingData ? (
+                      <div className="p-3 bg-muted rounded-md">
+                        <div className="flex items-center gap-2">
+                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span className="text-sm text-muted-foreground">Loading AI providers...</span>
+                        </div>
+                      </div>
+                    ) : models.length > 0 ? (
                       <div>
                         <label htmlFor="resumeModel" className="block text-sm font-medium mb-2">
                           AI Model <span className="text-red-500">*</span>
@@ -585,10 +536,18 @@ export default function GeneratePage() {
 
                     <Button
                       onClick={handleGenerateResume}
-                      disabled={isGeneratingResume || resumeJobDescription.length < 50 || !selectedResumeProfileId || models.length === 0}
+                      disabled={isLoadingData || isGeneratingResume || resumeJobDescription.length < 50 || !selectedResumeProfileId || models.length === 0}
                       className="w-full"
                     >
-                      {isGeneratingResume ? (
+                      {isLoadingData ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Loading...
+                        </>
+                      ) : isGeneratingResume ? (
                         <>
                           <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -619,7 +578,7 @@ export default function GeneratePage() {
                     </div>
 
                     <ResumePreview
-                      resumeData={generatedResume.content as any}
+                      resumeData={generatedResume.content}
                       resumeId={generatedResumeId}
                       onTemplateChange={() => { }}
                       showTemplateSelector={true}
@@ -717,7 +676,17 @@ export default function GeneratePage() {
                     )}
 
                     {/* AI Model Selection */}
-                    {models.length > 0 ? (
+                    {isLoadingData ? (
+                      <div className="p-3 bg-muted rounded-md">
+                        <div className="flex items-center gap-2">
+                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span className="text-sm text-muted-foreground">Loading AI providers...</span>
+                        </div>
+                      </div>
+                    ) : models.length > 0 ? (
                       <div>
                         <label htmlFor="coverLetterModel" className="block text-sm font-medium mb-2">
                           AI Model <span className="text-red-500">*</span>
@@ -791,12 +760,23 @@ export default function GeneratePage() {
                     <div className="flex gap-3">
                       <Button
                         onClick={handleGenerateCoverLetter}
-                        disabled={isGeneratingCoverLetter || coverLetterJobDescription.length < 50}
+                        disabled={isLoadingData || isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || profiles.length === 0 || models.length === 0}
                         className="flex-1"
                       >
-                        {isGeneratingCoverLetter ? (
+                        {isLoadingData ? (
                           <>
-                            <span className="animate-spin mr-2">⏳</span>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading...
+                          </>
+                        ) : isGeneratingCoverLetter ? (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
                             Generating...
                           </>
                         ) : (

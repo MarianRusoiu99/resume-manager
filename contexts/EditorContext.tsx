@@ -159,7 +159,7 @@ export function EditorProvider({
 
     // Set new timeout for autosave
     autoSaveTimeoutRef.current = setTimeout(async () => {
-      console.log('🔄 Autosaving...');
+      logger.debug('Autosaving...');
       setIsSaving(true);
       try {
         const success = await onSave(resume);

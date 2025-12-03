@@ -6,7 +6,6 @@
 'use client';
 
 import { RefObject } from 'react';
-import { A4_WIDTH } from '@/lib/utils/pagination';
 
 // UI Components
 import { PreviewHeader } from './PreviewHeader';

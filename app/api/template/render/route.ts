@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
-import { resumeSchema } from '@/lib/validations/jsonresume';
+import { logger } from '@/lib/utils/logger';
 
 export async function POST(req: Request) {
   try {
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ html });
   } catch (error) {
-    console.error('Template rendering error:', error);
+    logger.error('Template rendering error', error);
     return NextResponse.json(
       { error: 'Failed to render template', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

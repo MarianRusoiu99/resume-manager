@@ -7,6 +7,7 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 import type { OptimizedResume } from '@/lib/ai/agents';
 import { logger } from '@/lib/utils/logger';
+import { success, failure, type ServiceResult } from '@/lib/types/service-result';
 
 /**
  * Input parameters for resume generation
@@ -46,26 +47,92 @@ export interface GenerateResumeWithProgressInput extends GenerateResumeServiceIn
 }
 
 /**
+ * Resume data returned from service operations
+ */
+export interface ResumeData {
+  id: string;
+  content: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+}
+
+/**
  * Result of resume generation operation
  */
-export interface GenerateResumeServiceResult {
-  /** Whether the generation was successful */
-  success: boolean;
-  /** Generated resume ID (if successful) */
-  resumeId?: string;
-  /** Full resume object with content and metadata */
-  resume?: {
-    id: string;
-    content: Record<string, unknown>;
-    metadata: Record<string, unknown>;
-    createdAt: Date;
-  };
-  /** Generated cover letter content (if requested) */
+export interface GeneratedResumeData {
+  resumeId: string;
+  resume: ResumeData;
   coverLetter?: string;
-  /** Generated cover letter ID (if requested and saved) */
   coverLetterId?: string;
-  /** Array of error messages (if failed) */
-  errors?: string[];
+}
+
+/**
+ * Cover letter generation result
+ */
+export interface CoverLetterGenerationData {
+  coverLetterId: string;
+  coverLetter: string;
+  metadata: {
+    jobTitle: string;
+    companyName: string;
+    tokensUsed: number;
+  };
+}
+
+/**
+ * Resume list item
+ */
+export interface ResumeListItem {
+  id: string;
+  userId: string;
+  jobTitle: string | null;
+  companyName: string | null;
+  jobDescription: string;
+  content: Record<string, unknown>;
+  templateId: string | null;
+  metadata: {
+    generatedAt: string;
+    model: string;
+    totalTokens: number;
+    processingTime: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Detailed resume data
+ */
+export interface ResumeDetails {
+  id: string;
+  jobDescription: string;
+  jobMetadata: Record<string, unknown>;
+  jobTitle: string;
+  companyName: string | null;
+  content: Record<string, unknown>;
+  metadata: {
+    generatedAt: string;
+    model: string;
+    totalTokens: number;
+    processingTime: number;
+  };
+  templateId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Updated resume data
+ */
+export interface UpdatedResumeData {
+  id: string;
+  resume: unknown;
+  jobDescription: string;
+  jobMetadata: unknown;
+  template: unknown;
+  metadata: unknown;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 /**
@@ -73,54 +140,54 @@ export interface GenerateResumeServiceResult {
  * Wraps the workflow service and handles database operations
  */
 export class ResumeService {
-  private async getValidatedUserResume(userId: string): Promise<{ success: boolean; resume?: Resume; error?: string }> {
+  private async getValidatedUserResume(userId: string): Promise<ServiceResult<Resume>> {
     const profileResult = await profileService.getProfile(userId);
-    if (!profileResult.data) {
-      return { success: false, error: 'User profile not found. Please complete your profile before generating a resume.' };
+    if (!profileResult.success || !profileResult.data) {
+      return failure('User profile not found. Please complete your profile before generating a resume.', 'NOT_FOUND');
     }
     const profileData = profileResult.data;
     if (!profileData || typeof profileData !== 'object' || !('resume' in profileData)) {
-      return { success: false, error: 'Profile structure is invalid. Please update your profile.' };
+      return failure('Profile structure is invalid. Please update your profile.', 'VALIDATION_ERROR');
     }
     if (!profileData.resume) {
-      return { success: false, error: 'Profile does not contain resume data. Please complete your profile.' };
+      return failure('Profile does not contain resume data. Please complete your profile.', 'VALIDATION_ERROR');
     }
     try {
       const userResume = resumeSchema.parse(profileData.resume);
-      return { success: true, resume: userResume };
+      return success(userResume);
     } catch (error) {
       logger.error('Profile resume validation failed', error);
-      return { success: false, error: 'Invalid profile data format. Please update your profile.' };
+      return failure('Invalid profile data format. Please update your profile.', 'VALIDATION_ERROR');
     }
   }
 
-  private async resolveProvider(input: GenerateResumeServiceInput): Promise<{ success: boolean; provider?: import('@/lib/ai/providers').AIProvider; modelId?: string; providerType?: string; error?: string }> {
+  private async resolveProvider(input: GenerateResumeServiceInput): Promise<ServiceResult<{ provider: import('@/lib/ai/providers').AIProvider; modelId: string; providerType: string }>> {
     if (input.modelId) {
       try {
         const { apiProviderService } = await import('@/lib/services/api-provider.service');
         const modelsResult = await apiProviderService.getAvailableModels(input.userId);
-        if (!modelsResult.success || !modelsResult.data) {
-          return { success: false, error: 'No API providers configured. Please add one in Settings → API Keys' };
+        if (!modelsResult.success) {
+          return failure('No API providers configured. Please add one in Settings → API Keys', 'NOT_FOUND');
         }
         const modelInfo = modelsResult.data.allModels.find(m => m.id === input.modelId);
         if (!modelInfo) {
-          return { success: false, error: `Model ${input.modelId} not found in your configured providers` };
+          return failure(`Model ${input.modelId} not found in your configured providers`, 'NOT_FOUND');
         }
         const providerResult = await apiProviderService.getProviderInstance(modelInfo.providerId, input.userId);
-        if (!providerResult.success || !providerResult.data) {
-          return { success: false, error: providerResult.error || 'Failed to get AI provider configuration' };
+        if (!providerResult.success) {
+          return failure(providerResult.error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
         }
-        return { success: true, provider: providerResult.data.provider, modelId: input.modelId, providerType: providerResult.data.providerType };
+        return success({ provider: providerResult.data.provider, modelId: input.modelId, providerType: providerResult.data.providerType });
       } catch (error) {
-        return { success: false, error: error instanceof Error ? error.message : 'Failed to get AI provider' };
+        return failure(error instanceof Error ? error.message : 'Failed to get AI provider', 'INTERNAL_ERROR');
       }
     } else {
       const apiKey = process.env.OPENAI_API_KEY || '';
       if (!apiKey) {
-        return { success: false, error: 'No AI provider configured. Please add an API key in Settings or set OPENAI_API_KEY environment variable.' };
+        return failure('No AI provider configured. Please add an API key in Settings or set OPENAI_API_KEY environment variable.', 'NOT_FOUND');
       }
       const { createProvider } = await import('@/lib/ai/providers');
-      return { success: true, provider: createProvider('openai', apiKey), modelId: 'gpt-4o-mini', providerType: 'openai' };
+      return success({ provider: createProvider('openai', apiKey), modelId: 'gpt-4o-mini', providerType: 'openai' });
     }
   }
 
@@ -172,14 +239,14 @@ export class ResumeService {
    * @param input - Generation parameters
    * @returns Generated resume with database ID
    */
-  async generateResume(input: GenerateResumeServiceInput): Promise<GenerateResumeServiceResult> {
+  async generateResume(input: GenerateResumeServiceInput): Promise<ServiceResult<GeneratedResumeData>> {
     try {
       // Validate user profile and resume
       const resumeResult = await this.getValidatedUserResume(input.userId);
-      if (!resumeResult.success || !resumeResult.resume) {
-        return { success: false, errors: [resumeResult.error || 'Profile validation failed'] };
+      if (!resumeResult.success) {
+        return failure(resumeResult.error, 'VALIDATION_ERROR');
       }
-      const userResume = resumeResult.resume;
+      const userResume = resumeResult.data;
 
       logger.info('Starting resume generation', {
         userId: input.userId,
@@ -190,11 +257,11 @@ export class ResumeService {
 
       // Resolve provider
       const providerResult = await this.resolveProvider(input);
-      if (!providerResult.success || !providerResult.provider) {
-        return { success: false, errors: [providerResult.error || 'Provider resolution failed'] };
+      if (!providerResult.success) {
+        return failure(providerResult.error, 'INTERNAL_ERROR');
       }
-      const provider = providerResult.provider;
-      const modelId = providerResult.modelId!;
+      const provider = providerResult.data.provider;
+      const modelId = providerResult.data.modelId;
 
       // Call workflow service with provider instance
       const workflowResult = await generateResume({
@@ -209,7 +276,7 @@ export class ResumeService {
 
       if (!workflowResult.success || !workflowResult.resume) {
         logger.error('Resume generation workflow failed');
-        return { success: false, errors: [workflowResult.error || 'Failed to generate resume'] };
+        return failure(workflowResult.error || 'Failed to generate resume', 'INTERNAL_ERROR');
       }
 
       logger.info('Workflow completed successfully', {
@@ -244,12 +311,11 @@ export class ResumeService {
             logger.debug('Cover letter linked to resume');
           }
         } else {
-          logger.error('Failed to save cover letter', { error: coverLetterResult.error });
+          logger.error('Failed to save cover letter', { error: coverLetterResult.success ? undefined : coverLetterResult.error });
         }
       }
 
-      return {
-        success: true,
+      return success({
         resumeId: generatedResume.id,
         resume: {
           id: generatedResume.id,
@@ -259,10 +325,10 @@ export class ResumeService {
         },
         coverLetter: workflowResult.coverLetter,
         coverLetterId,
-      };
+      });
     } catch (error) {
       logger.error('Resume generation error', error);
-      return { success: false, errors: [error instanceof Error ? error.message : 'Unknown error occurred'] };
+      return failure(error instanceof Error ? error.message : 'Unknown error occurred', 'INTERNAL_ERROR');
     }
   }
 
@@ -272,55 +338,62 @@ export class ResumeService {
    * @param input - Generation parameters including progress callback
    * @returns Generated resume with database ID
    */
-  async generateResumeWithProgress(input: GenerateResumeWithProgressInput): Promise<GenerateResumeServiceResult> {
+  async generateResumeWithProgress(input: GenerateResumeWithProgressInput): Promise<ServiceResult<GeneratedResumeData>> {
     const { onProgress, ...baseInput } = input;
 
-    // Small helpers to keep this method linear and reduce branching
-    const fail = (message: string[]) => ({ success: false, errors: message });
-
-    const fetchAndValidateProfile = async (): Promise<{ success: true; resume: Resume } | { success: false; error: string }> => {
+    const fetchAndValidateProfile = async (): Promise<ServiceResult<Resume>> => {
       // Use profileId if provided, otherwise get default profile
       const profileResult = baseInput.profileId
         ? await profileService.getProfileById(baseInput.profileId, baseInput.userId)
         : await profileService.getProfile(baseInput.userId);
 
-      if (!profileResult.data) return { success: false, error: 'User profile not found. Please complete your profile before generating a resume.' };
+      if (!profileResult.success || !profileResult.data) {
+        return failure('User profile not found. Please complete your profile before generating a resume.', 'NOT_FOUND');
+      }
 
       const profileData = profileResult.data;
       if (!profileData || typeof profileData !== 'object' || !('resume' in profileData)) {
-        return { success: false, error: 'Profile structure is invalid. Please update your profile.' };
+        return failure('Profile structure is invalid. Please update your profile.', 'VALIDATION_ERROR');
       }
       if (!profileData.resume) {
-        return { success: false, error: 'Profile does not contain resume data. Please complete your profile.' };
+        return failure('Profile does not contain resume data. Please complete your profile.', 'VALIDATION_ERROR');
       }
 
       // Rely on runtime type; JSON resume validation happens elsewhere
-      return { success: true, resume: profileData.resume as Resume };
+      return success(profileData.resume as Resume);
     };
 
-    const resolveProviderForProgress = async (): Promise<{ provider: import('@/lib/ai/providers').AIProvider; modelId: string; providerType: string } | { error: string }> => {
+    const resolveProviderForProgress = async (): Promise<ServiceResult<{ provider: import('@/lib/ai/providers').AIProvider; modelId: string; providerType: string }>> => {
       if (baseInput.modelId) {
         try {
           const { apiProviderService } = await import('@/lib/services/api-provider.service');
           const modelsResult = await apiProviderService.getAvailableModels(baseInput.userId);
-          if (!modelsResult.success || !modelsResult.data) return { error: 'No API providers configured. Please add one in Settings → API Keys' };
+          if (!modelsResult.success) {
+            return failure('No API providers configured. Please add one in Settings → API Keys', 'NOT_FOUND');
+          }
 
           const modelInfo = modelsResult.data.allModels.find(m => m.id === baseInput.modelId);
-          if (!modelInfo) return { error: `Model ${baseInput.modelId} not found in your configured providers` };
+          if (!modelInfo) {
+            return failure(`Model ${baseInput.modelId} not found in your configured providers`, 'NOT_FOUND');
+          }
 
           const providerResult = await apiProviderService.getProviderInstance(modelInfo.providerId, baseInput.userId);
-          if (!providerResult.success || !providerResult.data) return { error: providerResult.error || 'Failed to get AI provider configuration' };
+          if (!providerResult.success) {
+            return failure(providerResult.error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
+          }
 
-          return { provider: providerResult.data.provider, modelId: baseInput.modelId, providerType: providerResult.data.providerType };
+          return success({ provider: providerResult.data.provider, modelId: baseInput.modelId, providerType: providerResult.data.providerType });
         } catch (err) {
-          return { error: err instanceof Error ? err.message : 'Failed to get AI provider' };
+          return failure(err instanceof Error ? err.message : 'Failed to get AI provider', 'INTERNAL_ERROR');
         }
       }
 
       const apiKey = process.env.OPENAI_API_KEY || '';
-      if (!apiKey) return { error: 'No AI provider configured. Please add an API key in Settings or set OPENAI_API_KEY environment variable.' };
+      if (!apiKey) {
+        return failure('No AI provider configured. Please add an API key in Settings or set OPENAI_API_KEY environment variable.', 'NOT_FOUND');
+      }
       const { createProvider } = await import('@/lib/ai/providers');
-      return { provider: createProvider('openai', apiKey), modelId: 'gpt-4o-mini', providerType: 'openai' };
+      return success({ provider: createProvider('openai', apiKey), modelId: 'gpt-4o-mini', providerType: 'openai' });
     };
 
     const scheduleProgressUpdates = (startTime: number) => {
@@ -348,10 +421,12 @@ export class ResumeService {
 
       onProgress('profile', 'Fetching your profile data...', 5);
       const profileFetch = await fetchAndValidateProfile();
-      if (!profileFetch.success) return fail([profileFetch.error]);
+      if (!profileFetch.success) {
+        return failure(profileFetch.error, profileFetch.code);
+      }
 
       onProgress('profile', 'Profile loaded successfully', 10);
-      const userResume = profileFetch.resume;
+      const userResume = profileFetch.data;
 
       // Debug: Log profile summary to verify it has real data
       logger.debug('Profile summary', {
@@ -375,11 +450,13 @@ export class ResumeService {
       scheduleProgressUpdates(startTime);
 
       const providerResult = await resolveProviderForProgress();
-      if ('error' in providerResult) return fail([providerResult.error]);
+      if (!providerResult.success) {
+        return failure(providerResult.error, providerResult.code);
+      }
 
-      const provider = providerResult.provider;
-      const modelId = providerResult.modelId;
-      logger.info('Using AI provider', { providerType: providerResult.providerType, modelId });
+      const provider = providerResult.data.provider;
+      const modelId = providerResult.data.modelId;
+      logger.info('Using AI provider', { providerType: providerResult.data.providerType, modelId });
 
       const workflowResult = await generateResume({
         provider,
@@ -393,7 +470,7 @@ export class ResumeService {
 
       if (!workflowResult.success || !workflowResult.resume) {
         logger.error('Resume generation workflow failed');
-        return fail([workflowResult.error || 'Failed to generate resume']);
+        return failure(workflowResult.error || 'Failed to generate resume', 'INTERNAL_ERROR');
       }
 
       logger.info('Workflow completed successfully', {
@@ -431,8 +508,7 @@ export class ResumeService {
 
       onProgress('complete', 'Resume generated successfully!', 100);
 
-      return {
-        success: true,
+      return success({
         resumeId: generatedResume.id,
         resume: {
           id: generatedResume.id,
@@ -441,14 +517,11 @@ export class ResumeService {
           createdAt: generatedResume.createdAt
         },
         coverLetter: workflowResult.coverLetter
-      };
+      });
     } catch (error) {
       logger.error('Resume generation with progress error', error);
       onProgress('error', error instanceof Error ? error.message : 'Unknown error occurred', 0);
-      return {
-        success: false,
-        errors: [error instanceof Error ? error.message : 'Unknown error occurred']
-      };
+      return failure(error instanceof Error ? error.message : 'Unknown error occurred', 'INTERNAL_ERROR');
     }
   }
 
@@ -539,26 +612,20 @@ export class ResumeService {
   /**
    * Delete a resume
    */
-  async deleteResume(resumeId: string, userId: string): Promise<{ success: boolean; error?: string }> {
+  async deleteResume(resumeId: string, userId: string): Promise<ServiceResult<void>> {
     try {
       // Verify ownership
       const resume = await this.repository.findByIdAndUserId(resumeId, userId);
 
       if (!resume) {
-        return {
-          success: false,
-          error: 'Resume not found or access denied'
-        };
+        return failure('Resume not found or access denied', 'NOT_FOUND');
       }
 
       await this.repository.delete(resumeId);
-      return { success: true };
+      return success(undefined);
     } catch (error) {
       logger.error('Error deleting resume', error);
-      return {
-        success: false,
-        error: 'Failed to delete resume'
-      };
+      return failure('Failed to delete resume', 'INTERNAL_ERROR');
     }
   }
 
@@ -676,46 +743,36 @@ export class ResumeService {
     personalInstructions?: string;
     modelId?: string;
     profileId?: string;
-  }): Promise<{
-    success: boolean;
-    coverLetterId?: string;
-    coverLetter?: string;
-    metadata?: {
-      jobTitle: string;
-      companyName: string;
-      tokensUsed: number;
-    };
-    error?: string;
-  }> {
+  }): Promise<ServiceResult<CoverLetterGenerationData>> {
     try {
       logger.info('Starting standalone cover letter generation', { userId: input.userId });
 
       // Validate user profile and resume
       // Use same validation logic as resume generation
-      let resumeResult;
+      let userResume: Resume;
       if (input.profileId) {
         // Use selected profile
         const profileResult = await profileService.getProfileById(input.profileId, input.userId);
-        if (!profileResult.success || !profileResult.data) {
-          return { success: false, error: profileResult.error || 'Profile not found' };
+        if (!profileResult.success) {
+          return failure(profileResult.error, 'NOT_FOUND');
         }
         const profileData = profileResult.data;
         if (!profileData || typeof profileData !== 'object' || !('resume' in profileData) || !profileData.resume) {
-          return { success: false, error: 'Profile does not contain resume data. Please complete your profile.' };
+          return failure('Profile does not contain resume data. Please complete your profile.', 'VALIDATION_ERROR');
         }
         try {
-          resumeResult = { success: true, resume: resumeSchema.parse(profileData.resume) };
-        } catch (error) {
-          return { success: false, error: 'Invalid profile data format. Please update your profile.' };
+          userResume = resumeSchema.parse(profileData.resume);
+        } catch {
+          return failure('Invalid profile data format. Please update your profile.', 'VALIDATION_ERROR');
         }
       } else {
         // Fallback to default profile
-        resumeResult = await this.getValidatedUserResume(input.userId);
-        if (!resumeResult.success || !resumeResult.resume) {
-          return { success: false, error: resumeResult.error || 'Profile validation failed' };
+        const resumeResult = await this.getValidatedUserResume(input.userId);
+        if (!resumeResult.success) {
+          return failure(resumeResult.error, 'VALIDATION_ERROR');
         }
+        userResume = resumeResult.data;
       }
-      const userResume = resumeResult.resume;
 
       // Resolve provider
       const providerResult = await this.resolveProvider({
@@ -724,12 +781,12 @@ export class ResumeService {
         profileId: input.profileId,
       } as GenerateResumeServiceInput);
 
-      if (!providerResult.success || !providerResult.provider) {
-        return { success: false, error: providerResult.error || 'Provider resolution failed' };
+      if (!providerResult.success) {
+        return failure(providerResult.error, 'INTERNAL_ERROR');
       }
 
-      const provider = providerResult.provider;
-      const modelId = providerResult.modelId!;
+      const provider = providerResult.data.provider;
+      const modelId = providerResult.data.modelId;
 
       logger.debug('Using AI model', { modelId });
 
@@ -772,15 +829,14 @@ export class ResumeService {
 
       const saveResult = await coverLetterService.createCoverLetter(coverLetterData);
 
-      if (!saveResult.success || !saveResult.data?.id) {
+      if (!saveResult.success) {
         logger.error('Failed to save cover letter', { error: saveResult.error });
-        return { success: false, error: saveResult.error || 'Failed to save cover letter' };
+        return failure(saveResult.error, 'INTERNAL_ERROR');
       }
 
       logger.info('Cover letter saved', { coverLetterId: saveResult.data.id });
 
-      return {
-        success: true,
+      return success({
         coverLetterId: saveResult.data.id,
         coverLetter: coverLetterResult.content,
         metadata: {
@@ -788,13 +844,10 @@ export class ResumeService {
           companyName: jobAnalysis.companyName,
           tokensUsed: 0,
         },
-      };
+      });
     } catch (error) {
       logger.error('Standalone cover letter generation failed', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to generate cover letter',
-      };
+      return failure(error instanceof Error ? error.message : 'Failed to generate cover letter', 'INTERNAL_ERROR');
     }
   }
 }

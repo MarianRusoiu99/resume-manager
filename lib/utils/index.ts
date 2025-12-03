@@ -3,7 +3,7 @@
  * Barrel file for all utility functions
  */
 
-export { logger, withTiming } from './logger';
+export { logger, withTiming, createTimedLogger } from './logger';
 export { cn } from './cn';
 export {
     retryWithBackoff,

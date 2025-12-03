@@ -1,106 +1,76 @@
 'use server'
 
-import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
-import { revalidatePath } from 'next/cache';
-import type { ActionResult } from './types';
+import { withServerAction } from '@/lib/actions/with-server-action';
 import type { GenerateResumeServiceInput } from '@/lib/services/resume.service';
-
 
 /**
  * Get all resumes for the current user
  */
-export async function getResumes(): Promise<ActionResult<unknown[]>> {
-    try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return { success: false, error: 'Unauthorized' };
-        }
-
+export const getResumes = withServerAction(
+    'getResumes',
+    async (session) => {
         const result = await resumeService.getUserResumes(session.user.id);
-
-        return { success: true, data: (result || []) as unknown[] };
-    } catch (error) {
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Failed to fetch resumes'
-        };
-    }
-}
+        return result || [];
+    },
+    { resourceType: 'resume' }
+);
 
 /**
  * Get a specific resume by ID
  */
-export async function getResume(resumeId: string): Promise<ActionResult<unknown>> {
-    try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return { success: false, error: 'Unauthorized' };
-        }
-
+export const getResume = withServerAction(
+    'getResume',
+    async (session, resumeId: string) => {
         const result = await resumeService.getResume(resumeId, session.user.id);
 
         if (!result) {
-            return { success: false, error: 'Resume not found' };
+            throw new Error('Resume not found');
         }
 
-        return { success: true, data: result };
-    } catch (error) {
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Failed to fetch resume'
-        };
-    }
-}
+        return result;
+    },
+    { resourceType: 'resume' }
+);
 
 /**
  * Delete a resume
  */
-export async function deleteResume(resumeId: string): Promise<ActionResult<void>> {
-    try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return { success: false, error: 'Unauthorized' };
-        }
-
+export const deleteResume = withServerAction(
+    'deleteResume',
+    async (session, resumeId: string) => {
         const result = await resumeService.deleteResume(resumeId, session.user.id);
 
         if (!result.success) {
-            return { success: false, error: result.error || 'Failed to delete resume' };
+            throw new Error(result.error);
         }
 
-        // Revalidate resume pages
-        revalidatePath('/resumes');
-
-        return { success: true, data: undefined };
-    } catch (error) {
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Failed to delete resume'
-        };
+        return undefined;
+    },
+    {
+        auditAction: 'RESUME_DELETE',
+        resourceType: 'resume',
+        revalidatePaths: ['/resumes'],
     }
-}
+);
 
 /**
  * Generate AI-optimized resume
  */
-export async function generateResume(
-    profileId: string,
-    jobDescription: string,
-    modelId: string,
-    options?: {
-        jobTitle?: string;
-        companyName?: string;
-        generateCoverLetter?: boolean;
-        personalInstructions?: string;
-    }
-): Promise<ActionResult<unknown>> {
-    try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return { success: false, error: 'Unauthorized' };
+export const generateResume = withServerAction(
+    'generateResume',
+    async (
+        session,
+        profileId: string,
+        jobDescription: string,
+        modelId: string,
+        options?: {
+            jobTitle?: string;
+            companyName?: string;
+            generateCoverLetter?: boolean;
+            personalInstructions?: string;
         }
-
+    ) => {
         const input: GenerateResumeServiceInput = {
             userId: session.user.id,
             profileId,
@@ -115,20 +85,14 @@ export async function generateResume(
         const result = await resumeService.generateResume(input);
 
         if (!result.success) {
-            return {
-                success: false,
-                error: result.errors?.join(', ') || 'Failed to generate resume'
-            };
+            throw new Error(result.error);
         }
 
-        // Revalidate resume pages
-        revalidatePath('/resumes');
-
-        return { success: true, data: result };
-    } catch (error) {
-        return {
-            success: false,
-            error: error instanceof Error ? error.message : 'Failed to generate resume'
-        };
+        return result.data;
+    },
+    {
+        auditAction: 'RESUME_GENERATE',
+        resourceType: 'resume',
+        revalidatePaths: ['/resumes'],
     }
-}
+);

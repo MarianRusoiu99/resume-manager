@@ -1,8 +1,6 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { SimpleFormField, SimpleFormFieldList } from "@/components/ui/simple-form-field";
 import { Education } from "@/lib/validations/jsonresume";
 import { useListForm } from "@/hooks/use-list-form";
 import { FormList } from "@/components/ui/form-list";
@@ -36,80 +34,67 @@ export function EducationForm({ education, onChange }: EducationFormProps) {
       emptyMessage="No education entries yet. Click 'Add Education' to get started."
       renderItem={(edu, index) => (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor={`institution-${index}`}>School/University *</Label>
-            <Input
-              id={`institution-${index}`}
-              value={edu.institution || ""}
-              onChange={(e) => updateItem(index, "institution", e.target.value)}
-              required
-            />
-          </div>
+          <SimpleFormField
+            id={`institution-${index}`}
+            label="School/University"
+            value={edu.institution || ""}
+            onChange={(value) => updateItem(index, "institution", value)}
+            required
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`studyType-${index}`}>Degree *</Label>
-            <Input
-              id={`studyType-${index}`}
-              value={edu.studyType || ""}
-              onChange={(e) => updateItem(index, "studyType", e.target.value)}
-              placeholder="e.g., Bachelor of Science"
-              required
-            />
-          </div>
+          <SimpleFormField
+            id={`studyType-${index}`}
+            label="Degree"
+            value={edu.studyType || ""}
+            onChange={(value) => updateItem(index, "studyType", value)}
+            placeholder="e.g., Bachelor of Science"
+            required
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`area-${index}`}>Field of Study</Label>
-            <Input
-              id={`area-${index}`}
-              value={edu.area || ""}
-              onChange={(e) => updateItem(index, "area", e.target.value)}
-              placeholder="e.g., Computer Science"
-            />
-          </div>
+          <SimpleFormField
+            id={`area-${index}`}
+            label="Field of Study"
+            value={edu.area || ""}
+            onChange={(value) => updateItem(index, "area", value)}
+            placeholder="e.g., Computer Science"
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`score-${index}`}>GPA</Label>
-            <Input
-              id={`score-${index}`}
-              value={edu.score || ""}
-              onChange={(e) => updateItem(index, "score", e.target.value)}
-              placeholder="e.g., 3.8/4.0"
-            />
-          </div>
+          <SimpleFormField
+            id={`score-${index}`}
+            label="GPA"
+            value={edu.score || ""}
+            onChange={(value) => updateItem(index, "score", value)}
+            placeholder="e.g., 3.8/4.0"
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`start-date-${index}`}>Start Date</Label>
-            <Input
-              id={`start-date-${index}`}
-              type="month"
-              value={edu.startDate || ""}
-              onChange={(e) => updateItem(index, "startDate", e.target.value)}
-            />
-          </div>
+          <SimpleFormField
+            id={`start-date-${index}`}
+            label="Start Date"
+            value={edu.startDate || ""}
+            onChange={(value) => updateItem(index, "startDate", value)}
+            type="month"
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`end-date-${index}`}>End Date</Label>
-            <Input
-              id={`end-date-${index}`}
-              type="month"
-              value={edu.endDate || ""}
-              onChange={(e) => updateItem(index, "endDate", e.target.value)}
-            />
-          </div>
+          <SimpleFormField
+            id={`end-date-${index}`}
+            label="End Date"
+            value={edu.endDate || ""}
+            onChange={(value) => updateItem(index, "endDate", value)}
+            type="month"
+          />
 
-          <div className="sm:col-span-2 space-y-2">
-            <Label htmlFor={`courses-${index}`}>Relevant Courses</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormFieldList
               id={`courses-${index}`}
-              value={edu.courses?.join(", ") || ""}
-              onChange={(e) => {
-                const coursesArray = e.target.value.split(",").map(c => c.trim()).filter(c => c);
-                updateItem(index, "courses", coursesArray);
-              }}
+              label="Relevant Courses"
+              value={edu.courses || []}
+              onChange={(value) => updateItem(index, "courses", value)}
+              separator="comma"
+              type="textarea"
               rows={3}
               placeholder="Comma-separated list of courses..."
+              description="Optional: Add relevant coursework"
             />
-            <p className="text-sm text-muted-foreground">Optional: Add relevant coursework</p>
           </div>
         </div>
       )}
