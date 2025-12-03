@@ -10,8 +10,6 @@
  * Body: {
  *   jobDescription: string,
  *   apiKey: string,  // User must provide their OpenAI API key
- *   generateCoverLetter?: boolean,
- *   personalInstructions?: string
  * }
  */
 
@@ -28,8 +26,6 @@ import { logger } from '@/lib/utils/logger';
 const generateResumeSchema = z.object({
   jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
   apiKey: z.string().min(20, 'Valid OpenAI API key required'),
-  generateCoverLetter: z.boolean().optional().default(false),
-  personalInstructions: z.string().optional(),
 });
 
 /**
@@ -56,7 +52,7 @@ export const POST = createApiHandler(async (request, context, session) => {
     );
   }
 
-  const { jobDescription, apiKey, generateCoverLetter, personalInstructions } = validation.data;
+  const { jobDescription, apiKey } = validation.data;
 
   logger.info(`Simple API: Resume generation for user ${session.user.id}`);
 
@@ -103,8 +99,6 @@ export const POST = createApiHandler(async (request, context, session) => {
     modelId: 'gpt-4o', // Default to GPT-4o for simple workflow
     jobDescription,
     userResume,
-    includeCoverLetter: generateCoverLetter,
-    personalInstructions,
   });
 
   if (!result.success) {
@@ -122,11 +116,11 @@ export const POST = createApiHandler(async (request, context, session) => {
 
   // Return the generated content
   // Note: This doesn't save to database - just returns the result
-  // You can extend this to save if needed
   return NextResponse.json({
     success: true,
     resume: result.resume,
-    coverLetter: result.coverLetter,
+    jobTitle: result.jobTitle,
+    companyName: result.companyName,
     tokensUsed: result.tokensUsed,
   });
 });

@@ -1,23 +1,19 @@
 /**
- * Resume Optimization Prompts - Main Export
- * 
- * Complete resume optimization for job applications
+ * Resume Optimization Agent - Main Export
  */
 
-export {
+// Prompt (for customization)
+export { 
   RESUME_OPTIMIZATION_SYSTEM_PROMPT,
-  RESUME_OPTIMIZATION_GUIDELINES
-} from './system-prompt';
+  RESUME_OPTIMIZATION_USER_PROMPT,
+  buildResumeOptimizationPrompt 
+} from './prompt';
 
-export {
-  formatResumeOptimizationPrompt,
-  type ResumeOptimizationInput
-} from './user-template';
-
-// Agent execution
+// Agent
 export {
   optimizeResume,
   optimizedResumeSchema,
   type OptimizedResume,
-  type OptimizeResumeInput
+  type OptimizeResumeInput,
+  type OptimizeResumeResult,
 } from './agent';

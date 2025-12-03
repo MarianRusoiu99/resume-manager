@@ -4,7 +4,6 @@ import { profileService } from '@/lib/services/profile.service';
 import { resumesCache } from '@/lib/cache/resumes-cache';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { resumeSchema } from '@/lib/validations/jsonresume';
-import type { OptimizedResume } from '@/lib/ai/agents';
 import { logger } from '@/lib/utils/logger';
 import { success, failure, type ServiceResult } from '@/lib/types/service-result';
 
@@ -257,7 +256,6 @@ export class ResumeService {
         modelId,
         jobDescription: input.jobDescription,
         userResume,
-        includeCoverLetter: false,
         userId: input.userId
       });
 
@@ -270,9 +268,9 @@ export class ResumeService {
         tokensUsed: workflowResult.tokensUsed || 0,
       });
 
-      // Extract job title and company from AI analysis (if available)
-      const extractedJobTitle = workflowResult.jobAnalysis?.jobTitle || input.jobTitle || 'Position';
-      const extractedCompanyName = workflowResult.jobAnalysis?.companyName || input.companyName || 'Company';
+      // Extract job title and company from workflow result
+      const extractedJobTitle = workflowResult.jobTitle || input.jobTitle || 'Position';
+      const extractedCompanyName = workflowResult.companyName || input.companyName || 'Company';
       logger.debug('Resume title extracted', { jobTitle: extractedJobTitle, companyName: extractedCompanyName });
 
       // Validate generated resume
@@ -431,7 +429,6 @@ export class ResumeService {
         modelId,
         jobDescription: baseInput.jobDescription,
         userResume,
-        includeCoverLetter: false,
         userId: baseInput.userId
       });
 
@@ -446,8 +443,8 @@ export class ResumeService {
 
       onProgress('save', 'Saving resume to database...', 95);
 
-      const extractedJobTitle = workflowResult.jobAnalysis?.jobTitle || baseInput.jobTitle;
-      const extractedCompanyName = workflowResult.jobAnalysis?.companyName || baseInput.companyName;
+      const extractedJobTitle = workflowResult.jobTitle || baseInput.jobTitle;
+      const extractedCompanyName = workflowResult.companyName || baseInput.companyName;
 
       logger.debug('Resume title extracted', { jobTitle: extractedJobTitle, companyName: extractedCompanyName || 'Unknown Company' });
 
@@ -749,36 +746,29 @@ export class ResumeService {
 
       logger.debug('Using AI model', { modelId });
 
-      // Step 1: Analyze job to extract title and company
-      const { analyzeJob } = await import('@/lib/ai/agents');
-      const jobAnalysis = await analyzeJob({
-        provider,
-        modelId,
-        jobDescription: input.jobDescription,
-      });
-
-      logger.debug('Job analysis complete', { jobTitle: jobAnalysis.jobTitle, companyName: jobAnalysis.companyName });
-
-      // Step 2: Generate cover letter using user's original resume
+      // Generate cover letter directly - no separate job analysis step
       const { generateCoverLetter } = await import('@/lib/ai/agents');
       const coverLetterResult = await generateCoverLetter({
         provider,
         modelId,
-        jobAnalysis,
+        jobDescription: input.jobDescription,
         userResume: userResume!,
-        optimizedResume: userResume as OptimizedResume, // Use original resume as optimized resume for standalone generation
       });
 
-      logger.debug('Cover letter generated', { length: coverLetterResult.content.length });
+      logger.debug('Cover letter generated', { 
+        length: coverLetterResult.content.length,
+        jobTitle: coverLetterResult.jobTitle,
+        companyName: coverLetterResult.companyName
+      });
 
-      // Step 3: Save to database
+      // Save to database
       const { coverLetterService } = await import('@/lib/services/cover-letter.service');
       const coverLetterData = {
         userId: input.userId,
         content: coverLetterResult.content,
         jobDescription: input.jobDescription,
-        jobTitle: jobAnalysis.jobTitle,
-        companyName: jobAnalysis.companyName,
+        jobTitle: coverLetterResult.jobTitle,
+        companyName: coverLetterResult.companyName,
         metadata: {
           model: modelId,
           tokens: 0, // We don't track tokens in standalone generation yet
@@ -800,8 +790,8 @@ export class ResumeService {
         coverLetterId: saveResult.data.id,
         coverLetter: coverLetterResult.content,
         metadata: {
-          jobTitle: jobAnalysis.jobTitle,
-          companyName: jobAnalysis.companyName,
+          jobTitle: coverLetterResult.jobTitle,
+          companyName: coverLetterResult.companyName,
           tokensUsed: 0,
         },
       });
