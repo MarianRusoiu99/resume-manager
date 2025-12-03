@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ArrowLeft, Trash2, ExternalLink, FileText } from 'lucide-react';
 
@@ -57,7 +57,7 @@ export default function CoverLetterDetailPage() {
       setError(null);
 
       const response = await fetch(`/api/cover-letter/${coverLetterId}`);
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           throw new Error('Cover letter not found');
@@ -110,7 +110,7 @@ export default function CoverLetterDetailPage() {
   const confirmDelete = async () => {
     try {
       setIsDeleting(true);
-      
+
       const response = await fetch(`/api/cover-letter/${coverLetterId}`, {
         method: 'DELETE',
       });
@@ -215,7 +215,7 @@ export default function CoverLetterDetailPage() {
               Back to Cover Letters
             </Button>
           </Link>
-          
+
           <Button
             variant="ghost"
             onClick={handleDelete}

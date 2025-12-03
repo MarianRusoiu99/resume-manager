@@ -1,23 +1,17 @@
 /**
- * Cover Letter Prompts - Main Export
- * 
- * Professional cover letter generation for job applications
+ * Cover Letter Agent - Main Export
  */
 
+// Prompt (for customization)
 export {
   COVER_LETTER_SYSTEM_PROMPT,
-  COVER_LETTER_GUIDELINES
-} from './system-prompt';
+  COVER_LETTER_USER_PROMPT,
+  buildCoverLetterPrompt,
+} from './prompt';
 
-export {
-  formatCoverLetterPrompt,
-  type CoverLetterInput
-} from './user-template';
-
-// Agent execution
+// Agent
 export {
   generateCoverLetter,
-  coverLetterSchema,
-  type CoverLetterResult,
-  type GenerateCoverLetterInput
+  type GenerateCoverLetterInput,
+  type GenerateCoverLetterResult,
 } from './agent';

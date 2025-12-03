@@ -5,22 +5,18 @@
  * Displays all cover letters for the authenticated user
  */
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { toast } from 'sonner';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
-import { Button, Card } from '@/components/ui';
-import { CoverLetterCard } from '@/components/cover-letter/CoverLetterCard';
+import { Page } from '@/components/layout/Page';
+import { Button } from '@/components/ui';
+import { CoverLetterList, type CoverLetterListItem } from '@/components/cover-letter/CoverLetterList';
+import { ErrorState } from '@/components/shared/states';
+import { useFetch } from '@/hooks/useDataFetching';
+import { API, ROUTES } from '@/lib/constants';
 import { FileText } from 'lucide-react';
 
-interface CoverLetter {
-  id: string;
-  content: string;
+interface CoverLetter extends CoverLetterListItem {
   jobDescription: string;
-  jobTitle: string | null;
-  companyName: string | null;
   resumeId: string | null;
   resume: {
     id: string;
@@ -33,133 +29,64 @@ interface CoverLetter {
     generationTime?: number;
     personalInstructions?: string;
   };
-  createdAt: string;
   updatedAt: string;
+}
+
+interface CoverLettersResponse {
+  coverLetters: CoverLetter[];
 }
 
 export default function CoverLettersPage() {
   const router = useRouter();
-  const [coverLetters, setCoverLetters] = useState<CoverLetter[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchCoverLetters();
-  }, []);
+  // Use the data fetching hook
+  const {
+    data,
+    isLoading,
+    error,
+    refetch,
+    mutate,
+  } = useFetch<CoverLettersResponse>(API.COVER_LETTER.LIST);
 
-  // Auto-refresh when page becomes visible (e.g., after navigating back from generation)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchCoverLetters();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
-
-  const fetchCoverLetters = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const response = await fetch('/api/cover-letter');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch cover letters');
-      }
-
-      const data = await response.json();
-      setCoverLetters(data.coverLetters || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load cover letters');
-      toast.error('Failed to load cover letters');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const coverLetters = data?.coverLetters ?? [];
 
   const handleDelete = (id: string) => {
-    // Remove from local state - deletion is handled in CoverLetterCard
-    setCoverLetters((prev) => prev.filter((cl) => cl.id !== id));
+    // Optimistic update - remove from local state
+    mutate((prev) => ({
+      coverLetters: (prev?.coverLetters ?? []).filter((cl) => cl.id !== id),
+    }));
   };
 
-  if (isLoading) {
-    return (
-      <>
-        <PageHeader
-          title="My Cover Letters"
-          description="Manage all your generated cover letters"
-          breadcrumbs={[
-            { label: "Cover Letters" },
-          ]}
-        />
-        <PageContainer>
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        </PageContainer>
-      </>
-    );
-  }
-
   return (
-    <>
-      <PageHeader
-        title="My Cover Letters"
-        description="Manage all your generated cover letters"
-        breadcrumbs={[
-          { label: "Cover Letters" },
-        ]}
-      />
-      <PageContainer>
-        <div className="flex justify-end mb-6">
-          <Link href="/generate?tab=cover-letter">
-            <Button>
-              <FileText className="w-4 h-4 mr-2" />
-              Generate New
-            </Button>
-          </Link>
-        </div>
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
+    <Page
+      title="My Cover Letters"
+      description="Manage all your generated cover letters"
+      breadcrumbs={[{ label: "Cover Letters" }]}
+    >
+      <div className="flex justify-end mb-6">
+        <Link href={ROUTES.GENERATE_COVER_LETTER}>
+          <Button>
+            <FileText className="w-4 h-4 mr-2" />
+            Generate New
+          </Button>
+        </Link>
+      </div>
 
-        {coverLetters.length === 0 ? (
-          <Card className="p-12 text-center">
-            <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-xl font-semibold mb-2">No Cover Letters Yet</h3>
-            <p className="text-gray-600 mb-6">
-              Start by generating your first cover letter for a job application
-            </p>
-            <Link href="/generate?tab=cover-letter">
-              <Button>
-                <FileText className="w-4 h-4 mr-2" />
-                Generate Cover Letter
-              </Button>
-            </Link>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {coverLetters.map((coverLetter) => (
-              <CoverLetterCard
-                key={coverLetter.id}
-                id={coverLetter.id}
-                jobTitle={coverLetter.jobTitle}
-                companyName={coverLetter.companyName}
-                content={coverLetter.content}
-                createdAt={coverLetter.createdAt}
-                onView={(id) => router.push(`/cover-letters/${id}`)}
-                onEdit={(id) => router.push(`/cover-letters/${id}`)}
-                onDelete={handleDelete}
-              />
-            ))}
-          </div>
-        )}
-      </PageContainer>
-    </>
+      {error && (
+        <ErrorState
+          message={error}
+          onRetry={refetch}
+          variant="inline"
+          className="mb-6"
+        />
+      )}
+
+      <CoverLetterList
+        coverLetters={coverLetters}
+        isLoading={isLoading}
+        onDelete={handleDelete}
+        onGenerate={() => router.push(ROUTES.GENERATE_COVER_LETTER)}
+      />
+    </Page>
   );
 }

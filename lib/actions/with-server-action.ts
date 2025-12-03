@@ -1,0 +1,204 @@
+/**
+ * Server Action Wrapper
+ * 
+ * Provides a unified wrapper for all server actions that:
+ * - Handles authentication consistently
+ * - Adds structured logging
+ * - Provides consistent error handling
+ * - Integrates with audit logging
+ * 
+ * Usage:
+ * ```typescript
+ * export const getProfile = withServerAction(
+ *   'getProfile',
+ *   async (session, profileId: string) => {
+ *     return await profileService.getProfile(profileId, session.user.id);
+ *   }
+ * );
+ * ```
+ */
+
+import { auth } from '@/lib/auth/config';
+import { logger } from '@/lib/utils';
+import { auditLog } from '@/lib/services/audit-log.service';
+import { revalidatePath } from 'next/cache';
+import type { ActionResult } from '@/app/actions/types';
+
+// Import AuditAction type - may not exist if migration hasn't run
+type AuditAction = 
+  | 'LOGIN' | 'LOGOUT' | 'LOGIN_FAILED' | 'PASSWORD_CHANGE'
+  | 'PROFILE_CREATE' | 'PROFILE_UPDATE' | 'PROFILE_DELETE' | 'PROFILE_SET_DEFAULT' | 'PROFILE_PUBLISH'
+  | 'RESUME_CREATE' | 'RESUME_UPDATE' | 'RESUME_DELETE' | 'RESUME_GENERATE' | 'RESUME_EXPORT_PDF'
+  | 'COVER_LETTER_CREATE' | 'COVER_LETTER_UPDATE' | 'COVER_LETTER_DELETE' | 'COVER_LETTER_GENERATE'
+  | 'TEMPLATE_CREATE' | 'TEMPLATE_UPDATE' | 'TEMPLATE_DELETE'
+  | 'API_KEY_ADD' | 'API_KEY_UPDATE' | 'API_KEY_DELETE'
+  | 'SETTINGS_UPDATE';
+
+/**
+ * Session type for authenticated users
+ */
+export interface ActionSession {
+  user: {
+    id: string;
+    email?: string | null;
+    name?: string | null;
+  };
+}
+
+/**
+ * Options for server action wrapper
+ */
+export interface ServerActionOptions {
+  /** Audit action to log (optional) */
+  auditAction?: AuditAction;
+  /** Resource type for audit logging */
+  resourceType?: string;
+  /** Whether to skip authentication (default: false) */
+  isPublic?: boolean;
+  /** Paths to revalidate on success */
+  revalidatePaths?: string[];
+}
+
+/**
+ * Wrap a server action with authentication, logging, and error handling
+ * 
+ * @param actionName - Name of the action for logging
+ * @param handler - The action handler function
+ * @param options - Optional configuration
+ * @returns Wrapped action function
+ */
+export function withServerAction<TArgs extends unknown[], TResult>(
+  actionName: string,
+  handler: (session: ActionSession, ...args: TArgs) => Promise<TResult>,
+  options: ServerActionOptions = {}
+): (...args: TArgs) => Promise<ActionResult<TResult>> {
+  return async (...args: TArgs): Promise<ActionResult<TResult>> => {
+    const startTime = Date.now();
+
+    try {
+      // Authentication check
+      const session = await auth();
+      
+      if (!options.isPublic && !session?.user?.id) {
+        logger.warn(`Unauthorized ${actionName} attempt`);
+        return { success: false, error: 'Unauthorized' };
+      }
+
+      const actionSession: ActionSession = {
+        user: {
+          id: session?.user?.id || '',
+          email: session?.user?.email,
+          name: session?.user?.name,
+        },
+      };
+
+      // Execute the handler
+      const result = await handler(actionSession, ...args);
+
+      // Calculate duration
+      const duration = Date.now() - startTime;
+
+      // Log success
+      logger.info(`${actionName} completed`, {
+        userId: actionSession.user.id,
+        duration,
+      });
+
+      // Revalidate paths if configured
+      if (options.revalidatePaths) {
+        for (const path of options.revalidatePaths) {
+          revalidatePath(path);
+        }
+      }
+
+      // Audit log if configured
+      if (options.auditAction && session?.user?.id) {
+        const resourceId = extractResourceId(result);
+        auditLog.success(options.auditAction, session.user.id, {
+          resourceType: options.resourceType,
+          resourceId,
+          metadata: { duration },
+        });
+      }
+
+      return { success: true, data: result };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      // Log error
+      logger.error(`${actionName} failed`, error, {
+        duration,
+      });
+
+      // Audit log failure if configured
+      if (options.auditAction) {
+        const session = await auth().catch(() => null);
+        auditLog.failure(
+          options.auditAction,
+          session?.user?.id,
+          errorMessage,
+          {
+            resourceType: options.resourceType,
+            metadata: { duration },
+          }
+        );
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  };
+}
+
+/**
+ * Create a server action without authentication requirement
+ * 
+ * @param actionName - Name of the action for logging
+ * @param handler - The action handler function
+ * @returns Wrapped action function
+ */
+export function withPublicAction<TArgs extends unknown[], TResult>(
+  actionName: string,
+  handler: (...args: TArgs) => Promise<TResult>
+): (...args: TArgs) => Promise<ActionResult<TResult>> {
+  return async (...args: TArgs): Promise<ActionResult<TResult>> => {
+    const startTime = Date.now();
+
+    try {
+      const result = await handler(...args);
+      const duration = Date.now() - startTime;
+
+      logger.info(`${actionName} completed`, { duration });
+
+      return { success: true, data: result };
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      logger.error(`${actionName} failed`, error, { duration });
+
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
+  };
+}
+
+/**
+ * Extract resource ID from action result for audit logging
+ */
+function extractResourceId(result: unknown): string | undefined {
+  if (result && typeof result === 'object') {
+    if ('id' in result && typeof result.id === 'string') {
+      return result.id;
+    }
+    if ('data' in result && typeof result.data === 'object' && result.data && 'id' in result.data) {
+      return (result.data as { id: string }).id;
+    }
+  }
+  return undefined;
+}

@@ -9,30 +9,26 @@ import type { Resume } from "@/lib/validations/jsonresume";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 
 /**
- * Default API Configuration
- * 
- * IMPORTANT: This is a fallback configuration for development/testing purposes.
- * In production, always use the OPENAI_API_KEY environment variable.
- * 
- * To override, set OPENAI_API_KEY in your environment or .env file.
+ * Default model configuration
  */
 const DEFAULT_CONFIG = {
-    // Replace with your development API key or leave empty to require environment variable
-    apiKey: process.env.OPENAI_API_KEY || '',
     defaultModel: 'gpt-4o-mini',
     defaultVisionModel: 'gpt-4o',
 };
 
-// Create OpenAI client with configuration
-const getOpenAIClient = () => {
-    if (!DEFAULT_CONFIG.apiKey) {
+/**
+ * Create OpenAI client with the provided API key
+ * API keys are managed through the in-app Settings → API Keys
+ */
+const getOpenAIClient = (apiKey: string) => {
+    if (!apiKey) {
         throw new Error(
-            'No OpenAI API key configured. Please set OPENAI_API_KEY environment variable or configure DEFAULT_CONFIG.apiKey in resume-parser.ts'
+            'No API key provided. Please configure an API provider in Settings → API Keys'
         );
     }
 
     return createOpenAI({
-        apiKey: DEFAULT_CONFIG.apiKey,
+        apiKey,
     });
 };
 
@@ -141,10 +137,11 @@ function normalizeDates(data: unknown): unknown {
 }
 
 export async function parseResumeFromText(
-    text: string
+    text: string,
+    apiKey: string
 ): Promise<Resume> {
     try {
-        const openaiClient = getOpenAIClient();
+        const openaiClient = getOpenAIClient(apiKey);
         const { text: responseText } = await generateText({
             model: openaiClient(DEFAULT_CONFIG.defaultModel),
             system: EXTRACTION_PROMPT,
@@ -189,10 +186,11 @@ export async function parseResumeFromText(
 
 export async function parseResumeFromImage(
     imageBase64: string,
-    mimeType: string
+    mimeType: string,
+    apiKey: string
 ): Promise<Resume> {
     try {
-        const openaiClient = getOpenAIClient();
+        const openaiClient = getOpenAIClient(apiKey);
         const { text: responseText } = await generateText({
             model: openaiClient(DEFAULT_CONFIG.defaultVisionModel),
             messages: [

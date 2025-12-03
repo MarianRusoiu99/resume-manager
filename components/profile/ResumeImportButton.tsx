@@ -16,7 +16,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Image, FileType, ClipboardPaste, Upload, ChevronDown } from "lucide-react";
+import { FileText, Image, FileType, ClipboardPaste, Upload, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import type { Resume } from "@/lib/validations/jsonresume";
@@ -139,7 +139,7 @@ export function ResumeImportButton({ onImportSuccess }: ResumeImportButtonProps)
                     <Button variant="outline" disabled={isUploading}>
                         {isUploading ? (
                             <>
-                                <Upload className="h-4 w-4 mr-2 animate-spin" />
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                 Importing...
                             </>
                         ) : (

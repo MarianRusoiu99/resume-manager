@@ -4,28 +4,15 @@
  */
 
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth/config';
+import { createApiHandler } from '@/lib/api-handler';
 import { apiProviderService } from '@/lib/services/api-provider.service';
 
-export async function GET() {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+export const GET = createApiHandler(async (request, context, session) => {
+  const result = await apiProviderService.getAvailableModels(session.user.id);
 
-    const result = await apiProviderService.getAvailableModels(session.user.id);
-
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
-    }
-
-    return NextResponse.json(result.data);
-  } catch (error) {
-    console.error('Error fetching models:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch models' },
-      { status: 500 }
-    );
+  if (!result.success) {
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
-}
+
+  return NextResponse.json(result.data);
+});

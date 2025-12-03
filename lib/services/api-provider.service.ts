@@ -12,6 +12,8 @@ import {
   getProviderName,
   type AIModel,
 } from '@/lib/ai/providers';
+import { logger } from '@/lib/utils/logger';
+import { success, failure, type ServiceResult } from '@/lib/types/service-result';
 
 export interface AddApiProviderInput {
   userId: string;
@@ -35,6 +37,43 @@ export interface ProviderWithModels {
   keyPreview: string;
   createdAt: Date;
   lastUsedAt: Date | null;
+}
+
+export interface ProviderInfo {
+  id: string;
+  name: string;
+  provider: string;
+  keyPreview: string;
+  models: AIModel[];
+  isActive: boolean;
+  createdAt: Date;
+}
+
+export interface ProviderListItem {
+  id: string;
+  name: string;
+  provider: string;
+  providerName: string;
+  keyPreview: string;
+  models: string[];
+  isActive: boolean;
+  createdAt: Date;
+  lastUsedAt: Date | null;
+}
+
+export interface ProviderInstanceData {
+  provider: import('@/lib/ai/providers').AIProvider;
+  providerType: string;
+}
+
+export interface AvailableModelsData {
+  providers: ProviderWithModels[];
+  allModels: Array<AIModel & { uniqueId: string; providerId: string; providerType: string; providerName: string }>;
+}
+
+export interface ValidationData {
+  valid: boolean;
+  modelsCount: number;
 }
 
 /**
@@ -64,23 +103,17 @@ function filterTextModels(models: AIModel[]): AIModel[] {
 }
 
 class ApiProviderService {
-  async addProvider(input: AddApiProviderInput) {
+  async addProvider(input: AddApiProviderInput): Promise<ServiceResult<ProviderInfo>> {
     try {
       if (!isProviderSupported(input.provider)) {
         const supported = getSupportedProviders().join(', ');
-        return {
-          success: false,
-          error: `Unsupported provider: ${input.provider}. Supported: ${supported}`,
-        };
+        return failure(`Unsupported provider: ${input.provider}. Supported: ${supported}`, 'VALIDATION_ERROR');
       }
 
       const providerInstance = createProvider(input.provider, input.apiKey);
 
       if (!providerInstance.validateApiKey(input.apiKey)) {
-        return {
-          success: false,
-          error: `Invalid API key format for ${providerInstance.name}`,
-        };
+        return failure(`Invalid API key format for ${providerInstance.name}`, 'VALIDATION_ERROR');
       }
 
       // Fetch models from the provider API
@@ -92,16 +125,10 @@ class ApiProviderService {
         models = filterTextModels(allModels);
 
         if (!models || models.length === 0) {
-          return {
-            success: false,
-            error: 'No text models available for this API key. Please check your API key permissions.',
-          };
+          return failure('No text models available for this API key. Please check your API key permissions.', 'VALIDATION_ERROR');
         }
       } catch (error) {
-        return {
-          success: false,
-          error: error instanceof Error ? error.message : 'Failed to fetch models from provider API',
-        };
+        return failure(error instanceof Error ? error.message : 'Failed to fetch models from provider API', 'EXTERNAL_SERVICE_ERROR');
       }
 
       const encryptedKey = encryptApiKey(input.apiKey);
@@ -118,32 +145,22 @@ class ApiProviderService {
         models: modelIds,
       });
 
-      return {
-        success: true,
-        data: {
-          id: provider.id,
-          name: provider.name,
-          provider: provider.provider.toLowerCase(), // Convert back to lowercase
-          keyPreview,
-          models,
-          isActive: provider.isActive,
-          createdAt: provider.createdAt,
-        },
-      };
+      return success({
+        id: provider.id,
+        name: provider.name,
+        provider: provider.provider.toLowerCase(), // Convert back to lowercase
+        keyPreview,
+        models,
+        isActive: provider.isActive,
+        createdAt: provider.createdAt,
+      });
     } catch (error) {
-      console.error('Error adding API provider:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to add provider',
-      };
+      logger.error('Error adding API provider', error);
+      return failure(error instanceof Error ? error.message : 'Failed to add provider', 'INTERNAL_ERROR');
     }
   }
 
-  async getUserProvidersWithModels(userId: string): Promise<{
-    success: boolean;
-    data?: ProviderWithModels[];
-    error?: string;
-  }> {
+  async getUserProvidersWithModels(userId: string): Promise<ServiceResult<ProviderWithModels[]>> {
     try {
       const providers = await apiProviderRepository.findByUserId(userId, true);
       const providersWithModels: ProviderWithModels[] = [];
@@ -177,7 +194,7 @@ class ApiProviderService {
             lastUsedAt: provider.lastUsedAt,
           });
         } catch (error) {
-          console.error(`Failed to fetch models for provider ${provider.id}:`, error);
+          logger.error(`Failed to fetch models for provider ${provider.id}`, error);
           // Return provider with empty models array on error
           providersWithModels.push({
             id: provider.id,
@@ -192,39 +209,36 @@ class ApiProviderService {
         }
       }
 
-      return { success: true, data: providersWithModels };
+      return success(providersWithModels);
     } catch (error) {
-      console.error('Error getting user providers:', error);
-      return { success: false, error: 'Failed to fetch providers' };
+      logger.error('Error getting user providers', error);
+      return failure('Failed to fetch providers', 'INTERNAL_ERROR');
     }
   }
 
-  async getUserProviders(userId: string) {
+  async getUserProviders(userId: string): Promise<ServiceResult<ProviderListItem[]>> {
     try {
       const providers = await apiProviderRepository.findByUserId(userId, true);
 
-      return {
-        success: true,
-        data: providers.map((p) => {
-          const providerType = p.provider.toLowerCase(); // Convert from DB enum to lowercase
-          const keyPreview = this.getStoredKeyPreview(providerType, p.encryptedKey);
+      return success(providers.map((p) => {
+        const providerType = p.provider.toLowerCase(); // Convert from DB enum to lowercase
+        const keyPreview = this.getStoredKeyPreview(providerType, p.encryptedKey);
 
-          return {
-            id: p.id,
-            name: p.name,
-            provider: providerType, // Use lowercase
-            providerName: getProviderName(providerType),
-            keyPreview,
-            models: p.models, // Return stored model IDs
-            isActive: p.isActive,
-            createdAt: p.createdAt,
-            lastUsedAt: p.lastUsedAt,
-          };
-        }),
-      };
+        return {
+          id: p.id,
+          name: p.name,
+          provider: providerType, // Use lowercase
+          providerName: getProviderName(providerType),
+          keyPreview,
+          models: p.models, // Return stored model IDs
+          isActive: p.isActive,
+          createdAt: p.createdAt,
+          lastUsedAt: p.lastUsedAt,
+        };
+      }));
     } catch (error) {
-      console.error('Error getting user providers:', error);
-      return { success: false, error: 'Failed to fetch providers' };
+      logger.error('Error getting user providers', error);
+      return failure('Failed to fetch providers', 'INTERNAL_ERROR');
     }
   }
 
@@ -237,16 +251,16 @@ class ApiProviderService {
     return previews[providerType] || '***...***';
   }
 
-  async getProviderInstance(providerId: string, userId: string) {
+  async getProviderInstance(providerId: string, userId: string): Promise<ServiceResult<ProviderInstanceData>> {
     try {
       const provider = await apiProviderRepository.findById(providerId, userId);
 
       if (!provider) {
-        return { success: false, error: 'Provider not found' };
+        return failure('Provider not found', 'NOT_FOUND');
       }
 
       if (!provider.isActive) {
-        return { success: false, error: 'Provider is inactive' };
+        return failure('Provider is inactive', 'VALIDATION_ERROR');
       }
 
       const apiKey = decryptApiKey(provider.encryptedKey);
@@ -254,31 +268,22 @@ class ApiProviderService {
       const providerInstance = createProvider(providerType, apiKey);
       await apiProviderRepository.updateLastUsed(providerId);
 
-      return {
-        success: true,
-        data: {
-          provider: providerInstance,
-          providerType: providerType, // Use lowercase
-        },
-      };
+      return success({
+        provider: providerInstance,
+        providerType: providerType, // Use lowercase
+      });
     } catch (error) {
-      console.error('Error getting provider instance:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to get provider',
-      };
+      logger.error('Error getting provider instance', error);
+      return failure(error instanceof Error ? error.message : 'Failed to get provider', 'INTERNAL_ERROR');
     }
   }
 
-  async getAvailableModels(userId: string) {
+  async getAvailableModels(userId: string): Promise<ServiceResult<AvailableModelsData>> {
     try {
       const result = await this.getUserProvidersWithModels(userId);
 
-      if (!result.success || !result.data) {
-        return {
-          success: false,
-          error: result.error || 'Failed to fetch providers',
-        };
+      if (!result.success) {
+        return failure(result.error, 'INTERNAL_ERROR');
       }
 
       const activeProviders = result.data.filter((p) => p.isActive);
@@ -295,16 +300,13 @@ class ApiProviderService {
         }))
       );
 
-      return {
-        success: true,
-        data: {
-          providers: activeProviders,
-          allModels,
-        },
-      };
+      return success({
+        providers: activeProviders,
+        allModels,
+      });
     } catch (error) {
-      console.error('Error getting available models:', error);
-      return { success: false, error: 'Failed to fetch models' };
+      logger.error('Error getting available models', error);
+      return failure('Failed to fetch models', 'INTERNAL_ERROR');
     }
   }
 
@@ -312,11 +314,11 @@ class ApiProviderService {
     providerId: string,
     userId: string,
     input: UpdateApiProviderInput
-  ) {
+  ): Promise<ServiceResult<{ message: string }>> {
     try {
       const provider = await apiProviderRepository.findById(providerId, userId);
       if (!provider) {
-        return { success: false, error: 'Provider not found' };
+        return failure('Provider not found', 'NOT_FOUND');
       }
 
       const updateData: Record<string, unknown> = {};
@@ -330,10 +332,7 @@ class ApiProviderService {
         const providerInstance = createProvider(providerType, input.apiKey);
 
         if (!providerInstance.validateApiKey(input.apiKey)) {
-          return {
-            success: false,
-            error: `Invalid API key format for ${providerInstance.name}`,
-          };
+          return failure(`Invalid API key format for ${providerInstance.name}`, 'VALIDATION_ERROR');
         }
 
         updateData.encryptedKey = encryptApiKey(input.apiKey);
@@ -345,36 +344,30 @@ class ApiProviderService {
 
       await apiProviderRepository.update(providerId, userId, updateData);
 
-      return { success: true, message: 'Provider updated successfully' };
+      return success({ message: 'Provider updated successfully' });
     } catch (error) {
-      console.error('Error updating provider:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to update provider',
-      };
+      logger.error('Error updating provider', error);
+      return failure(error instanceof Error ? error.message : 'Failed to update provider', 'INTERNAL_ERROR');
     }
   }
 
-  async deleteProvider(providerId: string, userId: string) {
+  async deleteProvider(providerId: string, userId: string): Promise<ServiceResult<{ message: string }>> {
     try {
       await apiProviderRepository.delete(providerId, userId);
-      return { success: true, message: 'Provider deleted successfully' };
+      return success({ message: 'Provider deleted successfully' });
     } catch (error) {
-      console.error('Error deleting provider:', error);
-      return { success: false, error: 'Failed to delete provider' };
+      logger.error('Error deleting provider', error);
+      return failure('Failed to delete provider', 'INTERNAL_ERROR');
     }
   }
 
-  async toggleProvider(providerId: string, userId: string, isActive: boolean) {
+  async toggleProvider(providerId: string, userId: string, isActive: boolean): Promise<ServiceResult<{ message: string }>> {
     try {
       await apiProviderRepository.toggleActive(providerId, userId, isActive);
-      return {
-        success: true,
-        message: `Provider ${isActive ? 'enabled' : 'disabled'} successfully`,
-      };
+      return success({ message: `Provider ${isActive ? 'enabled' : 'disabled'} successfully` });
     } catch (error) {
-      console.error('Error toggling provider:', error);
-      return { success: false, error: 'Failed to toggle provider' };
+      logger.error('Error toggling provider', error);
+      return failure('Failed to toggle provider', 'INTERNAL_ERROR');
     }
   }
 
@@ -385,35 +378,53 @@ class ApiProviderService {
     }));
   }
 
-  async validateApiKey(providerType: string, apiKey: string) {
+  async validateApiKey(providerType: string, apiKey: string): Promise<ServiceResult<ValidationData>> {
     try {
       if (!isProviderSupported(providerType)) {
-        return { success: false, error: 'Unsupported provider type' };
+        return failure('Unsupported provider type', 'VALIDATION_ERROR');
       }
 
       const providerInstance = createProvider(providerType, apiKey);
 
       if (!providerInstance.validateApiKey(apiKey)) {
-        return {
-          success: false,
-          error: `Invalid API key format for ${providerInstance.name}`,
-        };
+        return failure(`Invalid API key format for ${providerInstance.name}`, 'VALIDATION_ERROR');
       }
 
       const models = await providerInstance.fetchModels();
 
-      return {
-        success: true,
-        data: {
-          valid: true,
-          modelsCount: models.length,
-        },
-      };
+      return success({
+        valid: true,
+        modelsCount: models.length,
+      });
     } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'API key validation failed',
-      };
+      return failure(error instanceof Error ? error.message : 'API key validation failed', 'EXTERNAL_SERVICE_ERROR');
+    }
+  }
+
+  /**
+   * Get the first active provider for a user with decrypted API key
+   * Used for features that need an API key but don't have a specific model selected
+   */
+  async getFirstActiveProvider(userId: string): Promise<ServiceResult<{ apiKey: string; providerType: string; providerId: string }>> {
+    try {
+      const providers = await apiProviderRepository.findByUserId(userId, true);
+      const activeProvider = providers.find(p => p.isActive);
+
+      if (!activeProvider) {
+        return failure('No active API provider configured. Please add one in Settings → API Keys', 'NOT_FOUND');
+      }
+
+      const apiKey = decryptApiKey(activeProvider.encryptedKey);
+      const providerType = activeProvider.provider.toLowerCase();
+
+      return success({
+        apiKey,
+        providerType,
+        providerId: activeProvider.id,
+      });
+    } catch (error) {
+      logger.error('Error getting first active provider', error);
+      return failure(error instanceof Error ? error.message : 'Failed to get provider', 'INTERNAL_ERROR');
     }
   }
 }

@@ -177,3 +177,74 @@ model ApiProvider {
   @@index([userId, provider])
   @@index([userId, isActive])
 }
+
+// Enum for audit log actions
+enum AuditAction {
+  // Authentication
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  PASSWORD_CHANGE
+  
+  // Profile operations
+  PROFILE_CREATE
+  PROFILE_UPDATE
+  PROFILE_DELETE
+  PROFILE_SET_DEFAULT
+  PROFILE_PUBLISH
+  
+  // Resume operations
+  RESUME_CREATE
+  RESUME_UPDATE
+  RESUME_DELETE
+  RESUME_GENERATE
+  RESUME_EXPORT_PDF
+  
+  // Cover letter operations
+  COVER_LETTER_CREATE
+  COVER_LETTER_UPDATE
+  COVER_LETTER_DELETE
+  COVER_LETTER_GENERATE
+  
+  // Template operations
+  TEMPLATE_CREATE
+  TEMPLATE_UPDATE
+  TEMPLATE_DELETE
+  
+  // API key operations
+  API_KEY_ADD
+  API_KEY_UPDATE
+  API_KEY_DELETE
+  
+  // Settings
+  SETTINGS_UPDATE
+}
+
+// Audit Log for security and compliance tracking
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String?     // Nullable for anonymous/failed auth attempts
+  action    AuditAction
+  
+  // Resource being acted upon
+  resourceType String?  // e.g., "profile", "resume", "cover-letter"
+  resourceId   String?  // ID of the resource
+  
+  // Request metadata
+  ipAddress    String?
+  userAgent    String?
+  
+  // Additional context (JSON for flexibility)
+  metadata     Json?    // {details, previousValue, newValue, etc.}
+  
+  // Success/failure tracking
+  success      Boolean  @default(true)
+  errorMessage String?
+  
+  timestamp    DateTime @default(now())
+
+  @@index([userId, timestamp(sort: Desc)])
+  @@index([action, timestamp(sort: Desc)])
+  @@index([resourceType, resourceId])
+  @@index([timestamp(sort: Desc)])
+}

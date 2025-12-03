@@ -1,11 +1,9 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { SimpleFormField, SimpleFormFieldList } from "@/components/ui/simple-form-field";
 import type { Project } from "@/lib/validations/jsonresume";
-import { Trash2, Plus } from "lucide-react";
+import { useListForm } from "@/hooks/use-list-form";
+import { FormList } from "@/components/ui/form-list";
 
 interface ProjectsFormProps {
   projects: Project[];
@@ -13,11 +11,10 @@ interface ProjectsFormProps {
 }
 
 export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
-  // Use projects directly from props - controlled component pattern
-  const projectsList = projects;
-
-  const handleAddProject = () => {
-    const newProject: Project = {
+  const { items, addItem, removeItem, updateItem } = useListForm<Project>({
+    initialItems: projects,
+    onChange,
+    newItemTemplate: {
       name: "",
       description: "",
       highlights: [],
@@ -25,132 +22,93 @@ export function ProjectsForm({ projects, onChange }: ProjectsFormProps) {
       startDate: "",
       endDate: "",
       url: "",
-    };
-    onChange([...projectsList, newProject]);
-  };
-
-  const handleRemoveProject = (index: number) => {
-    onChange(projectsList.filter((_, i) => i !== index));
-  };
-
-  const handleProjectChange = (index: number, field: keyof NonNullable<Project>, value: string | string[]) => {
-    const updated = projectsList.map((project, i) => {
-      if (i === index && project) {
-        return { ...project, [field]: value };
-      }
-      return project;
-    });
-    onChange(updated);
-  };
-
-  const handleHighlightsChange = (index: number, value: string) => {
-    const items = value.split("\n").filter((item) => item.trim() !== "");
-    handleProjectChange(index, "highlights", items);
-  };
-
-  const handleKeywordsChange = (index: number, value: string) => {
-    const items = value.split("\n").filter((item) => item.trim() !== "");
-    handleProjectChange(index, "keywords", items);
-  };
+    },
+  });
 
   return (
-    <div className="space-y-6">
-      {projectsList.filter(project => project).map((project, index) => (
-        <div key={index} className="border rounded-md p-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Project {index + 1}</h3>
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={() => handleRemoveProject(index)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+    <FormList
+      items={items}
+      onAdd={addItem}
+      onRemove={removeItem}
+      addButtonText="Add Project"
+      emptyMessage="No projects added yet. Click 'Add Project' to showcase your work."
+      renderItem={(project, index) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SimpleFormField
+            id={`project-name-${index}`}
+            label="Project Name"
+            value={project.name || ""}
+            onChange={(value) => updateItem(index, "name", value)}
+            placeholder="Personal Portfolio Website"
+            required
+          />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`project-name-${index}`}>Project Name *</Label>
-              <Input
-                id={`project-name-${index}`}
-                value={project!.name}
-                onChange={(e) => handleProjectChange(index, "name", e.target.value)}
-                placeholder="Personal Portfolio Website"
-              />
-            </div>
+          <SimpleFormField
+            id={`project-url-${index}`}
+            label="URL"
+            value={project.url || ""}
+            onChange={(value) => updateItem(index, "url", value)}
+            type="url"
+            placeholder="https://project-url.com"
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`project-url-${index}`}>URL</Label>
-              <Input
-                id={`project-url-${index}`}
-                value={project!.url || ""}
-                onChange={(e) => handleProjectChange(index, "url", e.target.value)}
-                placeholder="https://project-url.com"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor={`project-description-${index}`}>Description</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormField
               id={`project-description-${index}`}
-              value={project!.description || ""}
-              onChange={(e) => handleProjectChange(index, "description", e.target.value)}
-              placeholder="Brief description of the project"
+              label="Description"
+              value={project.description || ""}
+              onChange={(value) => updateItem(index, "description", value)}
+              type="textarea"
               rows={3}
+              placeholder="Brief description of the project"
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`project-startDate-${index}`}>Start Date</Label>
-              <Input
-                id={`project-startDate-${index}`}
-                type="date"
-                value={project!.startDate || ""}
-                onChange={(e) => handleProjectChange(index, "startDate", e.target.value)}
-              />
-            </div>
+          <SimpleFormField
+            id={`project-startDate-${index}`}
+            label="Start Date"
+            value={project.startDate || ""}
+            onChange={(value) => updateItem(index, "startDate", value)}
+            type="date"
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`project-endDate-${index}`}>End Date</Label>
-              <Input
-                id={`project-endDate-${index}`}
-                type="date"
-                value={project!.endDate || ""}
-                onChange={(e) => handleProjectChange(index, "endDate", e.target.value)}
-              />
-            </div>
-          </div>
+          <SimpleFormField
+            id={`project-endDate-${index}`}
+            label="End Date"
+            value={project.endDate || ""}
+            onChange={(value) => updateItem(index, "endDate", value)}
+            type="date"
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`project-highlights-${index}`}>Highlights (one per line)</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormFieldList
               id={`project-highlights-${index}`}
-              value={(project!.highlights || []).join("\n")}
-              onChange={(e) => handleHighlightsChange(index, e.target.value)}
-              placeholder="Feature 1&#10;Feature 2"
+              label="Highlights"
+              value={project.highlights || []}
+              onChange={(value) => updateItem(index, "highlights", value)}
+              separator="newline"
+              type="textarea"
               rows={4}
+              placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
+              description="One highlight per line"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={`project-keywords-${index}`}>Tech Stack (one per line)</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormFieldList
               id={`project-keywords-${index}`}
-              value={(project!.keywords || []).join("\n")}
-              onChange={(e) => handleKeywordsChange(index, e.target.value)}
+              label="Tech Stack"
+              value={project.keywords || []}
+              onChange={(value) => updateItem(index, "keywords", value)}
+              separator="newline"
+              type="textarea"
+              rows={3}
               placeholder="React&#10;TypeScript&#10;Node.js"
-              rows={4}
+              description="One technology per line"
             />
           </div>
         </div>
-      ))}
-
-      <Button type="button" onClick={handleAddProject} variant="outline" className="w-full">
-        <Plus className="mr-2 h-4 w-4" /> Add Project
-      </Button>
-    </div>
+      )}
+    />
   );
 }

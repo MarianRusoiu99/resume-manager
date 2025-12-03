@@ -1,7 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth/config';
+/**
+ * Profile API Routes
+ * 
+ * GET /api/profile - Get all profiles for the current user
+ *   - Used for initial data fetching in components
+ * 
+ * POST /api/profile - Create a new profile
+ *   - @deprecated Prefer using createProfile server action from '@/app/actions/profile'
+ *   - Kept for backward compatibility and potential external API access
+ */
+
+import { NextResponse } from 'next/server';
 import { profileService } from '@/lib/services/profile.service';
 import { z } from 'zod';
+import { createApiHandler } from '@/lib/api-handler';
 
 // Schema for creating a new profile
 const createProfileSchema = z.object({
@@ -10,89 +21,51 @@ const createProfileSchema = z.object({
   isDefault: z.boolean().optional(),
 });
 
-/**
- * GET /api/profile - Get all profiles for the current user
- */
-export async function GET() {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+export const GET = createApiHandler(async (request, context, session) => {
+  const result = await profileService.getProfiles(session.user.id);
 
-    const result = await profileService.getProfiles(session.user.id);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(result.data);
-  } catch (error) {
-    console.error('Error fetching profiles:', error);
+  if (!result.success) {
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: result.error },
       { status: 500 }
     );
   }
-}
 
-/**
- * POST /api/profile - Create a new profile
- */
-export async function POST(request: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  return NextResponse.json(result.data);
+});
 
-    const body = await request.json();
-    const validation = createProfileSchema.safeParse(body);
+export const POST = createApiHandler(async (request, context, session) => {
+  const body = await request.json();
+  const validation = createProfileSchema.safeParse(body);
 
-    if (!validation.success) {
-      return NextResponse.json(
-        {
-          error: 'Invalid request',
-          details: validation.error.issues.map(e => ({
-            field: e.path.join('.'),
-            message: e.message
-          }))
-        },
-        { status: 400 }
-      );
-    }
-
-    const { name, resume, isDefault } = validation.data;
-
-    const result = await profileService.createProfile(
-      session.user.id,
-      name,
-      resume,
-      isDefault
-    );
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(result.data, { status: 201 });
-  } catch (error) {
-    console.error('Error creating profile:', error);
+  if (!validation.success) {
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      {
+        error: 'Invalid request',
+        details: validation.error.issues.map(e => ({
+          field: e.path.join('.'),
+          message: e.message
+        }))
+      },
+      { status: 400 }
     );
   }
-}
+
+  const { name, resume, isDefault } = validation.data;
+
+  const result = await profileService.createProfile(
+    session.user.id,
+    name,
+    resume,
+    isDefault
+  );
+
+  if (!result.success) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: 400 }
+    );
+  }
+
+  return NextResponse.json(result.data, { status: 201 });
+});

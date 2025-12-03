@@ -1,23 +1,22 @@
 /**
- * Simple Resume Generator using Vercel AI SDK
+ * Resume Generator using Configurable Workflow Engine
  * 
- * A streamlined workflow for resume generation with structured outputs
- * Now supports multiple AI providers through the provider abstraction layer
+ * A streamlined workflow for resume generation using the workflow engine.
+ * Supports configurable steps and progress tracking.
  */
 
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { AIProvider } from '@/lib/ai/providers';
 import {
-  analyzeJob,
-  type JobAnalysisResult,
-  optimizeResume,
-  type OptimizedResume,
-  generateCoverLetter,
-  type CoverLetterResult,
-} from '@/lib/ai/agents';
+  executeWorkflow,
+  resumeGenerationWorkflow,
+  type WorkflowConfig,
+  type ProgressCallback,
+} from '@/lib/ai/workflow';
+import type { OptimizedResume, OptimizeResumeResult } from '@/lib/ai/agents';
 
 // Re-export types for convenience
-export type { JobAnalysisResult, OptimizedResume, CoverLetterResult };
+export type { OptimizedResume, OptimizeResumeResult };
 
 // ============================================================================
 // Types
@@ -28,18 +27,26 @@ export interface GenerateResumeInput {
   modelId: string;
   jobDescription: string;
   userResume: Resume;
-  includeCoverLetter?: boolean;
-  personalInstructions?: string;
   userId?: string;
+  /** Optional progress callback for streaming updates */
+  onProgress?: ProgressCallback;
+  /** Optional custom workflow configuration */
+  workflow?: WorkflowConfig;
 }
 
 export interface GenerateResumeResult {
   success: boolean;
   resume?: Resume;
-  coverLetter?: string;
-  jobAnalysis?: JobAnalysisResult; // Include job analysis with extracted job title
+  /** Extracted job title from the job description */
+  jobTitle?: string;
+  /** Extracted company name from the job description */
+  companyName?: string;
   error?: string;
   tokensUsed?: number;
+  /** Steps that were executed */
+  executedSteps?: string[];
+  /** Execution time in ms */
+  executionTime?: number;
 }
 
 // ============================================================================
@@ -47,83 +54,55 @@ export interface GenerateResumeResult {
 // ============================================================================
 
 /**
- * Generate an optimized resume (and optionally a cover letter)
+ * Generate an optimized resume using the workflow engine
  * 
- * This is the main entry point that orchestrates the entire workflow:
- * 1. Analyze job description
- * 2. Generate optimized resume and cover letter IN PARALLEL (if requested)
- * 3. Return both results
+ * This is the main entry point that orchestrates the resume generation:
+ * 1. Takes the user's profile (source of truth) and job description
+ * 2. Executes the configured workflow steps
+ * 3. Returns the optimized resume with extracted job metadata
+ * 
+ * IMPORTANT: The optimization NEVER fabricates information. It only:
+ * - Rephrases existing content to better match job requirements
+ * - Removes or de-emphasizes irrelevant information
+ * - Highlights skills and experience that match the job
+ * - Uses appropriate keywords from the job description where truthful
  */
 export async function generateResume(
   input: GenerateResumeInput
 ): Promise<GenerateResumeResult> {
-  try {
-    console.log('🚀 Starting resume generation workflow');
+  const workflow = input.workflow || resumeGenerationWorkflow;
 
-    // Step 1: Analyze the job
-    console.log('🔍 Step 1: Analyzing job description...');
-    const jobAnalysis = await analyzeJob({
-      provider: input.provider,
-      modelId: input.modelId,
-      jobDescription: input.jobDescription,
-    });
-    console.log(`   ✓ Found job: ${jobAnalysis.jobTitle} at ${jobAnalysis.companyName}`);
+  console.log(`🚀 Starting resume generation with workflow: ${workflow.name}`);
+  console.log('   Profile is the source of truth - no fabrication allowed');
 
-    // Step 2 & 3: Generate optimized resume and cover letter IN PARALLEL
-    if (input.includeCoverLetter) {
-      console.log('✨ Step 2 & 3: Generating resume and cover letter in parallel...');
-      
-      const [optimizedResume, coverLetterResult] = await Promise.all([
-        optimizeResume({
-          provider: input.provider,
-          modelId: input.modelId,
-          jobAnalysis,
-          userResume: input.userResume,
-          personalInstructions: input.personalInstructions,
-        }),
-        generateCoverLetter({
-          provider: input.provider,
-          modelId: input.modelId,
-          jobAnalysis,
-          userResume: input.userResume,
-          optimizedResume: input.userResume as OptimizedResume, // Use original resume for cover letter generation in parallel
-        }),
-      ]);
-      
-      console.log('   ✓ Resume optimized');
-      console.log('   ✓ Cover letter generated');
-      console.log('✅ Resume generation complete!');
+  const result = await executeWorkflow({
+    config: workflow,
+    provider: input.provider,
+    modelId: input.modelId,
+    jobDescription: input.jobDescription,
+    userResume: input.userResume,
+    userId: input.userId,
+    onProgress: input.onProgress,
+  });
 
-      return {
-        success: true,
-        resume: optimizedResume as Resume,
-        coverLetter: coverLetterResult.content,
-        jobAnalysis,
-      };
-    } else {
-      // Only generate resume
-      console.log('✨ Step 2: Generating optimized resume...');
-      const optimizedResume = await optimizeResume({
-        provider: input.provider,
-        modelId: input.modelId,
-        jobAnalysis,
-        userResume: input.userResume,
-        personalInstructions: input.personalInstructions,
-      });
-      console.log('   ✓ Resume optimized');
-      console.log('✅ Resume generation complete!');
-
-      return {
-        success: true,
-        resume: optimizedResume as Resume,
-        jobAnalysis,
-      };
-    }
-  } catch (error) {
-    console.error('❌ Resume generation failed:', error);
+  if (!result.success) {
+    console.error('❌ Workflow failed:', result.error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: result.error,
+      executedSteps: result.executedSteps,
+      executionTime: result.executionTime,
     };
   }
+
+  console.log(`✅ Resume generation complete in ${result.executionTime}ms`);
+
+  return {
+    success: true,
+    resume: result.results.resume as Resume,
+    jobTitle: result.results.jobTitle as string,
+    companyName: result.results.companyName as string,
+    executedSteps: result.executedSteps,
+    executionTime: result.executionTime,
+  };
 }

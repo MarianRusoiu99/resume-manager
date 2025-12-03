@@ -8,14 +8,10 @@ import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { templateRepository } from '@/lib/repositories/template.repository';
 import { templateService } from '@/lib/services/template.service';
-import { logger } from '@/lib/utils/logger';
-import { auth } from '@/lib/auth/config';
+import { createApiHandler } from '@/lib/api-handler';
 
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
+export const GET = createApiHandler(
+  async (request, { params }) => {
     const { id } = await params;
     const template = await templateRepository.findById(id);
 
@@ -27,94 +23,46 @@ export async function GET(
     }
 
     return NextResponse.json(template);
-  } catch (error) {
-    const { id } = await params;
-    logger.error(`Failed to fetch template ${id}`, error);
+  },
+  { isPublic: true }
+);
+
+export const PATCH = createApiHandler(async (request, { params }) => {
+  const { id } = await params;
+  const body = await request.json();
+
+  const result = await templateService.updateTemplate(id, body);
+
+  if (!result.success) {
+    const statusCode = result.error === 'Template not found' ? 404 : 400;
     return NextResponse.json(
-      { error: 'Failed to fetch template' },
-      { status: 500 }
+      { error: result.error },
+      { status: statusCode }
     );
   }
-}
 
-export async function PATCH(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Check authentication
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  // Revalidate the templates page to show the updated template
+  revalidatePath('/templates');
+  revalidatePath(`/templates/${id}`);
 
-    const { id } = await params;
-    const body = await request.json();
+  return NextResponse.json(result.data);
+});
 
-    const result = await templateService.updateTemplate(id, body);
+export const DELETE = createApiHandler(async (request, { params }) => {
+  const { id } = await params;
 
-    if (!result.success) {
-      const statusCode = result.error === 'Template not found' ? 404 : 400;
-      return NextResponse.json(
-        { error: result.error },
-        { status: statusCode }
-      );
-    }
+  const result = await templateService.deleteTemplate(id);
 
-    // Revalidate the templates page to show the updated template
-    revalidatePath('/templates');
-    revalidatePath(`/templates/${id}`);
-
-    return NextResponse.json(result.data);
-  } catch (error) {
-    const { id } = await params;
-    logger.error(`Failed to update template ${id}`, error);
+  if (!result.success) {
+    const statusCode = result.error === 'Template not found' ? 404 : 400;
     return NextResponse.json(
-      { error: 'Failed to update template' },
-      { status: 500 }
+      { error: result.error },
+      { status: statusCode }
     );
   }
-}
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Check authentication
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  // Revalidate the templates page after deletion
+  revalidatePath('/templates');
 
-    const { id } = await params;
-
-    const result = await templateService.deleteTemplate(id);
-
-    if (!result.success) {
-      const statusCode = result.error === 'Template not found' ? 404 : 400;
-      return NextResponse.json(
-        { error: result.error },
-        { status: statusCode }
-      );
-    }
-
-    // Revalidate the templates page after deletion
-    revalidatePath('/templates');
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    const { id } = await params;
-    logger.error(`Failed to delete template ${id}`, error);
-    return NextResponse.json(
-      { error: 'Failed to delete template' },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json({ success: true });
+});

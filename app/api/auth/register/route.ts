@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/middleware/rate-limit-helpers";
+import { logger } from "@/lib/utils/logger";
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error("Registration error:", error);
+    logger.error("Registration error", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

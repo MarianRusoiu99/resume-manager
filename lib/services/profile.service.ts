@@ -2,6 +2,12 @@ import { profileRepository } from "@/lib/repositories/profile.repository";
 import { profileCache } from "@/lib/cache/simple-cache";
 import { ZodError } from "zod";
 import type { Resume } from "@/lib/validations/jsonresume";
+import { logger } from "@/lib/utils/logger";
+import { success, failure, type ServiceResult } from "@/lib/types/service-result";
+
+// Type for profile data returned from repository
+type Profile = Awaited<ReturnType<typeof profileRepository.findById>>;
+type ProfileList = Awaited<ReturnType<typeof profileRepository.findAllByUserId>>;
 
 export class ProfileService {
   private getCacheKey(userId: string): string {
@@ -12,96 +18,94 @@ export class ProfileService {
     return `profile:${profileId}`;
   }
 
+  private invalidateUserCache(userId: string, profileId?: string): void {
+    profileCache.delete(this.getCacheKey(userId));
+    if (profileId) {
+      profileCache.delete(this.getProfileCacheKey(profileId));
+    }
+  }
+
   /**
    * Get all profiles for a user
    */
-  async getProfiles(userId: string) {
+  async getProfiles(userId: string): Promise<ServiceResult<ProfileList>> {
     try {
       // Check cache first
       const cacheKey = this.getCacheKey(userId);
       const cached = profileCache.get(cacheKey);
       if (cached) {
-        return { success: true, data: cached };
+        return success(cached as ProfileList);
       }
 
       // Fetch from database
       const profiles = await profileRepository.findAllByUserId(userId);
-      
+
       // Cache the result
       if (profiles) {
         profileCache.set(cacheKey, profiles);
       }
-      
-      return { success: true, data: profiles };
+
+      return success(profiles);
     } catch (error) {
-      console.error("Error fetching profiles:", error);
-      return {
-        success: false,
-        error: "Failed to fetch profiles",
-      };
+      logger.error("Error fetching profiles", error);
+      return failure("Failed to fetch profiles", "INTERNAL_ERROR");
     }
   }
 
   /**
    * Get a specific profile by ID
    */
-  async getProfileById(profileId: string, userId: string) {
+  async getProfileById(profileId: string, userId: string): Promise<ServiceResult<NonNullable<Profile>>> {
     try {
       // Check cache first
       const cacheKey = this.getProfileCacheKey(profileId);
       const cached = profileCache.get(cacheKey);
       if (cached) {
-        return { success: true, data: cached };
+        return success(cached as NonNullable<Profile>);
       }
 
       // Fetch from database
       const profile = await profileRepository.findById(profileId, userId);
-      
+
       if (!profile) {
-        return {
-          success: false,
-          error: "Profile not found",
-        };
+        return failure("Profile not found", "NOT_FOUND");
       }
 
       // Cache the result
       profileCache.set(cacheKey, profile);
-      
-      return { success: true, data: profile };
+
+      return success(profile);
     } catch (error) {
-      console.error("Error fetching profile:", error);
-      return {
-        success: false,
-        error: "Failed to fetch profile",
-      };
+      logger.error("Error fetching profile", error);
+      return failure("Failed to fetch profile", "INTERNAL_ERROR");
     }
   }
 
   /**
    * Get default profile for a user (for backward compatibility)
    */
-  async getProfile(userId: string) {
+  async getProfile(userId: string): Promise<ServiceResult<Profile>> {
     try {
       // Fetch default profile
       const profile = await profileRepository.findDefaultByUserId(userId);
-      
-      return { success: true, data: profile };
+
+      return success(profile);
     } catch (error) {
-      console.error("Error fetching default profile:", error);
-      return {
-        success: false,
-        error: "Failed to fetch profile",
-      };
+      logger.error("Error fetching default profile", error);
+      return failure("Failed to fetch profile", "INTERNAL_ERROR");
     }
   }
 
   /**
    * Create a new profile
    */
-  async createProfile(userId: string, name: string, data: Resume, isDefault: boolean = false) {
+  async createProfile(
+    userId: string, 
+    name: string, 
+    data: Resume, 
+    isDefault: boolean = false
+  ): Promise<ServiceResult<NonNullable<Profile>>> {
     try {
- 
-
       // If this is set as default, unset other defaults
       if (isDefault) {
         await profileRepository.unsetAllDefaults(userId);
@@ -116,39 +120,32 @@ export class ProfileService {
       });
 
       // Invalidate cache
-      const cacheKey = this.getCacheKey(userId);
-      profileCache.delete(cacheKey);
+      this.invalidateUserCache(userId);
 
-      return { success: true, data: profile };
+      return success(profile);
     } catch (error) {
       if (error instanceof ZodError) {
-        return {
-          success: false,
-          error: "Validation error",
-          details: error.issues,
-        };
+        return failure("Validation error: " + error.issues[0].message, "VALIDATION_ERROR");
       }
 
-      console.error("Error creating profile:", error);
-      return {
-        success: false,
-        error: "Failed to create profile",
-      };
+      logger.error("Error creating profile", error);
+      return failure("Failed to create profile", "INTERNAL_ERROR");
     }
   }
 
   /**
    * Update a profile
    */
-  async updateProfile(profileId: string, userId: string, data: Partial<{ name: string; resume: Resume; isDefault: boolean; selectedTemplateId: string | null }>) {
+  async updateProfile(
+    profileId: string, 
+    userId: string, 
+    data: Partial<{ name: string; resume: Resume; isDefault: boolean; selectedTemplateId: string | null }>
+  ): Promise<ServiceResult<NonNullable<Profile>>> {
     try {
       // Check if profile exists and belongs to user
       const existing = await profileRepository.findById(profileId, userId);
       if (!existing) {
-        return {
-          success: false,
-          error: "Profile not found",
-        };
+        return failure("Profile not found", "NOT_FOUND");
       }
 
       // If setting as default, unset other defaults
@@ -160,50 +157,34 @@ export class ProfileService {
       const profile = await profileRepository.update(profileId, userId, data);
 
       // Invalidate cache
-      const cacheKey = this.getCacheKey(userId);
-      const profileCacheKey = this.getProfileCacheKey(profileId);
-      profileCache.delete(cacheKey);
-      profileCache.delete(profileCacheKey);
+      this.invalidateUserCache(userId, profileId);
 
-      return { success: true, data: profile };
+      return success(profile);
     } catch (error) {
       if (error instanceof ZodError) {
-        return {
-          success: false,
-          error: "Validation error",
-          details: error.issues,
-        };
+        return failure("Validation error: " + error.issues[0].message, "VALIDATION_ERROR");
       }
 
-      console.error("Error updating profile:", error);
-      return {
-        success: false,
-        error: "Failed to update profile",
-      };
+      logger.error("Error updating profile", error);
+      return failure("Failed to update profile", "INTERNAL_ERROR");
     }
   }
 
   /**
    * Delete a profile
    */
-  async deleteProfile(profileId: string, userId: string) {
+  async deleteProfile(profileId: string, userId: string): Promise<ServiceResult<void>> {
     try {
       // Check if profile exists
       const profile = await profileRepository.findById(profileId, userId);
       if (!profile) {
-        return {
-          success: false,
-          error: "Profile not found",
-        };
+        return failure("Profile not found", "NOT_FOUND");
       }
 
       // Don't allow deleting the last profile
       const allProfiles = await profileRepository.findAllByUserId(userId);
       if (allProfiles.length <= 1) {
-        return {
-          success: false,
-          error: "Cannot delete your last profile",
-        };
+        return failure("Cannot delete your last profile", "CONFLICT");
       }
 
       // If deleting default profile, set another as default
@@ -215,35 +196,26 @@ export class ProfileService {
       }
 
       await profileRepository.delete(profileId, userId);
-      
+
       // Invalidate cache
-      const cacheKey = this.getCacheKey(userId);
-      const profileCacheKey = this.getProfileCacheKey(profileId);
-      profileCache.delete(cacheKey);
-      profileCache.delete(profileCacheKey);
-      
-      return { success: true };
+      this.invalidateUserCache(userId, profileId);
+
+      return success(undefined as void);
     } catch (error) {
-      console.error("Error deleting profile:", error);
-      return {
-        success: false,
-        error: "Failed to delete profile",
-      };
+      logger.error("Error deleting profile", error);
+      return failure("Failed to delete profile", "INTERNAL_ERROR");
     }
   }
 
   /**
    * Set a profile as default
    */
-  async setDefaultProfile(profileId: string, userId: string) {
+  async setDefaultProfile(profileId: string, userId: string): Promise<ServiceResult<void>> {
     try {
       // Check if profile exists
       const profile = await profileRepository.findById(profileId, userId);
       if (!profile) {
-        return {
-          success: false,
-          error: "Profile not found",
-        };
+        return failure("Profile not found", "NOT_FOUND");
       }
 
       // Unset all defaults and set this one
@@ -251,34 +223,31 @@ export class ProfileService {
       await profileRepository.update(profileId, userId, { isDefault: true });
 
       // Invalidate cache
-      const cacheKey = this.getCacheKey(userId);
-      profileCache.delete(cacheKey);
+      this.invalidateUserCache(userId);
 
-      return { success: true };
+      return success(undefined as void);
     } catch (error) {
-      console.error("Error setting default profile:", error);
-      return {
-        success: false,
-        error: "Failed to set default profile",
-      };
+      logger.error("Error setting default profile", error);
+      return failure("Failed to set default profile", "INTERNAL_ERROR");
     }
   }
 
   /**
    * Duplicate a profile
    */
-  async duplicateProfile(profileId: string, userId: string, newName?: string) {
+  async duplicateProfile(
+    profileId: string, 
+    userId: string, 
+    newName?: string
+  ): Promise<ServiceResult<NonNullable<Profile>>> {
     try {
       const profile = await profileRepository.findById(profileId, userId);
       if (!profile) {
-        return {
-          success: false,
-          error: "Profile not found",
-        };
+        return failure("Profile not found", "NOT_FOUND");
       }
 
       const duplicateName = newName || `${profile.name} (Copy)`;
-      
+
       const newProfile = await profileRepository.create({
         userId,
         name: duplicateName,
@@ -287,16 +256,12 @@ export class ProfileService {
       });
 
       // Invalidate cache
-      const cacheKey = this.getCacheKey(userId);
-      profileCache.delete(cacheKey);
+      this.invalidateUserCache(userId);
 
-      return { success: true, data: newProfile };
+      return success(newProfile);
     } catch (error) {
-      console.error("Error duplicating profile:", error);
-      return {
-        success: false,
-        error: "Failed to duplicate profile",
-      };
+      logger.error("Error duplicating profile", error);
+      return failure("Failed to duplicate profile", "INTERNAL_ERROR");
     }
   }
 }

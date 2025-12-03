@@ -27,8 +27,8 @@ export async function getAIProvider(
   if (providerId) {
     const result = await apiProviderService.getProviderInstance(providerId, userId);
     
-    if (!result.success || !result.data) {
-      throw new Error(result.error || 'Failed to get provider instance');
+    if (!result.success) {
+      throw new Error(result.error);
     }
 
     const { provider, providerType } = result.data;
@@ -43,7 +43,7 @@ export async function getAIProvider(
   // Otherwise, find a provider that supports this model
   const modelsResult = await apiProviderService.getAvailableModels(userId);
   
-  if (!modelsResult.success || !modelsResult.data) {
+  if (!modelsResult.success) {
     throw new Error('No API providers configured. Please add one in Settings → API Keys');
   }
 
@@ -60,8 +60,8 @@ export async function getAIProvider(
     userId
   );
 
-  if (!providerResult.success || !providerResult.data) {
-    throw new Error(providerResult.error || 'Failed to get provider instance');
+  if (!providerResult.success) {
+    throw new Error(providerResult.error);
   }
 
   const { provider, providerType } = providerResult.data;
@@ -79,7 +79,7 @@ export async function getAIProvider(
 export async function getDefaultModel(userId: string): Promise<string | null> {
   const modelsResult = await apiProviderService.getAvailableModels(userId);
 
-  if (!modelsResult.success || !modelsResult.data || modelsResult.data.allModels.length === 0) {
+  if (!modelsResult.success || modelsResult.data.allModels.length === 0) {
     return null;
   }
 

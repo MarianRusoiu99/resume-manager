@@ -7,8 +7,8 @@
 
 import { useState, useEffect } from 'react';
 import { Edit, Trash2, Eye, Copy, Download } from 'lucide-react';
-import { GalleryCard, type GalleryCardAction } from '@/components/ui/GalleryCard';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { GalleryCard, type GalleryCardAction } from "@/components/shared/GalleryCard";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { TemplatePreviewModal } from './TemplatePreviewModal';
 import { toast } from 'sonner';
 import type { ResumeTemplate } from '@/lib/templates/template';
@@ -188,25 +188,25 @@ export function TemplateCard({
     },
     ...(showAdminActions
       ? [
-          {
-            label: 'Edit',
-            icon: <Edit className="h-4 w-4" />,
-            onClick: () => {
-              globalThis.location.href = `/templates/${template.id}`;
-            },
+        {
+          label: 'Edit',
+          icon: <Edit className="h-4 w-4" />,
+          onClick: () => {
+            globalThis.location.href = `/templates/${template.id}`;
           },
-          {
-            label: 'Duplicate',
-            icon: <Copy className="h-4 w-4" />,
-            onClick: handleDuplicate,
-          },
-          {
-            label: 'Delete',
-            icon: <Trash2 className="h-4 w-4" />,
-            onClick: () => setShowDeleteDialog(true),
-            variant: 'destructive' as const,
-          },
-        ]
+        },
+        {
+          label: 'Duplicate',
+          icon: <Copy className="h-4 w-4" />,
+          onClick: handleDuplicate,
+        },
+        {
+          label: 'Delete',
+          icon: <Trash2 className="h-4 w-4" />,
+          onClick: () => setShowDeleteDialog(true),
+          variant: 'destructive' as const,
+        },
+      ]
       : []),
   ];
 

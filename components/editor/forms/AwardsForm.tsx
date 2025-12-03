@@ -1,12 +1,9 @@
 "use client";
 
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { SimpleFormField } from "@/components/ui/simple-form-field";
 import type { Award } from "@/lib/validations/jsonresume";
-import { Trash2, Plus } from "lucide-react";
+import { useListForm } from "@/hooks/use-list-form";
+import { FormList } from "@/components/ui/form-list";
 
 interface AwardsFormProps {
   awards: Award[];
@@ -14,97 +11,65 @@ interface AwardsFormProps {
 }
 
 export function AwardsForm({ awards, onChange }: AwardsFormProps) {
-  // Use awards directly from props - controlled component pattern
-  const awardsList = awards;
-
-  const handleAddAward = () => {
-    const newAward: Award = {
+  const { items, addItem, removeItem, updateItem } = useListForm<Award>({
+    initialItems: awards,
+    onChange,
+    newItemTemplate: {
       title: "",
       date: "",
       awarder: "",
       summary: "",
-    };
-    onChange([...awardsList, newAward]);
-  };
-
-  const handleRemoveAward = (index: number) => {
-    onChange(awardsList.filter((_, i) => i !== index));
-  };
-
-  const handleAwardChange = (index: number, field: keyof NonNullable<Award>, value: string) => {
-    const updated = awardsList.map((award, i) => {
-      if (i === index && award) {
-        return { ...award, [field]: value };
-      }
-      return award;
-    });
-    onChange(updated);
-  };
+    },
+  });
 
   return (
-    <div className="space-y-6">
-      {awardsList.filter(award => award).map((award, index) => (
-        <div key={index} className="border rounded-md p-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Award {index + 1}</h3>
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={() => handleRemoveAward(index)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+    <FormList
+      items={items}
+      onAdd={addItem}
+      onRemove={removeItem}
+      addButtonText="Add Award"
+      emptyMessage="No awards added yet. Click 'Add Award' to showcase your achievements."
+      renderItem={(award, index) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SimpleFormField
+            id={`award-title-${index}`}
+            label="Award Title"
+            value={award.title || ""}
+            onChange={(value) => updateItem(index, "title", value)}
+            placeholder="Employee of the Year"
+            required
+          />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`award-title-${index}`}>Award Title *</Label>
-              <Input
-                id={`award-title-${index}`}
-                value={award!.title || ""}
-                onChange={(e) => handleAwardChange(index, "title", e.target.value)}
-                placeholder="Employee of the Year"
-              />
-            </div>
+          <SimpleFormField
+            id={`award-awarder-${index}`}
+            label="Awarded By"
+            value={award.awarder || ""}
+            onChange={(value) => updateItem(index, "awarder", value)}
+            placeholder="Company Name"
+            required
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`award-awarder-${index}`}>Awarded By *</Label>
-              <Input
-                id={`award-awarder-${index}`}
-                value={award!.awarder || ""}
-                onChange={(e) => handleAwardChange(index, "awarder", e.target.value)}
-                placeholder="Company Name"
-              />
-            </div>
-          </div>
+          <SimpleFormField
+            id={`award-date-${index}`}
+            label="Date Received"
+            value={award.date || ""}
+            onChange={(value) => updateItem(index, "date", value)}
+            type="date"
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`award-date-${index}`}>Date Received</Label>
-            <Input
-              id={`award-date-${index}`}
-              type="date"
-              value={award!.date || ""}
-              onChange={(e) => handleAwardChange(index, "date", e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor={`award-summary-${index}`}>Summary</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormField
               id={`award-summary-${index}`}
-              value={award!.summary || ""}
-              onChange={(e) => handleAwardChange(index, "summary", e.target.value)}
-              placeholder="Brief description of the award and what it recognizes"
+              label="Summary"
+              value={award.summary || ""}
+              onChange={(value) => updateItem(index, "summary", value)}
+              type="textarea"
               rows={3}
+              placeholder="Brief description of the award and what it recognizes"
             />
           </div>
         </div>
-      ))}
-
-      <Button type="button" onClick={handleAddAward} variant="outline" className="w-full">
-        <Plus className="mr-2 h-4 w-4" /> Add Award
-      </Button>
-    </div>
+      )}
+    />
   );
 }

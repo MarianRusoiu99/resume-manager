@@ -1,24 +1,20 @@
 "use client";
 
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { SimpleFormField, SimpleFormFieldList } from "@/components/ui/simple-form-field";
 import type { Volunteer } from "@/lib/validations/jsonresume";
-import { Trash2, Plus } from "lucide-react";
+import { useListForm } from "@/hooks/use-list-form";
+import { FormList } from "@/components/ui/form-list";
 
 interface VolunteerFormProps {
   volunteer: Volunteer[];
-  onChange: (volunteer: NonNullable<Volunteer>[]) => void;
+  onChange: (volunteer: Volunteer[]) => void;
 }
 
 export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
-  // Use volunteer directly from props - controlled component pattern
-  const volunteerList = volunteer;
-
-  const handleAddVolunteer = () => {
-    const newVolunteer: Volunteer = {
+  const { items, addItem, removeItem, updateItem } = useListForm<Volunteer>({
+    initialItems: volunteer,
+    onChange,
+    newItemTemplate: {
       organization: "",
       position: "",
       url: "",
@@ -26,126 +22,90 @@ export function VolunteerForm({ volunteer, onChange }: VolunteerFormProps) {
       endDate: "",
       summary: "",
       highlights: [],
-    };
-    onChange([...volunteerList.filter((v): v is NonNullable<Volunteer> => !!v), newVolunteer]);
-  };
-
-  const handleRemoveVolunteer = (index: number) => {
-    onChange(volunteerList.filter((_, i) => i !== index).filter((v): v is NonNullable<Volunteer> => !!v));
-  };
-
-  const handleVolunteerChange = (index: number, field: keyof NonNullable<Volunteer>, value: string | string[]) => {
-    const updated = volunteerList.map((vol, i) => {
-      if (i === index && vol) {
-        return { ...vol, [field]: value };
-      }
-      return vol;
-    });
-    onChange(updated.filter((v): v is NonNullable<Volunteer> => !!v));
-  };
-
-  const handleHighlightsChange = (index: number, value: string) => {
-    const highlights = value.split("\n").filter((item) => item.trim() !== "");
-    handleVolunteerChange(index, "highlights", highlights);
-  };
+    },
+  });
 
   return (
-    <div className="space-y-6">
-      {volunteerList.map((vol, index) => (
-        <div key={index} className="border rounded-md p-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Volunteer Experience {index + 1}</h3>
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={() => handleRemoveVolunteer(index)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+    <FormList
+      items={items}
+      onAdd={addItem}
+      onRemove={removeItem}
+      addButtonText="Add Volunteer Experience"
+      emptyMessage="No volunteer experience added yet. Click 'Add Volunteer Experience' to get started."
+      renderItem={(vol, index) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <SimpleFormField
+            id={`volunteer-organization-${index}`}
+            label="Organization"
+            value={vol.organization || ""}
+            onChange={(value) => updateItem(index, "organization", value)}
+            placeholder="Red Cross"
+            required
+          />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`volunteer-organization-${index}`}>Organization *</Label>
-              <Input
-                id={`volunteer-organization-${index}`}
-                value={vol!.organization || ""}
-                onChange={(e) => handleVolunteerChange(index, "organization", e.target.value)}
-                placeholder="Red Cross"
-              />
-            </div>
+          <SimpleFormField
+            id={`volunteer-position-${index}`}
+            label="Position"
+            value={vol.position || ""}
+            onChange={(value) => updateItem(index, "position", value)}
+            placeholder="Volunteer Coordinator"
+            required
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`volunteer-position-${index}`}>Position *</Label>
-              <Input
-                id={`volunteer-position-${index}`}
-                value={vol!.position || ""}
-                onChange={(e) => handleVolunteerChange(index, "position", e.target.value)}
-                placeholder="Volunteer Coordinator"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor={`volunteer-url-${index}`}>Website URL</Label>
-            <Input
+          <div className="sm:col-span-2">
+            <SimpleFormField
               id={`volunteer-url-${index}`}
-              value={vol!.url || ""}
-              onChange={(e) => handleVolunteerChange(index, "url", e.target.value)}
+              label="Website URL"
+              value={vol.url || ""}
+              onChange={(value) => updateItem(index, "url", value)}
+              type="url"
               placeholder="https://organization-website.org"
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`volunteer-startDate-${index}`}>Start Date</Label>
-              <Input
-                id={`volunteer-startDate-${index}`}
-                type="date"
-                value={vol!.startDate || ""}
-                onChange={(e) => handleVolunteerChange(index, "startDate", e.target.value)}
-              />
-            </div>
+          <SimpleFormField
+            id={`volunteer-startDate-${index}`}
+            label="Start Date"
+            value={vol.startDate || ""}
+            onChange={(value) => updateItem(index, "startDate", value)}
+            type="date"
+          />
 
-            <div className="space-y-2">
-              <Label htmlFor={`volunteer-endDate-${index}`}>End Date</Label>
-              <Input
-                id={`volunteer-endDate-${index}`}
-                type="date"
-                value={vol!.endDate || ""}
-                onChange={(e) => handleVolunteerChange(index, "endDate", e.target.value)}
-              />
-            </div>
-          </div>
+          <SimpleFormField
+            id={`volunteer-endDate-${index}`}
+            label="End Date"
+            value={vol.endDate || ""}
+            onChange={(value) => updateItem(index, "endDate", value)}
+            type="date"
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor={`volunteer-summary-${index}`}>Summary</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormField
               id={`volunteer-summary-${index}`}
-              value={vol!.summary || ""}
-              onChange={(e) => handleVolunteerChange(index, "summary", e.target.value)}
-              placeholder="Brief description of your volunteer work"
+              label="Summary"
+              value={vol.summary || ""}
+              onChange={(value) => updateItem(index, "summary", value)}
+              type="textarea"
               rows={3}
+              placeholder="Brief description of your volunteer work"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor={`volunteer-highlights-${index}`}>Highlights (one per line)</Label>
-            <Textarea
+          <div className="sm:col-span-2">
+            <SimpleFormFieldList
               id={`volunteer-highlights-${index}`}
-              value={(vol!.highlights || []).join("\n")}
-              onChange={(e) => handleHighlightsChange(index, e.target.value)}
-              placeholder="Organized fundraising events&#10;Managed team of 15 volunteers"
+              label="Highlights"
+              value={vol.highlights || []}
+              onChange={(value) => updateItem(index, "highlights", value)}
+              separator="newline"
+              type="textarea"
               rows={4}
+              placeholder="Organized fundraising events&#10;Managed team of 15 volunteers"
+              description="One highlight per line"
             />
           </div>
         </div>
-      ))}
-
-      <Button type="button" onClick={handleAddVolunteer} variant="outline" className="w-full">
-        <Plus className="mr-2 h-4 w-4" /> Add Volunteer Experience
-      </Button>
-    </div>
+      )}
+    />
   );
 }

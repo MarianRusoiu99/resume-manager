@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ResumeEditor } from "@/components/editor/ResumeEditor";
-import { EditorProvider } from "@/lib/contexts/EditorContext";
+import { EditorProvider } from "@/contexts/EditorContext";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";

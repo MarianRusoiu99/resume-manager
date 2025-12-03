@@ -1,58 +1,73 @@
 /**
- * Cover Letter Agent - Execution Logic
+ * Cover Letter Generation Agent
  * 
- * Generates personalized cover letters for job applications
+ * Generates personalized cover letters for job applications.
+ * The user's profile is the SINGLE SOURCE OF TRUTH - nothing is fabricated.
  */
 
-import { generateObject } from 'ai';
-import { z } from 'zod';
+import { generateText } from 'ai';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { AIProvider } from '@/lib/ai/providers';
-import { COVER_LETTER_SYSTEM_PROMPT, formatCoverLetterPrompt } from './index';
-import type { JobAnalysisResult } from '../job-analysis/agent';
-import type { OptimizedResume } from '../resume-optimization/agent';
+import { extractJSON } from '../shared/utils';
+import { COVER_LETTER_SYSTEM_PROMPT, buildCoverLetterPrompt } from './prompt';
 
-/**
- * Cover Letter Schema
- */
-export const coverLetterSchema = z.object({
-  content: z.string().describe('The full cover letter content in markdown format'),
-  tone: z.string().describe('The tone of the cover letter (professional, enthusiastic, etc.)'),
-});
-
-export type CoverLetterResult = z.infer<typeof coverLetterSchema>;
+// ============================================================================
+// Types
+// ============================================================================
 
 export interface GenerateCoverLetterInput {
   provider: AIProvider;
   modelId: string;
-  jobAnalysis: JobAnalysisResult;
+  jobDescription: string;
   userResume: Resume;
-  optimizedResume: OptimizedResume;
 }
 
-/**
- * Execute cover letter generation agent
- * 
- * Generates a personalized cover letter that connects the candidate's
- * experience to the job requirements in a compelling narrative.
- */
-export async function generateCoverLetter(input: GenerateCoverLetterInput): Promise<CoverLetterResult> {
-  const model = input.provider.createLanguageModel(input.modelId);
-  const userName = input.userResume.basics?.name || input.optimizedResume.basics?.name || 'Applicant';
+export interface GenerateCoverLetterResult {
+  content: string;
+  tone: string;
+  jobTitle: string;
+  companyName: string;
+}
 
-  const result = await generateObject({
+// ============================================================================
+// Agent
+// ============================================================================
+
+/**
+ * Generate a cover letter for a specific job
+ * 
+ * @param input - The generation input
+ * @returns The generated cover letter with job metadata
+ */
+export async function generateCoverLetter(
+  input: GenerateCoverLetterInput
+): Promise<GenerateCoverLetterResult> {
+  const model = input.provider.createLanguageModel(input.modelId);
+
+  const result = await generateText({
     model,
-    schema: coverLetterSchema,
     system: COVER_LETTER_SYSTEM_PROMPT,
-    prompt: formatCoverLetterPrompt({
-      applicantName: userName,
-      jobTitle: input.jobAnalysis.jobTitle,
-      companyName: input.jobAnalysis.companyName,
-      jobSummary: input.jobAnalysis.summary,
-      keyResponsibilities: input.jobAnalysis.keyResponsibilities,
-      optimizedResume: input.optimizedResume,
-    }),
+    prompt: buildCoverLetterPrompt(input.jobDescription, input.userResume),
   });
 
-  return result.object;
+  try {
+    const jsonStr = extractJSON(result.text);
+    const parsed = JSON.parse(jsonStr);
+    
+    return {
+      content: parsed.coverLetter || parsed.content || result.text.trim(),
+      tone: 'professional',
+      jobTitle: parsed.jobTitle || 'Position',
+      companyName: parsed.companyName || 'Company',
+    };
+  } catch (error) {
+    // Fallback: return raw text if JSON parsing fails
+    console.error('Failed to parse cover letter response:', error);
+    return {
+      content: result.text.trim(),
+      tone: 'professional',
+      jobTitle: 'Position',
+      companyName: 'Company',
+    };
+  }
 }

@@ -4,8 +4,7 @@
  */
 
 import { templateRepository } from '@/lib/repositories/template.repository';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
+import { Page } from '@/components/layout/Page';
 import { TemplateGallery } from '@/components/templates/TemplateGallery';
 import { auth } from '@/lib/auth/config';
 
@@ -18,17 +17,12 @@ export default async function TemplatesPage() {
   const showAdminActions = !!session?.user?.id;
 
   return (
-    <>
-      <PageHeader
-        title="Resume Templates"
-        description="Choose from professionally designed templates optimized for ATS systems"
-        breadcrumbs={[
-          { label: "Templates" },
-        ]}
-      />
-      <PageContainer>
-        <TemplateGallery templates={templates} showAdminActions={showAdminActions} />
-      </PageContainer>
-    </>
+    <Page
+      title="Resume Templates"
+      description="Choose from professionally designed templates optimized for ATS systems"
+      breadcrumbs={[{ label: "Templates" }]}
+    >
+      <TemplateGallery templates={templates} showAdminActions={showAdminActions} />
+    </Page>
   );
 }

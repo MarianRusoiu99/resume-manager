@@ -1,15 +1,17 @@
 /**
  * Cover Letter Card Component
- * Displays cover letter information using GalleryCard
+ * Displays cover letter information using EntityCard
  */
 
 'use client';
 
-import { useState } from 'react';
-import { Edit, Trash2, Download, Eye, FileText, Briefcase } from 'lucide-react';
-import { GalleryCard, type GalleryCardAction } from '@/components/ui/GalleryCard';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useTransition } from 'react';
+import { Edit, Download, Eye, FileText, Briefcase } from 'lucide-react';
+import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import { toast } from 'sonner';
+import { deleteCoverLetter } from '@/app/actions/cover-letter';
+import { formatDate } from '@/lib/utils';
+import { API, ROUTES } from '@/lib/constants';
 
 interface CoverLetterCardProps {
   id: string;
@@ -32,7 +34,7 @@ export function CoverLetterCard({
   onEdit,
   onDelete,
 }: Readonly<CoverLetterCardProps>) {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const getDisplayTitle = (): string => {
     if (jobTitle && companyName) {
@@ -49,7 +51,7 @@ export function CoverLetterCard({
 
   const handleExport = async () => {
     try {
-      const response = await fetch(`/api/cover-letter/${id}/export`, {
+      const response = await fetch(API.COVER_LETTER.EXPORT(id), {
         method: 'POST',
       });
 
@@ -74,54 +76,18 @@ export function CoverLetterCard({
   };
 
   const handleDelete = async () => {
-    try {
-      const response = await fetch(`/api/cover-letter/${id}`, {
-        method: 'DELETE',
+    return new Promise<void>((resolve, reject) => {
+      startTransition(async () => {
+        const result = await deleteCoverLetter(id);
+        if (result.success) {
+          toast.success('Cover letter deleted successfully');
+          onDelete(id);
+          resolve();
+        } else {
+          toast.error(result.error || 'Failed to delete cover letter');
+          reject(new Error(result.error || 'Failed to delete'));
+        }
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete cover letter');
-      }
-
-      toast.success('Cover letter deleted successfully');
-      onDelete(id);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete cover letter');
-    } finally {
-      setShowDeleteDialog(false);
-    }
-  };
-
-  const actions: GalleryCardAction[] = [
-    {
-      label: 'View',
-      icon: <Eye className="h-4 w-4" />,
-      onClick: () => onView(id),
-    },
-    {
-      label: 'Edit',
-      icon: <Edit className="h-4 w-4" />,
-      onClick: () => onEdit(id),
-    },
-    {
-      label: 'Export PDF',
-      icon: <Download className="h-4 w-4" />,
-      onClick: handleExport,
-    },
-    {
-      label: 'Delete',
-      icon: <Trash2 className="h-4 w-4" />,
-      onClick: () => setShowDeleteDialog(true),
-      variant: 'destructive',
-    },
-  ];
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
     });
   };
 
@@ -134,35 +100,34 @@ export function CoverLetterCard({
   );
 
   return (
-    <>
-      <GalleryCard
-        id={id}
-        title={getDisplayTitle()}
-        subtitle={content.substring(0, 100) + '...'}
-        href={`/cover-letters/${id}`}
-        previewFallbackIcon={previewFallback}
-        metadata={[
-          { label: 'Created', value: formatDate(createdAt) },
-        ]}
-        actions={actions}
-        badges={[
-          {
-            label: 'Cover Letter',
-            variant: 'secondary',
-            icon: <Briefcase className="h-3 w-3" />,
-          },
-        ]}
-      />
-
-      <ConfirmDialog
-        isOpen={showDeleteDialog}
-        onCancel={() => setShowDeleteDialog(false)}
-        onConfirm={handleDelete}
-        title="Delete Cover Letter"
-        message={`Are you sure you want to delete the cover letter "${getDisplayTitle()}"? This action cannot be undone.`}
-        confirmText="Delete"
-        variant="danger"
-      />
-    </>
+    <EntityCard
+      id={id}
+      title={getDisplayTitle()}
+      subtitle={content.substring(0, 100) + '...'}
+      href={ROUTES.COVER_LETTER(id)}
+      previewFallbackIcon={previewFallback}
+      metadata={[{ label: 'Created', value: formatDate(createdAt) }]}
+      badges={[
+        {
+          label: 'Cover Letter',
+          variant: 'secondary',
+          icon: <Briefcase className="h-3 w-3" />,
+        },
+      ]}
+      actions={[
+        createCardAction.view(() => onView(id)),
+        createCardAction.edit(() => onEdit(id)),
+        {
+          label: 'Export PDF',
+          icon: <Download className="h-4 w-4" />,
+          onClick: handleExport,
+        },
+      ]}
+      onDelete={handleDelete}
+      deleteDialog={{
+        title: 'Delete Cover Letter',
+        message: `Are you sure you want to delete the cover letter "${getDisplayTitle()}"? This action cannot be undone.`,
+      }}
+    />
   );
 }

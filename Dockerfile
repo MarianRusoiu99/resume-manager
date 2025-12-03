@@ -1,59 +1,88 @@
+# =============================================================================
+# Resume Optimizer - Production Dockerfile
+# Multi-stage build for optimized Next.js 16 + Prisma deployment
+# =============================================================================
+
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
+# Install OpenSSL for Prisma compatibility with Alpine
+RUN apk add --no-cache libc6-compat openssl
+
+# =============================================================================
+# Dependencies Stage - Install npm packages
+# =============================================================================
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Copy package files for dependency installation
 COPY package.json package-lock.json* ./
-RUN npm i 
+COPY prisma ./prisma/
 
-# Rebuild the source code only when needed
+# Install all dependencies (including devDependencies for build)
+# Use --legacy-peer-deps to handle React 19 peer dependency conflicts
+RUN npm install --legacy-peer-deps
+
+# Generate Prisma Client with correct binary target
+RUN npx prisma generate
+
+# =============================================================================
+# Builder Stage - Build the Next.js application
+# =============================================================================
 FROM base AS builder
 WORKDIR /app
+
+# Copy dependencies and source code
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Disable Next.js telemetry during build
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-ENV NEXT_TELEMETRY_DISABLED 1
-
+# Build the application
 RUN npm run build
 
-# Production image, copy all the files and run next
+# =============================================================================
+# Runner Stage - Production runtime
+# =============================================================================
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-ENV NEXT_TELEMETRY_DISABLED 1
+# Set production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
+# Copy public assets
 COPY --from=builder /app/public ./public
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Create .next directory with correct permissions
+RUN mkdir .next && chown nextjs:nodejs .next
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
+# Copy standalone build output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copy Prisma schema and generated client (critical for runtime)
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+# Switch to non-root user
 USER nextjs
 
+# Expose application port
 EXPOSE 3000
 
-ENV PORT 3000
-# set hostname to localhost
-ENV HOSTNAME "0.0.0.0"
+# Environment configuration
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+
+# Start the application
 CMD ["node", "server.js"]

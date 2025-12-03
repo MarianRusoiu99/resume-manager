@@ -65,8 +65,5 @@ export { Badge, badgeVariants } from "./badge";
 export { Skeleton } from "./skeleton";
 export { Alert, AlertTitle, AlertDescription } from "./alert";
 export { Toaster } from "./sonner";
-export { ErrorBoundary } from "./ErrorBoundary";
-export { ConfirmDialog } from "./ConfirmDialog";
-export type { ConfirmDialogProps } from "./ConfirmDialog";
-export { ThemeToggle } from "./ThemeToggle";
+
 export { PaginationControls } from "./pagination-controls";

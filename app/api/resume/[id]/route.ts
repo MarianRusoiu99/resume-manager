@@ -1,158 +1,102 @@
+/**
+ * Resume Detail API Routes
+ * 
+ * GET /api/resume/[id] - Get a specific resume
+ *   - Used for initial data fetching in components
+ * 
+ * PATCH /api/resume/[id] - Update resume content or template
+ *   - Used for content updates (no server action equivalent yet)
+ * 
+ * DELETE /api/resume/[id] - Delete a specific resume
+ *   - @deprecated Prefer using deleteResume server action from '@/app/actions/resume'
+ *   - Kept for backward compatibility
+ */
+
 import { NextResponse } from 'next/server';
-import { auth } from '@/lib/auth/config';
 import { resumeService } from '@/lib/services/resume.service';
-import { resumesCache } from '@/lib/cache/resumes-cache';
+import { createApiHandler } from '@/lib/api-handler';
 
 /**
  * GET /api/resume/[id] - Get a specific resume
  */
-export async function GET(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Check authentication
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+export const GET = createApiHandler(async (request, { params }, session) => {
+  const { id } = await params;
 
-    const { id } = await context.params;
+  // Get resume (with ownership verification)
+  const result = await resumeService.getResume(id, session.user.id);
 
-    // Get resume (with ownership verification)
-    const resume = await resumeService.getResume(id, session.user.id);
-
-    if (!resume) {
-      return NextResponse.json(
-        { error: 'Resume not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(resume);
-
-  } catch (error) {
-    console.error('Error fetching resume:', error);
+  if (!result.success) {
     return NextResponse.json(
-      { error: 'Failed to fetch resume' },
-      { status: 500 }
+      { error: result.error },
+      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
     );
   }
-}
+
+  return NextResponse.json(result.data);
+});
 
 /**
  * DELETE /api/resume/[id] - Delete a specific resume
  */
-export async function DELETE(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Check authentication
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+export const DELETE = createApiHandler(async (request, { params }, session) => {
+  const { id } = await params;
 
-    const { id } = await context.params;
+  // Delete resume (with ownership verification) - cache invalidation handled in service
+  const result = await resumeService.deleteResume(id, session.user.id);
 
-    // Delete resume (with ownership verification)
-    await resumeService.deleteResume(id, session.user.id);
-
-    // Invalidate cache after deleting a resume
-    const cacheKey = `resumes:${session.user.id}`;
-    resumesCache.delete(cacheKey);
-
+  if (!result.success) {
     return NextResponse.json(
-      { success: true, message: 'Resume deleted successfully' }
-    );
-
-  } catch (error) {
-    console.error('Error deleting resume:', error);
-    
-    // Check if it's a not found error
-    if (error instanceof Error && error.message.includes('not found')) {
-      return NextResponse.json(
-        { error: 'Resume not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Failed to delete resume' },
-      { status: 500 }
+      { error: result.error },
+      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
     );
   }
-}
+
+  return NextResponse.json(
+    { success: true, message: 'Resume deleted successfully' }
+  );
+});
 
 /**
  * PATCH /api/resume/[id] - Update resume content or template
  */
-export async function PATCH(
-  request: Request,
-  context: { params: Promise<{ id: string }> }
-) {
-  try {
-    // Check authentication
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+export const PATCH = createApiHandler(async (request, { params }, session) => {
+  const { id } = await params;
+  const body = await request.json();
 
-    const { id } = await context.params;
-    const body = await request.json();
-
-    // Handle template update separately if only templateId is provided
-    if (body.templateId !== undefined && !body.resume) {
-      const updatedResume = await resumeService.updateResumeTemplate(
-        id,
-        session.user.id,
-        body.templateId
-      );
-
-      // Invalidate cache after updating
-      const cacheKey = `resumes:${session.user.id}`;
-      resumesCache.delete(cacheKey);
-
-      return NextResponse.json(updatedResume);
-    }
-
-    // Update the resume content
-    const updatedResume = await resumeService.updateResumeContent(
+  // Handle template update separately if only templateId is provided
+  if (body.templateId !== undefined && !body.resume) {
+    const result = await resumeService.updateResumeTemplate(
       id,
       session.user.id,
-      body.resume
+      body.templateId
     );
 
-    // Invalidate cache after updating
-    const cacheKey = `resumes:${session.user.id}`;
-    resumesCache.delete(cacheKey);
-
-    return NextResponse.json(updatedResume);
-
-  } catch (error) {
-    console.error('Error updating resume:', error);
-    
-    // Check if it's a not found error
-    if (error instanceof Error && error.message.includes('not found')) {
+    if (!result.success) {
       return NextResponse.json(
-        { error: 'Resume not found' },
-        { status: 404 }
+        { error: result.error },
+        { status: result.code === 'NOT_FOUND' ? 404 : 500 }
       );
     }
 
+    // Cache invalidation handled in service
+    return NextResponse.json(result.data);
+  }
+
+  // Update the resume content
+  const result = await resumeService.updateResumeContent(
+    id,
+    session.user.id,
+    body.resume
+  );
+
+  if (!result.success) {
     return NextResponse.json(
-      { error: 'Failed to update resume' },
-      { status: 500 }
+      { error: result.error },
+      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
     );
   }
-}
+
+  // Cache invalidation handled in service
+  return NextResponse.json(result.data);
+});
+

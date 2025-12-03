@@ -9,19 +9,19 @@ import { useRef, useMemo } from 'react';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useTemplatePreview } from '@/lib/hooks/useTemplatePreview';
+import { useTemplatePreview } from '@/hooks/useTemplatePreview';
 
 // Custom hooks
-import { useTemplateSelection } from './preview/useTemplateSelection';
-import { useResumeData } from './preview/useResumeData';
-import { useExportPDF } from './preview/useExportPDF';
-import { usePagination } from './preview/usePagination';
-import { usePreviewScale } from './preview/usePreviewScale';
-import { useIframeResize } from './preview/useIframeResize';
+import { useTemplateSelection } from '../preview/useTemplateSelection';
+import { useResumeData } from '../preview/useResumeData';
+import { useExportPDF } from '../preview/useExportPDF';
+import { usePagination } from '../preview/usePagination';
+import { usePreviewScale } from '../preview/usePreviewScale';
+import { useIframeResize } from '../preview/useIframeResize';
 
 // UI Components
-import { PreviewContent } from './preview/PreviewContent';
-import { FullscreenModal } from './preview/FullscreenModal';
+import { PreviewContent } from '../preview/PreviewContent';
+import { FullscreenModal } from '../preview/FullscreenModal';
 
 interface UnifiedResumePreviewProps {
   /** Resume data to preview */

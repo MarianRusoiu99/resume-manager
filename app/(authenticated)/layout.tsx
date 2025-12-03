@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
-import { ProfileProvider } from "@/lib/contexts/ProfileContext";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 
 export default async function AuthenticatedLayout({
   children,

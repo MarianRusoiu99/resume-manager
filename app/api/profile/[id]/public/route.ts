@@ -1,26 +1,20 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth/config";
+import { createApiHandler } from "@/lib/api-handler";
 import { profileRepository } from "@/lib/repositories/profile.repository";
 import { nanoid } from "nanoid";
+import { z } from "zod";
 
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
+const togglePublicSchema = z.object({
+  isPublic: z.boolean(),
+});
 
 /**
  * Toggle profile public status
  * POST /api/profile/[id]/public
  */
-export async function POST(request: Request, { params }: RouteParams) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export const POST = createApiHandler(
+  async (request, { params }, session, body) => {
     const { id } = await params;
-    const body = await request.json();
-    const { isPublic } = body;
 
     // Verify ownership
     const profile = await profileRepository.findById(id, session.user.id);
@@ -30,14 +24,14 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     // Generate slug if making public and doesn't have one
     let publicSlug = profile.publicSlug;
-    if (isPublic && !publicSlug) {
+    if (body!.isPublic && !publicSlug) {
       publicSlug = nanoid(10); // Generate short unique slug
     }
 
     // Update profile
     const updated = await profileRepository.update(id, session.user.id, {
-      isPublic,
-      publicSlug: isPublic ? publicSlug : null,
+      isPublic: body!.isPublic,
+      publicSlug: body!.isPublic ? publicSlug : null,
     });
 
     return NextResponse.json({
@@ -45,11 +39,6 @@ export async function POST(request: Request, { params }: RouteParams) {
       isPublic: updated.isPublic,
       publicSlug: updated.publicSlug,
     });
-  } catch (error) {
-    console.error("Error updating public status:", error);
-    return NextResponse.json(
-      { error: "Failed to update public status" },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { bodySchema: togglePublicSchema }
+);
