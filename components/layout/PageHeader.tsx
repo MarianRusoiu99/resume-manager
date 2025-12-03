@@ -19,7 +19,7 @@ export function PageHeader({ title, description, breadcrumbs }: PageHeaderProps)
     <header className="flex flex-col gap-4 bg-background px-6 py-4">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="-ml-2" />
-        <Separator orientation="vertical" className="h-6" />
+
         {breadcrumbs && breadcrumbs.length > 0 && (
           <nav className="flex items-center gap-2 text-sm text-muted-foreground">
             {breadcrumbs.map((crumb, index) => (

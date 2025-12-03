@@ -3,7 +3,7 @@ import { User, Briefcase, GraduationCap, Code, FolderOpen, MoreHorizontal } from
 
 export function EditorSidebar() {
     return (
-        <TabsList className="w-full justify-start border-b rounded-none bg-muted/50 px-6 overflow-x-auto flex-wrap h-auto">
+        <TabsList className="w-full justify-start rounded-none bg-muted/50 px-6 overflow-x-auto flex-wrap h-auto">
             <TabsTrigger value="basics" className="gap-2">
                 <User className="h-4 w-4" />
                 Basics
