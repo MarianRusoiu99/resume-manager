@@ -17,6 +17,7 @@ import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from './config';
+import { prisma } from '@/lib/db';
 
 /**
  * Session payload returned by verifySession
@@ -71,6 +72,37 @@ export const getSession = cache(async (): Promise<SessionPayload | null> => {
   const session = await auth();
 
   if (!session?.user?.id) {
+    return null;
+  }
+
+  return {
+    isAuth: true,
+    userId: session.user.id,
+    email: session.user.email,
+    name: session.user.name,
+  };
+});
+
+/**
+ * Get session with database verification.
+ * Returns null if not authenticated OR if user no longer exists in database.
+ * 
+ * Use this for sensitive operations where you need to ensure the user still exists.
+ */
+export const getVerifiedSession = cache(async (): Promise<SessionPayload | null> => {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  // Verify user still exists in database
+  const userExists = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true },
+  });
+
+  if (!userExists) {
     return null;
   }
 

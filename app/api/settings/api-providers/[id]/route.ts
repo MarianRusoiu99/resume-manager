@@ -2,6 +2,9 @@
  * API Provider by ID Endpoint
  * PATCH /api/settings/api-providers/[id] - Update a provider
  * DELETE /api/settings/api-providers/[id] - Delete a provider
+ * POST /api/settings/api-providers/[id]/revoke - Revoke a provider (new)
+ * 
+ * Rate limited to 10 requests per minute for security
  */
 
 import { NextResponse } from 'next/server';
@@ -20,10 +23,17 @@ export const PATCH = createApiHandler(
   async (request, { params }, session, body) => {
     const { id } = await params;
 
+    // Extract audit context from request
+    const auditContext = {
+      userId: session.user.id,
+      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || undefined,
+      userAgent: request.headers.get('user-agent') || undefined,
+    };
+
     const result = await apiProviderService.updateProvider(
       id,
       session.user.id,
-      body!
+      { ...body!, auditContext }
     );
 
     if (!result.success) {
@@ -32,17 +42,27 @@ export const PATCH = createApiHandler(
 
     return NextResponse.json({ message: result.data.message });
   },
-  { bodySchema: updateProviderSchema }
+  { bodySchema: updateProviderSchema, rateLimit: 'apiKeys' }
 );
 
-export const DELETE = createApiHandler(async (request, { params }, session) => {
-  const { id } = await params;
+export const DELETE = createApiHandler(
+  async (request, { params }, session) => {
+    const { id } = await params;
 
-  const result = await apiProviderService.deleteProvider(id, session.user.id);
+    // Extract audit context from request
+    const auditContext = {
+      userId: session.user.id,
+      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || undefined,
+      userAgent: request.headers.get('user-agent') || undefined,
+    };
 
-  if (!result.success) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
-  }
+    const result = await apiProviderService.deleteProvider(id, session.user.id, auditContext);
 
-  return NextResponse.json({ message: result.data.message });
-});
+    if (!result.success) {
+      return NextResponse.json({ error: result.error }, { status: 400 });
+    }
+
+    return NextResponse.json({ message: result.data.message });
+  },
+  { rateLimit: 'apiKeys' }
+);

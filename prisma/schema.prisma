@@ -170,12 +170,57 @@ model ApiProvider {
   models       String[] // Array of available model IDs from the provider
   isActive     Boolean      @default(true)
 
+  // Security enhancements
+  keyVersion   Int       @default(1) // For key rotation tracking
+  revokedAt    DateTime? // Soft revocation without deletion
+  usageCount   Int       @default(0) // Track usage frequency
+  lastUsedIp   String?   // Last IP that used this key
+  scopes       String[]  @default(["generate", "validate"]) // Permission scopes
+
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   lastUsedAt DateTime?
 
+  auditLogs  ApiKeyAuditLog[]
+
   @@index([userId, provider])
   @@index([userId, isActive])
+  @@index([revokedAt])
+}
+
+// API Key Audit Log - tracks all sensitive key operations
+model ApiKeyAuditLog {
+  id         String   @id @default(cuid())
+  providerId String
+  provider   ApiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  
+  action     ApiKeyAuditAction
+  userId     String
+  ipAddress  String?
+  userAgent  String?
+  
+  // Additional context
+  metadata   Json?    // {modelUsed, tokensConsumed, endpoint, etc.}
+  success    Boolean  @default(true)
+  errorMessage String?
+  
+  timestamp  DateTime @default(now())
+
+  @@index([providerId, timestamp(sort: Desc)])
+  @@index([userId, timestamp(sort: Desc)])
+  @@index([action, timestamp(sort: Desc)])
+}
+
+// Enum for API key audit actions
+enum ApiKeyAuditAction {
+  KEY_CREATED
+  KEY_ROTATED
+  KEY_REVOKED
+  KEY_DELETED
+  KEY_DECRYPTED  // When key is decrypted for use
+  KEY_VALIDATED  // External API validation
+  KEY_USED       // When key is used for AI generation
+  KEY_SCOPE_CHANGED
 }
 
 // Enum for audit log actions

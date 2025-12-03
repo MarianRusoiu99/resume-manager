@@ -1,8 +1,9 @@
-import { getSession } from "@/lib/auth/dal";
-import { NextResponse } from "next/server";
+import { getSession, getVerifiedSession } from "@/lib/auth/dal";
+import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
 import { z, ZodError, ZodSchema } from "zod";
 import { errorCodeToStatus, ServiceErrorCode } from "@/lib/types/service-result";
+import { applyRateLimit, getClientIdentifier, addRateLimitHeaders, RateLimitConfigs, type RateLimitConfig } from "@/lib/middleware/rate-limit";
 
 type ApiHandlerContext = {
     params: Promise<Record<string, string>>;
@@ -30,8 +31,10 @@ interface ApiHandlerOptions<TBody = unknown> {
     isPublic?: boolean;
     /** Zod schema for request body validation */
     bodySchema?: ZodSchema<TBody>;
-    /** Rate limit configuration key */
-    rateLimit?: string;
+    /** Rate limit configuration key or custom config */
+    rateLimit?: keyof typeof RateLimitConfigs | RateLimitConfig;
+    /** Verify user exists in database (use for write operations) */
+    verifyUser?: boolean;
 }
 
 /**
@@ -54,13 +57,37 @@ export function createApiHandler<T = unknown, TBody = unknown>(
             // Authentication check via DAL
             let session = null;
             if (!options.isPublic) {
-                session = await getSession();
+                // Use verified session for write operations to catch stale sessions
+                session = options.verifyUser 
+                    ? await getVerifiedSession()
+                    : await getSession();
+                    
                 if (!session?.userId) {
                     reqLogger.warn(`Unauthorized access attempt to ${method} ${url}`);
                     return NextResponse.json(
-                        { error: "Unauthorized", requestId },
+                        { 
+                            error: options.verifyUser 
+                                ? "Session expired. Please log out and log back in." 
+                                : "Unauthorized", 
+                            requestId 
+                        },
                         { status: 401 }
                     );
+                }
+            }
+
+            // Apply rate limiting if configured
+            if (options.rateLimit) {
+                const rateLimitConfig = typeof options.rateLimit === 'string'
+                    ? RateLimitConfigs[options.rateLimit]
+                    : options.rateLimit;
+                
+                const identifier = getClientIdentifier(request, session?.userId);
+                const rateLimitResponse = applyRateLimit(identifier, rateLimitConfig);
+                
+                if (rateLimitResponse) {
+                    reqLogger.warn(`Rate limited: ${method} ${url}`, { userId: session?.userId });
+                    return rateLimitResponse;
                 }
             }
 
@@ -88,12 +115,21 @@ export function createApiHandler<T = unknown, TBody = unknown>(
             } : null;
 
             // Execute handler
-            const response = await handler(
+            let response = await handler(
                 request, 
                 context, 
                 apiSession as unknown as Session,
                 body
             );
+
+            // Add rate limit headers if configured
+            if (options.rateLimit) {
+                const rateLimitConfig = typeof options.rateLimit === 'string'
+                    ? RateLimitConfigs[options.rateLimit]
+                    : options.rateLimit;
+                const identifier = getClientIdentifier(request, session?.userId);
+                response = addRateLimitHeaders(response, identifier, rateLimitConfig) as NextResponse;
+            }
 
             // Log success
             const duration = Date.now() - startTime;

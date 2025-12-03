@@ -18,6 +18,9 @@ export interface UpdateApiProviderInput {
   encryptedKey?: string;
   isActive?: boolean;
   lastUsedAt?: Date;
+  keyVersion?: number;
+  revokedAt?: Date;
+  scopes?: string[];
 }
 
 class ApiProviderRepository {
@@ -40,7 +43,7 @@ class ApiProviderRepository {
     return prisma.apiProvider.findMany({
       where: {
         userId,
-        ...(includeInactive ? {} : { isActive: true }),
+        ...(includeInactive ? {} : { isActive: true, revokedAt: null }),
       },
       orderBy: {
         createdAt: 'desc',
@@ -69,6 +72,7 @@ class ApiProviderRepository {
         userId,
         provider: provider.toUpperCase() as 'OPENAI' | 'ANTHROPIC' | 'GOOGLE' | 'COHERE' | 'MISTRAL',
         isActive: true,
+        revokedAt: null,
       },
       orderBy: {
         createdAt: 'desc',
@@ -90,13 +94,28 @@ class ApiProviderRepository {
   }
 
   /**
-   * Update last used timestamp
+   * Update last used timestamp and IP
    */
-  async updateLastUsed(id: string) {
+  async updateLastUsed(id: string, ipAddress?: string) {
     return prisma.apiProvider.update({
       where: { id },
       data: {
         lastUsedAt: new Date(),
+        ...(ipAddress ? { lastUsedIp: ipAddress } : {}),
+      },
+    });
+  }
+
+  /**
+   * Increment usage count
+   */
+  async incrementUsage(id: string, ipAddress?: string) {
+    return prisma.apiProvider.update({
+      where: { id },
+      data: {
+        usageCount: { increment: 1 },
+        lastUsedAt: new Date(),
+        ...(ipAddress ? { lastUsedIp: ipAddress } : {}),
       },
     });
   }
@@ -136,6 +155,7 @@ class ApiProviderRepository {
       where: {
         userId,
         isActive: true,
+        revokedAt: null,
       },
     });
   }

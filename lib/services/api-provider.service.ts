@@ -1,10 +1,12 @@
 /**
  * API Provider Service
  * Business logic for managing API providers with secure key encryption
+ * and comprehensive audit logging
  */
 
 import { apiProviderRepository } from '@/lib/repositories/api-provider.repository';
-import { encryptApiKey, decryptApiKey } from '@/lib/encryption/api-key';
+import { encryptApiKey, decryptApiKey, createKeyPreview } from '@/lib/encryption/api-key';
+import { apiKeyAuditService, type AuditContext } from './api-key-audit.service';
 import {
   createProvider,
   getSupportedProviders,
@@ -20,12 +22,14 @@ export interface AddApiProviderInput {
   name: string;
   provider: string;
   apiKey: string;
+  auditContext?: AuditContext;
 }
 
 export interface UpdateApiProviderInput {
   name?: string;
   apiKey?: string;
   isActive?: boolean;
+  auditContext?: AuditContext;
 }
 
 export interface ProviderWithModels {
@@ -132,17 +136,35 @@ class ApiProviderService {
       }
 
       const encryptedKey = encryptApiKey(input.apiKey);
-      const keyPreview = providerInstance.getKeyPreview(input.apiKey);
+      // Use secure preview that doesn't expose actual key characters
+      const keyPreview = createKeyPreview(input.provider);
 
       // Store model IDs in database
       const modelIds = models.map((m) => m.id);
 
-      const provider = await apiProviderRepository.create({
-        userId: input.userId,
+      let provider;
+      try {
+        provider = await apiProviderRepository.create({
+          userId: input.userId,
+          name: input.name,
+          provider: input.provider, // Repository will convert to uppercase
+          encryptedKey,
+          models: modelIds,
+        });
+      } catch (dbError) {
+        // Handle foreign key constraint violation (user doesn't exist)
+        if (dbError instanceof Error && dbError.message.includes('Foreign key constraint')) {
+          logger.error('User not found when adding API provider - session may be stale', { userId: input.userId });
+          return failure('Session expired. Please log out and log back in.', 'UNAUTHORIZED');
+        }
+        throw dbError;
+      }
+
+      // Audit log the key creation
+      const auditContext = input.auditContext || { userId: input.userId };
+      await apiKeyAuditService.logKeyCreated(provider.id, auditContext, {
+        provider: input.provider,
         name: input.name,
-        provider: input.provider, // Repository will convert to uppercase
-        encryptedKey,
-        models: modelIds,
       });
 
       return success({
@@ -160,16 +182,29 @@ class ApiProviderService {
     }
   }
 
-  async getUserProvidersWithModels(userId: string): Promise<ServiceResult<ProviderWithModels[]>> {
+  async getUserProvidersWithModels(userId: string, auditContext?: AuditContext): Promise<ServiceResult<ProviderWithModels[]>> {
     try {
       const providers = await apiProviderRepository.findByUserId(userId, true);
       const providersWithModels: ProviderWithModels[] = [];
 
       for (const provider of providers) {
+        // Skip revoked providers
+        if (provider.revokedAt) {
+          continue;
+        }
+
         try {
           const apiKey = decryptApiKey(provider.encryptedKey);
           const providerType = provider.provider.toLowerCase(); // Convert from DB enum to lowercase
           const providerInstance = createProvider(providerType, apiKey);
+
+          // Log decryption for audit trail (only for sensitive operations)
+          if (auditContext) {
+            await apiKeyAuditService.logKeyDecrypted(provider.id, auditContext, {
+              endpoint: 'getUserProvidersWithModels',
+              purpose: 'fetch_models',
+            });
+          }
 
           // Fetch current models from API to get full model details
           const allModels = await providerInstance.fetchModels();
@@ -181,7 +216,8 @@ class ApiProviderService {
           const storedModelIds = provider.models;
           const filteredModels = textModels.filter((m) => storedModelIds.includes(m.id));
 
-          const keyPreview = providerInstance.getKeyPreview(apiKey);
+          // Use secure preview
+          const keyPreview = createKeyPreview(providerType);
 
           providersWithModels.push({
             id: provider.id,
@@ -202,7 +238,7 @@ class ApiProviderService {
             provider: provider.provider.toLowerCase(),
             isActive: false,
             models: [],
-            keyPreview: '***...***',
+            keyPreview: createKeyPreview(provider.provider.toLowerCase()),
             createdAt: provider.createdAt,
             lastUsedAt: provider.lastUsedAt,
           });
@@ -243,20 +279,24 @@ class ApiProviderService {
   }
 
   private getStoredKeyPreview(providerType: string, _encryptedKey: string): string {
-    const previews: Record<string, string> = {
-      openai: 'sk-proj-...',
-      anthropic: 'sk-ant-...',
-      google: 'AIza...',
-    };
-    return previews[providerType] || '***...***';
+    return createKeyPreview(providerType);
   }
 
-  async getProviderInstance(providerId: string, userId: string): Promise<ServiceResult<ProviderInstanceData>> {
+  async getProviderInstance(
+    providerId: string,
+    userId: string,
+    auditContext?: AuditContext
+  ): Promise<ServiceResult<ProviderInstanceData>> {
     try {
       const provider = await apiProviderRepository.findById(providerId, userId);
 
       if (!provider) {
         return failure('Provider not found', 'NOT_FOUND');
+      }
+
+      // Check if provider is revoked
+      if (provider.revokedAt) {
+        return failure('Provider key has been revoked', 'VALIDATION_ERROR');
       }
 
       if (!provider.isActive) {
@@ -266,6 +306,15 @@ class ApiProviderService {
       const apiKey = decryptApiKey(provider.encryptedKey);
       const providerType = provider.provider.toLowerCase(); // Convert from DB enum to lowercase
       const providerInstance = createProvider(providerType, apiKey);
+      
+      // Log decryption for audit trail
+      if (auditContext) {
+        await apiKeyAuditService.logKeyDecrypted(providerId, auditContext, {
+          endpoint: 'getProviderInstance',
+          purpose: 'api_call',
+        });
+      }
+      
       await apiProviderRepository.updateLastUsed(providerId);
 
       return success({
@@ -336,6 +385,15 @@ class ApiProviderService {
         }
 
         updateData.encryptedKey = encryptApiKey(input.apiKey);
+        // Increment key version on rotation
+        updateData.keyVersion = (provider.keyVersion || 1) + 1;
+        
+        // Log key rotation
+        const auditContext = input.auditContext || { userId };
+        await apiKeyAuditService.logKeyRotated(providerId, auditContext, {
+          keyVersion: updateData.keyVersion as number,
+          reason: 'user_initiated',
+        });
       }
 
       if (input.isActive !== undefined) {
@@ -351,8 +409,18 @@ class ApiProviderService {
     }
   }
 
-  async deleteProvider(providerId: string, userId: string): Promise<ServiceResult<{ message: string }>> {
+  async deleteProvider(
+    providerId: string,
+    userId: string,
+    auditContext?: AuditContext
+  ): Promise<ServiceResult<{ message: string }>> {
     try {
+      // Log deletion before actually deleting
+      const context = auditContext || { userId };
+      await apiKeyAuditService.logKeyDeleted(providerId, context, {
+        reason: 'user_initiated',
+      });
+      
       await apiProviderRepository.delete(providerId, userId);
       return success({ message: 'Provider deleted successfully' });
     } catch (error) {
@@ -361,8 +429,50 @@ class ApiProviderService {
     }
   }
 
+  /**
+   * Revoke a provider key without deleting it
+   * This allows keeping audit history while preventing further use
+   */
+  async revokeProvider(
+    providerId: string,
+    userId: string,
+    auditContext?: AuditContext,
+    reason?: string
+  ): Promise<ServiceResult<{ message: string }>> {
+    try {
+      const provider = await apiProviderRepository.findById(providerId, userId);
+      if (!provider) {
+        return failure('Provider not found', 'NOT_FOUND');
+      }
+
+      if (provider.revokedAt) {
+        return failure('Provider is already revoked', 'VALIDATION_ERROR');
+      }
+
+      await apiProviderRepository.update(providerId, userId, {
+        revokedAt: new Date(),
+        isActive: false,
+      });
+
+      // Log revocation
+      const context = auditContext || { userId };
+      await apiKeyAuditService.logKeyRevoked(providerId, context, { reason });
+
+      return success({ message: 'Provider key revoked successfully' });
+    } catch (error) {
+      logger.error('Error revoking provider', error);
+      return failure('Failed to revoke provider', 'INTERNAL_ERROR');
+    }
+  }
+
   async toggleProvider(providerId: string, userId: string, isActive: boolean): Promise<ServiceResult<{ message: string }>> {
     try {
+      // Check if revoked - cannot re-enable revoked keys
+      const provider = await apiProviderRepository.findById(providerId, userId);
+      if (provider?.revokedAt && isActive) {
+        return failure('Cannot enable a revoked key. Please add a new key.', 'VALIDATION_ERROR');
+      }
+      
       await apiProviderRepository.toggleActive(providerId, userId, isActive);
       return success({ message: `Provider ${isActive ? 'enabled' : 'disabled'} successfully` });
     } catch (error) {
@@ -405,10 +515,14 @@ class ApiProviderService {
    * Get the first active provider for a user with decrypted API key
    * Used for features that need an API key but don't have a specific model selected
    */
-  async getFirstActiveProvider(userId: string): Promise<ServiceResult<{ apiKey: string; providerType: string; providerId: string }>> {
+  async getFirstActiveProvider(
+    userId: string,
+    auditContext?: AuditContext
+  ): Promise<ServiceResult<{ apiKey: string; providerType: string; providerId: string }>> {
     try {
       const providers = await apiProviderRepository.findByUserId(userId, true);
-      const activeProvider = providers.find(p => p.isActive);
+      // Find first active AND non-revoked provider
+      const activeProvider = providers.find(p => p.isActive && !p.revokedAt);
 
       if (!activeProvider) {
         return failure('No active API provider configured. Please add one in Settings → API Keys', 'NOT_FOUND');
@@ -416,6 +530,14 @@ class ApiProviderService {
 
       const apiKey = decryptApiKey(activeProvider.encryptedKey);
       const providerType = activeProvider.provider.toLowerCase();
+
+      // Log decryption if audit context provided
+      if (auditContext) {
+        await apiKeyAuditService.logKeyDecrypted(activeProvider.id, auditContext, {
+          endpoint: 'getFirstActiveProvider',
+          purpose: 'api_call',
+        });
+      }
 
       return success({
         apiKey,
@@ -426,6 +548,44 @@ class ApiProviderService {
       logger.error('Error getting first active provider', error);
       return failure(error instanceof Error ? error.message : 'Failed to get provider', 'INTERNAL_ERROR');
     }
+  }
+
+  /**
+   * Log API key usage (call this after successful AI generation)
+   */
+  async logKeyUsage(
+    providerId: string,
+    auditContext: AuditContext,
+    metadata: {
+      endpoint: string;
+      modelUsed?: string;
+      tokensConsumed?: number;
+      success?: boolean;
+      errorMessage?: string;
+    }
+  ): Promise<void> {
+    await apiKeyAuditService.logKeyUsed(providerId, auditContext, metadata);
+  }
+
+  /**
+   * Get audit logs for a provider
+   */
+  async getProviderAuditLogs(
+    providerId: string,
+    userId: string,
+    options?: { limit?: number; offset?: number }
+  ) {
+    return apiKeyAuditService.getProviderAuditLogs(providerId, userId, options);
+  }
+
+  /**
+   * Get all audit logs for a user
+   */
+  async getUserAuditLogs(
+    userId: string,
+    options?: { limit?: number; offset?: number }
+  ) {
+    return apiKeyAuditService.getUserAuditLogs(userId, options);
   }
 }
 
