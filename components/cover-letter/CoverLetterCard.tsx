@@ -10,6 +10,8 @@ import { Edit, Download, Eye, FileText, Briefcase } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import { toast } from 'sonner';
 import { deleteCoverLetter } from '@/app/actions/cover-letter';
+import { formatDate } from '@/lib/utils';
+import { API, ROUTES } from '@/lib/constants';
 
 interface CoverLetterCardProps {
   id: string;
@@ -49,7 +51,7 @@ export function CoverLetterCard({
 
   const handleExport = async () => {
     try {
-      const response = await fetch(`/api/cover-letter/${id}/export`, {
+      const response = await fetch(API.COVER_LETTER.EXPORT(id), {
         method: 'POST',
       });
 
@@ -89,15 +91,6 @@ export function CoverLetterCard({
     });
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   // Preview fallback for cover letters (no HTML template)
   const previewFallback = (
     <div className="text-center">
@@ -111,7 +104,7 @@ export function CoverLetterCard({
       id={id}
       title={getDisplayTitle()}
       subtitle={content.substring(0, 100) + '...'}
-      href={`/cover-letters/${id}`}
+      href={ROUTES.COVER_LETTER(id)}
       previewFallbackIcon={previewFallback}
       metadata={[{ label: 'Created', value: formatDate(createdAt) }]}
       badges={[

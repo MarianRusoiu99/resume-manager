@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { useCardPreview, useExportPdf } from '@/hooks/useCardPreview';
 import { deleteProfile, duplicateProfile, setDefaultProfile } from '@/app/actions/profile';
+import { ROUTES } from '@/lib/constants';
 
 interface ProfileCardProps {
   id: string;
@@ -113,7 +114,7 @@ export function ProfileCard({
       id={id}
       title={name}
       subtitle={`${email} • ${location}`}
-      href={`/profile/${id}`}
+      href={ROUTES.PROFILE(id)}
       previewHtml={previewHtml}
       isPreviewLoading={isLoadingPreview}
       badges={

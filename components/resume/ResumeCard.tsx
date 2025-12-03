@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { useCardPreview, useExportPdf } from '@/hooks/useCardPreview';
 import { deleteResume } from '@/app/actions/resume';
+import { formatDate } from '@/lib/utils';
+import { ROUTES } from '@/lib/constants';
 
 interface ResumeCardProps {
   id: string;
@@ -77,21 +79,12 @@ export function ResumeCard({
     createCardAction.export(handleExport, <Download className="h-4 w-4" />),
   ];
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
   return (
     <EntityCard
       id={id}
       title={title}
       subtitle={subtitle}
-      href={`/resumes/${id}`}
+      href={ROUTES.RESUME(id)}
       previewHtml={previewHtml}
       isPreviewLoading={isLoadingPreview}
       metadata={[

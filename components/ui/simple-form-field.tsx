@@ -4,7 +4,19 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+
+export interface SelectOption {
+  value: string;
+  label: string;
+}
 
 export interface SimpleFormFieldProps {
   /** Field name/id - used for accessibility */
@@ -16,7 +28,7 @@ export interface SimpleFormFieldProps {
   /** Change handler */
   onChange: (value: string) => void;
   /** Input type - defaults to "text" */
-  type?: "text" | "email" | "tel" | "url" | "month" | "date" | "number" | "textarea";
+  type?: "text" | "email" | "tel" | "url" | "month" | "date" | "number" | "textarea" | "select";
   /** Placeholder text */
   placeholder?: string;
   /** Whether field is required */
@@ -31,6 +43,8 @@ export interface SimpleFormFieldProps {
   disabled?: boolean;
   /** Error message to display */
   error?: string;
+  /** Options for select type */
+  options?: SelectOption[];
 }
 
 /**
@@ -63,6 +77,7 @@ export function SimpleFormField({
   className,
   disabled = false,
   error,
+  options = [],
 }: SimpleFormFieldProps) {
   const handleChange = React.useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -73,13 +88,9 @@ export function SimpleFormField({
 
   const displayLabel = required ? `${label} *` : label;
 
-  return (
-    <div className={cn("space-y-2", className)}>
-      <Label htmlFor={id} className={cn(error && "text-destructive")}>
-        {displayLabel}
-      </Label>
-      
-      {type === "textarea" ? (
+  const renderInput = () => {
+    if (type === "textarea") {
+      return (
         <Textarea
           id={id}
           value={value}
@@ -90,19 +101,48 @@ export function SimpleFormField({
           aria-invalid={!!error}
           aria-describedby={description ? `${id}-description` : undefined}
         />
-      ) : (
-        <Input
-          id={id}
-          type={type}
-          value={value}
-          onChange={handleChange}
-          placeholder={placeholder}
-          required={required}
-          disabled={disabled}
-          aria-invalid={!!error}
-          aria-describedby={description ? `${id}-description` : undefined}
-        />
-      )}
+      );
+    }
+
+    if (type === "select") {
+      return (
+        <Select value={value} onValueChange={onChange} disabled={disabled}>
+          <SelectTrigger id={id} aria-invalid={!!error}>
+            <SelectValue placeholder={placeholder || "Select..."} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+
+    return (
+      <Input
+        id={id}
+        type={type}
+        value={value}
+        onChange={handleChange}
+        placeholder={placeholder}
+        required={required}
+        disabled={disabled}
+        aria-invalid={!!error}
+        aria-describedby={description ? `${id}-description` : undefined}
+      />
+    );
+  };
+
+  return (
+    <div className={cn("space-y-2", className)}>
+      <Label htmlFor={id} className={cn(error && "text-destructive")}>
+        {displayLabel}
+      </Label>
+      
+      {renderInput()}
       
       {description && !error && (
         <p id={`${id}-description`} className="text-sm text-muted-foreground">
