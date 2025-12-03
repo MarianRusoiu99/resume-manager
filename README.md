@@ -1,90 +1,193 @@
-# Resume Optimizer
+# Resume Manager
 
-> **Create tailored, ATS-optimized resumes in minutes with the power of AI.**
+> **Your complete resume management solution with powerful AI integrations.**
 
-Resume Optimizer is an intelligent platform that helps you land your dream job by analyzing job descriptions and automatically tailoring your resume to match. Built with modern web technologies and advanced AI agents, it ensures your application stands out and passes Applicant Tracking Systems (ATS).
+Resume Manager is a modern platform for creating, editing, and managing professional resumes. With an intuitive editor, customizable templates, and optional AI-powered enhancements, you have full control over crafting the perfect resume for any opportunity.
+
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
+![React](https://img.shields.io/badge/React-19-blue?logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38bdf8?logo=tailwindcss)
+![License](https://img.shields.io/badge/License-MIT-green)
 
 ## 🚀 Quick Start
 
 ### Option 1: Run Locally
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/yourusername/resume-optimizer.git
-    cd resume-optimizer
-    ```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/MarianRusoiu99/resume-optimizer.git
+   cd resume-optimizer
+   ```
 
-2.  **Install dependencies**
-    ```bash
-    npm install --legacy-peer-deps
-    ```
+2. **Install dependencies**
+   ```bash
+   npm install --legacy-peer-deps
+   ```
 
-3.  **Set up environment variables**
-    Copy `.env.example` to `.env` and fill in your secrets:
-    ```bash
-    cp .env.example .env
-    ```
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `.env` and configure:
+   ```env
+   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/resume_optimizer"
+   NEXTAUTH_SECRET="your-secret-key-min-32-chars"  # Generate: openssl rand -base64 32
+   NEXTAUTH_URL="http://localhost:3000"
+   ENCRYPTION_KEY="your-encryption-key-32-chars"   # Generate: openssl rand -hex 32
+   ```
 
-4.  **Run database migrations**
-    ```bash
-    npx prisma migrate dev
-    ```
+4. **Run database migrations**
+   ```bash
+   npx prisma migrate dev
+   ```
 
-5.  **Start the development server**
-    ```bash
-    npm run dev
-    ```
-    Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ### Option 2: Run with Docker 🐳
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/yourusername/resume-optimizer.git
-    cd resume-optimizer
-    ```
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/MarianRusoiu99/resume-optimizer.git
+   cd resume-optimizer
+   ```
 
-2.  **Configure environment**
-    Create a `.env` file with your secrets (see `.env.example`).
+2. **Configure environment**
+   Create a `.env` file with your required secrets:
+   ```env
+   NEXTAUTH_SECRET="your-secret-key-min-32-chars"
+   ENCRYPTION_KEY="your-encryption-key-32-chars"
+   
+   # Optional overrides
+   POSTGRES_USER=postgres
+   POSTGRES_PASSWORD=postgres
+   POSTGRES_DB=resume_optimizer
+   ```
 
-3.  **Start with Docker Compose**
-    ```bash
-    docker-compose up -d
-    ```
-    The app will be available at [http://localhost:3000](http://localhost:3000).
+3. **Start with Docker Compose**
+   ```bash
+   docker-compose up -d
+   ```
+   The app will be available at [http://localhost:3000](http://localhost:3000).
+
+   Docker Compose includes:
+   - **app**: Next.js application (production build)
+   - **db**: PostgreSQL 15 database
+   - **migrate**: Automatic database migrations on startup
 
 ## ✨ Key Features
 
-*   **🤖 AI-Powered Tailoring**: Automatically analyzes job descriptions and optimizes your resume content.
-*   **📄 ATS-Friendly PDF Export**: Generates professionally formatted PDFs that pass automated screening.
-*   **📝 Smart Cover Letters**: Creates personalized cover letters matching the job's tone and requirements.
-*   **💼 Profile Management**: Centralized storage for your experience, education, and skills.
-*   **🔒 Secure & Private**: API keys are encrypted at rest; your data stays yours.
-*   **📊 Resume History**: Keep track of every version of your resume you've generated.
+### 📝 Resume Editor
+| Feature | Description |
+| :--- | :--- |
+| **Rich Text Editor** | BlockNote-powered editor with formatting, lists, and more |
+| **Section Management** | Organize experience, education, skills, projects, and certifications |
+| **Real-time Preview** | See changes instantly as you edit |
+| **Multiple Profiles** | Maintain different resume versions for various career paths |
+
+### 🎨 Templates & Export
+| Feature | Description |
+| :--- | :--- |
+| **Custom Templates** | Choose from built-in templates or create your own with Handlebars |
+| **PDF Export** | Generate professional, print-ready PDF documents |
+| **JSON Resume Standard** | Import/export using the [JSON Resume](https://jsonresume.org/) format |
+
+### 🤖 AI Integrations (Optional)
+| Feature | Description |
+| :--- | :--- |
+| **Content Enhancement** | AI suggestions to improve bullet points and descriptions |
+| **Job Tailoring** | Optimize your resume for specific job descriptions |
+| **Cover Letter Generation** | Create matching cover letters with AI assistance |
+| **ATS Optimization** | Ensure compatibility with Applicant Tracking Systems |
+
+### 🔐 Security & Privacy
+| Feature | Description |
+| :--- | :--- |
+| **Your Data, Your Control** | All data stored securely in your own database |
+| **Encrypted API Keys** | AI provider keys encrypted at rest |
+| **No Data Sharing** | Your resume content is never shared with third parties |
 
 ## 🛠️ Tech Stack
 
-*   **Frontend**: Next.js 16 (App Router), Tailwind CSS v4, Shadcn UI
-*   **Backend**: Next.js API Routes, Prisma ORM
-*   **Database**: PostgreSQL
-*   **AI/LLM**: OpenAI API
-*   **Auth**: NextAuth.js v5
-*   **PDF**: @react-pdf/renderer
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | Next.js 16 (App Router), React 19, Tailwind CSS v4, shadcn/ui, BlockNote Editor |
+| **Backend** | Next.js API Routes, Server Actions, Prisma ORM |
+| **Database** | PostgreSQL |
+| **AI/LLM** | OpenAI API via Vercel AI SDK (optional) |
+| **Auth** | NextAuth.js v5 (credentials provider) |
+| **PDF** | pdf-lib, Handlebars templates |
+| **Testing** | Vitest (unit), Playwright (E2E) |
+
+## 📁 Project Structure
+
+```
+├── app/                    # Next.js App Router
+│   ├── (authenticated)/    # Protected routes (dashboard, editor, settings)
+│   ├── (public)/           # Public routes (login, register)
+│   ├── api/                # API routes
+│   └── actions/            # Server actions
+├── components/             # React components (organized by UI area)
+│   ├── editor/             # Resume/profile editor components
+│   ├── preview/            # PDF preview components
+│   ├── ui/                 # shadcn/ui base components
+│   └── ...
+├── contexts/               # React contexts (Editor, Profile, Theme)
+├── hooks/                  # Custom React hooks
+├── lib/                    # Business logic
+│   ├── ai/                 # AI agents and LLM integration
+│   ├── auth/               # NextAuth configuration
+│   ├── repositories/       # Data access layer
+│   ├── services/           # Business logic services
+│   ├── templates/          # Resume template engine
+│   └── validations/        # Zod schemas (JSON Resume)
+└── prisma/                 # Database schema and migrations
+```
 
 ## ⚙️ Environment Variables
 
 | Variable | Description | Required |
 | :--- | :--- | :--- |
 | `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `NEXTAUTH_SECRET` | Secret for session encryption | Yes |
-| `NEXTAUTH_URL` | Base URL (e.g., http://localhost:3000) | Yes |
-| `ENCRYPTION_KEY` | 32-char key for encrypting API keys | Yes |
+| `NEXTAUTH_SECRET` | Secret for session encryption (min 32 chars) | Yes |
+| `NEXTAUTH_URL` | Base URL (e.g., `http://localhost:3000`) | Yes |
+| `ENCRYPTION_KEY` | 32+ char key for encrypting API keys at rest | Yes |
 
-> **Note**: API keys for AI providers (OpenAI, Anthropic, Google, etc.) are managed through the in-app Settings → API Keys page. No environment variables needed for AI providers.
+> **Note**: AI features are optional. If you want to use AI integrations, configure your API keys through the in-app **Settings → API Keys** page.
+
+## 🧪 Testing
+
+```bash
+# Unit tests (Vitest)
+npm run test
+npm run test:ui        # With UI
+npm run test:coverage  # With coverage report
+
+# E2E tests (Playwright)
+npm run e2e
+npm run e2e:ui         # With UI
+npm run e2e:headed     # With browser visible
+```
+
+## 📜 Available Scripts
+
+| Script | Description |
+| :--- | :--- |
+| `npm run dev` | Start development server |
+| `npm run build` | Create production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run unit tests |
+| `npm run e2e` | Run E2E tests |
+| `npm run db:seed` | Seed database with test data |
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) for details.
 
 ## 📄 License
 
