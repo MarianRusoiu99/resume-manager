@@ -14,7 +14,6 @@ import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { ExternalLink } from 'lucide-react';
 import type { Resume } from '@/lib/validations/jsonresume';
-
 interface Template {
   id: string;
   name: string;

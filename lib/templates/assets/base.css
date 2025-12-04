@@ -1,0 +1,68 @@
+/**
+ * Base CSS for Resume Templates
+ * 
+ * Shared styles that apply to all templates:
+ * - A4 page setup
+ * - Print media queries
+ * - Common utility classes
+ */
+
+/* A4 Page Setup */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+html, body {
+  width: 210mm;
+  height: 297mm;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+}
+
+/* Main content wrapper - ensures A4 bounds */
+main {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 210mm;
+  min-height: 297mm;
+  overflow: hidden;
+}
+
+/* Print optimizations */
+@media print {
+  /* Prevent page breaks inside elements */
+  section,
+  article,
+  header,
+  footer,
+  p,
+  ul,
+  li {
+    page-break-inside: avoid;
+  }
+
+  /* Ensure backgrounds print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+/* Common layout utilities */
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Hide empty sections */
+section:empty {
+  display: none;
+}

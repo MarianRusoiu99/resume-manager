@@ -1,9 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
+import { apiFetch } from "@/lib/utils/api-client";
 
 interface Profile {
   id: string;
@@ -24,12 +25,16 @@ interface ProfileContextType {
   refreshProfiles: () => Promise<void>;
 }
 
+interface ProfileProviderProps {
+  readonly children: React.ReactNode;
+}
+
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
-export function ProfileProvider({ children }: { children: React.ReactNode }) {
+export function ProfileProvider({ children }: ProfileProviderProps) {
   const { status } = useSession();
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +49,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/profile");
+      const response = await apiFetch("/api/profile");
       if (!response.ok) {
         throw new Error("Failed to load profiles");
       }
@@ -55,7 +60,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       // Set active profile to default if not already set
       if (!activeProfileId && data.length > 0) {
         const defaultProfile = data.find((p: Profile) => p.isDefault) || data[0];
-        setActiveProfileIdState(defaultProfile.id);
+        setActiveProfileId(defaultProfile.id);
       }
     } catch (err) {
       logger.error("Failed to load profiles", err);
@@ -69,20 +74,20 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     loadProfiles();
   }, [loadProfiles]);
 
-  const setActiveProfileId = useCallback((profileId: string) => {
-    setActiveProfileIdState(profileId);
+  const handleSetActiveProfileId = useCallback((profileId: string) => {
+    setActiveProfileId(profileId);
     // Store in sessionStorage for persistence across page reloads
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("activeProfileId", profileId);
+    if (globalThis.window !== undefined) {
+      globalThis.sessionStorage.setItem("activeProfileId", profileId);
     }
   }, []);
 
   // Restore active profile from sessionStorage on mount
   useEffect(() => {
-    if (typeof window !== "undefined" && profiles.length > 0) {
-      const storedProfileId = sessionStorage.getItem("activeProfileId");
+    if (globalThis.window !== undefined && profiles.length > 0) {
+      const storedProfileId = globalThis.sessionStorage.getItem("activeProfileId");
       if (storedProfileId && profiles.some((p) => p.id === storedProfileId)) {
-        setActiveProfileIdState(storedProfileId);
+        setActiveProfileId(storedProfileId);
       }
     }
   }, [profiles]);
@@ -93,15 +98,15 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     await loadProfiles();
   }, [loadProfiles]);
 
-  const value: ProfileContextType = {
+  const value = useMemo<ProfileContextType>(() => ({
     profiles,
     activeProfileId,
     activeProfile,
     loading,
     error,
-    setActiveProfileId,
+    setActiveProfileId: handleSetActiveProfileId,
     refreshProfiles,
-  };
+  }), [profiles, activeProfileId, activeProfile, loading, error, handleSetActiveProfileId, refreshProfiles]);
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 }

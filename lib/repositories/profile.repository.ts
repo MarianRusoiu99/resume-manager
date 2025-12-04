@@ -144,11 +144,15 @@ export class ProfileRepository {
 
   /**
    * Find profile by public slug (for public sharing)
+   * Includes the selected template for rendering
    */
   async findByPublicSlug(slug: string) {
     return prisma.userProfile.findUnique({
       where: {
         publicSlug: slug,
+      },
+      include: {
+        selectedTemplate: true,
       },
     });
   }

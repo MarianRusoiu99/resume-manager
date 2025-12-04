@@ -1,71 +1,161 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
+import type { Template } from '@/lib/types/template';
 
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-  htmlTemplate: string;
-  cssStyles: string;
-}
-
+/**
+ * Options for the unified template preview hook
+ */
 interface UseTemplatePreviewOptions {
-  templateId: string | null;
-  resumeData: Resume;
+  /** Resume data to render in template */
+  resumeData: Resume | null;
+  /** Specific template ID to use (optional - will fallback to default) */
+  templateId?: string | null;
+  /** Whether to enable fetching/rendering (default: true) */
+  enabled?: boolean;
+  /** Whether to use fallback template if specific one fails (default: true) */
+  useFallback?: boolean;
 }
 
 /**
- * Hook for template preview rendering
- * Fetches template from API and renders client-side (no server round-trip for rendering)
+ * Return type for template preview hook
  */
-export function useTemplatePreview({ templateId, resumeData }: UseTemplatePreviewOptions) {
+interface UseTemplatePreviewReturn {
+  /** Rendered HTML content */
+  htmlContent: string;
+  /** Loading state */
+  isLoading: boolean;
+  /** Error message if any */
+  error: string | null;
+  /** Manually refresh the preview */
+  refresh: () => Promise<void>;
+}
+
+/**
+ * Fetch a template by ID or get default template
+ */
+async function fetchTemplate(templateId?: string | null, useFallback = true): Promise<Template | null> {
+  // Try specific template first
+  if (templateId) {
+    try {
+      const response = await fetch(`/api/template/${templateId}`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch {
+      // Fall through to fallback
+    }
+  }
+
+  // Fallback to default template
+  if (useFallback) {
+    const response = await fetch('/api/template?limit=1');
+    if (response.ok) {
+      const { templates } = await response.json();
+      if (templates && templates.length > 0) {
+        return templates[0];
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Unified hook for template preview rendering
+ * 
+ * Consolidates logic from useCardPreview and original useTemplatePreview.
+ * Fetches template from API and renders client-side.
+ * 
+ * @example Basic usage with specific template
+ * ```tsx
+ * const { htmlContent, isLoading } = useTemplatePreview({
+ *   resumeData: resume,
+ *   templateId: 'template-123',
+ * });
+ * ```
+ * 
+ * @example With fallback to default template
+ * ```tsx
+ * const { htmlContent, isLoading, refresh } = useTemplatePreview({
+ *   resumeData: resume,
+ *   templateId: null, // Will use default template
+ *   useFallback: true,
+ * });
+ * ```
+ * 
+ * @example Conditionally enabled
+ * ```tsx
+ * const { htmlContent } = useTemplatePreview({
+ *   resumeData: resume,
+ *   templateId: selectedTemplateId,
+ *   enabled: isPreviewVisible,
+ * });
+ * ```
+ */
+export function useTemplatePreview({
+  resumeData,
+  templateId,
+  enabled = true,
+  useFallback = true,
+}: UseTemplatePreviewOptions): UseTemplatePreviewReturn {
   const [htmlContent, setHtmlContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchAndRenderTemplate() {
-      if (!templateId) {
-        setHtmlContent('');
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Fetch template data from API
-        const templateResponse = await fetch(`/api/template/${templateId}`);
-        if (!templateResponse.ok) {
-          throw new Error('Failed to fetch template');
-        }
-
-        const template: Template = await templateResponse.json();
-
-        // Render template client-side (no API call needed!)
-        const html = renderTemplateClientSide({
-          htmlTemplate: template.htmlTemplate,
-          cssStyles: template.cssStyles,
-          resumeData,
-        });
-
-        setHtmlContent(html);
-      } catch (err) {
-        console.error('Template preview error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load template');
-        setHtmlContent('');
-      } finally {
-        setIsLoading(false);
-      }
+  const renderPreview = useCallback(async () => {
+    // Skip if disabled or no resume data
+    if (!enabled || !resumeData) {
+      setHtmlContent('');
+      setIsLoading(false);
+      return;
     }
 
-    fetchAndRenderTemplate();
-  }, [templateId, resumeData]);
+    // If no templateId and no fallback, clear content
+    if (!templateId && !useFallback) {
+      setHtmlContent('');
+      setIsLoading(false);
+      return;
+    }
 
-  return { htmlContent, isLoading, error };
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const template = await fetchTemplate(templateId, useFallback);
+
+      if (!template) {
+        throw new Error('No template available');
+      }
+
+      // Render template client-side
+      const html = renderTemplateClientSide({
+        htmlTemplate: template.htmlTemplate,
+        cssStyles: template.cssStyles,
+        resumeData,
+      });
+
+      setHtmlContent(html);
+    } catch (err) {
+      console.error('Template preview error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load template');
+      setHtmlContent('');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [resumeData, templateId, enabled, useFallback]);
+
+  // Render on mount and when dependencies change
+  useEffect(() => {
+    renderPreview();
+  }, [renderPreview]);
+
+  return {
+    htmlContent,
+    isLoading,
+    error,
+    refresh: renderPreview,
+  };
 }

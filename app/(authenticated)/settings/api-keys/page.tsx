@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { apiFetch } from '@/lib/utils/api-client';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
@@ -60,7 +61,7 @@ export default function ApiKeysPage() {
   const loadProviders = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/settings/api-providers');
+      const response = await apiFetch('/api/settings/api-providers');
       if (response.ok) {
         const data = await response.json();
         setProviders(data);
@@ -85,7 +86,7 @@ export default function ApiKeysPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await fetch('/api/settings/api-providers', {
+      const response = await apiFetch('/api/settings/api-providers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -123,7 +124,7 @@ export default function ApiKeysPage() {
     }
 
     try {
-      const response = await fetch(`/api/settings/api-providers/${id}`, {
+      const response = await apiFetch(`/api/settings/api-providers/${id}`, {
         method: 'DELETE',
       });
 
@@ -142,14 +143,14 @@ export default function ApiKeysPage() {
 
   const handleToggleProvider = async (id: string, isActive: boolean) => {
     try {
-      const response = await fetch(`/api/settings/api-providers/${id}`, {
+      const response = await apiFetch(`/api/settings/api-providers/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !isActive }),
       });
 
       if (response.ok) {
-        toast.success(`Provider ${!isActive ? 'enabled' : 'disabled'}`);
+        toast.success(`Provider ${isActive ? 'disabled' : 'enabled'}`);
         loadProviders();
       } else {
         const data = await response.json();
@@ -299,10 +300,11 @@ export default function ApiKeysPage() {
 
           <form onSubmit={handleAddProvider} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label htmlFor="provider-name" className="block text-sm font-medium mb-2">
                 Provider Name
               </label>
               <input
+                id="provider-name"
                 type="text"
                 value={newProvider.name}
                 onChange={(e) => setNewProvider({ ...newProvider, name: e.target.value })}
@@ -311,12 +313,12 @@ export default function ApiKeysPage() {
                 required
               />
             </div>
-
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label htmlFor="provider-type" className="block text-sm font-medium mb-2">
                 Provider Type
               </label>
               <select
+                id="provider-type"
                 value={newProvider.provider}
                 onChange={(e) =>
                   setNewProvider({
@@ -333,13 +335,13 @@ export default function ApiKeysPage() {
                 ))}
               </select>
             </div>
-
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label htmlFor="api-key" className="block text-sm font-medium mb-2">
                 API Key
               </label>
               <div className="relative">
                 <input
+                  id="api-key"
                   type={showApiKey ? 'text' : 'password'}
                   value={newProvider.apiKey}
                   onChange={(e) => setNewProvider({ ...newProvider, apiKey: e.target.value })}

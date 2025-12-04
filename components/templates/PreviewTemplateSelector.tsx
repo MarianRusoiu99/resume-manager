@@ -13,13 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-}
+import type { TemplateBase } from '@/lib/types/template';
 
 interface PreviewTemplateSelectorProps {
   selectedTemplateId: string | null;
@@ -34,7 +28,7 @@ export function PreviewTemplateSelector({
   variant = 'outline',
   size = 'sm'
 }: Readonly<PreviewTemplateSelectorProps>) {
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -75,7 +69,7 @@ export function PreviewTemplateSelector({
     }
     acc[template.category].push(template);
     return acc;
-  }, {} as Record<string, Template[]>);
+  }, {} as Record<string, TemplateBase[]>);
 
   const categories = Object.keys(templatesByCategory).sort((a, b) => a.localeCompare(b));
 

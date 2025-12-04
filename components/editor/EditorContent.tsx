@@ -1,5 +1,5 @@
 import { TabsContent } from "@/components/ui/tabs";
-import { useEditor } from "@/contexts/EditorContext";
+import { useEditor } from "@/lib/contexts";
 import { PersonalInfoForm } from "@/components/editor/forms/PersonalInfoForm";
 import { SummaryForm } from "@/components/editor/forms/SummaryForm";
 import { ExperienceForm } from "@/components/editor/forms/ExperienceForm";

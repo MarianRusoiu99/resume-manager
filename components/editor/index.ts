@@ -5,7 +5,7 @@
  */
 
 // Context
-export { EditorProvider, useEditor, type EditorContextType } from '@/contexts/EditorContext';
+export { EditorProvider, useEditor, type EditorContextType } from '@/lib/contexts';
 
 // UI Component
 export { EditorUI, type EditorUIProps } from './EditorUI';

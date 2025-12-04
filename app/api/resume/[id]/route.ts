@@ -15,6 +15,7 @@
 import { NextResponse } from 'next/server';
 import { resumeService } from '@/lib/services/resume.service';
 import { createApiHandler } from '@/lib/api-handler';
+import { errorCodeToStatus } from '@/lib/types/service-result';
 
 /**
  * GET /api/resume/[id] - Get a specific resume
@@ -28,7 +29,7 @@ export const GET = createApiHandler(async (request, { params }, session) => {
   if (!result.success) {
     return NextResponse.json(
       { error: result.error },
-      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
+      { status: errorCodeToStatus(result.code) }
     );
   }
 
@@ -47,7 +48,7 @@ export const DELETE = createApiHandler(async (request, { params }, session) => {
   if (!result.success) {
     return NextResponse.json(
       { error: result.error },
-      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
+      { status: errorCodeToStatus(result.code) }
     );
   }
 
@@ -74,7 +75,7 @@ export const PATCH = createApiHandler(async (request, { params }, session) => {
     if (!result.success) {
       return NextResponse.json(
         { error: result.error },
-        { status: result.code === 'NOT_FOUND' ? 404 : 500 }
+        { status: errorCodeToStatus(result.code) }
       );
     }
 
@@ -92,7 +93,7 @@ export const PATCH = createApiHandler(async (request, { params }, session) => {
   if (!result.success) {
     return NextResponse.json(
       { error: result.error },
-      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
+      { status: errorCodeToStatus(result.code) }
     );
   }
 

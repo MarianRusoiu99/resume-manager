@@ -1,14 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { renderTemplateClientSide } from "@/lib/utils/client-renderer";
+import { useState, useCallback } from "react";
 import type { Resume } from "@/lib/validations/jsonresume";
-
-interface Template {
-  id: string;
-  htmlTemplate: string;
-  cssStyles: string;
-}
+import type { Template } from "@/lib/types/template";
+import { useTemplatePreview } from "./useTemplatePreview";
 
 interface UseCardPreviewOptions {
   /** Resume/profile data to render */
@@ -33,8 +28,8 @@ interface UseCardPreviewReturn {
 /**
  * useCardPreview - Hook for generating card preview HTML
  * 
+ * Thin wrapper around useTemplatePreview for backward compatibility.
  * Extracts common preview generation logic from ProfileCard, ResumeCard, etc.
- * Fetches template and renders resume data client-side.
  * 
  * @example
  * ```tsx
@@ -57,71 +52,18 @@ export function useCardPreview({
   templateId,
   enabled = true,
 }: UseCardPreviewOptions): UseCardPreviewReturn {
-  const [previewHtml, setPreviewHtml] = useState<string | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const generatePreview = useCallback(async () => {
-    if (!content || !enabled) return;
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      let template: Template | null = null;
-
-      // Try to fetch specific template if templateId provided
-      if (templateId) {
-        try {
-          const templateResponse = await fetch(`/api/template/${templateId}`);
-          if (templateResponse.ok) {
-            template = await templateResponse.json();
-          }
-        } catch {
-          // Fall through to default template
-        }
-      }
-
-      // Fallback to default template
-      if (!template) {
-        const templatesResponse = await fetch("/api/template?limit=1");
-        if (!templatesResponse.ok) {
-          throw new Error("Failed to load template");
-        }
-
-        const { templates } = await templatesResponse.json();
-        if (!templates || templates.length === 0) {
-          throw new Error("No templates available");
-        }
-        template = templates[0];
-      }
-
-      // Render preview client-side
-      const html = renderTemplateClientSide({
-        htmlTemplate: template!.htmlTemplate,
-        cssStyles: template!.cssStyles,
-        resumeData: content,
-      });
-
-      setPreviewHtml(html);
-    } catch (err) {
-      console.error("Failed to generate preview:", err);
-      setError(err instanceof Error ? err.message : "Failed to generate preview");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [content, templateId, enabled]);
-
-  // Generate preview on mount and when dependencies change
-  useEffect(() => {
-    generatePreview();
-  }, [generatePreview]);
+  const { htmlContent, isLoading, error, refresh } = useTemplatePreview({
+    resumeData: content,
+    templateId,
+    enabled,
+    useFallback: true,
+  });
 
   return {
-    previewHtml,
+    previewHtml: htmlContent || undefined,
     isLoading,
     error,
-    refresh: generatePreview,
+    refresh,
   };
 }
 

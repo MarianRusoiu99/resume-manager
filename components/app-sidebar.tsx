@@ -18,7 +18,7 @@ import {
   Briefcase,
   LayoutDashboard,
 } from "lucide-react"
-import { useTheme } from "@/contexts/ThemeContext"
+import { useTheme } from "@/lib/contexts"
 import { signOut } from "next-auth/react"
 
 import {

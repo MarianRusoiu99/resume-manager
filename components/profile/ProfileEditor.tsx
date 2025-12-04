@@ -1,6 +1,6 @@
 "use client";
 
-import { EditorProvider } from "@/contexts/EditorContext";
+import { EditorProvider } from "@/lib/contexts";
 import { ResumeEditor } from "@/components/editor/ResumeEditor";
 import { Button } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
+import { apiFetch } from "@/lib/utils/api-client";
 
 interface Profile {
   id: string;
@@ -31,7 +32,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const loadProfile = useCallback(async () => {
     try {
-      const response = await fetch(`/api/profile/${profileId}`);
+      const response = await apiFetch(`/api/profile/${profileId}`);
       
       if (!response.ok) {
         throw new Error("Failed to load profile");
@@ -52,7 +53,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const response = await fetch(`/api/profile/${profileId}`);
+      const response = await apiFetch(`/api/profile/${profileId}`);
       
       if (response.status === 200) {
         const data = await response.json();
@@ -70,7 +71,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const response = await fetch(`/api/profile/${profileId}`, {
+      const response = await apiFetch(`/api/profile/${profileId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume }),
@@ -91,7 +92,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleProfileNameChange = async (name: string) => {
     try {
-      const response = await fetch(`/api/profile/${profileId}`, {
+      const response = await apiFetch(`/api/profile/${profileId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
@@ -113,7 +114,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleTogglePublic = async () => {
     try {
-      const response = await fetch(`/api/profile/${profileId}/public`, {
+      const response = await apiFetch(`/api/profile/${profileId}/public`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isPublic: !profile?.isPublic }),

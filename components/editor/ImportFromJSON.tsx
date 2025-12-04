@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useEditor } from "@/contexts/EditorContext";
+import { useEditor } from "@/lib/contexts";
 import { toast } from "sonner";
 import { ClipboardPaste, Upload } from "lucide-react";
 import { resumeSchema } from "@/lib/validations/jsonresume";

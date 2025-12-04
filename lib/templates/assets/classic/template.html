@@ -1,0 +1,165 @@
+<main>
+<header>
+  <h1>{{basics.name}}</h1>
+  {{#if basics.label}}<h2>{{basics.label}}</h2>{{/if}}
+  <p class="contact">
+    {{#if basics.phone}}{{basics.phone}}{{/if}}
+    {{#if basics.email}}{{#if basics.phone}} · {{/if}}<a href="mailto:{{basics.email}}">{{basics.email}}</a>{{/if}}
+    {{#if basics.url}}{{#if basics.email}}{{/if}} {{#if basics.phone}} · {{/if}}<a href="{{basics.url}}">{{basics.url}}</a>{{/if}}
+    {{#if basics.profiles}}
+      {{#each basics.profiles}} · <a href="{{url}}">{{network}}{{#if username}} ({{username}}){{/if}}</a>{{/each}}
+    {{/if}}
+  </p>
+</header>
+
+{{#if basics.summary}}
+<section>
+  <h3>SUMMARY</h3>
+  <article>
+    <p>{{basics.summary}}</p>
+  </article>
+</section>
+{{/if}}
+
+{{#if work}}
+<section>
+  <h3>EXPERIENCE</h3>
+  {{#each work}}
+  <article>
+    <strong>{{position}}</strong> — <span>{{name}}</span>
+    {{#if startDate}}
+      <time>{{startDate}}{{#if endDate}} – {{endDate}}{{/if}}</time>
+    {{/if}}
+    {{#if summary}}<p>{{summary}}</p>{{/if}}
+    {{#if highlights}}
+      <ul>
+        {{#each highlights}}<li>{{this}}</li>{{/each}}
+      </ul>
+    {{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if volunteer}}
+<section>
+  <h3>VOLUNTEER</h3>
+  {{#each volunteer}}
+  <article>
+    <strong>{{position}}</strong> — <span>{{organization}}</span>
+    {{#if startDate}}<time>{{startDate}}{{#if endDate}} – {{endDate}}{{/if}}</time>{{/if}}
+    {{#if summary}}<p>{{summary}}</p>{{/if}}
+    {{#if highlights}}
+      <ul>{{#each highlights}}<li>{{this}}</li>{{/each}}</ul>
+    {{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if projects}}
+<section>
+  <h3>PROJECTS</h3>
+  {{#each projects}}
+  <article>
+    <strong><a href="{{url}}">{{name}}</a></strong>
+    {{#if startDate}}<time>{{startDate}}{{#if endDate}} – {{endDate}}{{/if}}</time>{{/if}}
+    {{#if description}}<p>{{description}}</p>{{/if}}
+    {{#if highlights}}
+      <ul>{{#each highlights}}<li>{{this}}</li>{{/each}}</ul>
+    {{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if education}}
+<section>
+  <h3>EDUCATION</h3>
+  {{#each education}}
+  <article>
+    <strong>{{studyType}} {{#if area}}— {{area}}{{/if}}</strong>
+    <div>{{institution}}</div>
+    {{#if startDate}}<time>{{startDate}}{{#if endDate}} – {{endDate}}{{/if}}</time>{{/if}}
+    {{#if score}}<div class="meta">Score: {{score}}</div>{{/if}}
+    {{#if courses}}
+      <ul>{{#each courses}}<li>{{this}}</li>{{/each}}</ul>
+    {{/if}}
+  </article>
+  {{/each}}
+</section>
+{{/if}}
+
+{{#if skills}}
+<section>
+  <h3>SKILLS</h3>
+  <article>
+    {{#each skills}}
+      <div>
+        <strong>{{name}}</strong>{{#if level}} — <small>{{level}}</small>{{/if}}
+        {{#if keywords}}
+          <div>
+            {{#each keywords}}<span class="keyword">{{this}}</span>{{/each}}
+          </div>
+        {{/if}}
+      </div>
+    {{/each}}
+  </article>
+</section>
+{{/if}}
+
+{{#if languages}}
+<section>
+  <h3>LANGUAGES</h3>
+  <article>
+    <ul>{{#each languages}}<li>{{language}}{{#if fluency}} — {{fluency}}{{/if}}</li>{{/each}}</ul>
+  </article>
+</section>
+{{/if}}
+
+{{#if interests}}
+<section>
+  <h3>INTERESTS</h3>
+  <article>
+    <ul>{{#each interests}}<li>{{name}}{{#if keywords}} — {{#each keywords}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}</li>{{/each}}</ul>
+  </article>
+</section>
+{{/if}}
+
+{{#if awards}}
+<section>
+  <h3>AWARDS</h3>
+  <article>
+    <ul>{{#each awards}}<li><strong>{{title}}</strong> — {{date}} {{#if awarder}}• {{awarder}}{{/if}}{{#if summary}} — {{summary}}{{/if}}</li>{{/each}}</ul>
+  </article>
+</section>
+{{/if}}
+
+{{#if certificates}}
+<section>
+  <h3>CERTIFICATES</h3>
+  <article>
+    <ul>{{#each certificates}}<li><strong>{{name}}</strong> — {{date}}{{#if issuer}} • {{issuer}}{{/if}}{{#if url}} • <a href="{{url}}">link</a>{{/if}}</li>{{/each}}</ul>
+  </article>
+</section>
+{{/if}}
+
+{{#if publications}}
+<section>
+  <h3>PUBLICATIONS</h3>
+  <article>
+    <ul>{{#each publications}}<li><strong>{{name}}</strong> — {{publisher}} {{#if releaseDate}}• {{releaseDate}}{{/if}} {{#if url}}• <a href="{{url}}">link</a>{{/if}}</li>{{/each}}</ul>
+  </article>
+</section>
+{{/if}}
+
+{{#if references}}
+<section>
+  <h3>REFERENCES</h3>
+  <article>
+    <ul>{{#each references}}<li><strong>{{name}}</strong>{{#if reference}} — {{reference}}{{/if}}</li>{{/each}}</ul>
+  </article>
+</section>
+{{/if}}
+
+</main>

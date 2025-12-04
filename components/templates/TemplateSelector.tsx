@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-}
+import type { TemplateBase } from '@/lib/types/template';
 
 interface TemplateSelector {
   currentTemplateId: string | null;
@@ -17,7 +11,7 @@ interface TemplateSelector {
 }
 
 export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange }: TemplateSelector) {
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(currentTemplateId);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
