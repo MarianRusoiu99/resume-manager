@@ -24,7 +24,7 @@ export function EditorHeader({
     onDisplayNameChange,
     onTogglePublic,
     onShareClick,
-}: EditorHeaderProps) {
+}: Readonly<EditorHeaderProps>) {
     const [isEditingName, setIsEditingName] = useState(false);
     const [localDisplayName, setLocalDisplayName] = useState("");
 
