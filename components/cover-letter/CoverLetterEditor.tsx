@@ -18,7 +18,7 @@ import { Button, Card } from '@/components/ui';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import type { BlockNoteEditorMethods } from '@/components/editor/BlockNoteEditorWrapper.client';
 import { MarkdownPreview } from '@/components/editor/MarkdownPreview';
-import { FileDown, Copy, Edit, Check, X } from 'lucide-react';
+import { Copy, Edit, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CoverLetterEditorProps {
@@ -82,9 +82,28 @@ export function CoverLetterEditor({
   const [editedContent, setEditedContent] = useState(content);
   const editorRef = useRef<BlockNoteEditorMethods>(null);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    toast.success('Cover letter copied to clipboard!');
+  const handleCopy = async () => {
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(content);
+        toast.success('Cover letter copied to clipboard!');
+      } else {
+        // Fallback for environments without clipboard API (SSR, older browsers)
+        const textArea = document.createElement('textarea');
+        textArea.value = content;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        // Using deprecated execCommand as fallback - no modern alternative for this case
+        document.execCommand('copy');
+        textArea.remove();
+        toast.success('Cover letter copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      toast.error('Failed to copy to clipboard');
+    }
   };
 
   const handleStartEdit = () => {

@@ -227,14 +227,34 @@ export default function GeneratePage() {
                 setProgressPercent(eventData.progress);
                 break;
 
-              case 'complete':
+              case 'complete': {
                 setProgressStep('complete');
                 setProgressMessage('Resume generated successfully!');
                 setProgressPercent(100);
                 setGeneratedResume(eventData.resume);
                 setGeneratedResumeId(eventData.resumeId);
-                toast.success('Resume generated successfully!');
+                
+                // Build description for toast
+                let toastDescription = 'Your optimized resume is ready.';
+                if (eventData.jobTitle) {
+                  toastDescription = eventData.companyName
+                    ? `Resume for ${eventData.jobTitle} at ${eventData.companyName}`
+                    : `Resume for ${eventData.jobTitle}`;
+                }
+                
+                // Show toast with action to view resume
+                toast.success('Resume generated successfully!', {
+                  description: toastDescription,
+                  action: {
+                    label: 'View Resume',
+                    onClick: () => {
+                      globalThis.location.href = `/resumes/${eventData.resumeId}/edit`;
+                    },
+                  },
+                  duration: 8000,
+                });
                 break;
+              }
 
               case 'error':
                 throw new Error(eventData.message || 'Generation failed');
@@ -301,7 +321,18 @@ export default function GeneratePage() {
 
       const data = await response.json();
       setGeneratedCoverLetter(data.coverLetter);
-      toast.success('Cover letter generated successfully!');
+      
+      // Show toast with action to view cover letter
+      toast.success('Cover letter generated successfully!', {
+        description: 'Your cover letter is ready to view and edit.',
+        action: data.coverLetterId ? {
+          label: 'View Cover Letter',
+          onClick: () => {
+            globalThis.location.href = `/cover-letters/${data.coverLetterId}`;
+          },
+        } : undefined,
+        duration: 8000,
+      });
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to generate cover letter';
       setCoverLetterError(errorMsg);

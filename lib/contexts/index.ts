@@ -23,3 +23,10 @@ export {
   ThemeProvider, 
   useTheme 
 } from './ThemeContext';
+
+// Notification Context - for in-app notifications
+export {
+  NotificationProvider,
+  useNotifications,
+  type Notification
+} from './NotificationContext';
