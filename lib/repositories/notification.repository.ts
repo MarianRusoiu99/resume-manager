@@ -1,4 +1,4 @@
-import { PrismaClient, Notification, NotificationType } from '@prisma/client';
+import { PrismaClient, Notification, NotificationType, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 
 /**
@@ -41,7 +41,7 @@ export class NotificationRepository {
         actionLabel: data.actionLabel,
         resourceType: data.resourceType,
         resourceId: data.resourceId,
-        metadata: data.metadata as never,
+        metadata: data.metadata as Prisma.InputJsonValue,
         expiresAt: data.expiresAt,
       },
     });

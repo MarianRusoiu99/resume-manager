@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import type { Resume } from "@/lib/validations/jsonresume";
 
 export class ProfileRepository {
@@ -59,7 +60,7 @@ export class ProfileRepository {
       data: {
         userId: data.userId,
         name: data.name,
-        resume: data.resume as never,
+        resume: data.resume as Prisma.InputJsonValue,
         isDefault: data.isDefault ?? false,
       },
     });
@@ -87,7 +88,7 @@ export class ProfileRepository {
       },
       data: {
         ...(data.name && { name: data.name }),
-        ...(data.resume && { resume: data.resume as never }),
+        ...(data.resume && { resume: data.resume as Prisma.InputJsonValue }),
         ...(data.isDefault !== undefined && { isDefault: data.isDefault }),
         ...(data.isPublic !== undefined && { isPublic: data.isPublic }),
         ...(data.publicSlug !== undefined && { publicSlug: data.publicSlug }),

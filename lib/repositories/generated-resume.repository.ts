@@ -1,4 +1,4 @@
-import { PrismaClient, GeneratedResume } from '@prisma/client';
+import { PrismaClient, GeneratedResume, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import type { Resume } from '@/lib/validations/jsonresume';
 
@@ -6,7 +6,7 @@ import type { Resume } from '@/lib/validations/jsonresume';
  * Repository for managing generated resumes in the database
  */
 export class GeneratedResumeRepository {
-  private db: PrismaClient;
+  private readonly db: PrismaClient;
 
   constructor(dbClient: PrismaClient = prisma) {
     this.db = dbClient;
@@ -30,13 +30,12 @@ export class GeneratedResumeRepository {
           connect: { id: data.userId }
         },
         jobDescription: data.jobDescription,
-        jobMetadata: data.jobMetadata as never,
-        resume: data.resume as never,
+        jobMetadata: data.jobMetadata as Prisma.InputJsonValue,
+        resume: data.resume as Prisma.InputJsonValue,
         template: data.templateId ? {
           connect: { id: data.templateId }
         } : undefined,
-  // coverLetter removed
-        metadata: data.metadata as never
+        metadata: data.metadata as Prisma.InputJsonValue
       }
     });
   }
@@ -79,7 +78,7 @@ export class GeneratedResumeRepository {
     return this.db.generatedResume.update({
       where: { id },
       data: {
-        resume: resume as never,
+        resume: resume as Prisma.InputJsonValue,
         updatedAt: new Date()
       }
     });

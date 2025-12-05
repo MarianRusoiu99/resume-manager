@@ -2,19 +2,27 @@ import { z } from 'zod';
 
 // Lenient ISO8601 date schema - allows empty strings and valid dates
 const iso8601Schema = z.string().refine(
-  (val) => val === '' || /^([1-2][0-9]{3}(-((0[1-9]|1[0-2])(-([0-2][0-9]|3[0-1]))?))?)$/.test(val),
+  (val) => val === '' || /^([1-2]\d{3}(-((0[1-9]|1[0-2])(-([0-2]\d|3[0-1]))?))?)$/.test(val),
   { message: 'Invalid date format. Use YYYY, YYYY-MM, or YYYY-MM-DD' }
 ).optional().or(z.literal(''));
 
 // Lenient URL schema - allows empty strings and valid URLs
 const urlSchema = z.string().refine(
-  (val) => val === '' || z.string().url().safeParse(val).success,
+  (val) => {
+    if (val === '') return true;
+    try {
+      new URL(val);
+      return true;
+    } catch {
+      return false;
+    }
+  },
   { message: 'Invalid URL format' }
 ).optional().or(z.literal(''));
 
 // Lenient email schema - allows empty strings and valid emails
 const emailSchema = z.string().refine(
-  (val) => val === '' || z.string().email().safeParse(val).success,
+  (val) => val === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
   { message: 'Invalid email format' }
 ).optional().or(z.literal(''));
 
@@ -129,12 +137,12 @@ const projectSchema = z.object({
 });
 
 const metaSchema = z.object({
-  canonical: z.string().url().optional(),
+  canonical: z.url().optional(),
   lastModified: z.string().optional(),
-}).passthrough();
+}).loose();
 
 export const resumeSchema = z.object({
-  $schema: z.string().url().optional(),
+  $schema: z.url().optional(),
   basics: basicsSchema.optional(),
   work: z.array(workSchema).optional(),
   volunteer: z.array(volunteerSchema).optional(),
