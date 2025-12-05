@@ -86,8 +86,8 @@ export class NotificationService {
     try {
       const notification = await this.repository.create(input);
       
-      // Emit to connected SSE clients for real-time updates
-      emitNotification(input.userId, this.toNotificationPayload(notification));
+      // Emit to connected SSE clients for real-time updates (via PubSub)
+      await emitNotification(input.userId, this.toNotificationPayload(notification));
       
       return {
         success: true,

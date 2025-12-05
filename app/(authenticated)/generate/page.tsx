@@ -143,25 +143,138 @@ export default function GeneratePage() {
 
 
 
-  const handleGenerateResume = async () => {
+  const validateResumeInput = (): boolean => {
     if (resumeJobDescription.length < 50) {
-      setResumeError('Job description must be at least 50 characters long');
-      toast.error('Job description must be at least 50 characters long');
-      return;
+      const errorMsg = 'Job description must be at least 50 characters long';
+      setResumeError(errorMsg);
+      toast.error(errorMsg);
+      return false;
     }
 
     if (!selectedResumeProfileId) {
-      setResumeError('Please select a profile');
-      toast.error('Please select a profile');
+      const errorMsg = 'Please select a profile';
+      setResumeError(errorMsg);
+      toast.error(errorMsg);
+      return false;
+    }
+
+    return true;
+  };
+
+  const resetResumeProgress = () => {
+    setProgressStep('');
+    setProgressMessage('');
+    setProgressPercent(0);
+  };
+
+  const handleStreamEvent = (eventType: string, eventData: unknown) => {
+    const data = eventData as {
+      step?: string;
+      message?: string;
+      progress?: number;
+      resume?: GeneratedResume['content'];
+      resumeId?: string;
+      jobTitle?: string;
+      companyName?: string;
+      error?: string;
+    };
+
+    switch (eventType) {
+      case 'connected':
+        console.log('Connected to stream');
+        break;
+
+      case 'start':
+        setProgressStep('init');
+        setProgressMessage('Starting generation...');
+        setProgressPercent(0);
+        break;
+
+      case 'progress':
+        setProgressStep(data.step || '');
+        setProgressMessage(data.message || '');
+        setProgressPercent(data.progress || 0);
+        break;
+
+      case 'complete': {
+        setProgressStep('complete');
+        setProgressMessage('Resume generated successfully!');
+        setProgressPercent(100);
+        if (data.resume) {
+          setGeneratedResume({
+            id: data.resumeId || '',
+            content: data.resume,
+            metadata: {
+              generatedAt: new Date().toISOString(),
+            },
+          });
+        } else {
+          setGeneratedResume(null);
+        }
+        setGeneratedResumeId(data.resumeId || null);
+
+        let toastDescription = 'Your optimized resume is ready.';
+        if (data.jobTitle) {
+          toastDescription = data.companyName
+            ? `Resume for ${data.jobTitle} at ${data.companyName}`
+            : `Resume for ${data.jobTitle}`;
+        }
+
+        toast.success('Resume generated successfully!', {
+          description: toastDescription,
+          action: {
+            label: 'View Resume',
+            onClick: () => {
+              globalThis.location.href = `/resumes/${data.resumeId}/edit`;
+            },
+          },
+          duration: 8000,
+        });
+        break;
+      }
+
+      case 'error':
+        throw new Error(data.error || 'Generation failed');
+    }
+  };
+
+  const processResumeStream = async (reader: ReadableStreamDefaultReader<Uint8Array>) => {
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        const eventMatch = line.match(/^event: (.+)$/m);
+        const dataMatch = line.match(/^data: (.+)$/m);
+
+        if (eventMatch && dataMatch) {
+          const eventType = eventMatch[1];
+          const eventData = JSON.parse(dataMatch[1]);
+          handleStreamEvent(eventType, eventData);
+        }
+      }
+    }
+  };
+
+  const handleGenerateResume = async () => {
+    if (!validateResumeInput()) {
       return;
     }
 
     setIsGeneratingResume(true);
     setResumeError(null);
     setGeneratedResume(null);
-    setProgressStep('');
-    setProgressMessage('');
-    setProgressPercent(0);
+    resetResumeProgress();
 
     try {
       const response = await fetch('/api/resume/generate-stream', {
@@ -183,92 +296,17 @@ export default function GeneratePage() {
       }
 
       const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
 
       if (!reader) {
         throw new Error('Stream not available');
       }
 
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-
-          const eventMatch = line.match(/^event: (.+)$/m);
-          const dataMatch = line.match(/^data: (.+)$/m);
-
-          if (eventMatch && dataMatch) {
-            const eventType = eventMatch[1];
-            const eventData = JSON.parse(dataMatch[1]);
-
-            switch (eventType) {
-              case 'connected':
-                console.log('Connected to stream');
-                break;
-
-              case 'start':
-                setProgressStep('init');
-                setProgressMessage('Starting generation...');
-                setProgressPercent(0);
-                break;
-
-              case 'progress':
-                setProgressStep(eventData.step);
-                setProgressMessage(eventData.message);
-                setProgressPercent(eventData.progress);
-                break;
-
-              case 'complete': {
-                setProgressStep('complete');
-                setProgressMessage('Resume generated successfully!');
-                setProgressPercent(100);
-                setGeneratedResume(eventData.resume);
-                setGeneratedResumeId(eventData.resumeId);
-                
-                // Build description for toast
-                let toastDescription = 'Your optimized resume is ready.';
-                if (eventData.jobTitle) {
-                  toastDescription = eventData.companyName
-                    ? `Resume for ${eventData.jobTitle} at ${eventData.companyName}`
-                    : `Resume for ${eventData.jobTitle}`;
-                }
-                
-                // Show toast with action to view resume
-                toast.success('Resume generated successfully!', {
-                  description: toastDescription,
-                  action: {
-                    label: 'View Resume',
-                    onClick: () => {
-                      globalThis.location.href = `/resumes/${eventData.resumeId}/edit`;
-                    },
-                  },
-                  duration: 8000,
-                });
-                break;
-              }
-
-              case 'error':
-                throw new Error(eventData.message || 'Generation failed');
-            }
-          }
-        }
-      }
+      await processResumeStream(reader);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
       setResumeError(errorMessage);
       toast.error(errorMessage);
-      setProgressStep('');
-      setProgressMessage('');
-      setProgressPercent(0);
+      resetResumeProgress();
     } finally {
       setIsGeneratingResume(false);
     }
@@ -450,49 +488,59 @@ export default function GeneratePage() {
                     )}
 
                     {/* AI Model Selection */}
-                    {isLoadingData ? (
-                      <div className="p-3 bg-muted rounded-md">
-                        <div className="flex items-center gap-2">
-                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span className="text-sm text-muted-foreground">Loading AI providers...</span>
+                    {(() => {
+                      if (isLoadingData) {
+                        return (
+                          <div className="p-3 bg-muted rounded-md">
+                            <div className="flex items-center gap-2">
+                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              <span className="text-sm text-muted-foreground">Loading AI providers...</span>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (models.length > 0) {
+                        return (
+                          <div>
+                            <label htmlFor="resumeModel" className="block text-sm font-medium mb-2">
+                              AI Model <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              id="resumeModel"
+                              value={selectedResumeModelId}
+                              onChange={(e) => setSelectedResumeModelId(e.target.value)}
+                              className="w-full px-3 py-2 border rounded-md"
+                              disabled={isGeneratingResume}
+                            >
+                              {models.map((model) => (
+                                <option className='bg-background text-foreground' key={model.id} value={model.id}>
+                                  {model.name} ({model.providerType})
+                                </option>
+                              ))}
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {models.find(m => m.id === selectedResumeModelId)?.description}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                          <p className="text-sm text-yellow-800">
+                            ⚠️ No AI providers configured. Please add an API key in{' '}
+                            <Link href="/settings/api-keys" className="underline font-medium">
+                              Settings → API Keys
+                            </Link>{' '}
+                            to generate resumes.
+                          </p>
                         </div>
-                      </div>
-                    ) : models.length > 0 ? (
-                      <div>
-                        <label htmlFor="resumeModel" className="block text-sm font-medium mb-2">
-                          AI Model <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          id="resumeModel"
-                          value={selectedResumeModelId}
-                          onChange={(e) => setSelectedResumeModelId(e.target.value)}
-                          className="w-full px-3 py-2 border rounded-md"
-                          disabled={isGeneratingResume}
-                        >
-                          {models.map((model) => (
-                            <option className='bg-background text-foreground' key={model.id} value={model.id}>
-                              {model.name} ({model.providerType})
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {models.find(m => m.id === selectedResumeModelId)?.description}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                        <p className="text-sm text-yellow-800">
-                          ⚠️ No AI providers configured. Please add an API key in{' '}
-                          <Link href="/settings/api-keys" className="underline font-medium">
-                            Settings → API Keys
-                          </Link>{' '}
-                          to generate resumes.
-                        </p>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {resumeError && (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -517,30 +565,62 @@ export default function GeneratePage() {
                       </div>
                     )}
 
+                    {(() => {
+                      if (isLoadingData) {
+                        return (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading...
+                          </>
+                        );
+                      }
+                      if (isGeneratingResume) {
+                        return (
+                          <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Generating Resume...
+                          </>
+                        );
+                      }
+                      return '✨ Generate Resume';
+                    })()}
+                    
                     <Button
                       onClick={handleGenerateResume}
                       disabled={isLoadingData || isGeneratingResume || resumeJobDescription.length < 50 || !selectedResumeProfileId || models.length === 0}
                       className="w-full"
                     >
-                      {isLoadingData ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Loading...
-                        </>
-                      ) : isGeneratingResume ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Generating Resume...
-                        </>
-                      ) : (
-                        '✨ Generate Resume'
-                      )}
+                      {(() => {
+                        if (isLoadingData) {
+                          return (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Loading...
+                            </>
+                          );
+                        }
+                        if (isGeneratingResume) {
+                          return (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Generating Resume...
+                            </>
+                          );
+                        }
+                        return '✨ Generate Resume';
+                      })()}
                     </Button>
                   </div>
                 </Card>
@@ -649,7 +729,7 @@ export default function GeneratePage() {
                     )}
 
                     {/* AI Model Selection */}
-                    {isLoadingData ? (
+                    {isLoadingData && (
                       <div className="p-3 bg-muted rounded-md">
                         <div className="flex items-center gap-2">
                           <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -659,7 +739,9 @@ export default function GeneratePage() {
                           <span className="text-sm text-muted-foreground">Loading AI providers...</span>
                         </div>
                       </div>
-                    ) : models.length > 0 ? (
+                    )}
+
+                    {!isLoadingData && models.length > 0 && (
                       <div>
                         <label htmlFor="coverLetterModel" className="block text-sm font-medium mb-2">
                           AI Model <span className="text-red-500">*</span>
@@ -681,7 +763,9 @@ export default function GeneratePage() {
                           {models.find(m => m.id === selectedCoverLetterModelId)?.description}
                         </p>
                       </div>
-                    ) : (
+                    )}
+
+                    {!isLoadingData && models.length === 0 && (
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                         <p className="text-sm text-yellow-800">
                           ⚠️ No AI providers configured. Please add an API key in{' '}
@@ -736,7 +820,7 @@ export default function GeneratePage() {
                         disabled={isLoadingData || isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || profiles.length === 0 || models.length === 0}
                         className="flex-1"
                       >
-                        {isLoadingData ? (
+                        {isLoadingData && (
                           <>
                             <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -744,7 +828,8 @@ export default function GeneratePage() {
                             </svg>
                             Loading...
                           </>
-                        ) : isGeneratingCoverLetter ? (
+                        )}
+                        {isGeneratingCoverLetter && !isLoadingData && (
                           <>
                             <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -752,9 +837,8 @@ export default function GeneratePage() {
                             </svg>
                             Generating...
                           </>
-                        ) : (
-                          'Generate Cover Letter'
                         )}
+                        {!isLoadingData && !isGeneratingCoverLetter && 'Generate Cover Letter'}
                       </Button>
 
                       {generatedCoverLetter && (

@@ -84,22 +84,8 @@ export function CoverLetterEditor({
 
   const handleCopy = async () => {
     try {
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        await navigator.clipboard.writeText(content);
-        toast.success('Cover letter copied to clipboard!');
-      } else {
-        // Fallback for environments without clipboard API (SSR, older browsers)
-        const textArea = document.createElement('textarea');
-        textArea.value = content;
-        textArea.style.position = 'fixed';
-        textArea.style.left = '-9999px';
-        document.body.appendChild(textArea);
-        textArea.select();
-        // Using deprecated execCommand as fallback - no modern alternative for this case
-        document.execCommand('copy');
-        textArea.remove();
-        toast.success('Cover letter copied to clipboard!');
-      }
+      await navigator.clipboard.writeText(content);
+      toast.success('Cover letter copied to clipboard!');
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
       toast.error('Failed to copy to clipboard');

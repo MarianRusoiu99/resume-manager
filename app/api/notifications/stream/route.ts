@@ -44,11 +44,11 @@ export async function GET() {
   let heartbeatInterval: NodeJS.Timeout | null = null;
   
   const stream = new ReadableStream({
-    start(controller) {
+    async start(controller) {
       controllerRef = controller;
       
-      // Register this connection
-      addConnection(userId, controller);
+      // Register this connection (async for PubSub subscription)
+      await addConnection(userId, controller);
       
       // Send initial connection message
       const encoder = new TextEncoder();
@@ -63,13 +63,13 @@ export async function GET() {
       }, 30000);
     },
     
-    cancel() {
+    async cancel() {
       // Clean up when client disconnects
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
       }
       if (controllerRef) {
-        removeConnection(userId, controllerRef);
+        await removeConnection(userId, controllerRef);
       }
     },
   });
