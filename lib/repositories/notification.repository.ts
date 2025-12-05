@@ -1,5 +1,6 @@
 import { PrismaClient, Notification, NotificationType, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import type { INotificationRepository } from './interfaces';
 
 /**
  * Input for creating a notification
@@ -19,8 +20,10 @@ export interface CreateNotificationInput {
 
 /**
  * Repository for managing notifications in the database
+ * 
+ * Implements INotificationRepository for data access abstraction.
  */
-export class NotificationRepository {
+export class NotificationRepository implements INotificationRepository {
   private readonly db: PrismaClient;
 
   constructor(dbClient: PrismaClient = prisma) {

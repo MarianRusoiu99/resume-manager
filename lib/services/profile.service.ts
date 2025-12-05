@@ -1,15 +1,28 @@
-import { profileRepository } from "@/lib/repositories/profile.repository";
+import { ProfileRepository, profileRepository } from "@/lib/repositories/profile.repository";
 import { profileCache } from "@/lib/cache/simple-cache";
 import { ZodError } from "zod";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
 import { success, failure, type ServiceResult } from "@/lib/types/service-result";
+import type { IProfileService } from "./interfaces";
+import type { ICache } from "@/lib/repositories/interfaces";
 
 // Type for profile data returned from repository
 type Profile = Awaited<ReturnType<typeof profileRepository.findById>>;
 type ProfileList = Awaited<ReturnType<typeof profileRepository.findAllByUserId>>;
 
-export class ProfileService {
+/**
+ * Profile Service
+ * 
+ * Implements IProfileService for business logic.
+ * Uses constructor injection for dependencies.
+ */
+export class ProfileService implements IProfileService {
+  constructor(
+    private readonly repository: ProfileRepository = profileRepository,
+    private readonly cache: ICache = profileCache
+  ) {}
+
   private getCacheKey(userId: string): string {
     return `profiles:${userId}`;
   }
@@ -19,9 +32,9 @@ export class ProfileService {
   }
 
   private invalidateUserCache(userId: string, profileId?: string): void {
-    profileCache.delete(this.getCacheKey(userId));
+    this.cache.delete(this.getCacheKey(userId));
     if (profileId) {
-      profileCache.delete(this.getProfileCacheKey(profileId));
+      this.cache.delete(this.getProfileCacheKey(profileId));
     }
   }
 
@@ -32,17 +45,17 @@ export class ProfileService {
     try {
       // Check cache first
       const cacheKey = this.getCacheKey(userId);
-      const cached = profileCache.get(cacheKey);
+      const cached = this.cache.get(cacheKey);
       if (cached) {
         return success(cached as ProfileList);
       }
 
       // Fetch from database
-      const profiles = await profileRepository.findAllByUserId(userId);
+      const profiles = await this.repository.findAllByUserId(userId);
 
       // Cache the result
       if (profiles) {
-        profileCache.set(cacheKey, profiles);
+        this.cache.set(cacheKey, profiles);
       }
 
       return success(profiles);
@@ -59,20 +72,20 @@ export class ProfileService {
     try {
       // Check cache first
       const cacheKey = this.getProfileCacheKey(profileId);
-      const cached = profileCache.get(cacheKey);
+      const cached = this.cache.get(cacheKey);
       if (cached) {
         return success(cached as NonNullable<Profile>);
       }
 
       // Fetch from database
-      const profile = await profileRepository.findById(profileId, userId);
+      const profile = await this.repository.findById(profileId, userId);
 
       if (!profile) {
         return failure("Profile not found", "NOT_FOUND");
       }
 
       // Cache the result
-      profileCache.set(cacheKey, profile);
+      this.cache.set(cacheKey, profile);
 
       return success(profile);
     } catch (error) {
@@ -87,7 +100,7 @@ export class ProfileService {
   async getProfile(userId: string): Promise<ServiceResult<Profile>> {
     try {
       // Fetch default profile
-      const profile = await profileRepository.findDefaultByUserId(userId);
+      const profile = await this.repository.findDefaultByUserId(userId);
 
       return success(profile);
     } catch (error) {
@@ -108,11 +121,11 @@ export class ProfileService {
     try {
       // If this is set as default, unset other defaults
       if (isDefault) {
-        await profileRepository.unsetAllDefaults(userId);
+        await this.repository.unsetAllDefaults(userId);
       }
 
       // Create profile
-      const profile = await profileRepository.create({
+      const profile = await this.repository.create({
         userId,
         name,
         resume: data,
@@ -143,18 +156,18 @@ export class ProfileService {
   ): Promise<ServiceResult<NonNullable<Profile>>> {
     try {
       // Check if profile exists and belongs to user
-      const existing = await profileRepository.findById(profileId, userId);
+      const existing = await this.repository.findById(profileId, userId);
       if (!existing) {
         return failure("Profile not found", "NOT_FOUND");
       }
 
       // If setting as default, unset other defaults
       if (data.isDefault) {
-        await profileRepository.unsetAllDefaults(userId);
+        await this.repository.unsetAllDefaults(userId);
       }
 
       // Update profile
-      const profile = await profileRepository.update(profileId, userId, data);
+      const profile = await this.repository.update(profileId, userId, data);
 
       // Invalidate cache
       this.invalidateUserCache(userId, profileId);
@@ -176,13 +189,13 @@ export class ProfileService {
   async deleteProfile(profileId: string, userId: string): Promise<ServiceResult<void>> {
     try {
       // Check if profile exists
-      const profile = await profileRepository.findById(profileId, userId);
+      const profile = await this.repository.findById(profileId, userId);
       if (!profile) {
         return failure("Profile not found", "NOT_FOUND");
       }
 
       // Don't allow deleting the last profile
-      const allProfiles = await profileRepository.findAllByUserId(userId);
+      const allProfiles = await this.repository.findAllByUserId(userId);
       if (allProfiles.length <= 1) {
         return failure("Cannot delete your last profile", "CONFLICT");
       }
@@ -191,11 +204,11 @@ export class ProfileService {
       if (profile.isDefault) {
         const otherProfile = allProfiles.find(p => p.id !== profileId);
         if (otherProfile) {
-          await profileRepository.update(otherProfile.id, userId, { isDefault: true });
+          await this.repository.update(otherProfile.id, userId, { isDefault: true });
         }
       }
 
-      await profileRepository.delete(profileId, userId);
+      await this.repository.delete(profileId, userId);
 
       // Invalidate cache
       this.invalidateUserCache(userId, profileId);
@@ -213,14 +226,14 @@ export class ProfileService {
   async setDefaultProfile(profileId: string, userId: string): Promise<ServiceResult<void>> {
     try {
       // Check if profile exists
-      const profile = await profileRepository.findById(profileId, userId);
+      const profile = await this.repository.findById(profileId, userId);
       if (!profile) {
         return failure("Profile not found", "NOT_FOUND");
       }
 
       // Unset all defaults and set this one
-      await profileRepository.unsetAllDefaults(userId);
-      await profileRepository.update(profileId, userId, { isDefault: true });
+      await this.repository.unsetAllDefaults(userId);
+      await this.repository.update(profileId, userId, { isDefault: true });
 
       // Invalidate cache
       this.invalidateUserCache(userId);
@@ -241,14 +254,14 @@ export class ProfileService {
     newName?: string
   ): Promise<ServiceResult<NonNullable<Profile>>> {
     try {
-      const profile = await profileRepository.findById(profileId, userId);
+      const profile = await this.repository.findById(profileId, userId);
       if (!profile) {
         return failure("Profile not found", "NOT_FOUND");
       }
 
       const duplicateName = newName || `${profile.name} (Copy)`;
 
-      const newProfile = await profileRepository.create({
+      const newProfile = await this.repository.create({
         userId,
         name: duplicateName,
         resume: profile.resume as Resume,

@@ -1,10 +1,12 @@
 /**
  * Cover Letter Service
  *
- * Business logic for managing cover letters
+ * Business logic for managing cover letters.
+ * Implements ICoverLetterService with constructor injection.
  */
 
 import {
+  CoverLetterRepository,
   coverLetterRepository,
   CreateCoverLetterInput,
   UpdateCoverLetterInput,
@@ -12,12 +14,17 @@ import {
 import type { CoverLetterWithResume, CoverLetterListItem } from '@/lib/types/cover-letter';
 import { logger } from '@/lib/utils/logger';
 import { success, failure, type ServiceResult } from '@/lib/types/service-result';
+import type { ICoverLetterService } from './interfaces';
 
 /**
  * Service for managing cover letters, including creation, retrieval, updating, and deletion.
  * All methods return a ServiceResult indicating success, data, or error.
  */
-export class CoverLetterService {
+export class CoverLetterService implements ICoverLetterService {
+  constructor(
+    private readonly repository: CoverLetterRepository = coverLetterRepository
+  ) {}
+
   /**
    * Create a new cover letter
    */
@@ -25,7 +32,7 @@ export class CoverLetterService {
     input: CreateCoverLetterInput
   ): Promise<ServiceResult<CoverLetterListItem>> {
     try {
-      const coverLetter = await coverLetterRepository.create(input);
+      const coverLetter = await this.repository.create(input);
       return success(coverLetter);
     } catch (error) {
       logger.error('[CoverLetterService] Create error', error, {
@@ -43,7 +50,7 @@ export class CoverLetterService {
     userId: string
   ): Promise<ServiceResult<CoverLetterWithResume>> {
     try {
-      const coverLetter = await coverLetterRepository.findById(id, userId);
+      const coverLetter = await this.repository.findById(id, userId);
 
       if (!coverLetter) {
         return failure('Cover letter not found', 'NOT_FOUND');
@@ -73,7 +80,7 @@ export class CoverLetterService {
     }
   ): Promise<ServiceResult<{ coverLetters: CoverLetterListItem[]; total: number }>> {
     try {
-      const result = await coverLetterRepository.findByUserId(userId, options);
+      const result = await this.repository.findByUserId(userId, options);
       return success(result);
     } catch (error) {
       logger.error('[CoverLetterService] List error', error, {
@@ -94,12 +101,12 @@ export class CoverLetterService {
   ): Promise<ServiceResult<CoverLetterListItem>> {
     try {
       // Check if exists
-      const exists = await coverLetterRepository.exists(id, userId);
+      const exists = await this.repository.exists(id, userId);
       if (!exists) {
         return failure('Cover letter not found', 'NOT_FOUND');
       }
 
-      const updated = await coverLetterRepository.update(id, userId, data);
+      const updated = await this.repository.update(id, userId, data);
       return success(updated);
     } catch (error) {
       logger.error('[CoverLetterService] Update error', error, {
@@ -117,12 +124,12 @@ export class CoverLetterService {
   async deleteCoverLetter(id: string, userId: string): Promise<ServiceResult<void>> {
     try {
       // Check if exists
-      const exists = await coverLetterRepository.exists(id, userId);
+      const exists = await this.repository.exists(id, userId);
       if (!exists) {
         return failure('Cover letter not found', 'NOT_FOUND');
       }
 
-      await coverLetterRepository.delete(id, userId);
+      await this.repository.delete(id, userId);
       return success(undefined as void);
     } catch (error) {
       logger.error('[CoverLetterService] Delete error', error, {

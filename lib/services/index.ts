@@ -10,7 +10,21 @@
  * ```
  */
 
+// Service interfaces for dependency injection and testing
+export type {
+  IProfileService,
+  IResumeService,
+  IResumeGenerationService,
+  IResumeCrudService,
+  INotificationService,
+  ITemplateService,
+  ICoverLetterService,
+} from './interfaces';
+
+// Resume services (facade + split services)
 export { resumeService, ResumeService } from './resume.service';
+export { resumeGenerationService, ResumeGenerationService } from './resume-generation.service';
+export { resumeCrudService, ResumeCrudService } from './resume-crud.service';
 export type {
   GenerateResumeServiceInput,
   GenerateResumeWithProgressInput,

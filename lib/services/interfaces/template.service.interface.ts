@@ -1,0 +1,82 @@
+/**
+ * Template Service Interface
+ * 
+ * Defines the contract for template business logic operations.
+ */
+
+import type { ResumeTemplate } from '@/lib/templates/template';
+import type { ServiceResult } from '@/lib/types/service-result';
+
+/**
+ * Input for creating a template
+ */
+export interface CreateTemplateServiceInput {
+  name: string;
+  category: 'PROFESSIONAL' | 'MODERN' | 'CREATIVE' | 'ATS_OPTIMIZED' | 'MINIMAL';
+  description: string;
+  htmlTemplate: string;
+  cssStyles: string;
+  previewUrl?: string;
+  isPublic?: boolean;
+}
+
+/**
+ * Input for updating a template
+ */
+export interface UpdateTemplateServiceInput {
+  name?: string;
+  category?: 'PROFESSIONAL' | 'MODERN' | 'CREATIVE' | 'ATS_OPTIMIZED' | 'MINIMAL';
+  description?: string;
+  htmlTemplate?: string;
+  cssStyles?: string;
+  previewUrl?: string;
+  isPublic?: boolean;
+}
+
+/**
+ * Template Service Interface
+ */
+export interface ITemplateService {
+  /**
+   * Get all public templates
+   */
+  getAllPublicTemplates(): Promise<ServiceResult<ResumeTemplate[]>>;
+
+  /**
+   * Get templates by category
+   */
+  getTemplatesByCategory(category: string): Promise<ServiceResult<ResumeTemplate[]>>;
+
+  /**
+   * Get a template by ID
+   */
+  getTemplateById(id: string): Promise<ServiceResult<ResumeTemplate>>;
+
+  /**
+   * Create a new template
+   */
+  createTemplate(input: CreateTemplateServiceInput): Promise<ServiceResult<ResumeTemplate>>;
+
+  /**
+   * Update a template
+   */
+  updateTemplate(
+    id: string,
+    input: UpdateTemplateServiceInput
+  ): Promise<ServiceResult<ResumeTemplate>>;
+
+  /**
+   * Delete a template
+   */
+  deleteTemplate(id: string): Promise<ServiceResult<void>>;
+
+  /**
+   * Get all template categories
+   */
+  getCategories(): Promise<ServiceResult<string[]>>;
+
+  /**
+   * Get template counts by category
+   */
+  getCategoryCounts(): Promise<ServiceResult<Record<string, number>>>;
+}

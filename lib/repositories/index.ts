@@ -14,6 +14,19 @@
  * ```
  */
 
+// Interfaces for dependency injection and testing
+export type {
+  IProfileRepository,
+  ProfileData,
+  CreateProfileInput,
+  UpdateProfileInput as ProfileUpdateInput,
+} from './interfaces';
+export type { IGeneratedResumeRepository } from './interfaces';
+export type { ITemplateRepository } from './interfaces';
+export type { ICoverLetterRepository } from './interfaces';
+export type { INotificationRepository } from './interfaces';
+export type { ICache } from './interfaces';
+
 export { 
   profileRepository, 
   ProfileRepository 

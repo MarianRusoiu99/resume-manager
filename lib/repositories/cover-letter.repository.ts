@@ -1,20 +1,20 @@
 /**
  * Cover Letter Repository
  * 
- * Data access layer for cover letters with CRUD operations
+ * Implements ICoverLetterRepository for data access abstraction.
+ * Data access layer for cover letters with CRUD operations.
  */
 
 import { prisma } from '@/lib/db';
-import { Prisma } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
+import type { ICoverLetterRepository } from './interfaces';
 
 export interface CreateCoverLetterInput {
   userId: string;
   content: string;
-  // contentJson removed (dropped from schema)
   jobDescription: string;
   jobTitle?: string;
   companyName?: string;
-    // resumeId removed (dropped from schema)
   metadata: {
     model?: string;
     tokens?: number;
@@ -25,31 +25,35 @@ export interface CreateCoverLetterInput {
 
 export interface UpdateCoverLetterInput {
   content?: string;
-  // contentJson removed (dropped from schema)
   jobDescription?: string;
   jobTitle?: string;
   companyName?: string;
-    // resumeId removed (dropped from schema)
   metadata?: Prisma.InputJsonValue;
 }
 
-export class CoverLetterRepository {
+/**
+ * Cover Letter Repository Implementation
+ */
+export class CoverLetterRepository implements ICoverLetterRepository {
+  private readonly db: PrismaClient;
+
+  constructor(dbClient: PrismaClient = prisma) {
+    this.db = dbClient;
+  }
+
   /**
    * Create a new cover letter
    */
   async create(data: CreateCoverLetterInput) {
-    return prisma.coverLetter.create({
+    return this.db.coverLetter.create({
       data: {
         userId: data.userId,
         content: data.content,
-  // contentJson removed
         jobDescription: data.jobDescription,
         jobTitle: data.jobTitle,
         companyName: data.companyName,
-          // resumeId removed
         metadata: data.metadata as Prisma.InputJsonValue,
       },
-        // resume relation removed
     });
   }
 
@@ -57,12 +61,11 @@ export class CoverLetterRepository {
    * Find cover letter by ID
    */
   async findById(id: string, userId: string) {
-    return prisma.coverLetter.findFirst({
+    return this.db.coverLetter.findFirst({
       where: {
         id,
         userId,
       },
-        // resume relation removed
     });
   }
 
@@ -81,14 +84,13 @@ export class CoverLetterRepository {
     const { limit = 50, offset = 0, orderBy = 'createdAt', orderDir = 'desc' } = options || {};
 
     const [coverLetters, total] = await Promise.all([
-      prisma.coverLetter.findMany({
+      this.db.coverLetter.findMany({
         where: { userId },
-          // resume relation removed
         orderBy: { [orderBy]: orderDir },
         take: limit,
         skip: offset,
       }),
-      prisma.coverLetter.count({ where: { userId } }),
+      this.db.coverLetter.count({ where: { userId } }),
     ]);
 
     return { coverLetters, total };
@@ -98,22 +100,19 @@ export class CoverLetterRepository {
    * Update a cover letter
    */
   async update(id: string, userId: string, data: UpdateCoverLetterInput) {
-    return prisma.coverLetter.update({
+    return this.db.coverLetter.update({
       where: {
         id,
         userId,
       },
       data: {
         ...(data.content !== undefined && { content: data.content }),
-        // contentJson removed
         ...(data.jobDescription !== undefined && { jobDescription: data.jobDescription }),
         ...(data.jobTitle !== undefined && { jobTitle: data.jobTitle }),
         ...(data.companyName !== undefined && { companyName: data.companyName }),
-        // resumeId removed
         ...(data.metadata !== undefined && { metadata: data.metadata }),
         updatedAt: new Date(),
       },
-      // resume relation removed
     });
   }
 
@@ -121,7 +120,7 @@ export class CoverLetterRepository {
    * Delete a cover letter
    */
   async delete(id: string, userId: string) {
-    return prisma.coverLetter.delete({
+    return this.db.coverLetter.delete({
       where: {
         id,
         userId,
@@ -133,7 +132,7 @@ export class CoverLetterRepository {
    * Check if cover letter exists and belongs to user
    */
   async exists(id: string, userId: string): Promise<boolean> {
-    const count = await prisma.coverLetter.count({
+    const count = await this.db.coverLetter.count({
       where: {
         id,
         userId,

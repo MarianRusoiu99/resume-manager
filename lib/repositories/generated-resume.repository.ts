@@ -1,11 +1,14 @@
 import { PrismaClient, GeneratedResume, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import type { Resume } from '@/lib/validations/jsonresume';
+import type { IGeneratedResumeRepository } from './interfaces';
 
 /**
  * Repository for managing generated resumes in the database
+ * 
+ * Implements IGeneratedResumeRepository for data access abstraction.
  */
-export class GeneratedResumeRepository {
+export class GeneratedResumeRepository implements IGeneratedResumeRepository {
   private readonly db: PrismaClient;
 
   constructor(dbClient: PrismaClient = prisma) {
