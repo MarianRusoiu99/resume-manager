@@ -36,11 +36,12 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  profiles     UserProfile[]
-  resumes      GeneratedResume[]
-  coverLetters CoverLetter[]
-  sessions     Session[]
-  apiProviders ApiProvider[]
+  profiles      UserProfile[]
+  resumes       GeneratedResume[]
+  coverLetters  CoverLetter[]
+  sessions      Session[]
+  apiProviders  ApiProvider[]
+  notifications Notification[]
 
   @@index([email])
   @@index([createdAt])
@@ -221,6 +222,44 @@ enum ApiKeyAuditAction {
   KEY_VALIDATED  // External API validation
   KEY_USED       // When key is used for AI generation
   KEY_SCOPE_CHANGED
+}
+
+// Notification types
+enum NotificationType {
+  RESUME_GENERATED
+  COVER_LETTER_GENERATED
+  PROFILE_UPDATED
+  EXPORT_COMPLETE
+  SYSTEM
+}
+
+// User notifications
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+
+  // Action data - allows clicking to navigate
+  actionUrl String?          // URL to navigate to when clicked
+  actionLabel String?        // Button text (e.g., "View Resume", "Open Cover Letter")
+
+  // Resource reference for linking
+  resourceType String?       // e.g., "resume", "cover-letter", "profile"
+  resourceId   String?       // ID of the linked resource
+
+  // Metadata for additional context
+  metadata  Json?            // {jobTitle, companyName, etc.}
+
+  createdAt DateTime         @default(now())
+  expiresAt DateTime?        // Optional expiration
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 // Enum for audit log actions

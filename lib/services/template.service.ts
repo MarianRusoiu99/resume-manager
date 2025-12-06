@@ -1,8 +1,9 @@
-import { templateRepository } from '@/lib/repositories/template.repository';
+import { TemplateRepository, templateRepository } from '@/lib/repositories/template.repository';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { z } from 'zod';
-import { logger } from '@/lib/utils/logger';
-import { success, failure, type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types/service-result';
+import { withServiceError, NotFoundError, ConflictError } from '@/lib/services/utils';
+import type { ITemplateService } from './interfaces';
 
 // Validation schemas
 const templateCategorySchema = z.enum(['PROFESSIONAL', 'MODERN', 'CREATIVE', 'ATS_OPTIMIZED', 'MINIMAL']);
@@ -13,7 +14,7 @@ const createTemplateSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description too long'),
   htmlTemplate: z.string().min(1, 'HTML template is required'),
   cssStyles: z.string().min(1, 'CSS styles are required'),
-  previewUrl: z.string().url('Invalid preview URL').optional(),
+  previewUrl: z.url('Invalid preview URL').optional(),
   isPublic: z.boolean().default(true),
 });
 
@@ -24,72 +25,53 @@ export type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>;
 
 /**
  * Service for managing resume templates
+ * 
+ * Implements ITemplateService with constructor injection.
  */
-export class TemplateService {
+export class TemplateService implements ITemplateService {
+  constructor(
+    private readonly repository: TemplateRepository = templateRepository
+  ) {}
   /**
    * Get all public templates
    */
   async getAllPublicTemplates(): Promise<ServiceResult<ResumeTemplate[]>> {
-    try {
-      const templates = await templateRepository.findAllPublic();
-      return success(templates);
-    } catch (error) {
-      logger.error('Error fetching templates', error);
-      return failure('Failed to fetch templates', 'INTERNAL_ERROR');
-    }
+    return withServiceError('fetch templates', async () => {
+      return await this.repository.findAllPublic();
+    });
   }
 
   /**
    * Get templates by category
    */
   async getTemplatesByCategory(category: string): Promise<ServiceResult<ResumeTemplate[]>> {
-    try {
-      const templates = await templateRepository.findByCategory(category);
-      return success(templates);
-    } catch (error) {
-      logger.error('Error fetching templates by category', error);
-      return failure('Failed to fetch templates', 'INTERNAL_ERROR');
-    }
+    return withServiceError('fetch templates by category', async () => {
+      return await this.repository.findByCategory(category);
+    });
   }
 
   /**
    * Get a template by ID
    */
   async getTemplateById(id: string): Promise<ServiceResult<ResumeTemplate>> {
-    try {
-      const template = await templateRepository.findById(id);
-
+    return withServiceError('fetch template', async () => {
+      const template = await this.repository.findById(id);
       if (!template) {
-        return failure('Template not found', 'NOT_FOUND');
+        throw new NotFoundError('Template');
       }
-
-      return success(template);
-    } catch (error) {
-      logger.error('Error fetching template', error);
-      return failure('Failed to fetch template', 'INTERNAL_ERROR');
-    }
+      return template;
+    });
   }
 
   /**
    * Create a new template
    */
   async createTemplate(input: CreateTemplateInput): Promise<ServiceResult<ResumeTemplate>> {
-    try {
-      // Validate input
+    return withServiceError('create template', async () => {
+      // Validate input (ZodError will be caught by withServiceError)
       const validatedData = createTemplateSchema.parse(input);
-
-      // Create template
-      const template = await templateRepository.create(validatedData);
-
-      return success(template);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return failure(error.issues.map((e) => e.message).join(', '), 'VALIDATION_ERROR');
-      }
-
-      logger.error('Error creating template', error);
-      return failure('Failed to create template', 'INTERNAL_ERROR');
-    }
+      return await this.repository.create(validatedData);
+    });
   }
 
   /**
@@ -99,68 +81,56 @@ export class TemplateService {
     id: string,
     input: UpdateTemplateInput
   ): Promise<ServiceResult<ResumeTemplate>> {
-    try {
+    return withServiceError('update template', async () => {
       // Check if template exists
-      const existing = await templateRepository.findById(id);
+      const existing = await this.repository.findById(id);
       if (!existing) {
-        return failure('Template not found', 'NOT_FOUND');
+        throw new NotFoundError('Template');
       }
 
-      // Validate input
+      // Validate input (ZodError will be caught by withServiceError)
       const validatedData = updateTemplateSchema.parse(input);
-
-      // Update template
-      const template = await templateRepository.update(id, validatedData);
-
-      return success(template);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return failure(error.issues.map((e) => e.message).join(', '), 'VALIDATION_ERROR');
-      }
-
-      logger.error('Error updating template', error);
-      return failure('Failed to update template', 'INTERNAL_ERROR');
-    }
+      return await this.repository.update(id, validatedData);
+    });
   }
 
   /**
    * Delete a template
    */
   async deleteTemplate(id: string): Promise<ServiceResult<void>> {
-    try {
+    return withServiceError('delete template', async () => {
       // Check if template exists
-      const existing = await templateRepository.findById(id);
+      const existing = await this.repository.findById(id);
       if (!existing) {
-        return failure('Template not found', 'NOT_FOUND');
+        throw new NotFoundError('Template');
       }
 
       // Check if template is in use
-      const inUse = await templateRepository.isInUse(id);
+      const inUse = await this.repository.isInUse(id);
       if (inUse) {
-        return failure('Cannot delete template that is in use by resumes', 'CONFLICT');
+        throw new ConflictError('Cannot delete template that is in use by resumes');
       }
 
-      // Delete template
-      await templateRepository.delete(id);
-
-      return success(undefined);
-    } catch (error) {
-      logger.error('Error deleting template', error);
-      return failure('Failed to delete template', 'INTERNAL_ERROR');
-    }
+      await this.repository.delete(id);
+    });
   }
 
   /**
    * Get all unique categories
    */
   async getCategories(): Promise<ServiceResult<string[]>> {
-    try {
-      const categories = await templateRepository.getCategories();
-      return success(categories);
-    } catch (error) {
-      logger.error('Error fetching categories', error);
-      return failure('Failed to fetch categories', 'INTERNAL_ERROR');
-    }
+    return withServiceError('fetch categories', async () => {
+      return await this.repository.getCategories();
+    });
+  }
+
+  /**
+   * Get template counts by category
+   */
+  async getCategoryCounts(): Promise<ServiceResult<Record<string, number>>> {
+    return withServiceError('fetch category counts', async () => {
+      return await this.repository.countByCategory();
+    });
   }
 
   /**

@@ -81,7 +81,7 @@ describe('ResumePreview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Mock localStorage
-    Object.defineProperty(window, 'localStorage', {
+    Object.defineProperty(globalThis, 'localStorage', {
       value: {
         getItem: vi.fn(),
         setItem: vi.fn(),

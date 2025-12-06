@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { env } from '@/lib/config';
 
 /**
  * Encryption utility for storing sensitive data like API keys
@@ -16,7 +17,7 @@ const ITERATIONS = 100000;
  * In production, this should be a secure, randomly generated key
  */
 function getEncryptionKey(): string {
-  const key = process.env.ENCRYPTION_KEY;
+  const key = env.ENCRYPTION_KEY;
   if (!key) {
     throw new Error('ENCRYPTION_KEY environment variable is not set');
   }

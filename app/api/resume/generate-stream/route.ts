@@ -17,6 +17,7 @@ import { resumeSchema } from '@/lib/validations/jsonresume';
 import { generateResume } from '@/lib/ai';
 import { getWorkflow, createCustomWorkflow } from '@/lib/ai/workflow';
 import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
+import { notificationService } from '@/lib/services/notification.service';
 
 // Request validation schema
 const generateResumeSchema = z.object({
@@ -246,6 +247,14 @@ export async function POST(request: NextRequest) {
               executedSteps: result.executedSteps,
               executionTime: result.executionTime,
             });
+
+            // Create notification for the user
+            await notificationService.notifyResumeGenerated(
+              userId,
+              savedResume.id,
+              result.jobTitle,
+              result.companyName
+            );
 
             logger.info('SSE: Resume generation complete', { resumeId: savedResume.id });
           } else {

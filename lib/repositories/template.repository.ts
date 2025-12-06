@@ -1,19 +1,29 @@
 /**
  * Template Repository
- * Handles data access for resume templates
+ * 
+ * Implements ITemplateRepository for data access abstraction.
+ * Handles data access for resume templates.
  */
 
 import { prisma } from '@/lib/db';
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { Prisma, TemplateCategory } from '@prisma/client';
+import { PrismaClient, Prisma, TemplateCategory } from '@prisma/client';
+import type { ITemplateRepository } from './interfaces';
 
+/**
+ * Template Repository Implementation
+ */
+export class TemplateRepository implements ITemplateRepository {
+  private readonly db: PrismaClient;
 
-export class TemplateRepository {
+  constructor(dbClient: PrismaClient = prisma) {
+    this.db = dbClient;
+  }
   /**
    * Get all public templates
    */
   async findAllPublic(): Promise<ResumeTemplate[]> {
-    const templates = await prisma.resumeTemplate.findMany({
+    const templates = await this.db.resumeTemplate.findMany({
       where: { isPublic: true },
       orderBy: [{ name: 'asc' }],
     });
@@ -25,7 +35,7 @@ export class TemplateRepository {
    * Get templates by category
    */
   async findByCategory(category: string): Promise<ResumeTemplate[]> {
-    const templates = await prisma.resumeTemplate.findMany({
+    const templates = await this.db.resumeTemplate.findMany({
       where: {
         isPublic: true,
         category: category as TemplateCategory,
@@ -40,7 +50,7 @@ export class TemplateRepository {
    * Get template by ID
    */
   async findById(id: string): Promise<ResumeTemplate | null> {
-    const template = await prisma.resumeTemplate.findUnique({
+    const template = await this.db.resumeTemplate.findUnique({
       where: { id },
     });
 
@@ -59,7 +69,7 @@ export class TemplateRepository {
     previewUrl?: string;
     isPublic?: boolean;
   }): Promise<ResumeTemplate> {
-    const template = await prisma.resumeTemplate.create({
+    const template = await this.db.resumeTemplate.create({
       data: {
         name: data.name,
         category: data.category,
@@ -114,7 +124,7 @@ export class TemplateRepository {
     if (data.previewUrl !== undefined) updateData.previewUrl = data.previewUrl;
     if (data.isPublic !== undefined) updateData.isPublic = data.isPublic;
 
-    const template = await prisma.resumeTemplate.update({
+    const template = await this.db.resumeTemplate.update({
       where: { id },
       data: updateData,
     });
@@ -126,7 +136,7 @@ export class TemplateRepository {
    * Delete template
    */
   async delete(id: string): Promise<void> {
-    await prisma.resumeTemplate.delete({
+    await this.db.resumeTemplate.delete({
       where: { id },
     });
   }
@@ -135,7 +145,7 @@ export class TemplateRepository {
    * Count templates by category
    */
   async countByCategory(): Promise<Record<string, number>> {
-    const templates = await prisma.resumeTemplate.groupBy({
+    const templates = await this.db.resumeTemplate.groupBy({
       by: ['category'],
       where: { isPublic: true },
       _count: true,
@@ -154,7 +164,7 @@ export class TemplateRepository {
    * Check if a template is in use by any resumes
    */
   async isInUse(templateId: string): Promise<boolean> {
-    const count = await prisma.generatedResume.count({
+    const count = await this.db.generatedResume.count({
       where: { templateId },
     });
     return count > 0;
@@ -164,7 +174,7 @@ export class TemplateRepository {
    * Get all unique categories
    */
   async getCategories(): Promise<string[]> {
-    const categories = await prisma.resumeTemplate.findMany({
+    const categories = await this.db.resumeTemplate.findMany({
       select: { category: true },
       distinct: ['category'],
       orderBy: { category: 'asc' },

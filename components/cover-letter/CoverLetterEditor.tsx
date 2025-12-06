@@ -18,7 +18,7 @@ import { Button, Card } from '@/components/ui';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import type { BlockNoteEditorMethods } from '@/components/editor/BlockNoteEditorWrapper.client';
 import { MarkdownPreview } from '@/components/editor/MarkdownPreview';
-import { FileDown, Copy, Edit, Check, X } from 'lucide-react';
+import { Copy, Edit, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CoverLetterEditorProps {
@@ -82,9 +82,14 @@ export function CoverLetterEditor({
   const [editedContent, setEditedContent] = useState(content);
   const editorRef = useRef<BlockNoteEditorMethods>(null);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    toast.success('Cover letter copied to clipboard!');
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success('Cover letter copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      toast.error('Failed to copy to clipboard');
+    }
   };
 
   const handleStartEdit = () => {

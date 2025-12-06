@@ -13,7 +13,11 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/config';
 import { logger } from '@/lib/utils';
+import { checkRedisHealth } from '@/lib/redis';
+import { circuitBreakerRegistry } from '@/lib/resilience';
+import { metrics } from '@/lib/telemetry';
 
 /**
  * Health check status for a single component
@@ -33,9 +37,16 @@ interface HealthCheckResponse {
   timestamp: string;
   version: string;
   uptime: number;
+  environment: string;
   checks: {
     database: ComponentHealth;
+    redis: ComponentHealth;
     memory: ComponentHealth;
+    circuitBreakers: ComponentHealth;
+  };
+  metrics?: {
+    counters: Record<string, number>;
+    gauges: Record<string, number>;
   };
 }
 
@@ -107,19 +118,100 @@ function checkMemory(): ComponentHealth {
  * Get application version from package.json
  */
 function getVersion(): string {
-  return process.env.npm_package_version || process.env.APP_VERSION || '1.0.0';
+  return env.APP_VERSION;
+}
+
+/**
+ * Check Redis connectivity and latency
+ */
+async function checkRedis(): Promise<ComponentHealth> {
+  try {
+    const health = await checkRedisHealth();
+    
+    return {
+      healthy: health.connected,
+      latency: health.latencyMs,
+      error: health.error,
+      details: {
+        provider: health.provider,
+      },
+    };
+  } catch (error) {
+    return {
+      healthy: false,
+      error: error instanceof Error ? error.message : 'Unknown Redis error',
+    };
+  }
+}
+
+/**
+ * Check circuit breakers status
+ */
+function checkCircuitBreakers(): ComponentHealth {
+  try {
+    const stats = circuitBreakerRegistry.getAllStats();
+    const breakerCount = Object.keys(stats).length;
+    
+    // Check if any circuit breaker is open
+    const openBreakers = Object.entries(stats)
+      .filter(([, s]) => (s as { state: string }).state === 'OPEN')
+      .map(([name]) => name);
+    
+    const halfOpenBreakers = Object.entries(stats)
+      .filter(([, s]) => (s as { state: string }).state === 'HALF_OPEN')
+      .map(([name]) => name);
+    
+    const healthy = openBreakers.length === 0;
+    
+    return {
+      healthy,
+      details: {
+        total: breakerCount,
+        open: openBreakers,
+        halfOpen: halfOpenBreakers,
+        stats: breakerCount > 0 ? stats : undefined,
+      },
+    };
+  } catch (error) {
+    return {
+      healthy: true, // Don't fail health check if circuit breaker check fails
+      error: error instanceof Error ? error.message : 'Unknown circuit breaker error',
+    };
+  }
 }
 
 /**
  * Calculate overall health status
+ * Database is critical, others are optional
  */
 function calculateOverallStatus(checks: HealthCheckResponse['checks']): HealthCheckResponse['status'] {
-  const allHealthy = Object.values(checks).every(check => check.healthy);
-  const anyHealthy = Object.values(checks).some(check => check.healthy);
+  // Database is critical
+  if (!checks.database.healthy) return 'unhealthy';
   
-  if (allHealthy) return 'healthy';
-  if (anyHealthy) return 'degraded';
-  return 'unhealthy';
+  // Memory critical issue
+  if (!checks.memory.healthy) return 'unhealthy';
+  
+  // Redis and circuit breakers are non-critical
+  const nonCriticalHealthy = checks.redis.healthy && checks.circuitBreakers.healthy;
+  
+  if (nonCriticalHealthy) return 'healthy';
+  return 'degraded';
+}
+
+/**
+ * Get status code for health status
+ */
+function getStatusCode(status: HealthCheckResponse['status']): number {
+  switch (status) {
+    case 'healthy':
+      return 200;
+    case 'degraded':
+      return 200; // Still return 200 for degraded (service is functional)
+    case 'unhealthy':
+      return 503;
+    default:
+      return 503;
+  }
 }
 
 /**
@@ -127,19 +219,26 @@ function calculateOverallStatus(checks: HealthCheckResponse['checks']): HealthCh
  * 
  * Returns comprehensive health status of the application.
  * 
+ * Query parameters:
+ * - verbose: Include metrics data in response
+ * 
  * @returns Health check response with status and component details
  */
-export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
+export async function GET(request: Request): Promise<NextResponse<HealthCheckResponse>> {
   const requestStart = Date.now();
+  const url = new URL(request.url);
+  const verbose = url.searchParams.get('verbose') === 'true';
   
   try {
     // Run health checks in parallel
-    const [database, memory] = await Promise.all([
+    const [database, redis, memory, circuitBreakers] = await Promise.all([
       checkDatabase(),
+      checkRedis(),
       Promise.resolve(checkMemory()),
+      Promise.resolve(checkCircuitBreakers()),
     ]);
     
-    const checks = { database, memory };
+    const checks = { database, redis, memory, circuitBreakers };
     const status = calculateOverallStatus(checks);
     
     const response: HealthCheckResponse = {
@@ -147,8 +246,18 @@ export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
       timestamp: new Date().toISOString(),
       version: getVersion(),
       uptime: Math.round((Date.now() - startTime) / 1000), // seconds
+      environment: process.env.NODE_ENV || 'development',
       checks,
     };
+
+    // Include metrics if verbose mode
+    if (verbose) {
+      const metricsData = metrics.getMetrics();
+      response.metrics = {
+        counters: metricsData.counters,
+        gauges: metricsData.gauges,
+      };
+    }
     
     // Log health check for monitoring
     if (status !== 'healthy') {
@@ -159,8 +268,7 @@ export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
       });
     }
     
-    // Return appropriate status code based on health
-    const statusCode = status === 'healthy' ? 200 : status === 'degraded' ? 200 : 503;
+    const statusCode = getStatusCode(status);
     
     return NextResponse.json(response, { 
       status: statusCode,
@@ -179,9 +287,12 @@ export async function GET(): Promise<NextResponse<HealthCheckResponse>> {
       timestamp: new Date().toISOString(),
       version: getVersion(),
       uptime: Math.round((Date.now() - startTime) / 1000),
+      environment: process.env.NODE_ENV || 'development',
       checks: {
         database: { healthy: false, error: 'Health check failed' },
+        redis: { healthy: false, error: 'Health check failed' },
         memory: { healthy: false, error: 'Health check failed' },
+        circuitBreakers: { healthy: false, error: 'Health check failed' },
       },
     };
     

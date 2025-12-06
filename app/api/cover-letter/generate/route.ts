@@ -8,6 +8,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { resumeService } from '@/lib/services/resume.service';
+import { notificationService } from '@/lib/services/notification.service';
 import { createApiHandler } from '@/lib/api-handler';
 import { logger } from '@/lib/utils/logger';
 
@@ -39,6 +40,14 @@ export const POST = createApiHandler(
         { status: 500 }
       );
     }
+
+    // Create notification for the user
+    await notificationService.notifyCoverLetterGenerated(
+      session.user.id,
+      result.data.coverLetterId,
+      result.data.metadata?.jobTitle as string | undefined,
+      result.data.metadata?.companyName as string | undefined
+    );
 
     logger.info('Cover letter generated successfully', { 
       coverLetterId: result.data.coverLetterId,

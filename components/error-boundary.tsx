@@ -78,7 +78,7 @@ export class ErrorBoundary extends React.Component<
       return (
         <ErrorFallback
           error={this.state.error}
-          onReset={this.props.showReset !== false ? this.handleReset : undefined}
+          onReset={this.props.showReset ? this.handleReset : undefined}
         />
       );
     }
@@ -95,7 +95,7 @@ interface ErrorFallbackProps {
 /**
  * Default error fallback UI component
  */
-export function ErrorFallback({ error, onReset }: ErrorFallbackProps) {
+export function ErrorFallback({ error, onReset }: Readonly<ErrorFallbackProps>) {
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center">
       <div className="rounded-full bg-destructive/10 p-3 mb-4">

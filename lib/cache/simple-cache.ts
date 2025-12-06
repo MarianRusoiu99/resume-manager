@@ -1,7 +1,11 @@
 /**
  * Simple in-memory cache for frequently accessed data
- * Useful for caching user profiles and other read-heavy data
+ * 
+ * Implements ICache interface for dependency injection.
+ * Useful for caching user profiles and other read-heavy data.
  */
+
+import type { ICache } from '@/lib/repositories/interfaces';
 
 interface CacheEntry<T> {
   data: T;
@@ -9,9 +13,15 @@ interface CacheEntry<T> {
   expiresAt: number;
 }
 
-class SimpleCache<T> {
-  private cache = new Map<string, CacheEntry<T>>();
-  private defaultTTL: number;
+/**
+ * Simple Cache Implementation
+ * 
+ * In-memory cache with TTL support.
+ * Implements ICache for dependency injection.
+ */
+class SimpleCache<T = unknown> implements ICache<T> {
+  private readonly cache = new Map<string, CacheEntry<T>>();
+  private readonly defaultTTL: number;
 
   constructor(defaultTTLSeconds: number = 300) {
     // Default 5 minutes

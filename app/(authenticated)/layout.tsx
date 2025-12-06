@@ -2,7 +2,7 @@ import { verifySession } from '@/lib/auth/dal';
 import { cookies } from 'next/headers';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
-import { ProfileProvider } from '@/lib/contexts';
+import { ProfileProvider, NotificationProvider } from '@/lib/contexts';
 
 export default async function AuthenticatedLayout({
   children,
@@ -18,17 +18,19 @@ export default async function AuthenticatedLayout({
 
   return (
     <ProfileProvider>
-      <SidebarProvider defaultOpen={defaultOpen}>
-        <AppSidebar user={{ 
-          email: session.email, 
-          name: session.name 
-        }} />
-        <SidebarInset>
-          <main className="flex-1 overflow-y-auto">
-            {children}
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
+      <NotificationProvider>
+        <SidebarProvider defaultOpen={defaultOpen}>
+          <AppSidebar user={{ 
+            email: session.email, 
+            name: session.name 
+          }} />
+          <SidebarInset>
+            <main className="flex-1 overflow-y-auto">
+              {children}
+            </main>
+          </SidebarInset>
+        </SidebarProvider>
+      </NotificationProvider>
     </ProfileProvider>
   );
 }

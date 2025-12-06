@@ -1,12 +1,25 @@
 import { prisma } from "@/lib/db";
+import { PrismaClient, Prisma } from "@prisma/client";
 import type { Resume } from "@/lib/validations/jsonresume";
+import type { IProfileRepository } from "./interfaces";
 
-export class ProfileRepository {
+/**
+ * Profile Repository
+ * 
+ * Implements IProfileRepository for data access abstraction.
+ * Allows dependency injection of database client for testing.
+ */
+export class ProfileRepository implements IProfileRepository {
+  private readonly db: PrismaClient;
+
+  constructor(dbClient: PrismaClient = prisma) {
+    this.db = dbClient;
+  }
   /**
    * Find all profiles for a user
    */
   async findAllByUserId(userId: string) {
-    return prisma.userProfile.findMany({
+    return this.db.userProfile.findMany({
       where: { userId },
       orderBy: [
         { isDefault: 'desc' }, // Default profile first
@@ -19,7 +32,7 @@ export class ProfileRepository {
    * Find a specific profile by ID (with user ownership check)
    */
   async findById(profileId: string, userId: string) {
-    return prisma.userProfile.findFirst({
+    return this.db.userProfile.findFirst({
       where: {
         id: profileId,
         userId,
@@ -31,7 +44,7 @@ export class ProfileRepository {
    * Find default profile for a user
    */
   async findDefaultByUserId(userId: string) {
-    return prisma.userProfile.findFirst({
+    return this.db.userProfile.findFirst({
       where: {
         userId,
         isDefault: true,
@@ -55,11 +68,11 @@ export class ProfileRepository {
     resume: Resume;
     isDefault?: boolean;
   }) {
-    return prisma.userProfile.create({
+    return this.db.userProfile.create({
       data: {
         userId: data.userId,
         name: data.name,
-        resume: data.resume as never,
+        resume: data.resume as Prisma.InputJsonValue,
         isDefault: data.isDefault ?? false,
       },
     });
@@ -77,21 +90,19 @@ export class ProfileRepository {
       isDefault: boolean;
       isPublic: boolean;
       publicSlug: string | null;
-  // selectedTemplateId removed (dropped from schema)
     }>
   ) {
-    return prisma.userProfile.update({
+    return this.db.userProfile.update({
       where: {
         id: profileId,
         userId,
       },
       data: {
         ...(data.name && { name: data.name }),
-        ...(data.resume && { resume: data.resume as never }),
+        ...(data.resume && { resume: data.resume as Prisma.InputJsonValue }),
         ...(data.isDefault !== undefined && { isDefault: data.isDefault }),
         ...(data.isPublic !== undefined && { isPublic: data.isPublic }),
         ...(data.publicSlug !== undefined && { publicSlug: data.publicSlug }),
-  // selectedTemplateId removed
       },
     });
   }
@@ -100,7 +111,7 @@ export class ProfileRepository {
    * Delete a profile
    */
   async delete(profileId: string, userId: string) {
-    return prisma.userProfile.delete({
+    return this.db.userProfile.delete({
       where: {
         id: profileId,
         userId,
@@ -112,7 +123,7 @@ export class ProfileRepository {
    * Unset all default flags for a user
    */
   async unsetAllDefaults(userId: string) {
-    return prisma.userProfile.updateMany({
+    return this.db.userProfile.updateMany({
       where: {
         userId,
         isDefault: true,
@@ -127,7 +138,7 @@ export class ProfileRepository {
    * Check if user has any profiles
    */
   async exists(userId: string): Promise<boolean> {
-    const count = await prisma.userProfile.count({
+    const count = await this.db.userProfile.count({
       where: { userId },
     });
     return count > 0;
@@ -137,7 +148,7 @@ export class ProfileRepository {
    * Get profile count for a user
    */
   async count(userId: string): Promise<number> {
-    return prisma.userProfile.count({
+    return this.db.userProfile.count({
       where: { userId },
     });
   }
@@ -147,7 +158,7 @@ export class ProfileRepository {
    * Includes the selected template for rendering
    */
   async findByPublicSlug(slug: string) {
-    return prisma.userProfile.findUnique({
+    return this.db.userProfile.findUnique({
       where: {
         publicSlug: slug,
       },
