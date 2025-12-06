@@ -11,7 +11,7 @@ import type { ResumeTemplate } from '@/lib/templates/template';
 import { TemplateCard } from './TemplateCard';
 import { Gallery, type GalleryFilterOption } from '@/components/shared/Gallery';
 import { Button } from '@/components/ui/button';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, ImagePlus } from 'lucide-react';
 
 interface TemplateGalleryProps {
   templates: ResumeTemplate[];
@@ -37,10 +37,16 @@ export function TemplateGallery({ templates, showAdminActions = false }: Templat
       : templates.filter((t) => t.category === selectedCategory);
 
   const headerActions = showAdminActions ? (
-    <Button onClick={() => router.push('/templates/new')}>
-      <Plus className="mr-2 h-4 w-4" />
-      Create Template
-    </Button>
+    <div className="flex gap-2">
+      <Button variant="outline" onClick={() => router.push('/templates/new?import=true')}>
+        <ImagePlus className="mr-2 h-4 w-4" />
+        Import from Image
+      </Button>
+      <Button onClick={() => router.push('/templates/new')}>
+        <Plus className="mr-2 h-4 w-4" />
+        Create Template
+      </Button>
+    </div>
   ) : null;
 
   return (
@@ -55,10 +61,10 @@ export function TemplateGallery({ templates, showAdminActions = false }: Templat
           : `No templates found in the "${selectedCategory}" category`,
         action: showAdminActions
           ? {
-              label: "Create Template",
-              onClick: () => router.push('/templates/new'),
-              icon: <Plus className="h-4 w-4" />,
-            }
+            label: "Create Template",
+            onClick: () => router.push('/templates/new'),
+            icon: <Plus className="h-4 w-4" />,
+          }
           : undefined,
       }}
       filters={categoryFilters}

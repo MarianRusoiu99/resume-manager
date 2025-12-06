@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { Button } from '@/components/ui/button';
@@ -22,10 +22,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Code } from 'lucide-react';
+import { Save, Code, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
+import { TemplateImportModal } from './TemplateImportModal';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -55,7 +56,9 @@ const categories = [
 
 export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEditorProps>) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: template?.name || '',
     category: template?.category || 'PROFESSIONAL',
@@ -64,6 +67,32 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     cssStyles: template?.cssStyles || '',
     isPublic: template?.isPublic ?? true,
   });
+
+  // Handle imported template data
+  const handleImportComplete = (importedTemplate: {
+    htmlTemplate: string;
+    cssStyles: string;
+    name?: string;
+    category?: string;
+    description?: string;
+  }) => {
+    setFormData((prev) => ({
+      ...prev,
+      htmlTemplate: importedTemplate.htmlTemplate,
+      cssStyles: importedTemplate.cssStyles,
+      name: importedTemplate.name || prev.name,
+      category: (importedTemplate.category as typeof prev.category) || prev.category,
+      description: importedTemplate.description || prev.description,
+    }));
+    setImportModalOpen(false);
+  };
+
+  // Auto-open import modal if ?import=true query param is present
+  useEffect(() => {
+    if (isNew && searchParams.get('import') === 'true') {
+      setImportModalOpen(true);
+    }
+  }, [isNew, searchParams]);
 
   // Auto-save draft to localStorage
   useEffect(() => {
@@ -142,6 +171,15 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
             >
               Cancel
             </Button>
+            {isNew && (
+              <Button
+                variant="outline"
+                onClick={() => setImportModalOpen(true)}
+              >
+                <ImagePlus className="mr-2 h-4 w-4" />
+                Import from Image
+              </Button>
+            )}
             <Button onClick={handleSave} disabled={saving}>
               <Save className="mr-2 h-4 w-4" />
               {saving ? 'Saving...' : 'Save Template'}
@@ -178,11 +216,11 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                      </SelectItem>
-                    ))}
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -289,6 +327,13 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
           />
         </div>
       </div>
+
+      {/* Import Modal */}
+      <TemplateImportModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onImportComplete={handleImportComplete}
+      />
     </div>
   );
 }
