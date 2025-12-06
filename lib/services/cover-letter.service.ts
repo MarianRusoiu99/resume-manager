@@ -12,8 +12,8 @@ import {
   UpdateCoverLetterInput,
 } from '@/lib/repositories/cover-letter.repository';
 import type { CoverLetterWithResume, CoverLetterListItem } from '@/lib/types/cover-letter';
-import { logger } from '@/lib/utils/logger';
-import { success, failure, type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types/service-result';
+import { withServiceError, NotFoundError } from '@/lib/services/utils';
 import type { ICoverLetterService } from './interfaces';
 
 /**
@@ -31,43 +31,24 @@ export class CoverLetterService implements ICoverLetterService {
   async createCoverLetter(
     input: CreateCoverLetterInput
   ): Promise<ServiceResult<CoverLetterListItem>> {
-    try {
-      const coverLetter = await this.repository.create(input);
-      return success(coverLetter);
-    } catch (error) {
-      logger.error('[CoverLetterService] Create error', error, {
-        operation: 'createCoverLetter',
-      });
-      return failure(
-        error instanceof Error ? error.message : 'Failed to create cover letter',
-        'INTERNAL_ERROR'
-      );
-    }
+    return withServiceError('create cover letter', async () => {
+      return await this.repository.create(input);
+    });
   }
 
   async getCoverLetter(
     id: string,
     userId: string
   ): Promise<ServiceResult<CoverLetterWithResume>> {
-    try {
+    return withServiceError('fetch cover letter', async () => {
       const coverLetter = await this.repository.findById(id, userId);
 
       if (!coverLetter) {
-        return failure('Cover letter not found', 'NOT_FOUND');
+        throw new NotFoundError('Cover letter');
       }
 
-      return success(coverLetter);
-    } catch (error) {
-      logger.error('[CoverLetterService] Get error', error, {
-        operation: 'getCoverLetter',
-        userId,
-        coverLetterId: id,
-      });
-      return failure(
-        error instanceof Error ? error.message : 'Failed to fetch cover letter',
-        'INTERNAL_ERROR'
-      );
-    }
+      return coverLetter;
+    });
   }
 
   async getUserCoverLetters(
@@ -79,19 +60,9 @@ export class CoverLetterService implements ICoverLetterService {
       orderDir?: 'asc' | 'desc';
     }
   ): Promise<ServiceResult<{ coverLetters: CoverLetterListItem[]; total: number }>> {
-    try {
-      const result = await this.repository.findByUserId(userId, options);
-      return success(result);
-    } catch (error) {
-      logger.error('[CoverLetterService] List error', error, {
-        operation: 'getUserCoverLetters',
-        userId,
-      });
-      return failure(
-        error instanceof Error ? error.message : 'Failed to fetch cover letters',
-        'INTERNAL_ERROR'
-      );
-    }
+    return withServiceError('fetch cover letters', async () => {
+      return await this.repository.findByUserId(userId, options);
+    });
   }
 
   async updateCoverLetter(
@@ -99,49 +70,27 @@ export class CoverLetterService implements ICoverLetterService {
     userId: string,
     data: UpdateCoverLetterInput
   ): Promise<ServiceResult<CoverLetterListItem>> {
-    try {
+    return withServiceError('update cover letter', async () => {
       // Check if exists
       const exists = await this.repository.exists(id, userId);
       if (!exists) {
-        return failure('Cover letter not found', 'NOT_FOUND');
+        throw new NotFoundError('Cover letter');
       }
 
-      const updated = await this.repository.update(id, userId, data);
-      return success(updated);
-    } catch (error) {
-      logger.error('[CoverLetterService] Update error', error, {
-        operation: 'updateCoverLetter',
-        userId,
-        coverLetterId: id,
-      });
-      return failure(
-        error instanceof Error ? error.message : 'Failed to update cover letter',
-        'INTERNAL_ERROR'
-      );
-    }
+      return await this.repository.update(id, userId, data);
+    });
   }
 
   async deleteCoverLetter(id: string, userId: string): Promise<ServiceResult<void>> {
-    try {
+    return withServiceError('delete cover letter', async () => {
       // Check if exists
       const exists = await this.repository.exists(id, userId);
       if (!exists) {
-        return failure('Cover letter not found', 'NOT_FOUND');
+        throw new NotFoundError('Cover letter');
       }
 
       await this.repository.delete(id, userId);
-      return success(undefined as void);
-    } catch (error) {
-      logger.error('[CoverLetterService] Delete error', error, {
-        operation: 'deleteCoverLetter',
-        userId,
-        coverLetterId: id,
-      });
-      return failure(
-        error instanceof Error ? error.message : 'Failed to delete cover letter',
-        'INTERNAL_ERROR'
-      );
-    }
+    });
   }
 }
 

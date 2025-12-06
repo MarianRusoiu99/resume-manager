@@ -5,6 +5,8 @@ import {
   CreateNotificationInput,
 } from '@/lib/repositories/notification.repository';
 import { emitNotification, NotificationPayload } from '@/lib/notifications/emitter';
+import { type ServiceResult } from '@/lib/types/service-result';
+import { withServiceError, NotFoundError } from '@/lib/services/utils';
 
 /**
  * Simplified notification data for API responses
@@ -21,15 +23,6 @@ export interface NotificationData {
   resourceId: string | null;
   metadata: Record<string, unknown> | null;
   createdAt: string;
-}
-
-/**
- * Service result wrapper
- */
-export interface ServiceResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
 }
 
 /**
@@ -83,23 +76,14 @@ export class NotificationService {
   async createNotification(
     input: CreateNotificationInput
   ): Promise<ServiceResult<NotificationData>> {
-    try {
+    return withServiceError('create notification', async () => {
       const notification = await this.repository.create(input);
       
       // Emit to connected SSE clients for real-time updates (via PubSub)
       await emitNotification(input.userId, this.toNotificationPayload(notification));
       
-      return {
-        success: true,
-        data: this.toNotificationData(notification),
-      };
-    } catch (error) {
-      console.error('Error creating notification:', error);
-      return {
-        success: false,
-        error: 'Failed to create notification',
-      };
-    }
+      return this.toNotificationData(notification);
+    });
   }
 
   /**
@@ -181,38 +165,20 @@ export class NotificationService {
     userId: string,
     options?: { limit?: number; includeRead?: boolean }
   ): Promise<ServiceResult<NotificationData[]>> {
-    try {
+    return withServiceError('fetch notifications', async () => {
       const notifications = await this.repository.findByUserId(userId, options);
-      return {
-        success: true,
-        data: notifications.map((n) => this.toNotificationData(n)),
-      };
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-      return {
-        success: false,
-        error: 'Failed to fetch notifications',
-      };
-    }
+      return notifications.map((n) => this.toNotificationData(n));
+    });
   }
 
   /**
    * Get unread notification count
    */
   async getUnreadCount(userId: string): Promise<ServiceResult<{ count: number }>> {
-    try {
+    return withServiceError('fetch unread count', async () => {
       const count = await this.repository.getUnreadCount(userId);
-      return {
-        success: true,
-        data: { count },
-      };
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-      return {
-        success: false,
-        error: 'Failed to fetch unread count',
-      };
-    }
+      return { count };
+    });
   }
 
   /**
@@ -222,44 +188,22 @@ export class NotificationService {
     id: string,
     userId: string
   ): Promise<ServiceResult<NotificationData>> {
-    try {
+    return withServiceError('mark notification as read', async () => {
       const notification = await this.repository.markAsRead(id, userId);
       if (!notification) {
-        return {
-          success: false,
-          error: 'Notification not found',
-        };
+        throw new NotFoundError('Notification');
       }
-      return {
-        success: true,
-        data: this.toNotificationData(notification),
-      };
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-      return {
-        success: false,
-        error: 'Failed to mark notification as read',
-      };
-    }
+      return this.toNotificationData(notification);
+    });
   }
 
   /**
    * Mark all notifications as read
    */
   async markAllAsRead(userId: string): Promise<ServiceResult<{ count: number }>> {
-    try {
-      const result = await this.repository.markAllAsRead(userId);
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error);
-      return {
-        success: false,
-        error: 'Failed to mark all notifications as read',
-      };
-    }
+    return withServiceError('mark all notifications as read', async () => {
+      return await this.repository.markAllAsRead(userId);
+    });
   }
 
   /**
@@ -269,25 +213,13 @@ export class NotificationService {
     id: string,
     userId: string
   ): Promise<ServiceResult<{ deleted: boolean }>> {
-    try {
+    return withServiceError('delete notification', async () => {
       const deleted = await this.repository.delete(id, userId);
       if (!deleted) {
-        return {
-          success: false,
-          error: 'Notification not found',
-        };
+        throw new NotFoundError('Notification');
       }
-      return {
-        success: true,
-        data: { deleted: true },
-      };
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-      return {
-        success: false,
-        error: 'Failed to delete notification',
-      };
-    }
+      return { deleted: true };
+    });
   }
 
   /**
@@ -297,19 +229,9 @@ export class NotificationService {
     userId: string,
     daysOld: number = 30
   ): Promise<ServiceResult<{ count: number }>> {
-    try {
-      const result = await this.repository.deleteOldNotifications(userId, daysOld);
-      return {
-        success: true,
-        data: result,
-      };
-    } catch (error) {
-      console.error('Error cleaning up notifications:', error);
-      return {
-        success: false,
-        error: 'Failed to cleanup notifications',
-      };
-    }
+    return withServiceError('cleanup notifications', async () => {
+      return await this.repository.deleteOldNotifications(userId, daysOld);
+    });
   }
 }
 

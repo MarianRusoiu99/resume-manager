@@ -311,4 +311,6 @@ export class TracingClient {
 /**
  * Global tracing instance
  */
-export const tracing = new TracingClient(process.env.NODE_ENV !== 'test');
+import { env } from '@/lib/config';
+
+export const tracing = new TracingClient(!env.isTest);

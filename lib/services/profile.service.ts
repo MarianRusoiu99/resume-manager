@@ -1,9 +1,8 @@
 import { ProfileRepository, profileRepository } from "@/lib/repositories/profile.repository";
 import { profileCache } from "@/lib/cache/simple-cache";
-import { ZodError } from "zod";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { logger } from "@/lib/utils/logger";
-import { success, failure, type ServiceResult } from "@/lib/types/service-result";
+import { type ServiceResult } from "@/lib/types/service-result";
+import { withServiceError, NotFoundError, ConflictError } from "@/lib/services/utils";
 import type { IProfileService } from "./interfaces";
 import type { ICache } from "@/lib/repositories/interfaces";
 
@@ -42,12 +41,12 @@ export class ProfileService implements IProfileService {
    * Get all profiles for a user
    */
   async getProfiles(userId: string): Promise<ServiceResult<ProfileList>> {
-    try {
+    return withServiceError('fetch profiles', async () => {
       // Check cache first
       const cacheKey = this.getCacheKey(userId);
       const cached = this.cache.get(cacheKey);
       if (cached) {
-        return success(cached as ProfileList);
+        return cached as ProfileList;
       }
 
       // Fetch from database
@@ -58,55 +57,43 @@ export class ProfileService implements IProfileService {
         this.cache.set(cacheKey, profiles);
       }
 
-      return success(profiles);
-    } catch (error) {
-      logger.error("Error fetching profiles", error);
-      return failure("Failed to fetch profiles", "INTERNAL_ERROR");
-    }
+      return profiles;
+    });
   }
 
   /**
    * Get a specific profile by ID
    */
   async getProfileById(profileId: string, userId: string): Promise<ServiceResult<NonNullable<Profile>>> {
-    try {
+    return withServiceError('fetch profile', async () => {
       // Check cache first
       const cacheKey = this.getProfileCacheKey(profileId);
       const cached = this.cache.get(cacheKey);
       if (cached) {
-        return success(cached as NonNullable<Profile>);
+        return cached as NonNullable<Profile>;
       }
 
       // Fetch from database
       const profile = await this.repository.findById(profileId, userId);
 
       if (!profile) {
-        return failure("Profile not found", "NOT_FOUND");
+        throw new NotFoundError('Profile');
       }
 
       // Cache the result
       this.cache.set(cacheKey, profile);
 
-      return success(profile);
-    } catch (error) {
-      logger.error("Error fetching profile", error);
-      return failure("Failed to fetch profile", "INTERNAL_ERROR");
-    }
+      return profile;
+    });
   }
 
   /**
    * Get default profile for a user (for backward compatibility)
    */
   async getProfile(userId: string): Promise<ServiceResult<Profile>> {
-    try {
-      // Fetch default profile
-      const profile = await this.repository.findDefaultByUserId(userId);
-
-      return success(profile);
-    } catch (error) {
-      logger.error("Error fetching default profile", error);
-      return failure("Failed to fetch profile", "INTERNAL_ERROR");
-    }
+    return withServiceError('fetch default profile', async () => {
+      return await this.repository.findDefaultByUserId(userId);
+    });
   }
 
   /**
@@ -118,7 +105,7 @@ export class ProfileService implements IProfileService {
     data: Resume, 
     isDefault: boolean = false
   ): Promise<ServiceResult<NonNullable<Profile>>> {
-    try {
+    return withServiceError('create profile', async () => {
       // If this is set as default, unset other defaults
       if (isDefault) {
         await this.repository.unsetAllDefaults(userId);
@@ -135,15 +122,8 @@ export class ProfileService implements IProfileService {
       // Invalidate cache
       this.invalidateUserCache(userId);
 
-      return success(profile);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return failure("Validation error: " + error.issues[0].message, "VALIDATION_ERROR");
-      }
-
-      logger.error("Error creating profile", error);
-      return failure("Failed to create profile", "INTERNAL_ERROR");
-    }
+      return profile;
+    });
   }
 
   /**
@@ -154,11 +134,11 @@ export class ProfileService implements IProfileService {
     userId: string, 
     data: Partial<{ name: string; resume: Resume; isDefault: boolean; selectedTemplateId: string | null }>
   ): Promise<ServiceResult<NonNullable<Profile>>> {
-    try {
+    return withServiceError('update profile', async () => {
       // Check if profile exists and belongs to user
       const existing = await this.repository.findById(profileId, userId);
       if (!existing) {
-        return failure("Profile not found", "NOT_FOUND");
+        throw new NotFoundError('Profile');
       }
 
       // If setting as default, unset other defaults
@@ -172,32 +152,25 @@ export class ProfileService implements IProfileService {
       // Invalidate cache
       this.invalidateUserCache(userId, profileId);
 
-      return success(profile);
-    } catch (error) {
-      if (error instanceof ZodError) {
-        return failure("Validation error: " + error.issues[0].message, "VALIDATION_ERROR");
-      }
-
-      logger.error("Error updating profile", error);
-      return failure("Failed to update profile", "INTERNAL_ERROR");
-    }
+      return profile;
+    });
   }
 
   /**
    * Delete a profile
    */
   async deleteProfile(profileId: string, userId: string): Promise<ServiceResult<void>> {
-    try {
+    return withServiceError('delete profile', async () => {
       // Check if profile exists
       const profile = await this.repository.findById(profileId, userId);
       if (!profile) {
-        return failure("Profile not found", "NOT_FOUND");
+        throw new NotFoundError('Profile');
       }
 
       // Don't allow deleting the last profile
       const allProfiles = await this.repository.findAllByUserId(userId);
       if (allProfiles.length <= 1) {
-        return failure("Cannot delete your last profile", "CONFLICT");
+        throw new ConflictError('Cannot delete your last profile');
       }
 
       // If deleting default profile, set another as default
@@ -212,23 +185,18 @@ export class ProfileService implements IProfileService {
 
       // Invalidate cache
       this.invalidateUserCache(userId, profileId);
-
-      return success(undefined as void);
-    } catch (error) {
-      logger.error("Error deleting profile", error);
-      return failure("Failed to delete profile", "INTERNAL_ERROR");
-    }
+    });
   }
 
   /**
    * Set a profile as default
    */
   async setDefaultProfile(profileId: string, userId: string): Promise<ServiceResult<void>> {
-    try {
+    return withServiceError('set default profile', async () => {
       // Check if profile exists
       const profile = await this.repository.findById(profileId, userId);
       if (!profile) {
-        return failure("Profile not found", "NOT_FOUND");
+        throw new NotFoundError('Profile');
       }
 
       // Unset all defaults and set this one
@@ -237,12 +205,7 @@ export class ProfileService implements IProfileService {
 
       // Invalidate cache
       this.invalidateUserCache(userId);
-
-      return success(undefined as void);
-    } catch (error) {
-      logger.error("Error setting default profile", error);
-      return failure("Failed to set default profile", "INTERNAL_ERROR");
-    }
+    });
   }
 
   /**
@@ -253,10 +216,10 @@ export class ProfileService implements IProfileService {
     userId: string, 
     newName?: string
   ): Promise<ServiceResult<NonNullable<Profile>>> {
-    try {
+    return withServiceError('duplicate profile', async () => {
       const profile = await this.repository.findById(profileId, userId);
       if (!profile) {
-        return failure("Profile not found", "NOT_FOUND");
+        throw new NotFoundError('Profile');
       }
 
       const duplicateName = newName || `${profile.name} (Copy)`;
@@ -271,11 +234,8 @@ export class ProfileService implements IProfileService {
       // Invalidate cache
       this.invalidateUserCache(userId);
 
-      return success(newProfile);
-    } catch (error) {
-      logger.error("Error duplicating profile", error);
-      return failure("Failed to duplicate profile", "INTERNAL_ERROR");
-    }
+      return newProfile;
+    });
   }
 }
 

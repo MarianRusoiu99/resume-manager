@@ -13,6 +13,7 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/config';
 import { logger } from '@/lib/utils';
 import { checkRedisHealth } from '@/lib/redis';
 import { circuitBreakerRegistry } from '@/lib/resilience';
@@ -117,7 +118,7 @@ function checkMemory(): ComponentHealth {
  * Get application version from package.json
  */
 function getVersion(): string {
-  return process.env.npm_package_version || process.env.APP_VERSION || '1.0.0';
+  return env.APP_VERSION;
 }
 
 /**

@@ -233,7 +233,9 @@ export class MetricsClient {
 /**
  * Global metrics instance
  */
-export const metrics = new MetricsClient(process.env.NODE_ENV !== 'test');
+import { env } from '@/lib/config';
+
+export const metrics = new MetricsClient(!env.isTest);
 
 /**
  * Predefined metrics for the application

@@ -4,6 +4,7 @@
  * High-level interface combining metrics and tracing.
  */
 
+import { env } from '@/lib/config';
 import { metrics, MetricsClient, AppMetrics } from './metrics';
 import { tracing, TracingClient, Span, SpanContext } from './tracing';
 import { logger } from '@/lib/utils/logger';
@@ -35,7 +36,7 @@ export class TelemetryClient {
       metricsEnabled: config.metricsEnabled ?? true,
       tracingEnabled: config.tracingEnabled ?? true,
       serviceName: config.serviceName ?? 'resume-optimizer',
-      environment: config.environment ?? process.env.NODE_ENV ?? 'development',
+      environment: config.environment ?? env.NODE_ENV,
     };
 
     this.metrics = metrics;
@@ -187,7 +188,7 @@ export class TelemetryClient {
  */
 export const telemetry = new TelemetryClient({
   serviceName: 'resume-optimizer',
-  environment: process.env.NODE_ENV,
+  environment: env.NODE_ENV,
 });
 
 /**

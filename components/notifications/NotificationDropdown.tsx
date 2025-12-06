@@ -191,7 +191,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
                 <Bell className="h-6 w-6 opacity-50" />
               </div>
               <p className="text-sm font-medium">No notifications yet</p>
-              <p className="text-xs mt-1 text-center">You'll see updates here when something happens</p>
+              <p className="text-xs mt-1 text-center">You&apos;ll see updates here when something happens</p>
             </div>
           )}
 

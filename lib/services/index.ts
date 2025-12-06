@@ -57,3 +57,14 @@ export type {
 export { apiKeyAuditService } from './api-key-audit.service';
 
 export { auditLogService } from './audit-log.service';
+
+// Service utilities for reducing boilerplate
+export {
+  withServiceError,
+  withServiceErrorSync,
+  ServiceOperationError,
+  ServiceErrors,
+  isServiceOperationError,
+  runParallel,
+  chainOperations,
+} from './utils';

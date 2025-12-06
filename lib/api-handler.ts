@@ -2,7 +2,7 @@ import { getSession, getVerifiedSession } from "@/lib/auth/dal";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
 import { ZodError, ZodSchema } from "zod";
-import { errorCodeToStatus, ServiceErrorCode } from "@/lib/types/service-result";
+import { errorCodeToStatus, ServiceErrorCode, type ServiceResult } from "@/lib/types/service-result";
 import { applyRateLimit, getClientIdentifier, addRateLimitHeaders, RateLimitConfigs, type RateLimitConfig } from "@/lib/middleware/rate-limit";
 
 type ApiHandlerContext = {
@@ -19,12 +19,18 @@ type Session = {
     [key: string]: unknown;
 };
 
+/**
+ * Handler return type - can be NextResponse or ServiceResult
+ * ServiceResult will be automatically converted to NextResponse
+ */
+type ApiHandlerReturn<T> = NextResponse<T> | NextResponse<unknown> | ServiceResult<T>;
+
 type ApiHandler<T = unknown, TBody = unknown> = (
     request: Request,
     context: ApiHandlerContext,
     session: Session,
     body?: TBody
-) => Promise<NextResponse<T> | NextResponse<unknown>>;
+) => Promise<ApiHandlerReturn<T>>;
 
 interface ApiHandlerOptions<TBody = unknown> {
     /** Skip authentication (default: false) */
@@ -115,12 +121,20 @@ export function createApiHandler<T = unknown, TBody = unknown>(
             } : null;
 
             // Execute handler
-            let response = await handler(
+            const handlerResult = await handler(
                 request, 
                 context, 
                 apiSession as unknown as Session,
                 body
             );
+
+            // Convert ServiceResult to NextResponse if needed
+            let response: NextResponse;
+            if (isServiceResult(handlerResult)) {
+                response = serviceResultToResponse(handlerResult, requestId);
+            } else {
+                response = handlerResult as NextResponse;
+            }
 
             // Add rate limit headers if configured
             if (options.rateLimit) {
@@ -257,4 +271,53 @@ export const ApiErrors = {
  */
 function generateRequestId(): string {
     return `req_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
+ * Type guard to check if a value is a ServiceResult
+ */
+function isServiceResult<T>(value: unknown): value is ServiceResult<T> {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        'success' in value &&
+        typeof (value as ServiceResult<T>).success === 'boolean'
+    );
+}
+
+/**
+ * Convert a ServiceResult to NextResponse
+ * 
+ * This enables API handlers to return ServiceResult directly,
+ * reducing boilerplate in route handlers.
+ * 
+ * @example
+ * ```typescript
+ * // Before:
+ * export const GET = createApiHandler(async (req, ctx, session) => {
+ *   const result = await profileService.getProfile(session.user.id);
+ *   if (!result.success) {
+ *     return NextResponse.json({ error: result.error }, { status: 400 });
+ *   }
+ *   return NextResponse.json(result.data);
+ * });
+ * 
+ * // After:
+ * export const GET = createApiHandler(async (req, ctx, session) => {
+ *   return profileService.getProfile(session.user.id);
+ * });
+ * ```
+ */
+function serviceResultToResponse<T>(
+    result: ServiceResult<T>,
+    requestId?: string
+): NextResponse {
+    if (result.success) {
+        return NextResponse.json(result.data);
+    }
+    
+    return NextResponse.json(
+        { error: result.error, code: result.code, requestId },
+        { status: errorCodeToStatus(result.code) }
+    );
 }

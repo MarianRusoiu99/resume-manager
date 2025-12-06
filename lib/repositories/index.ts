@@ -27,6 +27,19 @@ export type { ICoverLetterRepository } from './interfaces';
 export type { INotificationRepository } from './interfaces';
 export type { ICache } from './interfaces';
 
+// Base repository classes and utilities
+export {
+  BaseRepository,
+  UserOwnedRepository,
+  createPaginatedResult,
+  buildOrderBy,
+  buildPagination,
+  type EntityWithId,
+  type BaseRepositoryOptions,
+  type FindOptions,
+  type PaginatedResult,
+} from './base.repository';
+
 export { 
   profileRepository, 
   ProfileRepository 

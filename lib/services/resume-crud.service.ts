@@ -1,8 +1,8 @@
 import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
 import { resumesCache } from '@/lib/cache/resumes-cache';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { logger } from '@/lib/utils/logger';
-import { success, failure, type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types/service-result';
+import { withServiceError, NotFoundError } from '@/lib/services/utils';
 import type { IResumeCrudService } from './interfaces';
 
 /**
@@ -88,10 +88,10 @@ export class ResumeCrudService implements IResumeCrudService {
    * List all resumes for a user
    */
   async listResumes(userId: string): Promise<ServiceResult<ResumeListItem[]>> {
-    try {
+    return withServiceError('list resumes', async () => {
       const resumes = await this.repository.findByUserId(userId);
 
-      const mapped = resumes.map(resume => {
+      return resumes.map(resume => {
         // Parse jobMetadata to extract jobTitle and companyName
         const jobMetadata = resume.jobMetadata as Record<string, unknown> | null;
         const jobTitle = (jobMetadata?.jobTitle as string) || null;
@@ -119,12 +119,7 @@ export class ResumeCrudService implements IResumeCrudService {
           updatedAt: resume.updatedAt
         };
       });
-
-      return success(mapped);
-    } catch (error) {
-      logger.error('Error listing resumes', error);
-      return failure('Failed to list resumes', 'INTERNAL_ERROR');
-    }
+    });
   }
 
   /**
@@ -138,11 +133,11 @@ export class ResumeCrudService implements IResumeCrudService {
    * Get a specific resume by ID
    */
   async getResume(resumeId: string, userId: string): Promise<ServiceResult<ResumeDetails>> {
-    try {
+    return withServiceError('get resume', async () => {
       const resume = await this.repository.findByIdAndUserId(resumeId, userId);
 
       if (!resume) {
-        return failure('Resume not found', 'NOT_FOUND');
+        throw new NotFoundError('Resume');
       }
 
       // Parse jobMetadata to extract jobTitle and companyName
@@ -159,7 +154,7 @@ export class ResumeCrudService implements IResumeCrudService {
         processingTime: (storedMetadata.processingTime as number) || 0
       };
 
-      return success({
+      return {
         id: resume.id,
         jobDescription: resume.jobDescription,
         jobMetadata: resume.jobMetadata as Record<string, unknown>,
@@ -170,35 +165,27 @@ export class ResumeCrudService implements IResumeCrudService {
         templateId: resume.templateId,
         createdAt: resume.createdAt,
         updatedAt: resume.updatedAt
-      });
-    } catch (error) {
-      logger.error('Error getting resume', error);
-      return failure('Failed to get resume', 'INTERNAL_ERROR');
-    }
+      };
+    });
   }
 
   /**
    * Delete a resume
    */
   async deleteResume(resumeId: string, userId: string): Promise<ServiceResult<void>> {
-    try {
+    return withServiceError('delete resume', async () => {
       // Verify ownership
       const resume = await this.repository.findByIdAndUserId(resumeId, userId);
 
       if (!resume) {
-        return failure('Resume not found or access denied', 'NOT_FOUND');
+        throw new NotFoundError('Resume');
       }
 
       await this.repository.delete(resumeId);
       
       // Invalidate cache after successful deletion
       this.invalidateCache(userId);
-      
-      return success(undefined);
-    } catch (error) {
-      logger.error('Error deleting resume', error);
-      return failure('Failed to delete resume', 'INTERNAL_ERROR');
-    }
+    });
   }
 
   /**
@@ -210,12 +197,12 @@ export class ResumeCrudService implements IResumeCrudService {
    * @returns Updated resume or error
    */
   async updateResumeContent(resumeId: string, userId: string, resumeData: Resume): Promise<ServiceResult<UpdatedResumeData>> {
-    try {
+    return withServiceError('update resume content', async () => {
       // Verify ownership
       const existingResume = await this.repository.findByIdAndUserId(resumeId, userId);
 
       if (!existingResume) {
-        return failure('Resume not found or access denied', 'NOT_FOUND');
+        throw new NotFoundError('Resume');
       }
 
       // Validation is intentionally skipped here because resume data is already validated via Zod schemas in the API route layer
@@ -227,7 +214,7 @@ export class ResumeCrudService implements IResumeCrudService {
       // Invalidate cache after successful update
       this.invalidateCache(userId);
 
-      return success({
+      return {
         id: updatedResume.id,
         resume: updatedResume.resume,
         jobDescription: updatedResume.jobDescription,
@@ -236,11 +223,8 @@ export class ResumeCrudService implements IResumeCrudService {
         metadata: updatedResume.metadata,
         createdAt: updatedResume.createdAt,
         updatedAt: updatedResume.updatedAt,
-      });
-    } catch (error) {
-      logger.error('Error updating resume content', error);
-      return failure('Failed to update resume content', 'INTERNAL_ERROR');
-    }
+      };
+    });
   }
 
   /**
@@ -252,12 +236,12 @@ export class ResumeCrudService implements IResumeCrudService {
    * @returns Updated resume or error
    */
   async updateResumeTemplate(resumeId: string, userId: string, templateId: string | null): Promise<ServiceResult<UpdatedResumeData>> {
-    try {
+    return withServiceError('update resume template', async () => {
       // Verify ownership
       const existingResume = await this.repository.findByIdAndUserId(resumeId, userId);
 
       if (!existingResume) {
-        return failure('Resume not found or access denied', 'NOT_FOUND');
+        throw new NotFoundError('Resume');
       }
 
       // Update the template using repository
@@ -266,7 +250,7 @@ export class ResumeCrudService implements IResumeCrudService {
       // Invalidate cache after successful update
       this.invalidateCache(userId);
 
-      return success({
+      return {
         id: updatedResume.id,
         resume: updatedResume.resume,
         jobDescription: updatedResume.jobDescription,
@@ -275,11 +259,8 @@ export class ResumeCrudService implements IResumeCrudService {
         metadata: updatedResume.metadata,
         createdAt: updatedResume.createdAt,
         updatedAt: updatedResume.updatedAt,
-      });
-    } catch (error) {
-      logger.error('Error updating resume template', error);
-      return failure('Failed to update resume template', 'INTERNAL_ERROR');
-    }
+      };
+    });
   }
 }
 

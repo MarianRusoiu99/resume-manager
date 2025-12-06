@@ -1,67 +1,45 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { verifySession } from '@/lib/auth/dal';
+import { NextResponse } from 'next/server';
 import { notificationService } from '@/lib/services/notification.service';
-
-interface RouteParams {
-  params: Promise<{ id: string }>;
-}
+import { createApiHandler } from '@/lib/api-handler';
 
 /**
  * PATCH /api/notifications/[id] - Mark a notification as read
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await verifySession();
-    const { id } = await params;
+export const PATCH = createApiHandler(async (request, { params }, session) => {
+  const { id } = await params;
 
-    const result = await notificationService.markAsRead(id, session.userId);
+  const result = await notificationService.markAsRead(id, session.user.id);
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.error === 'Notification not found' ? 404 : 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      notification: result.data,
-    });
-  } catch (error) {
-    console.error('Error marking notification as read:', error);
+  if (!result.success) {
     return NextResponse.json(
-      { error: 'Failed to mark notification as read' },
-      { status: 500 }
+      { error: result.error },
+      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
     );
   }
-}
+
+  return NextResponse.json({
+    success: true,
+    notification: result.data,
+  });
+});
 
 /**
  * DELETE /api/notifications/[id] - Delete a notification
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const session = await verifySession();
-    const { id } = await params;
+export const DELETE = createApiHandler(async (request, { params }, session) => {
+  const { id } = await params;
 
-    const result = await notificationService.deleteNotification(id, session.userId);
+  const result = await notificationService.deleteNotification(id, session.user.id);
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.error === 'Notification not found' ? 404 : 500 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Notification deleted',
-    });
-  } catch (error) {
-    console.error('Error deleting notification:', error);
+  if (!result.success) {
     return NextResponse.json(
-      { error: 'Failed to delete notification' },
-      { status: 500 }
+      { error: result.error },
+      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
     );
   }
-}
+
+  return NextResponse.json({
+    success: true,
+    message: 'Notification deleted',
+  });
+});

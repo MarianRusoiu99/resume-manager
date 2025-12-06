@@ -5,6 +5,7 @@
  * Supports Redis (production) and in-memory (development/fallback).
  */
 
+import { env } from '@/lib/config';
 import { CacheProvider, PubSubProvider } from './types';
 import { MemoryCacheProvider, MemoryPubSubProvider } from './memory-provider';
 import { RedisCacheProvider, RedisPubSubProvider, RedisProvider, RedisOptions } from './redis-provider';
@@ -46,12 +47,10 @@ let combinedInstance: (CacheProvider & PubSubProvider) | null = null;
  * Get default configuration from environment
  */
 function getDefaultConfig(): ClientConfig {
-  const redisUrl = process.env.REDIS_URL;
-  
   return {
-    provider: redisUrl ? 'redis' : 'memory',
-    redis: redisUrl ? { url: redisUrl } : undefined,
-    keyPrefix: process.env.REDIS_KEY_PREFIX || 'resume-optimizer:',
+    provider: env.hasRedis ? 'redis' : 'memory',
+    redis: env.REDIS_URL ? { url: env.REDIS_URL } : undefined,
+    keyPrefix: env.REDIS_KEY_PREFIX,
   };
 }
 
@@ -63,7 +62,7 @@ function resolveProvider(config: ClientConfig): 'redis' | 'memory' {
   if (config.provider === 'memory') return 'memory';
   
   // Auto-detect
-  return process.env.REDIS_URL ? 'redis' : 'memory';
+  return env.hasRedis ? 'redis' : 'memory';
 }
 
 /**

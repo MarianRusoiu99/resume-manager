@@ -1,0 +1,67 @@
+/**
+ * Validation Schemas Barrel Export
+ * 
+ * Centralized exports for all validation schemas.
+ */
+
+// Auth schemas
+export {
+  passwordSchema,
+  strongPasswordSchema,
+  emailSchema,
+  nameSchema,
+  loginSchema,
+  registerSchema,
+} from './auth';
+
+// API schemas
+export {
+  // Profile
+  createProfileSchema,
+  updateProfileSchema,
+  type CreateProfileInput,
+  type UpdateProfileInput,
+  
+  // Template
+  templateCategorySchema,
+  createTemplateSchema,
+  updateTemplateSchema,
+  type TemplateCategory,
+  type CreateTemplateInput,
+  type UpdateTemplateInput,
+  
+  // Resume
+  generateResumeSchema,
+  updateResumeContentSchema,
+  updateResumeTemplateSchema,
+  type GenerateResumeInput,
+  type UpdateResumeContentInput,
+  type UpdateResumeTemplateInput,
+  
+  // Cover Letter
+  generateCoverLetterSchema,
+  updateCoverLetterSchema,
+  type GenerateCoverLetterInput,
+  type UpdateCoverLetterInput,
+  
+  // API Provider
+  aiProviderSchema,
+  addApiProviderSchema,
+  updateApiProviderSchema,
+  type AIProviderType,
+  type AddApiProviderInput,
+  type UpdateApiProviderInput,
+  
+  // Notification
+  notificationQuerySchema,
+  type NotificationQuery,
+  
+  // Common
+  paginationSchema,
+  idParamSchema,
+  type PaginationQuery,
+  type IdParam,
+} from './api-schemas';
+
+// JSON Resume schemas
+export { resumeSchema, type Resume } from './jsonresume';
