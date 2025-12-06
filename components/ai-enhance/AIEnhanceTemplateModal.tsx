@@ -3,6 +3,7 @@
 /**
  * AI Enhance Template Modal
  * Specialized modal for enhancing both HTML and CSS together with tabbed view
+ * Uses the AI model configured in Settings → AI Models for the "template" feature
  */
 
 import { useState, useEffect } from 'react';
@@ -17,23 +18,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Sparkles, RefreshCw, Check, X, Loader2, Code } from 'lucide-react';
-
-interface AIModel {
-    id: string;
-    name: string;
-    provider: string;
-}
 
 interface AIEnhanceTemplateModalProps {
     open: boolean;
@@ -54,16 +42,11 @@ export function AIEnhanceTemplateModal({
     const [enhancedHtml, setEnhancedHtml] = useState('');
     const [enhancedCss, setEnhancedCss] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [models, setModels] = useState<AIModel[]>([]);
-    const [selectedModel, setSelectedModel] = useState<string>('');
-    const [modelsLoading, setModelsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'html' | 'css'>('html');
 
-    // Fetch available models when modal opens
+    // Reset state when modal opens
     useEffect(() => {
         if (open) {
-            fetchModels();
-            // Reset state when modal opens
             setEnhancedHtml('');
             setEnhancedCss('');
             setInstructions('');
@@ -71,37 +54,9 @@ export function AIEnhanceTemplateModal({
         }
     }, [open]);
 
-    const fetchModels = async () => {
-        try {
-            setModelsLoading(true);
-            const response = await fetch('/api/settings/api-providers/models');
-            if (response.ok) {
-                const data = await response.json();
-                const allModels = (data.allModels || []).map((m: { id: string; name: string; providerId: string }) => ({
-                    id: m.id,
-                    name: m.name,
-                    provider: m.providerId,
-                }));
-                setModels(allModels);
-                if (allModels.length > 0 && !selectedModel) {
-                    setSelectedModel(allModels[0].id);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to fetch models:', error);
-        } finally {
-            setModelsLoading(false);
-        }
-    };
-
     const handleEnhance = async () => {
         if (!instructions.trim()) {
             toast.error('Please provide instructions for the AI');
-            return;
-        }
-
-        if (!selectedModel) {
-            toast.error('Please select an AI model');
             return;
         }
 
@@ -132,7 +87,7 @@ IMPORTANT: You must return both the HTML and CSS in this exact format:
 Make sure to preserve both sections and the exact separator format.`,
                     context: 'This is a resume template with Handlebars syntax ({{variable}}, {{#each}}, etc.)',
                     contentType: 'html',
-                    modelId: selectedModel,
+                    // No modelId - will use settings-based model for 'template' feature
                 }),
             });
 
@@ -186,53 +141,19 @@ Make sure to preserve both sections and the exact separator format.`,
                 </DialogHeader>
 
                 <div className="flex-1 overflow-hidden flex flex-col gap-4">
-                    {/* Model Selection & Instructions */}
-                    <div className="flex gap-4 items-start">
-                        <div className="flex-shrink-0 w-48">
-                            <Label htmlFor="model-select" className="text-sm font-medium">
-                                AI Model
-                            </Label>
-                            <Select
-                                value={selectedModel}
-                                onValueChange={setSelectedModel}
-                                disabled={modelsLoading || isLoading}
-                            >
-                                <SelectTrigger id="model-select" className="mt-1.5">
-                                    <SelectValue placeholder={modelsLoading ? 'Loading...' : 'Select model'} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {models.map((model) => (
-                                        <SelectItem key={model.id} value={model.id}>
-                                            <span className="flex items-center gap-2">
-                                                <span className="text-xs text-muted-foreground uppercase">
-                                                    {model.provider}
-                                                </span>
-                                                {model.name}
-                                            </span>
-                                        </SelectItem>
-                                    ))}
-                                    {models.length === 0 && !modelsLoading && (
-                                        <SelectItem value="none" disabled>
-                                            No models available
-                                        </SelectItem>
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="flex-1">
-                            <Label htmlFor="instructions" className="text-sm font-medium">
-                                Instructions
-                            </Label>
-                            <Textarea
-                                id="instructions"
-                                value={instructions}
-                                onChange={(e) => setInstructions(e.target.value)}
-                                placeholder="Describe what you want the AI to do... (e.g., 'Make it more modern', 'Improve responsiveness', 'Add better typography')"
-                                className="mt-1.5 min-h-[60px] resize-none"
-                                disabled={isLoading}
-                            />
-                        </div>
+                    {/* Instructions */}
+                    <div>
+                        <Label htmlFor="instructions" className="text-sm font-medium">
+                            Instructions
+                        </Label>
+                        <Textarea
+                            id="instructions"
+                            value={instructions}
+                            onChange={(e) => setInstructions(e.target.value)}
+                            placeholder="Describe what you want the AI to do... (e.g., 'Make it more modern', 'Improve responsiveness', 'Add better typography')"
+                            className="mt-1.5 min-h-[60px] resize-none"
+                            disabled={isLoading}
+                        />
                     </div>
 
                     {/* Tabbed Side-by-side Comparison */}
@@ -339,7 +260,7 @@ Make sure to preserve both sections and the exact separator format.`,
                         type="button"
                         variant="outline"
                         onClick={handleEnhance}
-                        disabled={isLoading || !instructions.trim() || !selectedModel}
+                        disabled={isLoading || !instructions.trim()}
                     >
                         {isLoading ? (
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

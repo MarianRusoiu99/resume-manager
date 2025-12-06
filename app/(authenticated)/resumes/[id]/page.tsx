@@ -12,97 +12,17 @@ import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Edit } from 'lucide-react';
 import { apiFetch } from '@/lib/utils/api-client';
+import { createComponentLogger } from '@/lib/utils/client-logger';
+import type { GeneratedResume } from '@/lib/types';
 
-interface Resume {
-  id: string;
-  userId: string;
-  jobTitle: string | null;
-  companyName: string | null;
-  jobDescription: string;
-  content: {
-    basics?: {
-      name?: string;
-      email?: string;
-      phone?: string;
-      url?: string;
-      summary?: string;
-      location?: {
-        address?: string;
-        city?: string;
-        region?: string;
-        postalCode?: string;
-        countryCode?: string;
-      };
-      profiles?: Array<{
-        network?: string;
-        username?: string;
-        url?: string;
-      }>;
-    };
-    work?: Array<{
-      name?: string;
-      position?: string;
-      url?: string;
-      startDate?: string;
-      endDate?: string;
-      summary?: string;
-      highlights?: string[];
-    }>;
-    education?: Array<{
-      institution?: string;
-      url?: string;
-      area?: string;
-      studyType?: string;
-      startDate?: string;
-      endDate?: string;
-      score?: string;
-      courses?: string[];
-    }>;
-    skills?: Array<{
-      name?: string;
-      level?: string;
-      keywords?: string[];
-    }>;
-    certificates?: Array<{
-      name?: string;
-      date?: string;
-      issuer?: string;
-      url?: string;
-    }>;
-    projects?: Array<{
-      name?: string;
-      description?: string;
-      highlights?: string[];
-      keywords?: string[];
-      startDate?: string;
-      endDate?: string;
-      url?: string;
-    }>;
-    [key: string]: unknown;
-  };
-  templateId: string | null;
-  customization: Record<string, unknown> | null;
-  pdfUrl: string | null;
-  coverLetter: string | null;
-  isEdited: boolean;
-  aiGeneratedContent?: Resume['content'];
-  sectionOrder?: string[] | null;
-  metadata: {
-    generatedAt: string;
-    model: string;
-    totalTokens: number;
-    processingTime: number;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+const logger = createComponentLogger('ResumeDetailPage');
 
 export default function ResumeDetailPage() {
   const router = useRouter();
   const params = useParams();
   const resumeId = params?.id as string;
 
-  const [resume, setResume] = useState<Resume | null>(null);
+  const [resume, setResume] = useState<GeneratedResume | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -125,9 +45,10 @@ export default function ResumeDetailPage() {
       }
 
       const data = await response.json();
-      console.log('Fetched resume data:', { templateId: data.templateId, pdfUrl: data.pdfUrl });
+      logger.debug('Fetched resume data', { templateId: data.templateId, pdfUrl: data.pdfUrl });
       setResume(data);
     } catch (err) {
+      logger.error('Failed to fetch resume', err);
       setError(err instanceof Error ? err.message : 'Failed to load resume');
     } finally {
       setIsLoading(false);

@@ -6,6 +6,9 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { createComponentLogger } from '@/lib/utils/client-logger';
+
+const logger = createComponentLogger('useExportPDF');
 
 interface ExportPDFParams {
   resume: Resume;
@@ -93,7 +96,7 @@ export function useExportPDF() {
       await downloadPDF(response);
       toast.success('PDF exported successfully');
     } catch (err) {
-      console.error('PDF export error:', err);
+      logger.error('PDF export error', err);
       toast.error(err instanceof Error ? err.message : 'Failed to export PDF');
     } finally {
       setIsExportingPDF(false);

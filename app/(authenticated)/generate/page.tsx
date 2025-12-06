@@ -27,14 +27,6 @@ interface Profile {
   isDefault: boolean;
 }
 
-interface Model {
-  id: string;
-  name: string;
-  description: string;
-  providerId: string;
-  providerType: string;
-}
-
 interface GeneratedResume {
   id: string;
   content: Resume;
@@ -52,14 +44,13 @@ export default function GeneratePage() {
 
   // Common state
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [models, setModels] = useState<Model[]>([]);
+  const [hasAIProviders, setHasAIProviders] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Resume generation state
   const [resumeJobDescription, setResumeJobDescription] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedResumeProfileId, setSelectedResumeProfileId] = useState<string>('');
-  const [selectedResumeModelId, setSelectedResumeModelId] = useState<string>('');
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isGeneratingResume, setIsGeneratingResume] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
@@ -76,7 +67,6 @@ export default function GeneratePage() {
   const [coverLetterJobDescription, setCoverLetterJobDescription] = useState('');
   const [coverLetterPersonalInstructions, setCoverLetterPersonalInstructions] = useState('');
   const [selectedCoverLetterProfileId, setSelectedCoverLetterProfileId] = useState<string>('');
-  const [selectedCoverLetterModelId, setSelectedCoverLetterModelId] = useState<string>('');
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [coverLetterError, setCoverLetterError] = useState<string | null>(null);
   const [generatedCoverLetter, setGeneratedCoverLetter] = useState<string | null>(null);
@@ -100,15 +90,15 @@ export default function GeneratePage() {
     loadTemplates();
   }, []);
 
-  // Load profiles and models on mount
+  // Load profiles and check for AI providers on mount
   useEffect(() => {
     const loadData = async () => {
       setIsLoadingData(true);
       try {
-        // Load profiles and models in parallel
-        const [profilesRes, modelsRes] = await Promise.all([
+        // Load profiles and check for AI providers in parallel
+        const [profilesRes, providersRes] = await Promise.all([
           fetch('/api/profile'),
-          fetch('/api/settings/api-providers/models'),
+          fetch('/api/settings/api-providers'),
         ]);
 
         if (profilesRes.ok) {
@@ -124,13 +114,11 @@ export default function GeneratePage() {
           }
         }
 
-        if (modelsRes.ok) {
-          const data = await modelsRes.json();
-          setModels(data.allModels || []);
-          if (data.allModels && data.allModels.length > 0) {
-            setSelectedResumeModelId(data.allModels[0].id);
-            setSelectedCoverLetterModelId(data.allModels[0].id);
-          }
+        if (providersRes.ok) {
+          const data = await providersRes.json();
+          // Check if user has at least one active provider
+          const hasProviders = Array.isArray(data) && data.some((p: { isActive: boolean }) => p.isActive);
+          setHasAIProviders(hasProviders);
         }
       } catch (err) {
         console.error('Failed to load data:', err);
@@ -285,7 +273,6 @@ export default function GeneratePage() {
         body: JSON.stringify({
           jobDescription: resumeJobDescription,
           profileId: selectedResumeProfileId,
-          modelId: selectedResumeModelId || undefined,
           templateId: selectedTemplateId || undefined,
         }),
       });
@@ -348,7 +335,6 @@ export default function GeneratePage() {
           jobDescription: coverLetterJobDescription,
           personalInstructions: coverLetterPersonalInstructions.trim() || undefined,
           profileId: profileId,
-          modelId: selectedCoverLetterModelId || undefined,
         }),
       });
 
@@ -487,60 +473,18 @@ export default function GeneratePage() {
                       </div>
                     )}
 
-                    {/* AI Model Selection */}
-                    {(() => {
-                      if (isLoadingData) {
-                        return (
-                          <div className="p-3 bg-muted rounded-md">
-                            <div className="flex items-center gap-2">
-                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              <span className="text-sm text-muted-foreground">Loading AI providers...</span>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      if (models.length > 0) {
-                        return (
-                          <div>
-                            <label htmlFor="resumeModel" className="block text-sm font-medium mb-2">
-                              AI Model <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              id="resumeModel"
-                              value={selectedResumeModelId}
-                              onChange={(e) => setSelectedResumeModelId(e.target.value)}
-                              className="w-full px-3 py-2 border rounded-md"
-                              disabled={isGeneratingResume}
-                            >
-                              {models.map((model) => (
-                                <option className='bg-background text-foreground' key={model.id} value={model.id}>
-                                  {model.name} ({model.providerType})
-                                </option>
-                              ))}
-                            </select>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {models.find(m => m.id === selectedResumeModelId)?.description}
-                            </p>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                          <p className="text-sm text-yellow-800">
-                            ⚠️ No AI providers configured. Please add an API key in{' '}
-                            <Link href="/settings/api-keys" className="underline font-medium">
-                              Settings → API Keys
-                            </Link>{' '}
-                            to generate resumes.
-                          </p>
-                        </div>
-                      );
-                    })()}
+                    {/* AI Provider Check */}
+                    {!isLoadingData && !hasAIProviders && (
+                      <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                          ⚠️ No AI providers configured. Please add an API key in{' '}
+                          <Link href="/settings/api-keys" className="underline font-medium">
+                            Settings → API Keys
+                          </Link>{' '}
+                          to generate resumes.
+                        </p>
+                      </div>
+                    )}
 
                     {resumeError && (
                       <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -593,7 +537,7 @@ export default function GeneratePage() {
                     
                     <Button
                       onClick={handleGenerateResume}
-                      disabled={isLoadingData || isGeneratingResume || resumeJobDescription.length < 50 || !selectedResumeProfileId || models.length === 0}
+                      disabled={isLoadingData || isGeneratingResume || resumeJobDescription.length < 50 || !selectedResumeProfileId || !hasAIProviders}
                       className="w-full"
                     >
                       {(() => {
@@ -736,38 +680,14 @@ export default function GeneratePage() {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          <span className="text-sm text-muted-foreground">Loading AI providers...</span>
+                          <span className="text-sm text-muted-foreground">Loading...</span>
                         </div>
                       </div>
                     )}
 
-                    {!isLoadingData && models.length > 0 && (
-                      <div>
-                        <label htmlFor="coverLetterModel" className="block text-sm font-medium mb-2">
-                          AI Model <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          id="coverLetterModel"
-                          value={selectedCoverLetterModelId}
-                          onChange={(e) => setSelectedCoverLetterModelId(e.target.value)}
-                          className="w-full px-3 py-2 border rounded-md"
-                          disabled={isGeneratingCoverLetter}
-                        >
-                          {models.map((model) => (
-                            <option className='bg-background text-foreground' key={`${model.providerId}-${model.id}`} value={model.id}>
-                              {model.name} ({model.providerType})
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {models.find(m => m.id === selectedCoverLetterModelId)?.description}
-                        </p>
-                      </div>
-                    )}
-
-                    {!isLoadingData && models.length === 0 && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                        <p className="text-sm text-yellow-800">
+                    {!isLoadingData && !hasAIProviders && (
+                      <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
                           ⚠️ No AI providers configured. Please add an API key in{' '}
                           <Link href="/settings/api-keys" className="underline font-medium">
                             Settings → API Keys
@@ -817,7 +737,7 @@ export default function GeneratePage() {
                     <div className="flex gap-3">
                       <Button
                         onClick={handleGenerateCoverLetter}
-                        disabled={isLoadingData || isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || profiles.length === 0 || models.length === 0}
+                        disabled={isLoadingData || isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || profiles.length === 0 || !hasAIProviders}
                         className="flex-1"
                       >
                         {isLoadingData && (

@@ -10,14 +10,7 @@
 import { NextResponse } from 'next/server';
 import { createApiHandler } from '@/lib/api-handler';
 import { apiProviderService } from '@/lib/services/api-provider.service';
-import { z } from 'zod';
-
-const updateProviderSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  apiKey: z.string().min(10).optional(),
-  models: z.array(z.string()).min(1).optional(),
-  isActive: z.boolean().optional(),
-});
+import { updateApiProviderSchema } from '@/lib/validations/api-schemas';
 
 export const PATCH = createApiHandler(
   async (request, { params }, session, body) => {
@@ -42,7 +35,7 @@ export const PATCH = createApiHandler(
 
     return NextResponse.json({ message: result.data.message });
   },
-  { bodySchema: updateProviderSchema, rateLimit: 'apiKeys' }
+  { bodySchema: updateApiProviderSchema, rateLimit: 'apiKeys' }
 );
 
 export const DELETE = createApiHandler(

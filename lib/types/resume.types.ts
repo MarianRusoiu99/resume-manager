@@ -113,6 +113,29 @@ export interface UpdatedResumeData {
 }
 
 /**
+ * Full generated resume entity as returned from API
+ * Used in detail pages and full resume operations
+ */
+export interface GeneratedResume {
+  id: string;
+  userId: string;
+  jobTitle: string | null;
+  companyName: string | null;
+  jobDescription: string;
+  content: import('@/lib/validations/jsonresume').Resume;
+  templateId: string | null;
+  customization: Record<string, unknown> | null;
+  pdfUrl: string | null;
+  coverLetter: string | null;
+  isEdited: boolean;
+  aiGeneratedContent?: import('@/lib/validations/jsonresume').Resume;
+  sectionOrder?: string[] | null;
+  metadata: ResumeMetadata;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
  * Cover letter generation result
  */
 export interface CoverLetterGenerationData {

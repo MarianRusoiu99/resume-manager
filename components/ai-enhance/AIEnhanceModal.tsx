@@ -3,9 +3,18 @@
 /**
  * AI Enhance Modal
  * Modal for AI-powered text enhancement with side-by-side comparison
+ * 
+ * Features:
+ * - Side-by-side original vs enhanced content
+ * - Model selection (optional - defaults to user's settings)
+ * - Quick instruction presets
+ * - Loading states with skeleton
+ * 
+ * Uses the AI model configured in Settings → AI Models for the "enhance" feature
+ * if no model is explicitly selected.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -17,6 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     Select,
     SelectContent,
@@ -24,26 +34,79 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Sparkles, RefreshCw, Check, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAIModels } from '@/hooks';
+import type { ContentType } from '@/lib/validations/settings';
 
-interface AIModel {
-    id: string;
-    name: string;
-    provider: string;
-}
+/**
+ * Quick instruction presets for common enhancement tasks
+ */
+const INSTRUCTION_PRESETS = [
+    { label: 'Professional', value: 'Make this more professional and polished' },
+    { label: 'Concise', value: 'Make this more concise without losing key information' },
+    { label: 'Grammar', value: 'Fix grammar, spelling, and punctuation errors' },
+    { label: 'Impactful', value: 'Make this more impactful and compelling' },
+    { label: 'ATS-Friendly', value: 'Optimize for ATS (Applicant Tracking Systems) while keeping it readable' },
+] as const;
 
 interface AIEnhanceModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     originalContent: string;
     onAccept: (enhancedContent: string) => void;
-    contentType?: 'text' | 'html' | 'css' | 'markdown';
+    contentType?: ContentType;
     context?: string;
     title?: string;
     description?: string;
+    /** Show model selector (default: false - uses user's saved settings) */
+    showModelSelector?: boolean;
+}
+
+/**
+ * Enhanced content display component
+ * Extracted to avoid nested ternary in JSX
+ */
+function EnhancedContentDisplay({
+    isLoading,
+    enhancedContent,
+    contentType,
+}: Readonly<{
+    isLoading: boolean;
+    enhancedContent: string;
+    contentType: ContentType;
+}>) {
+    if (isLoading) {
+        return (
+            <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-[90%]" />
+                <Skeleton className="h-4 w-[80%]" />
+                <Skeleton className="h-4 w-[85%]" />
+            </div>
+        );
+    }
+
+    if (enhancedContent) {
+        return (
+            <pre
+                className={cn(
+                    'text-sm whitespace-pre-wrap break-words font-mono',
+                    contentType === 'text' && 'font-sans'
+                )}
+            >
+                {enhancedContent}
+            </pre>
+        );
+    }
+
+    return (
+        <p className="text-sm text-muted-foreground italic">
+            Enter instructions and click &quot;Enhance&quot; to generate
+        </p>
+    );
 }
 
 export function AIEnhanceModal({
@@ -55,56 +118,43 @@ export function AIEnhanceModal({
     context,
     title = 'Enhance with AI',
     description = 'Use AI to improve, rephrase, or modify your content.',
+    showModelSelector = false,
 }: Readonly<AIEnhanceModalProps>) {
     const [instructions, setInstructions] = useState('');
     const [enhancedContent, setEnhancedContent] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [models, setModels] = useState<AIModel[]>([]);
-    const [selectedModel, setSelectedModel] = useState<string>('');
-    const [modelsLoading, setModelsLoading] = useState(false);
+    
+    // Model selection (optional)
+    const {
+        models,
+        selectedModel,
+        setSelectedModel,
+        isLoading: modelsLoading,
+        fetchModels,
+    } = useAIModels();
 
-    // Fetch available models when modal opens
+    // Fetch models when modal opens if model selector is shown
+    useEffect(() => {
+        if (open && showModelSelector) {
+            fetchModels();
+        }
+    }, [open, showModelSelector, fetchModels]);
+
+    // Reset state when modal opens
     useEffect(() => {
         if (open) {
-            fetchModels();
-            // Reset state when modal opens
             setEnhancedContent('');
             setInstructions('');
         }
     }, [open]);
 
-    const fetchModels = async () => {
-        try {
-            setModelsLoading(true);
-            const response = await fetch('/api/settings/api-providers/models');
-            if (response.ok) {
-                const data = await response.json();
-                // API returns { allModels: [...], byProvider: {...} }
-                const allModels = (data.allModels || []).map((m: { id: string; name: string; providerId: string }) => ({
-                    id: m.id,
-                    name: m.name,
-                    provider: m.providerId,
-                }));
-                setModels(allModels);
-                if (allModels.length > 0 && !selectedModel) {
-                    setSelectedModel(allModels[0].id);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to fetch models:', error);
-        } finally {
-            setModelsLoading(false);
-        }
-    };
+    const handlePresetClick = useCallback((preset: string) => {
+        setInstructions(preset);
+    }, []);
 
     const handleEnhance = async () => {
         if (!instructions.trim()) {
             toast.error('Please provide instructions for the AI');
-            return;
-        }
-
-        if (!selectedModel) {
-            toast.error('Please select an AI model');
             return;
         }
 
@@ -118,7 +168,8 @@ export function AIEnhanceModal({
                     instructions,
                     context,
                     contentType,
-                    modelId: selectedModel,
+                    // Only send modelId if explicitly selected
+                    ...(showModelSelector && selectedModel ? { modelId: selectedModel } : {}),
                 }),
             });
 
@@ -162,53 +213,61 @@ export function AIEnhanceModal({
                 </DialogHeader>
 
                 <div className="flex-1 overflow-hidden flex flex-col gap-4">
-                    {/* Model Selection & Instructions */}
-                    <div className="flex gap-4 items-start">
-                        <div className="flex-shrink-0 w-48">
-                            <Label htmlFor="model-select" className="text-sm font-medium">
-                                AI Model
-                            </Label>
-                            <Select
-                                value={selectedModel}
-                                onValueChange={setSelectedModel}
-                                disabled={modelsLoading || isLoading}
-                            >
-                                <SelectTrigger id="model-select" className="mt-1.5">
-                                    <SelectValue placeholder={modelsLoading ? 'Loading...' : 'Select model'} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {models.map((model) => (
-                                        <SelectItem key={model.id} value={model.id}>
-                                            <span className="flex items-center gap-2">
-                                                <span className="text-xs text-muted-foreground uppercase">
-                                                    {model.provider}
-                                                </span>
-                                                {model.name}
-                                            </span>
-                                        </SelectItem>
-                                    ))}
-                                    {models.length === 0 && !modelsLoading && (
-                                        <SelectItem value="none" disabled>
-                                            No models available
-                                        </SelectItem>
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="flex-1">
+                    {/* Instructions with presets */}
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between">
                             <Label htmlFor="instructions" className="text-sm font-medium">
                                 Instructions
                             </Label>
-                            <Textarea
-                                id="instructions"
-                                value={instructions}
-                                onChange={(e) => setInstructions(e.target.value)}
-                                placeholder="Describe what you want the AI to do... (e.g., 'Make this more professional', 'Fix grammar', 'Simplify the language')"
-                                className="mt-1.5 min-h-[80px] resize-none"
-                                disabled={isLoading}
-                            />
+                            {/* Model selector (optional) */}
+                            {showModelSelector && (
+                                <div className="flex items-center gap-2">
+                                    <Label className="text-xs text-muted-foreground">Model:</Label>
+                                    <Select
+                                        value={selectedModel}
+                                        onValueChange={setSelectedModel}
+                                        disabled={modelsLoading || isLoading}
+                                    >
+                                        <SelectTrigger className="w-[180px] h-8 text-xs">
+                                            <SelectValue placeholder={modelsLoading ? 'Loading...' : 'Select model'} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {models.map((model) => (
+                                                <SelectItem key={model.id} value={model.id}>
+                                                    {model.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
                         </div>
+                        
+                        {/* Quick presets */}
+                        <div className="flex flex-wrap gap-1.5">
+                            {INSTRUCTION_PRESETS.map((preset) => (
+                                <Button
+                                    key={preset.label}
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                    onClick={() => handlePresetClick(preset.value)}
+                                    disabled={isLoading}
+                                >
+                                    {preset.label}
+                                </Button>
+                            ))}
+                        </div>
+                        
+                        <Textarea
+                            id="instructions"
+                            value={instructions}
+                            onChange={(e) => setInstructions(e.target.value)}
+                            placeholder="Describe what you want the AI to do... (e.g., 'Make this more professional', 'Fix grammar', 'Simplify the language')"
+                            className="min-h-[80px] resize-none"
+                            disabled={isLoading}
+                        />
                     </div>
 
                     {/* Side-by-side Comparison */}
@@ -243,22 +302,11 @@ export function AIEnhanceModal({
                                 )}
                             </div>
                             <ScrollArea className="flex-1 p-3">
-                                {enhancedContent ? (
-                                    <pre
-                                        className={cn(
-                                            'text-sm whitespace-pre-wrap break-words font-mono',
-                                            contentType === 'text' && 'font-sans'
-                                        )}
-                                    >
-                                        {enhancedContent}
-                                    </pre>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground italic">
-                                        {isLoading
-                                            ? 'Generating enhanced content...'
-                                            : 'Enter instructions and click "Enhance" to generate'}
-                                    </p>
-                                )}
+                                <EnhancedContentDisplay
+                                    isLoading={isLoading}
+                                    enhancedContent={enhancedContent}
+                                    contentType={contentType}
+                                />
                             </ScrollArea>
                         </div>
                     </div>
@@ -279,7 +327,7 @@ export function AIEnhanceModal({
                         type="button"
                         variant="outline"
                         onClick={handleEnhance}
-                        disabled={isLoading || !instructions.trim() || !selectedModel}
+                        disabled={isLoading || !instructions.trim()}
                     >
                         {isLoading ? (
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

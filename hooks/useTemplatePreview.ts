@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Template } from '@/lib/types/template';
+import { createComponentLogger } from '@/lib/utils/client-logger';
+
+const logger = createComponentLogger('useTemplatePreview');
 
 /**
  * Options for the unified template preview hook
@@ -139,7 +142,7 @@ export function useTemplatePreview({
 
       setHtmlContent(html);
     } catch (err) {
-      console.error('Template preview error:', err);
+      logger.error('Template preview error', err);
       setError(err instanceof Error ? err.message : 'Failed to load template');
       setHtmlContent('');
     } finally {

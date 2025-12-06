@@ -4,6 +4,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { createComponentLogger } from '@/lib/utils/client-logger';
+
+const logger = createComponentLogger('useTemplateSelection');
 
 interface UseTemplateSelectionProps {
   resumeId?: string;
@@ -72,7 +75,7 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
           setSelectedTemplateId(defaultTemplate);
         }
       } catch (error) {
-        console.error('Error loading template preference:', error);
+        logger.error('Error loading template preference', error);
         
         // Fallback: Try loading default template
         try {
@@ -81,7 +84,7 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
             setSelectedTemplateId(defaultTemplate);
           }
         } catch (fallbackError) {
-          console.error('Error loading default template:', fallbackError);
+          logger.error('Error loading default template', fallbackError);
         }
       } finally {
         setIsLoadingTemplate(false);
@@ -115,10 +118,10 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
         
         if (!response.ok) {
           const error = await response.json();
-          console.error('Failed to save template selection:', error);
+          logger.error('Failed to save template selection', new Error(error.error || 'Unknown error'));
         }
       } catch (error) {
-        console.error('Error saving template:', error);
+        logger.error('Error saving template', error);
       }
     }
     

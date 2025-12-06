@@ -4,6 +4,9 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { createComponentLogger } from '@/lib/utils/client-logger';
+
+const logger = createComponentLogger('useAutoSave');
 
 interface UseAutoSaveOptions<T> {
   data: T;
@@ -32,7 +35,7 @@ export function useAutoSave<T>({
       await onSave(data);
       previousDataRef.current = data;
     } catch (error) {
-      console.error('Auto-save failed:', error);
+      logger.error('Auto-save failed', error);
       // Error is handled by the onSave function (toast notifications)
     } finally {
       isSavingRef.current = false;

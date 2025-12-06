@@ -103,6 +103,8 @@ export const API = {
     API_PROVIDERS: '/api/settings/api-providers',
     API_PROVIDER: (id: string) => `/api/settings/api-providers/${id}` as const,
     MODELS: '/api/settings/api-providers/models',
+    AI_MODELS: '/api/settings/ai-models',
+    REVOKE_PROVIDER: (id: string) => `/api/settings/api-providers/${id}/revoke` as const,
   },
   
   // Health

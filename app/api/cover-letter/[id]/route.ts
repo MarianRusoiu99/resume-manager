@@ -29,36 +29,15 @@ const updateSchema = z.object({
 
 export const GET = createApiHandler(async (request, { params }, session) => {
   const { id } = await params;
-  const result = await coverLetterService.getCoverLetter(id, session.user.id);
-
-  if (!result.success) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: result.error === 'Cover letter not found' ? 404 : 500 }
-    );
-  }
-
-  return NextResponse.json(result.data);
+  // ServiceResult is automatically converted to NextResponse with proper status codes
+  return coverLetterService.getCoverLetter(id, session.user.id);
 });
 
 export const PUT = createApiHandler(
   async (request, { params }, session, body) => {
     const { id } = await params;
-
-    const result = await coverLetterService.updateCoverLetter(
-      id,
-      session.user.id,
-      body!
-    );
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: result.error === 'Cover letter not found' ? 404 : 500 }
-      );
-    }
-
-    return NextResponse.json(result.data);
+    // ServiceResult is automatically converted to NextResponse with proper status codes
+    return coverLetterService.updateCoverLetter(id, session.user.id, body!);
   },
   { bodySchema: updateSchema }
 );
@@ -67,12 +46,9 @@ export const DELETE = createApiHandler(async (request, { params }, session) => {
   const { id } = await params;
   const result = await coverLetterService.deleteCoverLetter(id, session.user.id);
 
-  if (!result.success) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: result.error === 'Cover letter not found' ? 404 : 500 }
-    );
+  // For delete, return { success: true } on success for backward compatibility
+  if (result.success) {
+    return NextResponse.json({ success: true });
   }
-
-  return NextResponse.json({ success: true });
+  return result;
 });

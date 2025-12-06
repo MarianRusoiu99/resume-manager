@@ -137,12 +137,15 @@ export class ResumeGenerationService implements IResumeGenerationService {
 
   /**
    * Resolve AI provider and model for generation
+   * Now respects user's AI model preferences from settings
    */
   private async resolveProvider(
     userId: string,
-    modelId?: string
+    modelId?: string,
+    feature: 'resume' | 'coverLetter' | 'enhance' | 'template' = 'resume'
   ): Promise<ServiceResult<{ provider: import('@/lib/ai/providers').AIProvider; modelId: string; providerType: string }>> {
     const { apiProviderService } = await import('@/lib/services/api-provider.service');
+    const { userAISettingsService } = await import('@/lib/services/user-ai-settings.service');
     
     try {
       const modelsResult = await apiProviderService.getAvailableModels(userId);
@@ -150,13 +153,33 @@ export class ResumeGenerationService implements IResumeGenerationService {
         return failure('No AI provider configured. Please add an API key in Settings → API Keys', 'NOT_FOUND');
       }
 
-      // Find specific model or use first available
-      const targetModel = modelId
-        ? modelsResult.data.allModels.find(m => m.id === modelId)
-        : modelsResult.data.allModels[0];
+      let targetModel = null;
 
+      // Priority 1: Use explicitly provided modelId
+      if (modelId) {
+        targetModel = modelsResult.data.allModels.find(m => m.id === modelId);
+        if (!targetModel) {
+          return failure(`Model ${modelId} not found in your configured providers`, 'NOT_FOUND');
+        }
+      }
+
+      // Priority 2: Check user's preference for this feature
       if (!targetModel) {
-        return failure(`Model ${modelId} not found in your configured providers`, 'NOT_FOUND');
+        const preferenceResult = await userAISettingsService.resolveProviderForFeature(userId, feature);
+        if (preferenceResult.success && preferenceResult.data) {
+          targetModel = modelsResult.data.allModels.find(
+            m => m.id === preferenceResult.data!.modelId && m.providerId === preferenceResult.data!.providerId
+          );
+          if (targetModel) {
+            logger.info(`Using user preference for ${feature}`, { modelId: targetModel.id });
+          }
+        }
+      }
+
+      // Priority 3: Fall back to first available model
+      if (!targetModel) {
+        targetModel = modelsResult.data.allModels[0];
+        logger.info(`Using default model for ${feature}`, { modelId: targetModel.id });
       }
 
       const providerResult = await apiProviderService.getProviderInstance(targetModel.providerId, userId);
@@ -243,8 +266,8 @@ export class ResumeGenerationService implements IResumeGenerationService {
         modelId: input.modelId || 'auto-selected'
       });
 
-      // Resolve provider
-      const providerResult = await this.resolveProvider(input.userId, input.modelId);
+      // Resolve provider (respects user's AI model preference for resume generation)
+      const providerResult = await this.resolveProvider(input.userId, input.modelId, 'resume');
       if (!providerResult.success) {
         return failure(providerResult.error, 'INTERNAL_ERROR');
       }
@@ -358,8 +381,8 @@ export class ResumeGenerationService implements IResumeGenerationService {
       const startTime = Date.now();
       scheduleProgressUpdates(startTime);
 
-      // Resolve provider using shared method
-      const providerResult = await this.resolveProvider(baseInput.userId, baseInput.modelId);
+      // Resolve provider using shared method (respects user's AI model preference for resume generation)
+      const providerResult = await this.resolveProvider(baseInput.userId, baseInput.modelId, 'resume');
       if (!providerResult.success) {
         return failure(providerResult.error, providerResult.code);
       }
@@ -441,8 +464,8 @@ export class ResumeGenerationService implements IResumeGenerationService {
       }
       const userResume = resumeResult.data;
 
-      // Resolve provider using shared method
-      const providerResult = await this.resolveProvider(input.userId, input.modelId);
+      // Resolve provider using shared method (respects user's AI model preference for cover letters)
+      const providerResult = await this.resolveProvider(input.userId, input.modelId, 'coverLetter');
 
       if (!providerResult.success) {
         return failure(providerResult.error, 'INTERNAL_ERROR');
@@ -451,7 +474,7 @@ export class ResumeGenerationService implements IResumeGenerationService {
       const provider = providerResult.data.provider;
       const modelId = providerResult.data.modelId;
 
-      logger.debug('Using AI model', { modelId });
+      logger.debug('Using AI model for cover letter', { modelId });
 
       // Generate cover letter directly - no separate job analysis step
       const { generateCoverLetter } = await import('@/lib/ai/agents');

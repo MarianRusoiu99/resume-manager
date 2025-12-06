@@ -1,141 +1,187 @@
 /**
  * useAIEnhance Hook
- * React hook for managing AI text enhancement state
+ * 
+ * React hook for managing AI text enhancement state and API calls.
+ * Composes useAIModels for model fetching and selection.
+ * 
+ * Features:
+ * - Content and instructions state management
+ * - Model selection via useAIModels
+ * - Debounced enhancement to prevent API spam
+ * - Error handling with typed errors
  */
 
-import { useState, useCallback } from 'react';
-
-interface AIModel {
-    id: string;
-    name: string;
-    provider: string;
-}
+import { useState, useCallback, useRef } from 'react';
+import { useAIModels, type AIModel } from './useAIModels';
+import type { ContentType } from '@/lib/validations/settings';
 
 interface UseAIEnhanceOptions {
-    contentType?: 'text' | 'html' | 'css' | 'markdown';
-    context?: string;
+  /** Content type for enhancement */
+  contentType?: ContentType;
+  /** Additional context for the AI */
+  context?: string;
+  /** Debounce delay in ms (default: 500) */
+  debounceMs?: number;
 }
 
 interface UseAIEnhanceReturn {
-    originalContent: string;
-    enhancedContent: string;
-    instructions: string;
-    isLoading: boolean;
-    error: string | null;
-    selectedModel: string;
-    models: AIModel[];
-    modelsLoading: boolean;
-    setOriginalContent: (content: string) => void;
-    setInstructions: (instructions: string) => void;
-    setSelectedModel: (modelId: string) => void;
-    enhance: () => Promise<void>;
-    reset: () => void;
-    fetchModels: () => Promise<void>;
+  // Content state
+  originalContent: string;
+  enhancedContent: string;
+  instructions: string;
+  
+  // Loading/error state
+  isLoading: boolean;
+  error: string | null;
+  
+  // Model selection (from useAIModels)
+  selectedModel: string;
+  models: AIModel[];
+  modelsLoading: boolean;
+  
+  // Actions
+  setOriginalContent: (content: string) => void;
+  setInstructions: (instructions: string) => void;
+  setSelectedModel: (modelId: string) => void;
+  enhance: () => Promise<void>;
+  reset: () => void;
+  fetchModels: () => Promise<void>;
+  
+  // Derived state
+  canEnhance: boolean;
+  hasEnhancement: boolean;
 }
 
+/**
+ * Hook for AI text enhancement with model selection
+ * 
+ * @example
+ * ```tsx
+ * const {
+ *   originalContent,
+ *   setOriginalContent,
+ *   instructions,
+ *   setInstructions,
+ *   enhance,
+ *   enhancedContent,
+ *   isLoading,
+ *   error
+ * } = useAIEnhance({ contentType: 'text' });
+ * ```
+ */
 export function useAIEnhance(options: UseAIEnhanceOptions = {}): UseAIEnhanceReturn {
-    const { contentType = 'text', context } = options;
+  const { contentType = 'text', context, debounceMs = 500 } = options;
 
-    const [originalContent, setOriginalContent] = useState('');
-    const [enhancedContent, setEnhancedContent] = useState('');
-    const [instructions, setInstructions] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedModel, setSelectedModel] = useState('');
-    const [models, setModels] = useState<AIModel[]>([]);
-    const [modelsLoading, setModelsLoading] = useState(false);
+  // Content state
+  const [originalContent, setOriginalContent] = useState('');
+  const [enhancedContent, setEnhancedContent] = useState('');
+  const [instructions, setInstructions] = useState('');
+  
+  // Loading/error state
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Debounce tracking
+  const lastEnhanceTime = useRef<number>(0);
 
-    const fetchModels = useCallback(async () => {
-        try {
-            setModelsLoading(true);
-            const response = await fetch('/api/settings/api-providers/models');
-            if (response.ok) {
-                const data = await response.json();
-                // API returns { allModels: [...], byProvider: {...} }
-                const allModels = (data.allModels || []).map((m: { id: string; name: string; providerId: string }) => ({
-                    id: m.id,
-                    name: m.name,
-                    provider: m.providerId,
-                }));
-                setModels(allModels);
-                if (allModels.length > 0 && !selectedModel) {
-                    setSelectedModel(allModels[0].id);
-                }
-            }
-        } catch (err) {
-            console.error('Failed to fetch models:', err);
-        } finally {
-            setModelsLoading(false);
-        }
-    }, [selectedModel]);
+  // Model selection from composed hook
+  const {
+    models,
+    isLoading: modelsLoading,
+    selectedModel,
+    setSelectedModel,
+    fetchModels,
+  } = useAIModels();
 
-    const enhance = useCallback(async () => {
-        if (!originalContent.trim()) {
-            setError('Please provide content to enhance');
-            return;
-        }
+  /**
+   * Enhance content with AI
+   * Includes debouncing to prevent API spam
+   */
+  const enhance = useCallback(async () => {
+    // Validate inputs
+    if (!originalContent.trim()) {
+      setError('Please provide content to enhance');
+      return;
+    }
 
-        if (!instructions.trim()) {
-            setError('Please provide instructions for the AI');
-            return;
-        }
+    if (!instructions.trim()) {
+      setError('Please provide instructions for the AI');
+      return;
+    }
 
-        if (!selectedModel) {
-            setError('Please select an AI model');
-            return;
-        }
+    // Debounce check
+    const now = Date.now();
+    if (now - lastEnhanceTime.current < debounceMs) {
+      return;
+    }
+    lastEnhanceTime.current = now;
 
-        try {
-            setIsLoading(true);
-            setError(null);
+    try {
+      setIsLoading(true);
+      setError(null);
 
-            const response = await fetch('/api/ai/enhance', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    content: originalContent,
-                    instructions,
-                    context,
-                    contentType,
-                    modelId: selectedModel,
-                }),
-            });
+      const response = await fetch('/api/ai/enhance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: originalContent,
+          instructions,
+          context,
+          contentType,
+          modelId: selectedModel || undefined,
+        }),
+      });
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'Enhancement failed');
-            }
+      const data = await response.json();
 
-            const data = await response.json();
-            setEnhancedContent(data.enhancedContent);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Enhancement failed');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [originalContent, instructions, selectedModel, contentType, context]);
+      if (!response.ok) {
+        throw new Error(data.error || 'Enhancement failed');
+      }
 
-    const reset = useCallback(() => {
-        setOriginalContent('');
-        setEnhancedContent('');
-        setInstructions('');
-        setError(null);
-    }, []);
+      setEnhancedContent(data.enhancedContent);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Enhancement failed';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [originalContent, instructions, selectedModel, contentType, context, debounceMs]);
 
-    return {
-        originalContent,
-        enhancedContent,
-        instructions,
-        isLoading,
-        error,
-        selectedModel,
-        models,
-        modelsLoading,
-        setOriginalContent,
-        setInstructions,
-        setSelectedModel,
-        enhance,
-        reset,
-        fetchModels,
-    };
+  /**
+   * Reset all state
+   */
+  const reset = useCallback(() => {
+    setOriginalContent('');
+    setEnhancedContent('');
+    setInstructions('');
+    setError(null);
+  }, []);
+
+  return {
+    // Content state
+    originalContent,
+    enhancedContent,
+    instructions,
+    
+    // Loading/error state
+    isLoading,
+    error,
+    
+    // Model selection
+    selectedModel,
+    models,
+    modelsLoading,
+    
+    // Actions
+    setOriginalContent,
+    setInstructions,
+    setSelectedModel,
+    enhance,
+    reset,
+    fetchModels,
+    
+    // Derived state
+    canEnhance: Boolean(originalContent.trim() && instructions.trim() && !isLoading),
+    hasEnhancement: enhancedContent.length > 0,
+  };
 }

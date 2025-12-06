@@ -4,6 +4,7 @@
  */
 
 export { logger, withTiming, createTimedLogger } from './logger';
+export { clientLogger, createComponentLogger, ClientLogger } from './client-logger';
 export { cn } from './cn';
 export {
     retryWithBackoff,

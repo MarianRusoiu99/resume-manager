@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { TemplateBase } from '@/lib/types/template';
+import { createComponentLogger } from '@/lib/utils/client-logger';
+
+const logger = createComponentLogger('TemplateSelector');
 
 interface TemplateSelector {
   currentTemplateId: string | null;
@@ -28,7 +31,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
         const data = await response.json();
         setTemplates(data.templates || []);
       } catch (error) {
-        console.error('Error fetching templates:', error);
+        logger.error('Error fetching templates', error);
         toast.error('Failed to load templates');
       } finally {
         setIsLoading(false);
@@ -65,10 +68,10 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
 
       toast.success('Template updated successfully');
       setIsOpen(false);
-      console.log('Calling onTemplateChange callback');
+      logger.debug('Calling onTemplateChange callback');
       onTemplateChange();
     } catch (error) {
-      console.error('Error updating template:', error);
+      logger.error('Error updating template', error);
       toast.error(error instanceof Error ? error.message : 'Failed to update template');
     } finally {
       setIsUpdating(false);

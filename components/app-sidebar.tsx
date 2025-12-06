@@ -83,7 +83,7 @@ const navigationItems = [
   },
   {
     title: "Settings",
-    url: "/settings/api-keys",
+    url: "/settings",
     icon: Settings,
   },
 ]

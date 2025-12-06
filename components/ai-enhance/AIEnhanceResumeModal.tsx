@@ -3,6 +3,7 @@
 /**
  * AI Enhance Resume Modal
  * Modal for enhancing entire resume content with AI
+ * Uses the AI model configured in Settings → AI Models for the "enhance" feature
  */
 
 import { useState, useEffect } from 'react';
@@ -17,23 +18,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { Sparkles, RefreshCw, Check, X, Loader2 } from 'lucide-react';
 import type { Resume } from '@/lib/validations/jsonresume';
-
-interface AIModel {
-    id: string;
-    name: string;
-    provider: string;
-}
 
 interface AIEnhanceResumeModalProps {
     open: boolean;
@@ -106,51 +94,19 @@ export function AIEnhanceResumeModal({
     const [enhancedPreview, setEnhancedPreview] = useState('');
     const [enhancedResume, setEnhancedResume] = useState<Resume | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [models, setModels] = useState<AIModel[]>([]);
-    const [selectedModel, setSelectedModel] = useState<string>('');
-    const [modelsLoading, setModelsLoading] = useState(false);
 
-    // Fetch available models when modal opens
+    // Reset state when modal opens
     useEffect(() => {
         if (open) {
-            fetchModels();
             setEnhancedPreview('');
             setEnhancedResume(null);
             setInstructions('');
         }
     }, [open]);
 
-    const fetchModels = async () => {
-        try {
-            setModelsLoading(true);
-            const response = await fetch('/api/settings/api-providers/models');
-            if (response.ok) {
-                const data = await response.json();
-                const allModels = (data.allModels || []).map((m: { id: string; name: string; providerId: string }) => ({
-                    id: m.id,
-                    name: m.name,
-                    provider: m.providerId,
-                }));
-                setModels(allModels);
-                if (allModels.length > 0 && !selectedModel) {
-                    setSelectedModel(allModels[0].id);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to fetch models:', error);
-        } finally {
-            setModelsLoading(false);
-        }
-    };
-
     const handleEnhance = async () => {
         if (!instructions.trim()) {
             toast.error('Please provide instructions for the AI');
-            return;
-        }
-
-        if (!selectedModel) {
-            toast.error('Please select an AI model');
             return;
         }
 
@@ -180,7 +136,7 @@ CRITICAL INSTRUCTIONS:
 6. Return ONLY the JSON object, no explanations or markdown`,
                     context: 'This is a JSON Resume format document',
                     contentType: 'text',
-                    modelId: selectedModel,
+                    // No modelId - will use settings-based model for 'enhance' feature
                 }),
             });
 
@@ -241,53 +197,19 @@ CRITICAL INSTRUCTIONS:
                 </DialogHeader>
 
                 <div className="flex-1 overflow-hidden flex flex-col gap-4">
-                    {/* Model Selection & Instructions */}
-                    <div className="flex gap-4 items-start">
-                        <div className="flex-shrink-0 w-48">
-                            <Label htmlFor="model-select" className="text-sm font-medium">
-                                AI Model
-                            </Label>
-                            <Select
-                                value={selectedModel}
-                                onValueChange={setSelectedModel}
-                                disabled={modelsLoading || isLoading}
-                            >
-                                <SelectTrigger id="model-select" className="mt-1.5">
-                                    <SelectValue placeholder={modelsLoading ? 'Loading...' : 'Select model'} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {models.map((model) => (
-                                        <SelectItem key={model.id} value={model.id}>
-                                            <span className="flex items-center gap-2">
-                                                <span className="text-xs text-muted-foreground uppercase">
-                                                    {model.provider}
-                                                </span>
-                                                {model.name}
-                                            </span>
-                                        </SelectItem>
-                                    ))}
-                                    {models.length === 0 && !modelsLoading && (
-                                        <SelectItem value="none" disabled>
-                                            No models available
-                                        </SelectItem>
-                                    )}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="flex-1">
-                            <Label htmlFor="instructions" className="text-sm font-medium">
-                                Instructions
-                            </Label>
-                            <Textarea
-                                id="instructions"
-                                value={instructions}
-                                onChange={(e) => setInstructions(e.target.value)}
-                                placeholder="Describe what you want the AI to do... (e.g., 'Make it more impactful', 'Tailor for a senior developer role', 'Improve summary and highlights')"
-                                className="mt-1.5 min-h-[60px] resize-none"
-                                disabled={isLoading}
-                            />
-                        </div>
+                    {/* Instructions */}
+                    <div>
+                        <Label htmlFor="instructions" className="text-sm font-medium">
+                            Instructions
+                        </Label>
+                        <Textarea
+                            id="instructions"
+                            value={instructions}
+                            onChange={(e) => setInstructions(e.target.value)}
+                            placeholder="Describe what you want the AI to do... (e.g., 'Make it more impactful', 'Tailor for a senior developer role', 'Improve summary and highlights')"
+                            className="mt-1.5 min-h-[60px] resize-none"
+                            disabled={isLoading}
+                        />
                     </div>
 
                     {/* Side-by-side Comparison */}
@@ -344,7 +266,7 @@ CRITICAL INSTRUCTIONS:
                         type="button"
                         variant="outline"
                         onClick={handleEnhance}
-                        disabled={isLoading || !instructions.trim() || !selectedModel}
+                        disabled={isLoading || !instructions.trim()}
                     >
                         {isLoading ? (
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

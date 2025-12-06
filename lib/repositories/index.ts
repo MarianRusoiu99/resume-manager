@@ -88,3 +88,13 @@ export type {
   CreateUserInput,
   UpdateUserInput,
 } from './user.repository';
+
+export {
+  userAISettingsRepository,
+} from './user-ai-settings.repository';
+export type {
+  AIFeatureType,
+  ModelPreference,
+  UserAISettingsData,
+  UpsertAISettingsInput,
+} from './user-ai-settings.repository';

@@ -1,5 +1,8 @@
 import { RefObject, useEffect } from 'react';
 import { A4_HEIGHT } from '@/lib/utils/pagination';
+import { createComponentLogger } from '@/lib/utils/client-logger';
+
+const logger = createComponentLogger('useIframeResize');
 
 interface UseIframeResizeProps {
     iframeRef: RefObject<HTMLIFrameElement | null>;
@@ -29,7 +32,7 @@ export function useIframeResize({ iframeRef, htmlContent }: UseIframeResizeProps
                     }
                 }
             } catch (error) {
-                console.error('Error resizing iframe:', error);
+                logger.error('Error resizing iframe', error);
             }
         };
 

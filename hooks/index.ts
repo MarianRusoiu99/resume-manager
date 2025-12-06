@@ -38,6 +38,8 @@ export { useProfileSave } from './useProfileSave';
 export { useCardPreview } from './useCardPreview';
 export { useListForm } from './use-list-form';
 export { useAIEnhance } from './useAIEnhance';
+export { useAIModels } from './useAIModels';
+export type { AIModel } from './useAIModels';
 
 // ============================================================================
 // Preview Hooks - Resume preview-specific (re-exported from components/preview)

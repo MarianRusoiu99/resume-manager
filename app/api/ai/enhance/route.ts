@@ -2,25 +2,24 @@
  * AI Text Enhancement API
  * POST /api/ai/enhance
  * 
- * Enhances text using AI based on user instructions
+ * Enhances text using AI based on user instructions.
+ * Uses centralized validation from lib/validations/settings.ts
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/dal';
-import { z } from 'zod';
 import { checkRateLimit, RateLimitConfigs } from '@/lib/middleware/rate-limit-helpers';
 import { logger } from '@/lib/utils/logger';
 import { apiProviderService } from '@/lib/services/api-provider.service';
+import { userAISettingsService } from '@/lib/services/user-ai-settings.service';
 import { generateText } from 'ai';
-
-// Request validation schema
-const enhanceRequestSchema = z.object({
-    content: z.string().min(1, 'Content is required'),
-    instructions: z.string().min(1, 'Instructions are required'),
-    context: z.string().optional(),
-    contentType: z.enum(['text', 'html', 'css', 'markdown']).optional().default('text'),
-    modelId: z.string().optional(),
-});
+import { enhanceRequestSchema } from '@/lib/validations/settings';
+import { 
+  AIProviderNotConfiguredError, 
+  ModelNotFoundError,
+  isAIError 
+} from '@/lib/errors/ai';
+import { isAppError } from '@/lib/errors';
 
 /**
  * Get system prompt based on content type
@@ -65,35 +64,52 @@ You are enhancing plain text content. Additional rules:
  * Resolve AI provider from user settings
  */
 async function resolveProvider(userId: string, modelId?: string) {
+    // First, check user's saved AI settings for the 'enhance' feature
+    const settingsResult = await userAISettingsService.resolveProviderForFeature(userId, 'enhance');
+    
+    if (settingsResult.success && settingsResult.data) {
+        const { providerId, modelId: settingsModelId } = settingsResult.data;
+        const providerResult = await apiProviderService.getProviderInstance(providerId, userId);
+        if (providerResult.success) {
+            return { 
+                provider: providerResult.data.provider, 
+                modelId: settingsModelId, 
+                providerType: providerResult.data.providerType 
+            };
+        }
+        // If saved provider is no longer valid, fall through to default behavior
+        logger.warn('Saved AI settings provider no longer valid, falling back to default', { userId, providerId });
+    }
+
     if (modelId) {
         const modelsResult = await apiProviderService.getAvailableModels(userId);
         if (!modelsResult.success) {
-            throw new Error('No API providers configured. Please add one in Settings → API Keys');
+            throw new AIProviderNotConfiguredError();
         }
 
         const modelInfo = modelsResult.data.allModels.find(m => m.id === modelId);
         if (!modelInfo) {
-            throw new Error(`Model ${modelId} not found in your configured providers`);
+            throw new ModelNotFoundError(modelId);
         }
 
         const providerResult = await apiProviderService.getProviderInstance(modelInfo.providerId, userId);
         if (!providerResult.success) {
-            throw new Error(providerResult.error || 'Failed to get AI provider configuration');
+            throw new AIProviderNotConfiguredError();
         }
 
         return { provider: providerResult.data.provider, modelId, providerType: providerResult.data.providerType };
     }
 
-    // No model specified - get the first available model from user's providers
+    // No model specified and no settings - get the first available model from user's providers
     const modelsResult = await apiProviderService.getAvailableModels(userId);
     if (!modelsResult.success || modelsResult.data.allModels.length === 0) {
-        throw new Error('No AI provider configured. Please add an API key in Settings → API Keys');
+        throw new AIProviderNotConfiguredError();
     }
 
     const firstModel = modelsResult.data.allModels[0];
     const providerResult = await apiProviderService.getProviderInstance(firstModel.providerId, userId);
     if (!providerResult.success) {
-        throw new Error(providerResult.error || 'Failed to get AI provider configuration');
+        throw new AIProviderNotConfiguredError();
     }
 
     return { provider: providerResult.data.provider, modelId: firstModel.id, providerType: providerResult.data.providerType };
@@ -183,10 +199,17 @@ Please enhance the content according to the instructions above. Return ONLY the 
 
     } catch (error) {
         logger.error('AI enhancement error', error);
+        
+        // Use typed error handling for better status codes
+        if (isAIError(error) || isAppError(error)) {
+            return NextResponse.json(
+                { error: error.message, code: error.code },
+                { status: error.statusCode }
+            );
+        }
+        
         return NextResponse.json(
-            {
-                error: error instanceof Error ? error.message : 'Enhancement failed',
-            },
+            { error: error instanceof Error ? error.message : 'Enhancement failed' },
             { status: 500 }
         );
     }

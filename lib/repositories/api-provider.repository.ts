@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { ProviderType } from '@prisma/client';
 
 export interface CreateApiProviderInput {
   userId: string;
@@ -23,6 +24,13 @@ export interface UpdateApiProviderInput {
   scopes?: string[];
 }
 
+/**
+ * Convert lowercase provider string to Prisma ProviderType enum
+ */
+function toProviderType(provider: string): ProviderType {
+  return provider.toUpperCase() as ProviderType;
+}
+
 class ApiProviderRepository {
   /**
    * Create a new API provider
@@ -31,7 +39,7 @@ class ApiProviderRepository {
     return prisma.apiProvider.create({
       data: {
         ...data,
-        provider: data.provider.toUpperCase() as 'OPENAI' | 'ANTHROPIC' | 'GOOGLE' | 'COHERE' | 'MISTRAL',
+        provider: toProviderType(data.provider),
       },
     });
   }
@@ -70,7 +78,7 @@ class ApiProviderRepository {
     return prisma.apiProvider.findMany({
       where: {
         userId,
-        provider: provider.toUpperCase() as 'OPENAI' | 'ANTHROPIC' | 'GOOGLE' | 'COHERE' | 'MISTRAL',
+        provider: toProviderType(provider),
         isActive: true,
         revokedAt: null,
       },

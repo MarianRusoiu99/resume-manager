@@ -9,6 +9,9 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { apiFetch } from "@/lib/utils/api-client";
+import { createComponentLogger } from "@/lib/utils/client-logger";
+
+const logger = createComponentLogger('ProfileEditor');
 
 interface Profile {
   id: string;
@@ -64,7 +67,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
       
       throw new Error("Failed to load profile");
     } catch (error) {
-      console.error("Error loading profile:", error);
+      logger.error('Error loading profile', error);
       return null;
     }
   };
@@ -79,13 +82,13 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Profile save error:", errorData);
+        logger.error('Profile save error', new Error(errorData.error), { errorData });
         throw new Error(errorData.error || "Failed to save profile");
       }
 
       return true;
     } catch (error) {
-      console.error("Error saving profile:", error);
+      logger.error('Error saving profile', error);
       return false;
     }
   };
