@@ -15,34 +15,9 @@
 
 import type { ServiceErrorCode } from '@/lib/types/service-result';
 
-/**
- * Base application error class
- */
-export abstract class AppError extends Error {
-  abstract readonly code: ServiceErrorCode;
-  abstract readonly statusCode: number;
-
-  constructor(message: string, public readonly cause?: unknown) {
-    super(message);
-    this.name = this.constructor.name;
-    
-    // Maintains proper stack trace for where error was thrown
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
-    }
-  }
-
-  /**
-   * Convert to JSON for API responses
-   */
-  toJSON() {
-    return {
-      error: this.message,
-      code: this.code,
-      name: this.name,
-    };
-  }
-}
+// Re-export base error class and type guard
+export { AppError, isAppError } from './base';
+import { AppError, isAppError } from './base';
 
 /**
  * Resource not found error (404)
@@ -148,13 +123,6 @@ export class InternalError extends AppError {
 }
 
 /**
- * Type guard to check if an error is an AppError
- */
-export function isAppError(error: unknown): error is AppError {
-  return error instanceof AppError;
-}
-
-/**
  * Get HTTP status code from any error
  */
 export function getErrorStatusCode(error: unknown): number {
@@ -188,3 +156,18 @@ export function wrapError(error: unknown, defaultMessage = 'An error occurred'):
   
   return new InternalError(defaultMessage, error);
 }
+
+// Re-export AI-specific errors
+export {
+  AIError,
+  AIProviderError,
+  AIProviderNotConfiguredError,
+  UnsupportedProviderError,
+  InvalidAPIKeyError,
+  ModelNotFoundError,
+  AIRateLimitError,
+  AIContextLengthError,
+  AIQuotaExceededError,
+  isAIError,
+  createAIErrorFromResponse,
+} from './ai';

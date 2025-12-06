@@ -9,23 +9,12 @@
 import { NextResponse } from 'next/server';
 import { createApiHandler } from '@/lib/api-handler';
 import { apiProviderService } from '@/lib/services/api-provider.service';
-import { z } from 'zod';
-
-const addProviderSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  provider: z.enum(['openai', 'anthropic', 'google']),
-  apiKey: z.string().min(10, 'API key is required'),
-});
+import { addApiProviderSchema } from '@/lib/validations/api-schemas';
 
 export const GET = createApiHandler(
   async (request, context, session) => {
-    const result = await apiProviderService.getUserProvidersWithModels(session.user.id);
-
-    if (!result.success) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
-    }
-
-    return NextResponse.json(result.data);
+    // ServiceResult is automatically converted to NextResponse
+    return apiProviderService.getUserProvidersWithModels(session.user.id);
   },
   { rateLimit: 'apiKeys' }
 );
@@ -52,5 +41,5 @@ export const POST = createApiHandler(
 
     return NextResponse.json(result.data, { status: 201 });
   },
-  { bodySchema: addProviderSchema, rateLimit: 'apiKeys', verifyUser: true }
+  { bodySchema: addApiProviderSchema, rateLimit: 'apiKeys', verifyUser: true }
 );

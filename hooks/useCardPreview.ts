@@ -4,6 +4,9 @@ import { useState, useCallback } from "react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import type { Template } from "@/lib/types/template";
 import { useTemplatePreview } from "./useTemplatePreview";
+import { createComponentLogger } from "@/lib/utils/client-logger";
+
+const logger = createComponentLogger('useCardPreview');
 
 interface UseCardPreviewOptions {
   /** Resume/profile data to render */
@@ -160,7 +163,7 @@ export function useExportPdf({
       globalThis.URL.revokeObjectURL(url);
       a.remove();
     } catch (err) {
-      console.error("Failed to export PDF:", err);
+      logger.error('Failed to export PDF', err);
       setError(err instanceof Error ? err.message : "Failed to export PDF");
       throw err;
     } finally {

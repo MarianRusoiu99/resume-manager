@@ -1,46 +1,73 @@
 /**
  * Provider Factory
  * Creates AI provider instances based on provider type
+ * 
+ * IMPORTANT: Only providers with complete implementations are included.
+ * Placeholder providers (Anthropic, Google) are NOT exposed until implemented.
+ * 
+ * To add a new provider:
+ * 1. Create the provider class extending BaseAIProvider
+ * 2. Implement all required methods (constructor must NOT throw)
+ * 3. Add to PROVIDER_REGISTRY below
+ * 4. Update lib/validations/settings.ts SUPPORTED_PROVIDERS
  */
 
 import type { AIProvider, ProviderConfig } from './base';
 import { OpenAIProvider } from './openai';
-import { AnthropicProvider } from './anthropic';
-import { GoogleProvider } from './google';
+import { UnsupportedProviderError } from '@/lib/errors/ai';
 
 /**
  * Supported provider types
+ * Only include providers that have working implementations
  */
-export type SupportedProvider = 'openai' | 'anthropic' | 'google';
+export const SUPPORTED_PROVIDERS = ['openai'] as const;
+export type SupportedProvider = typeof SUPPORTED_PROVIDERS[number];
 
 /**
- * Provider registry
+ * Provider registry - maps provider type to implementation class
+ * Only providers with complete implementations should be added here
  */
-const providerRegistry: Record<SupportedProvider, new (config: ProviderConfig) => AIProvider> = {
+const PROVIDER_REGISTRY: Record<SupportedProvider, new (config: ProviderConfig) => AIProvider> = {
   openai: OpenAIProvider,
-  anthropic: AnthropicProvider,
-  google: GoogleProvider,
+  // Add more providers here as they are implemented:
+  // anthropic: AnthropicProvider,
+  // google: GoogleProvider,
+};
+
+/**
+ * Provider display names
+ */
+const PROVIDER_NAMES: Record<SupportedProvider, string> = {
+  openai: 'OpenAI',
+  // anthropic: 'Anthropic',
+  // google: 'Google AI',
 };
 
 /**
  * Create an AI provider instance
+ * 
  * @param providerType - The type of provider to create
  * @param apiKey - The API key for the provider
  * @returns An instance of AIProvider
- * @throws Error if provider type is not supported
+ * @throws UnsupportedProviderError if provider type is not supported
+ * 
+ * @example
+ * ```typescript
+ * const provider = createProvider('openai', 'sk-...');
+ * const model = provider.createLanguageModel('gpt-4o');
+ * ```
  */
 export function createProvider(providerType: string, apiKey: string): AIProvider {
-  const ProviderClass = providerRegistry[providerType as SupportedProvider];
+  const normalizedType = providerType.toLowerCase() as SupportedProvider;
+  const ProviderClass = PROVIDER_REGISTRY[normalizedType];
 
   if (!ProviderClass) {
-    throw new Error(
-      `Unsupported provider: ${providerType}. Supported providers: ${Object.keys(providerRegistry).join(', ')}`
-    );
+    throw new UnsupportedProviderError(providerType, [...SUPPORTED_PROVIDERS]);
   }
 
   const config: ProviderConfig = {
-    type: providerType,
-    name: providerType.charAt(0).toUpperCase() + providerType.slice(1),
+    type: normalizedType,
+    name: PROVIDER_NAMES[normalizedType] || providerType,
     apiKey,
   };
 
@@ -50,25 +77,31 @@ export function createProvider(providerType: string, apiKey: string): AIProvider
 /**
  * Get all supported provider types
  */
-export function getSupportedProviders(): SupportedProvider[] {
-  return Object.keys(providerRegistry) as SupportedProvider[];
+export function getSupportedProviders(): readonly SupportedProvider[] {
+  return SUPPORTED_PROVIDERS;
 }
 
 /**
  * Check if a provider type is supported
  */
 export function isProviderSupported(providerType: string): providerType is SupportedProvider {
-  return providerType in providerRegistry;
+  return SUPPORTED_PROVIDERS.includes(providerType.toLowerCase() as SupportedProvider);
 }
 
 /**
  * Get provider display name
  */
 export function getProviderName(providerType: string): string {
-  const names: Record<string, string> = {
-    openai: 'OpenAI',
-    anthropic: 'Anthropic',
-    google: 'Google AI',
-  };
-  return names[providerType] || providerType.charAt(0).toUpperCase() + providerType.slice(1);
+  const normalizedType = providerType.toLowerCase() as SupportedProvider;
+  return PROVIDER_NAMES[normalizedType] || providerType.charAt(0).toUpperCase() + providerType.slice(1);
+}
+
+/**
+ * Validate that a provider type is supported before use
+ * Throws a descriptive error if not supported
+ */
+export function assertProviderSupported(providerType: string): asserts providerType is SupportedProvider {
+  if (!isProviderSupported(providerType)) {
+    throw new UnsupportedProviderError(providerType, [...SUPPORTED_PROVIDERS]);
+  }
 }

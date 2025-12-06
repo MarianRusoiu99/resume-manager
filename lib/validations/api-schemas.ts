@@ -158,13 +158,14 @@ export type UpdateCoverLetterInput = z.infer<typeof updateCoverLetterSchema>;
 
 /**
  * Supported AI providers
+ * 
+ * IMPORTANT: This must match the providers in:
+ * - lib/ai/providers/factory.ts (SUPPORTED_PROVIDERS)
+ * - lib/validations/settings.ts (SUPPORTED_PROVIDERS)
+ * 
+ * Only include providers with working implementations.
  */
-export const aiProviderSchema = z.enum([
-  'openai',
-  'anthropic',
-  'google',
-  'azure-openai',
-]);
+export const aiProviderSchema = z.enum(['openai']);
 
 export type AIProviderType = z.infer<typeof aiProviderSchema>;
 
@@ -174,7 +175,7 @@ export type AIProviderType = z.infer<typeof aiProviderSchema>;
 export const addApiProviderSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   provider: aiProviderSchema,
-  apiKey: z.string().min(1, 'API key is required'),
+  apiKey: z.string().min(10, 'API key is required').max(500, 'API key too long'),
 });
 
 /**

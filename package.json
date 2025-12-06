@@ -20,6 +20,8 @@
     "e2e:report": "playwright show-report"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.53",
+    "@ai-sdk/google": "^2.0.44",
     "@ai-sdk/openai": "^2.0.64",
     "@blocknote/core": "^0.42.0",
     "@blocknote/mantine": "^0.42.0",
@@ -64,6 +66,7 @@
     "prisma": "^6.18.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "react-dropzone": "^14.3.8",
     "react-hook-form": "^7.66.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",

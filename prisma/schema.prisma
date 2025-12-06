@@ -42,9 +42,39 @@ model User {
   sessions      Session[]
   apiProviders  ApiProvider[]
   notifications Notification[]
+  aiSettings    UserAISettings?
 
   @@index([email])
   @@index([createdAt])
+}
+
+// AI Model Preferences per feature
+// Stores user's preferred API provider and model for each AI feature
+model UserAISettings {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Resume Generation preferences
+  resumeProviderId String? // Reference to ApiProvider.id
+  resumeModelId    String? // Model ID within that provider
+
+  // Cover Letter Generation preferences
+  coverLetterProviderId String?
+  coverLetterModelId    String?
+
+  // Resume Enhancement/AI Enhance preferences
+  enhanceProviderId String?
+  enhanceModelId    String?
+
+  // Template Parsing preferences
+  templateProviderId String?
+  templateModelId    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // User professional profile and experience

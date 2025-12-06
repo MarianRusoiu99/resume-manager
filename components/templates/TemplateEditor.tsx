@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { Button } from '@/components/ui/button';
@@ -22,10 +22,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Code } from 'lucide-react';
+import { Save, Code, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
+import { TemplateImportModal } from './TemplateImportModal';
+import { AIEnhanceButton, AIEnhanceTemplateModal } from '@/components/ai-enhance';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -55,7 +57,10 @@ const categories = [
 
 export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEditorProps>) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [templateEnhanceModalOpen, setTemplateEnhanceModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: template?.name || '',
     category: template?.category || 'PROFESSIONAL',
@@ -64,6 +69,32 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     cssStyles: template?.cssStyles || '',
     isPublic: template?.isPublic ?? true,
   });
+
+  // Handle imported template data
+  const handleImportComplete = (importedTemplate: {
+    htmlTemplate: string;
+    cssStyles: string;
+    name?: string;
+    category?: string;
+    description?: string;
+  }) => {
+    setFormData((prev) => ({
+      ...prev,
+      htmlTemplate: importedTemplate.htmlTemplate,
+      cssStyles: importedTemplate.cssStyles,
+      name: importedTemplate.name || prev.name,
+      category: (importedTemplate.category as typeof prev.category) || prev.category,
+      description: importedTemplate.description || prev.description,
+    }));
+    setImportModalOpen(false);
+  };
+
+  // Auto-open import modal if ?import=true query param is present
+  useEffect(() => {
+    if (isNew && searchParams.get('import') === 'true') {
+      setImportModalOpen(true);
+    }
+  }, [isNew, searchParams]);
 
   // Auto-save draft to localStorage
   useEffect(() => {
@@ -142,6 +173,15 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
             >
               Cancel
             </Button>
+            {isNew && (
+              <Button
+                variant="outline"
+                onClick={() => setImportModalOpen(true)}
+              >
+                <ImagePlus className="mr-2 h-4 w-4" />
+                Import from Image
+              </Button>
+            )}
             <Button onClick={handleSave} disabled={saving}>
               <Save className="mr-2 h-4 w-4" />
               {saving ? 'Saving...' : 'Save Template'}
@@ -153,7 +193,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       {/* Main Content - Split Layout */}
       <div className="flex-1 overflow-hidden flex">
         {/* Left Panel - Form and Code Editor */}
-        <div className="w-1/2 flex flex-col gap-6 overflow-y-auto p-6">
+        <div className="flex flex-col gap-6 overflow-y-auto p-6 w-1/2">
           {/* Template Metadata */}
           <div className="space-y-4 border rounded-lg p-4 bg-card">
             <h3 className="font-semibold text-lg">Template Information</h3>
@@ -178,11 +218,11 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                      </SelectItem>
-                    ))}
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -213,16 +253,27 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
 
           {/* Code Editors */}
           <Tabs defaultValue="html" className="flex-1">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="html">
-                <Code className="mr-2 h-4 w-4" />
-                HTML Template
-              </TabsTrigger>
-              <TabsTrigger value="css">
-                <Code className="mr-2 h-4 w-4" />
-                CSS Styles
-              </TabsTrigger>
-            </TabsList>
+            <div className="flex items-center justify-between">
+              <TabsList className="grid grid-cols-2 w-auto">
+                <TabsTrigger value="html">
+                  <Code className="mr-2 h-4 w-4" />
+                  HTML Template
+                </TabsTrigger>
+                <TabsTrigger value="css">
+                  <Code className="mr-2 h-4 w-4" />
+                  CSS Styles
+                </TabsTrigger>
+              </TabsList>
+              <div className="flex gap-1">
+                <AIEnhanceButton
+                  onClick={() => setTemplateEnhanceModalOpen(true)}
+                  disabled={!formData.htmlTemplate.trim() && !formData.cssStyles.trim()}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-auto px-3 rounded-md"
+                />
+              </div>
+            </div>
 
             <TabsContent value="html" className="mt-4">
               <div className="border rounded-lg overflow-hidden h-[500px]">
@@ -278,17 +329,33 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
         </div>
 
         {/* Right Panel - Live Preview */}
-        <div className="w-1/2 border-l bg-muted/20 overflow-hidden">
-          <ResumePreview
-            resumeData={sampleResume}
-            templateHtml={formData.htmlTemplate}
-            templateCss={formData.cssStyles}
-            showTemplateSelector={false}
-            showCard={false}
-            className="h-full"
-          />
+        <div className="border-l bg-muted/20 overflow-hidden w-1/2">
+            <ResumePreview
+              resumeData={sampleResume}
+              templateHtml={formData.htmlTemplate}
+              templateCss={formData.cssStyles}
+              showTemplateSelector={false}
+              showCard={false}
+              className="h-full"
+            />
         </div>
       </div>
+
+      {/* Import Modal */}
+      <TemplateImportModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onImportComplete={handleImportComplete}
+      />
+
+      {/* AI Enhancement Modal */}
+      <AIEnhanceTemplateModal
+        open={templateEnhanceModalOpen}
+        onOpenChange={setTemplateEnhanceModalOpen}
+        originalHtml={formData.htmlTemplate}
+        originalCss={formData.cssStyles}
+        onAccept={(enhancedHtml, enhancedCss) => setFormData({ ...formData, htmlTemplate: enhancedHtml, cssStyles: enhancedCss })}
+      />
     </div>
   );
 }

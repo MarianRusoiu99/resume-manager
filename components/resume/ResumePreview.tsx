@@ -10,6 +10,7 @@ import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useTemplatePreview } from '@/hooks/useTemplatePreview';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 
 // Custom hooks
 import { useTemplateSelection } from '../preview/useTemplateSelection';
@@ -22,6 +23,8 @@ import { useIframeResize } from '../preview/useIframeResize';
 // UI Components
 import { PreviewContent } from '../preview/PreviewContent';
 import { FullscreenModal } from '../preview/FullscreenModal';
+
+const logger = createComponentLogger('ResumePreview');
 
 interface UnifiedResumePreviewProps {
   /** Resume data to preview */
@@ -112,7 +115,7 @@ export function ResumePreview({
         resumeData: resume,
       });
     } catch (err) {
-      console.error('Error rendering custom template:', err);
+      logger.error('Error rendering custom template', err);
       return null;
     }
   }, [templateHtml, templateCss, resume]);

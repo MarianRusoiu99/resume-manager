@@ -58,6 +58,15 @@ export { apiKeyAuditService } from './api-key-audit.service';
 
 export { auditLogService } from './audit-log.service';
 
+export { userAISettingsService } from './user-ai-settings.service';
+export type {
+  AIFeatureConfig,
+  FeatureModelSelection,
+  ResolvedAISettings,
+  UpdateFeaturePreferenceInput,
+} from './user-ai-settings.service';
+export { AI_FEATURES } from './user-ai-settings.service';
+
 // Service utilities for reducing boilerplate
 export {
   withServiceError,

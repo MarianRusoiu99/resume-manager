@@ -15,37 +15,22 @@ const duplicateSchema = z.object({
   name: z.string().min(1).max(100).optional(),
 });
 
-export const POST = createApiHandler(async (request, { params }, session) => {
-  const { id } = await params;
+export const POST = createApiHandler(
+  async (request, { params }, session, body) => {
+    const { id } = await params;
 
-  const body = await request.json();
-  const validation = duplicateSchema.safeParse(body);
-
-  if (!validation.success) {
-    return NextResponse.json(
-      {
-        error: 'Invalid request',
-        details: validation.error.issues.map(e => ({
-          field: e.path.join('.'),
-          message: e.message
-        }))
-      },
-      { status: 400 }
+    const result = await profileService.duplicateProfile(
+      id,
+      session.user.id,
+      body?.name
     );
-  }
 
-  const result = await profileService.duplicateProfile(
-    id,
-    session.user.id,
-    validation.data.name
-  );
+    if (!result.success) {
+      // ServiceResult already has proper error codes, but for 201 status we need custom handling
+      return result;
+    }
 
-  if (!result.success) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: 400 }
-    );
-  }
-
-  return NextResponse.json(result.data, { status: 201 });
-});
+    return NextResponse.json(result.data, { status: 201 });
+  },
+  { bodySchema: duplicateSchema }
+);

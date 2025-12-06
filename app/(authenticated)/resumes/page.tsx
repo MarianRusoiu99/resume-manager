@@ -9,22 +9,7 @@ import { Input } from '@/components/ui/input';
 import { ErrorState } from '@/components/shared/states';
 import { useFetch } from '@/hooks/useDataFetching';
 import { API, ROUTES } from '@/lib/constants';
-
-// Define Resume type locally or import if available shared
-interface Resume extends ResumeListItem {
-  userId: string;
-  jobDescription: string | null;
-  customization: Record<string, unknown> | null;
-  pdfUrl: string | null;
-  isEdited: boolean;
-  metadata: {
-    generatedAt: string;
-    model: string;
-    totalTokens: number;
-    processingTime: number;
-  };
-  updatedAt: string;
-}
+import type { GeneratedResume } from '@/lib/types';
 
 export default function ResumesPage() {
   const router = useRouter();
@@ -37,7 +22,7 @@ export default function ResumesPage() {
     error, 
     refetch,
     mutate 
-  } = useFetch<Resume[]>(API.RESUME.LIST, {
+  } = useFetch<GeneratedResume[]>(API.RESUME.LIST, {
     initialData: [],
     refetchOnFocus: true,
   });
@@ -56,6 +41,16 @@ export default function ResumesPage() {
       (resume.jobDescription?.toLowerCase().includes(searchLower))
     );
   });
+
+  // Convert to ResumeListItem format
+  const resumeListItems: ResumeListItem[] = filteredResumes.map(r => ({
+    id: r.id,
+    jobTitle: r.jobTitle,
+    companyName: r.companyName,
+    content: r.content,
+    templateId: r.templateId,
+    createdAt: r.createdAt, // Already a string from GeneratedResume
+  }));
 
   return (
     <Page
@@ -92,7 +87,7 @@ export default function ResumesPage() {
       )}
 
       <ResumeList
-        resumes={filteredResumes}
+        resumes={resumeListItems}
         isLoading={isLoading}
         onDelete={handleDelete}
         onGenerate={() => router.push(ROUTES.GENERATE)}
@@ -102,7 +97,7 @@ export default function ResumesPage() {
       {/* Results Count */}
       {(resumes?.length ?? 0) > 0 && (
         <div className="mt-6 text-center text-sm text-muted-foreground">
-          Showing {filteredResumes.length} of {resumes?.length ?? 0} resume{(resumes?.length ?? 0) === 1 ? '' : 's'}
+          Showing {resumeListItems.length} of {resumes?.length ?? 0} resume{(resumes?.length ?? 0) === 1 ? '' : 's'}
         </div>
       )}
     </Page>

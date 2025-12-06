@@ -18,49 +18,50 @@ import { Button, Card } from '@/components/ui';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import type { BlockNoteEditorMethods } from '@/components/editor/BlockNoteEditorWrapper.client';
 import { MarkdownPreview } from '@/components/editor/MarkdownPreview';
-import { Copy, Edit, Check, X } from 'lucide-react';
+import { Copy, Edit, Check, X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AIEnhanceButton, AIEnhanceModal } from '@/components/ai-enhance';
 
 interface CoverLetterEditorProps {
   /**
    * Cover letter content in markdown format
    */
   content: string;
-  
+
   /**
    * Cover letter content in Yoopta JSON format (for editing with formatting)
    */
   contentJson?: string;
-  
+
   /**
    * Whether the cover letter can be edited
    * @default false
    */
   editable?: boolean;
-  
+
   /**
    * Resume ID for exporting cover letter to PDF (optional)
    */
   resumeId?: string;
-  
+
   /**
    * Callback when cover letter is saved (for editable mode)
    * @param content - Markdown content
    * @param contentJson - Yoopta JSON state
    */
   onSave?: (content: string, contentJson: string) => Promise<void>;
-  
+
   /**
    * Additional CSS classes
    */
   className?: string;
-  
+
   /**
    * Show card wrapper
    * @default true
    */
   showCard?: boolean;
-  
+
   /**
    * Custom title
    * @default "Generated Cover Letter"
@@ -80,6 +81,7 @@ export function CoverLetterEditor({
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
+  const [enhanceModalOpen, setEnhanceModalOpen] = useState(false);
   const editorRef = useRef<BlockNoteEditorMethods>(null);
 
   const handleCopy = async () => {
@@ -107,10 +109,10 @@ export function CoverLetterEditor({
 
     try {
       setIsSaving(true);
-      
+
       // Get JSON state from editor
       const json = editorRef.current?.getJSON() || '{}';
-      
+
       await onSave(markdown, json);
       setEditedContent(markdown);
       setIsEditing(false);
@@ -141,7 +143,7 @@ export function CoverLetterEditor({
     }
 
     return (
-      <MarkdownPreview 
+      <MarkdownPreview
         content={content}
         className="bg-muted/50 p-6 rounded-lg border"
       />
@@ -160,7 +162,7 @@ export function CoverLetterEditor({
           Edit
         </Button>
       )}
-      
+
       {isEditing && (
         <>
           <Button
@@ -182,9 +184,16 @@ export function CoverLetterEditor({
           </Button>
         </>
       )}
-      
+
       {!isEditing && (
-        
+        <>
+          <AIEnhanceButton
+            onClick={() => setEnhanceModalOpen(true)}
+            disabled={!content.trim()}
+            variant="outline"
+            size="sm"
+            className="h-8 w-auto px-3 rounded-md"
+          />
           <Button
             variant="outline"
             size="sm"
@@ -193,30 +202,68 @@ export function CoverLetterEditor({
             <Copy className="w-4 h-4 mr-2" />
             Copy
           </Button>
-          
+        </>
       )}
     </div>
   );
 
+  const handleEnhanceAccept = async (enhancedContent: string) => {
+    if (onSave) {
+      try {
+        setIsSaving(true);
+        await onSave(enhancedContent, '{}');
+        setEditedContent(enhancedContent);
+        toast.success('Cover letter enhanced successfully!');
+      } catch (error) {
+        console.error('Failed to save enhanced content:', error);
+        toast.error('Failed to save changes');
+      } finally {
+        setIsSaving(false);
+      }
+    }
+  };
+
   if (!showCard) {
     return (
-      <div className={cn('space-y-4', className)}>
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">{title}</h2>
-          {actionButtons}
+      <>
+        <div className={cn('space-y-4', className)}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">{title}</h2>
+            {actionButtons}
+          </div>
+          {renderContent()}
         </div>
-        {renderContent()}
-      </div>
+        <AIEnhanceModal
+          open={enhanceModalOpen}
+          onOpenChange={setEnhanceModalOpen}
+          originalContent={content}
+          onAccept={handleEnhanceAccept}
+          contentType="markdown"
+          title="Enhance Cover Letter"
+          description="Use AI to improve your cover letter's tone, clarity, or professionalism."
+        />
+      </>
     );
   }
 
   return (
-    <Card className={cn('p-6', className)}>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">{title}</h2>
-        {actionButtons}
-      </div>
-      {renderContent()}
-    </Card>
+    <>
+      <Card className={cn('p-6', className)}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">{title}</h2>
+          {actionButtons}
+        </div>
+        {renderContent()}
+      </Card>
+      <AIEnhanceModal
+        open={enhanceModalOpen}
+        onOpenChange={setEnhanceModalOpen}
+        originalContent={content}
+        onAccept={handleEnhanceAccept}
+        contentType="markdown"
+        title="Enhance Cover Letter"
+        description="Use AI to improve your cover letter's tone, clarity, or professionalism."
+      />
+    </>
   );
 }

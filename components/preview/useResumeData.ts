@@ -5,6 +5,9 @@
 
 import { useState, useEffect } from 'react';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { createComponentLogger } from '@/lib/utils/client-logger';
+
+const logger = createComponentLogger('useResumeData');
 
 interface UseResumeDataProps {
   resumeData: Resume;
@@ -31,7 +34,7 @@ export function useResumeData({
             setResume(data.content as Resume);
           }
         } catch (error) {
-          console.error('Error fetching resume:', error);
+          logger.error('Error fetching resume', error);
         }
       };
       fetchResume();
