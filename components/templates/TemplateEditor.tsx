@@ -22,11 +22,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Code, ImagePlus } from 'lucide-react';
+import { Save, Code, ImagePlus, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
 import { TemplateImportModal } from './TemplateImportModal';
+import { AIEnhanceButton, AIEnhanceTemplateModal } from '@/components/ai-enhance';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -59,6 +60,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
   const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [templateEnhanceModalOpen, setTemplateEnhanceModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: template?.name || '',
     category: template?.category || 'PROFESSIONAL',
@@ -251,16 +253,27 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
 
           {/* Code Editors */}
           <Tabs defaultValue="html" className="flex-1">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="html">
-                <Code className="mr-2 h-4 w-4" />
-                HTML Template
-              </TabsTrigger>
-              <TabsTrigger value="css">
-                <Code className="mr-2 h-4 w-4" />
-                CSS Styles
-              </TabsTrigger>
-            </TabsList>
+            <div className="flex items-center justify-between">
+              <TabsList className="grid grid-cols-2 w-auto">
+                <TabsTrigger value="html">
+                  <Code className="mr-2 h-4 w-4" />
+                  HTML Template
+                </TabsTrigger>
+                <TabsTrigger value="css">
+                  <Code className="mr-2 h-4 w-4" />
+                  CSS Styles
+                </TabsTrigger>
+              </TabsList>
+              <div className="flex gap-1">
+                <AIEnhanceButton
+                  onClick={() => setTemplateEnhanceModalOpen(true)}
+                  disabled={!formData.htmlTemplate.trim() && !formData.cssStyles.trim()}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-auto px-3 rounded-md"
+                />
+              </div>
+            </div>
 
             <TabsContent value="html" className="mt-4">
               <div className="border rounded-lg overflow-hidden h-[500px]">
@@ -333,6 +346,15 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
         open={importModalOpen}
         onOpenChange={setImportModalOpen}
         onImportComplete={handleImportComplete}
+      />
+
+      {/* AI Enhancement Modal */}
+      <AIEnhanceTemplateModal
+        open={templateEnhanceModalOpen}
+        onOpenChange={setTemplateEnhanceModalOpen}
+        originalHtml={formData.htmlTemplate}
+        originalCss={formData.cssStyles}
+        onAccept={(enhancedHtml, enhancedCss) => setFormData({ ...formData, htmlTemplate: enhancedHtml, cssStyles: enhancedCss })}
       />
     </div>
   );

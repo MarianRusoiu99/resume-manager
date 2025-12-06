@@ -51,7 +51,7 @@ export const POST = createApiHandler(async (request, context, session) => {
             { status: 400 }
         );
     }
-    const { apiKey } = providerResult.data;
+    const { apiKey, providerType } = providerResult.data;
 
     try {
         // Convert file to base64
@@ -59,7 +59,12 @@ export const POST = createApiHandler(async (request, context, session) => {
         const base64 = Buffer.from(arrayBuffer).toString("base64");
 
         // Parse template from image using AI
-        const templateData = await parseTemplateFromImage(base64, file.type, apiKey);
+        const templateData = await parseTemplateFromImage({
+            imageBase64: base64,
+            mimeType: file.type,
+            apiKey,
+            providerType: providerType as 'openai' | 'anthropic' | 'google',
+        });
 
         return NextResponse.json({
             success: true,
@@ -77,3 +82,4 @@ export const POST = createApiHandler(async (request, context, session) => {
         );
     }
 });
+

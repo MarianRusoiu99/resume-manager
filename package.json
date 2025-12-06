@@ -20,6 +20,8 @@
     "e2e:report": "playwright show-report"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.53",
+    "@ai-sdk/google": "^2.0.44",
     "@ai-sdk/openai": "^2.0.64",
     "@blocknote/core": "^0.42.0",
     "@blocknote/mantine": "^0.42.0",

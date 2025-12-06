@@ -35,7 +35,7 @@ export function ResumeEditor({
   onDisplayNameChange,
   onTogglePublic,
 }: ResumeEditorProps) {
-  const { resume, save, isDirty, isSaving, lastSavedAt } = useEditor();
+  const { resume, save, isDirty, isSaving, lastSavedAt, updateResume } = useEditor();
   const [activeTab, setActiveTab] = useState("basics");
   const [showShareDialog, setShowShareDialog] = useState(false);
 
@@ -67,10 +67,12 @@ export function ResumeEditor({
         isDirty={isDirty}
         isSaving={isSaving}
         lastSavedAt={lastSavedAt}
+        resume={resume}
         onSave={handleSave}
         onDisplayNameChange={onDisplayNameChange}
         onTogglePublic={onTogglePublic}
         onShareClick={() => setShowShareDialog(true)}
+        onResumeChange={updateResume}
       />
 
       {/* Main Content */}
