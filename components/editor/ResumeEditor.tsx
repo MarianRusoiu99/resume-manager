@@ -38,6 +38,7 @@ export function ResumeEditor({
   const { resume, save, isDirty, isSaving, lastSavedAt, updateResume } = useEditor();
   const [activeTab, setActiveTab] = useState("basics");
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   // Derive display values from props (parent is source of truth)
   const displayName = initialDisplayName || "";
@@ -68,6 +69,8 @@ export function ResumeEditor({
         isSaving={isSaving}
         lastSavedAt={lastSavedAt}
         resume={resume}
+        profileId={id}
+        templateId={selectedTemplateId}
         onSave={handleSave}
         onDisplayNameChange={onDisplayNameChange}
         onTogglePublic={onTogglePublic}
@@ -75,10 +78,10 @@ export function ResumeEditor({
         onResumeChange={updateResume}
       />
 
-      {/* Main Content */}
+      {/* Main Content - Split Layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* Editor Area */}
-        <div className={`w-1/2 overflow-y-auto`}>
+        <div className="overflow-y-auto w-1/2">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
             <EditorSidebar />
             <EditorContent />
@@ -86,13 +89,14 @@ export function ResumeEditor({
         </div>
 
         {/* Live Preview */}
-        <div className="w-1/2 border-l bg-muted/20 overflow-hidden">
+        <div className="border-l bg-muted/20 overflow-hidden w-1/2">
           <ResumePreview
             resumeData={resume}
             profileId={id}
             showTemplateSelector
             showCard={false}
             className="h-full"
+            onTemplateChange={setSelectedTemplateId}
           />
         </div>
       </div>

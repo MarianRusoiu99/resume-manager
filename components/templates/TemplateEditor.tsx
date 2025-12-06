@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Code, ImagePlus, Sparkles } from 'lucide-react';
+import { Save, Code, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
@@ -193,7 +193,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       {/* Main Content - Split Layout */}
       <div className="flex-1 overflow-hidden flex">
         {/* Left Panel - Form and Code Editor */}
-        <div className="w-1/2 flex flex-col gap-6 overflow-y-auto p-6">
+        <div className="flex flex-col gap-6 overflow-y-auto p-6 w-1/2">
           {/* Template Metadata */}
           <div className="space-y-4 border rounded-lg p-4 bg-card">
             <h3 className="font-semibold text-lg">Template Information</h3>
@@ -329,15 +329,15 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
         </div>
 
         {/* Right Panel - Live Preview */}
-        <div className="w-1/2 border-l bg-muted/20 overflow-hidden">
-          <ResumePreview
-            resumeData={sampleResume}
-            templateHtml={formData.htmlTemplate}
-            templateCss={formData.cssStyles}
-            showTemplateSelector={false}
-            showCard={false}
-            className="h-full"
-          />
+        <div className="border-l bg-muted/20 overflow-hidden w-1/2">
+            <ResumePreview
+              resumeData={sampleResume}
+              templateHtml={formData.htmlTemplate}
+              templateCss={formData.cssStyles}
+              showTemplateSelector={false}
+              showCard={false}
+              className="h-full"
+            />
         </div>
       </div>
 

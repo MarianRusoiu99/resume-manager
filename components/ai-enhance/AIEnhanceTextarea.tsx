@@ -8,7 +8,7 @@
 import { useState } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { AIEnhanceButton } from './AIEnhanceButton';
-import { AIEnhanceModal } from './AIEnhanceModal';
+import { AIEnhanceTextModal } from './modals/AIEnhanceTextModal';
 import { cn } from '@/lib/utils';
 
 interface AIEnhanceTextareaProps extends React.ComponentProps<typeof Textarea> {
@@ -67,7 +67,7 @@ export function AIEnhanceTextarea({
                 </div>
             )}
 
-            <AIEnhanceModal
+            <AIEnhanceTextModal
                 open={modalOpen}
                 onOpenChange={setModalOpen}
                 originalContent={currentValue}

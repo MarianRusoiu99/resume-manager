@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Save, Edit2, Check, X, Share2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AIEnhanceResumeModal } from "@/components/ai-enhance";
+import { AIEnhanceResumeModalUnified } from "@/components/ai-enhance";
 import type { Resume } from "@/lib/validations/jsonresume";
 
 interface EditorHeaderProps {
@@ -12,6 +12,10 @@ interface EditorHeaderProps {
     isSaving: boolean;
     lastSavedAt: Date | null;
     resume?: Resume;
+    /** Profile ID for live preview in AI enhance modal */
+    profileId?: string;
+    /** Template ID for preview */
+    templateId?: string | null;
     onSave: () => Promise<void>;
     onDisplayNameChange?: (name: string) => Promise<void>;
     onTogglePublic?: () => Promise<void>;
@@ -25,6 +29,8 @@ export function EditorHeader({
     isSaving,
     lastSavedAt,
     resume,
+    profileId,
+    templateId,
     onSave,
     onDisplayNameChange,
     onTogglePublic,
@@ -149,11 +155,13 @@ export function EditorHeader({
             </div>
 
             {resume && onResumeChange && (
-                <AIEnhanceResumeModal
+                <AIEnhanceResumeModalUnified
                     open={enhanceModalOpen}
                     onOpenChange={setEnhanceModalOpen}
                     resume={resume}
                     onAccept={handleEnhancedResume}
+                    profileId={profileId}
+                    templateId={templateId}
                 />
             )}
         </>
