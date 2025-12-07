@@ -52,13 +52,13 @@ export default function ApiDocsPage() {
     <div className="min-h-screen bg-white">
       <div className="border-b bg-linear-to-r from-blue-600 to-blue-700 text-white">
         <div className="container mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold mb-2">AI Resume Optimizer API</h1>
+          <h1 className="text-3xl font-bold mb-2">AI Resume Manager API</h1>
           <p className="text-blue-100">
             Interactive API documentation for developers. Test endpoints directly from your browser.
           </p>
         </div>
       </div>
-      
+
       <div className="container mx-auto">
         {spec && <SwaggerUI spec={spec} />}
       </div>
@@ -70,7 +70,7 @@ export default function ApiDocsPage() {
             Login through the main application before testing protected endpoints.
           </p>
           <p>
-            Rate Limit: 5 requests per minute per endpoint | 
+            Rate Limit: 5 requests per minute per endpoint |
             <Link href="/" className="text-blue-600 hover:underline ml-1">Back to Application</Link>
           </p>
         </div>

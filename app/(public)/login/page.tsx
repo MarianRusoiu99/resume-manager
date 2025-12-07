@@ -31,7 +31,7 @@ function LoginForm() {
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">
-          Sign in to Resume Optimizer
+          Sign in to Resume Manager
         </CardTitle>
         <CardDescription className="text-center">
           Or{' '}
@@ -110,7 +110,7 @@ function LoginFormSkeleton() {
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold text-center">
-          Sign in to Resume Optimizer
+          Sign in to Resume Manager
         </CardTitle>
         <CardDescription className="text-center">Loading...</CardDescription>
       </CardHeader>

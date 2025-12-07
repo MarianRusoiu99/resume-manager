@@ -52,15 +52,12 @@ export function PreviewContent({
         showTemplateSelector={showTemplateSelector}
         selectedTemplateId={selectedTemplateId}
         onTemplateChange={onTemplateChange}
-        resumeId={resumeId}
         templateHtml={templateHtml}
         isExportingPDF={isExportingPDF}
         onExportPDF={onExportPDF}
-        onToggleFullscreen={onToggleFullscreen}
-        onRefresh={onRefresh}
       />
 
-      <div className="flex flex-col items-center justify-center w-full h-full overflow-hidden p-4">
+      <div className="flex flex-col items-center justify-center w-full h-full overflow-hidden">
         <div
           className="relative w-full h-full flex items-center justify-center"
           style={{

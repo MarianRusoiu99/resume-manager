@@ -14,6 +14,7 @@ import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { ExternalLink } from 'lucide-react';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { PageHeader } from '@/components/layout';
 interface Template {
   id: string;
   name: string;
@@ -381,19 +382,16 @@ export default function GeneratePage() {
     <div className="h-screen flex flex-col overflow-hidden">
       <Tabs defaultValue={tabParam === 'cover-letter' ? 'cover-letter' : 'resume'} className="h-full flex flex-col">
         {/* Tab Header */}
-        <div className="border-b bg-background px-6 py-4 flex-shrink-0">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">Generate</h1>
-              <p className="text-sm text-muted-foreground">Create tailored resumes and cover letters with AI</p>
-            </div>
-            <TabsList>
-              <TabsTrigger value="resume">Resume</TabsTrigger>
-              <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
-            </TabsList>
-          </div>
+        <div className="flex items-end justify-between">
+          <PageHeader
+            title="Generate"
+            description="Create tailored resumes and cover letters with AI"
+          />
+          <TabsList className="ml-auto mr-6">
+            <TabsTrigger value="resume">Resume</TabsTrigger>
+            <TabsTrigger value="cover-letter">Cover Letter</TabsTrigger>
+          </TabsList>
         </div>
-
         {/* Tab Content - Scrollable */}
         <div className="flex-1 overflow-auto">
           {/* Resume Tab */}

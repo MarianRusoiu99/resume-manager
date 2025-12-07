@@ -4,12 +4,12 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'AI Resume Optimizer API',
+      title: 'AI Resume Manager API',
       version: '1.0.0',
       description: `
-# AI Resume Optimizer API Documentation
+# AI Resume Manager API Documentation
 
-Complete API reference for the AI-Powered Resume Optimizer platform. 
+Complete API reference for the AI-Powered Resume Manager platform. 
 This platform uses AI (GPT-4) to analyze job descriptions and optimize resumes for Applicant Tracking Systems (ATS).
 
 ## Features
