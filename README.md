@@ -159,19 +159,6 @@ Resume Manager is a modern platform for creating, editing, and managing professi
 
 > **Note**: AI features are optional. If you want to use AI integrations, configure your API keys through the in-app **Settings → API Keys** page.
 
-## 🧪 Testing
-
-```bash
-# Unit tests (Vitest)
-npm run test
-npm run test:ui        # With UI
-npm run test:coverage  # With coverage report
-
-# E2E tests (Playwright)
-npm run e2e
-npm run e2e:ui         # With UI
-npm run e2e:headed     # With browser visible
-```
 
 ## 📜 Available Scripts
 
@@ -181,9 +168,7 @@ npm run e2e:headed     # With browser visible
 | `npm run build` | Create production build |
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
-| `npm run test` | Run unit tests |
-| `npm run e2e` | Run E2E tests |
-| `npm run db:seed` | Seed database with test data |
+
 
 ## 🤝 Contributing
 
