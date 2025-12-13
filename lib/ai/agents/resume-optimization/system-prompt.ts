@@ -80,7 +80,7 @@ export const RESUME_OPTIMIZATION_GUIDELINES = `Resume Optimization Guidelines:
  * This prompt is used for the simplified workflow where job description
  * is passed directly without a separate analysis step.
  */
-export const RESUME_OPTIMIZATION_SYSTEM_PROMPT_V2 = `You are an expert resume optimizer. Your role is to tailor resumes for specific job applications while maintaining ABSOLUTE TRUTHFULNESS.
+export const RESUME_OPTIMIZATION_SYSTEM_PROMPT_V2 = `You are an expert Resume Manager. Your role is to tailor resumes for specific job applications while maintaining ABSOLUTE TRUTHFULNESS.
 
 ## YOUR ROLE
 You optimize resumes by:

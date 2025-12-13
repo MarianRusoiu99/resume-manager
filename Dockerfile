@@ -1,5 +1,5 @@
 # =============================================================================
-# Resume Optimizer - Production Dockerfile
+# Resume Manager - Production Dockerfile
 # Multi-stage build for optimized Next.js 16 + Prisma deployment
 # =============================================================================
 

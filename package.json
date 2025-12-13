@@ -10,14 +10,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "db:seed": "npx tsx prisma/seed.ts",
-    "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui",
-    "e2e:headed": "playwright test --headed",
-    "e2e:chromium": "playwright test --project=chromium",
-    "e2e:firefox": "playwright test --project=firefox",
-    "e2e:webkit": "playwright test --project=webkit",
-    "e2e:report": "playwright show-report"
+    "db:seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.53",
@@ -64,6 +57,7 @@
     "next-themes": "^0.4.6",
     "pdf-lib": "^1.17.1",
     "prisma": "^6.18.0",
+    "puppeteer": "^24.32.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-dropzone": "^14.3.8",
@@ -79,7 +73,6 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.0.0",
-    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/dom": "^10.4.1",

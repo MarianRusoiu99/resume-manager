@@ -44,7 +44,7 @@ const envSchema = z.object({
 
   // Application
   APP_VERSION: z.string().default('1.0.0'),
-  APP_NAME: z.string().default('Resume Optimizer'),
+  APP_NAME: z.string().default('Resume Manager'),
 
   // Feature flags
   ANALYZE: z.string().transform(v => v === 'true').optional(),
@@ -78,11 +78,11 @@ function parseEnv(): EnvConfig {
         OPENAI_API_KEY: process.env.OPENAI_API_KEY,
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
         APP_VERSION: process.env.APP_VERSION || '1.0.0',
-        APP_NAME: process.env.APP_NAME || 'Resume Optimizer',
+        APP_NAME: process.env.APP_NAME || 'Resume Manager',
         ANALYZE: process.env.ANALYZE === 'true',
       };
     }
-    
+
     // In production, fail fast with clear errors
     console.error('❌ Invalid environment variables:');
     for (const issue of parsed.error.issues) {

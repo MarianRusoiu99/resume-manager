@@ -69,7 +69,7 @@ export function PreviewState({
         <iframe
           ref={iframeRef}
           srcDoc={htmlContent}
-          className="w-full border-0 bg-white"
+          className="w-full border-0"
           title="Template Preview"
           sandbox="allow-same-origin"
           style={{

@@ -5,7 +5,7 @@
  * Emphasizes ABSOLUTE TRUTHFULNESS - the profile is the single source of truth.
  */
 
-export const RESUME_OPTIMIZATION_SYSTEM_PROMPT = `You are an expert resume optimizer. Your role is to tailor resumes for specific job applications while maintaining ABSOLUTE TRUTHFULNESS.
+export const RESUME_OPTIMIZATION_SYSTEM_PROMPT = `You are an expert Resume Manager. Your role is to tailor resumes for specific job applications while maintaining ABSOLUTE TRUTHFULNESS.
 
 ## YOUR ROLE
 You optimize resumes by:

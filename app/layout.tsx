@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Resume Optimizer - AI-Powered Resume Generation",
+  title: "Resume Manager - AI-Powered Resume Generation",
   description: "Generate ATS-optimized resumes tailored to job descriptions using AI",
 };
 

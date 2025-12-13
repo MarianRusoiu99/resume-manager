@@ -1,6 +1,6 @@
-# AI Coding Agent Instructions for Resume Optimizer
+# AI Coding Agent Instructions for Resume Manager
 
-Resume Optimizer is an intelligent platform for AI-tailored resume optimization using Next.js 16, Prisma, OpenAI, and modern UI patterns. This guide helps AI agents understand the codebase structure, conventions, and workflows.
+Resume Manager is an intelligent platform for AI-tailored resume optimization using Next.js 16, Prisma, OpenAI, and modern UI patterns. This guide helps AI agents understand the codebase structure, conventions, and workflows.
 
 ## Architecture Overview
 

@@ -22,7 +22,6 @@ import { useIframeResize } from '../preview/useIframeResize';
 
 // UI Components
 import { PreviewContent } from '../preview/PreviewContent';
-import { FullscreenModal } from '../preview/FullscreenModal';
 
 const logger = createComponentLogger('ResumePreview');
 
@@ -137,7 +136,7 @@ export function ResumePreview({
 
   if (showCard) {
     return (
-      <>
+          
         <Card className={className}>
           <CardHeader>
             <CardTitle>Live Preview</CardTitle>
@@ -163,20 +162,11 @@ export function ResumePreview({
             />
           </CardContent>
         </Card>
-
-        <FullscreenModal
-          isOpen={isFullscreen}
-          onClose={toggleFullscreen}
-          htmlContent={htmlContent}
-          fullscreenIframeRef={fullscreenIframeRef}
-        />
-      </>
     );
   }
 
   return (
-    <>
-      <PreviewContent
+    <PreviewContent
         showTemplateSelector={showTemplateSelector && !templateHtml}
         selectedTemplateId={selectedTemplateId}
         onTemplateChange={onTemplateSelect}
@@ -193,13 +183,5 @@ export function ResumePreview({
         iframeRef={iframeRef}
         containerRef={containerRef}
       />
-
-      <FullscreenModal
-        isOpen={isFullscreen}
-        onClose={toggleFullscreen}
-        htmlContent={htmlContent}
-        fullscreenIframeRef={fullscreenIframeRef}
-      />
-    </>
   );
 }

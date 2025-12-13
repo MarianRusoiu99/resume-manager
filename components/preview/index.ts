@@ -15,4 +15,3 @@ export { useIframeResize } from './useIframeResize';
 export { PreviewHeader } from './PreviewHeader';
 export { PreviewState } from './PreviewState';
 export { PreviewContent } from './PreviewContent';
-export { FullscreenModal } from './FullscreenModal';

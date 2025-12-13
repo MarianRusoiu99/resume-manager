@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server';
 import { createApiHandler } from '@/lib/api-handler';
-import { chromium } from 'playwright';
+import puppeteer from 'puppeteer';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
 import { PDF_CONFIG } from '@/lib/utils/pdf-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
@@ -37,20 +37,22 @@ export const POST = createApiHandler(
       );
 
       // Launch browser with optimal settings
-      browser = await chromium.launch({
+      browser = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
-      const browserContext = await browser.newContext();
-      const page = await browserContext.newPage();
+      const page = await browser.newPage();
 
       // Set content and wait for render
       await page.setContent(html, {
-        waitUntil: 'networkidle',
+        waitUntil: 'networkidle0',
         timeout: 30000
       });
 
       // Generate PDF with unified config
+      // Puppeteer's pdf options are compatible with the keys in PDF_CONFIG
+      // but we need to cast or ensure types match if strict.
+      // PDF_CONFIG has format: 'A4', printBackground: true, etc. which matches Puppeteer.
       const pdfBuffer = await page.pdf(PDF_CONFIG);
 
       await browser.close();
@@ -71,7 +73,7 @@ export const POST = createApiHandler(
     } finally {
       // Ensure browser cleanup
       if (browser) {
-        await browser.close().catch(() => {});
+        await browser.close().catch(() => { });
       }
     }
   },
