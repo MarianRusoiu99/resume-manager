@@ -194,8 +194,7 @@ export function configureIframeScrolling(iframeDocument: Document): void {
  */
 export function scrollToPage(
   iframeDocument: Document,
-  pageNumber: number,
-  pageHeight: number = A4_HEIGHT
+  pageNumber: number
 ): void {
   if (!iframeDocument?.documentElement) {
     console.error('scrollToPage: Invalid iframe document');
@@ -301,13 +300,7 @@ export function setupIframePagination(
   try {
     // Configure page-based rendering
     configureIframeScrolling(iframeDoc);
-
-    // Wait for the DOM to settle and measure accurately
-    // Force a reflow to ensure accurate measurements
-    const _forceReflow = iframeDoc.body.offsetHeight;
-    // Debug: Forced reflow
-    // console.log('📄 Forced reflow, body height:', _forceReflow);
-
+    
     // Calculate total pages based on page container content
     const pageContainer = iframeDoc.getElementById('page-container');
     if (!pageContainer) {

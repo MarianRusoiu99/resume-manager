@@ -6,19 +6,11 @@
  */
 
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { resumeService } from '@/lib/services/resume.service';
 import { notificationService } from '@/lib/services/notification.service';
 import { createApiHandler } from '@/lib/api-handler';
 import { logger } from '@/lib/utils/logger';
-
-// Validation schema
-const generateCoverLetterSchema = z.object({
-  jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
-  personalInstructions: z.string().optional(),
-  modelId: z.string().optional(),
-  profileId: z.string().optional(),
-});
+import { generateStandaloneCoverLetterSchema } from '@/lib/validations/api-schemas';
 
 export const POST = createApiHandler(
   async (request, context, session, body) => {
@@ -35,10 +27,7 @@ export const POST = createApiHandler(
 
     if (!result.success) {
       logger.error('Cover letter generation failed', new Error(result.error));
-      return NextResponse.json(
-        { error: result.error },
-        { status: 500 }
-      );
+      return result;
     }
 
     // Create notification for the user
@@ -60,5 +49,5 @@ export const POST = createApiHandler(
       metadata: result.data.metadata,
     });
   },
-  { bodySchema: generateCoverLetterSchema }
+  { bodySchema: generateStandaloneCoverLetterSchema, verifyUser: true }
 );

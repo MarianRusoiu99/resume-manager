@@ -16,16 +16,7 @@
 import { NextResponse } from 'next/server';
 import { createApiHandler } from '@/lib/api-handler';
 import { coverLetterService } from '@/lib/services/cover-letter.service';
-import { z } from 'zod';
-
-const updateSchema = z.object({
-  content: z.string().min(1).optional(),
-  contentJson: z.string().optional(), // Yoopta editor JSON state
-  jobDescription: z.string().optional(),
-  jobTitle: z.string().optional(),
-  companyName: z.string().optional(),
-  resumeId: z.string().optional().nullable(),
-});
+import { updateCoverLetterSchema } from '@/lib/validations/api-schemas';
 
 export const GET = createApiHandler(async (request, { params }, session) => {
   const { id } = await params;
@@ -39,7 +30,7 @@ export const PUT = createApiHandler(
     // ServiceResult is automatically converted to NextResponse with proper status codes
     return coverLetterService.updateCoverLetter(id, session.user.id, body!);
   },
-  { bodySchema: updateSchema }
+  { bodySchema: updateCoverLetterSchema, verifyUser: true }
 );
 
 export const DELETE = createApiHandler(async (request, { params }, session) => {
