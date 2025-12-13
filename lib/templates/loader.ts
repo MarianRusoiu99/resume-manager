@@ -11,12 +11,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** Template asset paths relative to assets directory */
-interface TemplateAssetPaths {
-  html: string;
-  css: string;
-}
-
 /** Loaded template content */
 export interface TemplateContent {
   html: string;

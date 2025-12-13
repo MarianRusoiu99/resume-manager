@@ -16,7 +16,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Image, FileType, ClipboardPaste, Upload, ChevronDown, Loader2 } from "lucide-react";
+import { FileText, Image as ImageIcon, FileType, ClipboardPaste, Upload, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import type { Resume } from "@/lib/validations/jsonresume";
@@ -159,7 +159,7 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
                         Import from PDF
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleFileSelect(".png,.jpg,.jpeg", "image")}>
-                        <Image className="h-4 w-4 mr-2" />
+                        <ImageIcon className="h-4 w-4 mr-2" />
                         Import from Image
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleFileSelect(".doc,.docx", "word")}>
@@ -178,6 +178,7 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
+                title="Import resume file"
                 onChange={handleFileChange}
             />
 

@@ -15,7 +15,6 @@ import {
   Sun,
   Monitor,
   ChevronUp,
-  Briefcase,
   LayoutDashboard,
 } from "lucide-react"
 import { useTheme } from "@/lib/contexts"

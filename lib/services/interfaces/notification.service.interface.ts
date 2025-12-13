@@ -101,7 +101,7 @@ export interface INotificationService {
   /**
    * Get unread notification count
    */
-  getUnreadCount(userId: string): Promise<ServiceResult<number>>;
+  getUnreadCount(userId: string): Promise<ServiceResult<{ count: number }>>;
 
   /**
    * Mark a notification as read
@@ -116,12 +116,12 @@ export interface INotificationService {
   /**
    * Delete a notification
    */
-  deleteNotification(id: string, userId: string): Promise<ServiceResult<void>>;
+  deleteNotification(id: string, userId: string): Promise<ServiceResult<{ deleted: boolean }>>;
 
   /**
    * Delete old notifications
    */
-  deleteOldNotifications(
+  cleanupOldNotifications(
     userId: string,
     daysOld?: number
   ): Promise<ServiceResult<{ count: number }>>;

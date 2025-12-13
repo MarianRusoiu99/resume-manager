@@ -7,7 +7,6 @@
 import { env } from '@/lib/config';
 import { metrics, MetricsClient, AppMetrics } from './metrics';
 import { tracing, TracingClient, Span, SpanContext } from './tracing';
-import { logger } from '@/lib/utils/logger';
 
 /**
  * Telemetry configuration
@@ -29,7 +28,7 @@ export interface TelemetryConfig {
 export class TelemetryClient {
   readonly metrics: MetricsClient;
   readonly tracing: TracingClient;
-  private config: Required<TelemetryConfig>;
+  private readonly config: Required<TelemetryConfig>;
 
   constructor(config: TelemetryConfig = {}) {
     this.config = {
@@ -134,21 +133,35 @@ export class TelemetryClient {
   }
 
   /**
-   * Record a cache operation
+   * Record a cache hit
    */
-  recordCacheOperation(hit: boolean, cache: string = 'default'): void {
-    if (hit) {
-      AppMetrics.cacheHits.inc({ cache });
-    } else {
-      AppMetrics.cacheMisses.inc({ cache });
-    }
+  recordCacheHit(cache: string = 'default'): void {
+    AppMetrics.cacheHits.inc({ cache });
+  }
+
+  /**
+   * Record a cache miss
+   */
+  recordCacheMiss(cache: string = 'default'): void {
+    AppMetrics.cacheMisses.inc({ cache });
   }
 
   /**
    * Record circuit breaker state
    */
   recordCircuitBreakerState(name: string, state: 'closed' | 'open' | 'half-open'): void {
-    const stateValue = state === 'closed' ? 0 : state === 'half-open' ? 1 : 2;
+    let stateValue: number;
+    switch (state) {
+      case 'closed':
+        stateValue = 0;
+        break;
+      case 'half-open':
+        stateValue = 1;
+        break;
+      case 'open':
+        stateValue = 2;
+        break;
+    }
     AppMetrics.circuitBreakerState.set(stateValue, { circuit: name });
   }
 

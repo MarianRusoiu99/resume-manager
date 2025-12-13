@@ -6,7 +6,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import { Edit, Download, Eye, FileText, Briefcase } from 'lucide-react';
+import { Download, FileText, Briefcase } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import { toast } from 'sonner';
 import { deleteCoverLetter } from '@/app/actions/cover-letter';
@@ -34,7 +34,7 @@ export function CoverLetterCard({
   onEdit,
   onDelete,
 }: Readonly<CoverLetterCardProps>) {
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const getDisplayTitle = (): string => {
     if (jobTitle && companyName) {

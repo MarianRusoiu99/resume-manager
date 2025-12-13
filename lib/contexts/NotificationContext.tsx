@@ -47,6 +47,7 @@ interface NotificationContextActions {
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
   handleNotificationAction: (notification: Notification) => void;
   openNotifications: () => void;
   closeNotifications: () => void;
@@ -180,6 +181,38 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
   }, []);
 
   /**
+   * Clear all notifications (mark all read, then delete all)
+   */
+  const clearAllNotifications = useCallback(async () => {
+    const idsToDelete = notifications.map((n) => n.id);
+    if (idsToDelete.length === 0) return;
+
+    try {
+      // Mark all read first (preserves current API behavior)
+      const markResponse = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'markAllRead' }),
+      });
+
+      if (!markResponse.ok) {
+        throw new Error('Failed to mark all notifications as read');
+      }
+
+      await Promise.all(
+        idsToDelete.map((id) =>
+          fetch(`/api/notifications/${id}`, { method: 'DELETE' })
+        )
+      );
+
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error clearing all notifications:', error);
+    }
+  }, [notifications]);
+
+  /**
    * Handle notification action (navigate to URL)
    */
   const handleNotificationAction = useCallback(
@@ -305,6 +338,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    clearAllNotifications,
     handleNotificationAction,
     openNotifications,
     closeNotifications,
@@ -319,6 +353,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    clearAllNotifications,
     handleNotificationAction,
     openNotifications,
     closeNotifications,

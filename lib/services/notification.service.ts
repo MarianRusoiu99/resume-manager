@@ -1,17 +1,15 @@
-import { Notification, NotificationType } from '@prisma/client';
+import { NotificationType } from '@prisma/client';
 import {
-  NotificationRepository,
   notificationRepository,
   CreateNotificationInput,
 } from '@/lib/repositories/notification.repository';
 import { emitNotification, NotificationPayload } from '@/lib/notifications/emitter';
 import { type ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, NotFoundError } from '@/lib/services/utils';
+import type { INotificationRepository } from '@/lib/repositories/interfaces';
+import type { INotificationService, NotificationServiceData } from '@/lib/services/interfaces/notification.service.interface';
 
-/**
- * Simplified notification data for API responses
- */
-export interface NotificationData {
+type DbNotification = {
   id: string;
   type: NotificationType;
   title: string;
@@ -21,22 +19,22 @@ export interface NotificationData {
   actionLabel: string | null;
   resourceType: string | null;
   resourceId: string | null;
-  metadata: Record<string, unknown> | null;
-  createdAt: string;
-}
+  metadata: unknown;
+  createdAt: Date;
+};
 
 /**
  * Notification service for handling business logic
  */
-export class NotificationService {
+export class NotificationService implements INotificationService {
   constructor(
-    private readonly repository: NotificationRepository = notificationRepository
+    private readonly repository: INotificationRepository = notificationRepository
   ) {}
 
   /**
    * Transform database notification to API format
    */
-  private toNotificationData(notification: Notification): NotificationData {
+  private toNotificationData(notification: DbNotification): NotificationServiceData {
     return {
       id: notification.id,
       type: notification.type,
@@ -55,7 +53,7 @@ export class NotificationService {
   /**
    * Transform database notification to SSE payload format
    */
-  private toNotificationPayload(notification: Notification): NotificationPayload {
+  private toNotificationPayload(notification: DbNotification): NotificationPayload {
     return {
       id: notification.id,
       type: notification.type,
@@ -75,7 +73,7 @@ export class NotificationService {
    */
   async createNotification(
     input: CreateNotificationInput
-  ): Promise<ServiceResult<NotificationData>> {
+  ): Promise<ServiceResult<NotificationServiceData>> {
     return withServiceError('create notification', async () => {
       const notification = await this.repository.create(input);
       
@@ -94,7 +92,7 @@ export class NotificationService {
     resumeId: string,
     jobTitle?: string,
     companyName?: string
-  ): Promise<ServiceResult<NotificationData>> {
+  ): Promise<ServiceResult<NotificationServiceData>> {
     const title = jobTitle && companyName
       ? `Resume for ${jobTitle} at ${companyName}`
       : 'Resume Generated';
@@ -120,7 +118,7 @@ export class NotificationService {
     coverLetterId: string,
     jobTitle?: string,
     companyName?: string
-  ): Promise<ServiceResult<NotificationData>> {
+  ): Promise<ServiceResult<NotificationServiceData>> {
     const title = jobTitle && companyName
       ? `Cover Letter for ${jobTitle} at ${companyName}`
       : 'Cover Letter Generated';
@@ -147,7 +145,7 @@ export class NotificationService {
     message: string,
     actionUrl?: string,
     actionLabel?: string
-  ): Promise<ServiceResult<NotificationData>> {
+  ): Promise<ServiceResult<NotificationServiceData>> {
     return this.createNotification({
       userId,
       type: 'SYSTEM',
@@ -164,7 +162,7 @@ export class NotificationService {
   async getNotifications(
     userId: string,
     options?: { limit?: number; includeRead?: boolean }
-  ): Promise<ServiceResult<NotificationData[]>> {
+  ): Promise<ServiceResult<NotificationServiceData[]>> {
     return withServiceError('fetch notifications', async () => {
       const notifications = await this.repository.findByUserId(userId, options);
       return notifications.map((n) => this.toNotificationData(n));
@@ -187,7 +185,7 @@ export class NotificationService {
   async markAsRead(
     id: string,
     userId: string
-  ): Promise<ServiceResult<NotificationData>> {
+  ): Promise<ServiceResult<NotificationServiceData>> {
     return withServiceError('mark notification as read', async () => {
       const notification = await this.repository.markAsRead(id, userId);
       if (!notification) {

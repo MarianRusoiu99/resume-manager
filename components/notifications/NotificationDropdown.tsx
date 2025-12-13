@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
-import { FileText, Mail, User, Download, Bell, X, Check, ExternalLink } from 'lucide-react';
+import { Bell, X, Check, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -14,25 +14,7 @@ import {
 import { useNotifications, type Notification } from '@/lib/contexts';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from './NotificationBell';
-
-/**
- * Get icon for notification type
- */
-function getNotificationIcon(type: Notification['type']) {
-  switch (type) {
-    case 'RESUME_GENERATED':
-      return <FileText className="h-4 w-4 text-blue-500" />;
-    case 'COVER_LETTER_GENERATED':
-      return <Mail className="h-4 w-4 text-green-500" />;
-    case 'PROFILE_UPDATED':
-      return <User className="h-4 w-4 text-purple-500" />;
-    case 'EXPORT_COMPLETE':
-      return <Download className="h-4 w-4 text-orange-500" />;
-    case 'SYSTEM':
-    default:
-      return <Bell className="h-4 w-4 text-gray-500" />;
-  }
-}
+import { getNotificationIcon } from './notification-ui';
 
 interface NotificationItemProps {
   readonly notification: Notification;
@@ -139,6 +121,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    clearAllNotifications,
     handleNotificationAction,
   } = useNotifications();
 
@@ -219,13 +202,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
                 variant="ghost"
                 size="sm"
                 className="w-full text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                onClick={async () => {
-                  markAllAsRead();
-                  // Delete all notifications after marking as read
-                  for (const n of notifications) {
-                    deleteNotification(n.id);
-                  }
-                }}
+                onClick={clearAllNotifications}
               >
                 Clear all notifications
               </Button>

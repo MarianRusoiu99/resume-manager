@@ -109,7 +109,6 @@ export function useFetch<T>(
     return () => {
       abortControllerRef.current?.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, immediate, fetchData, depsKey]);
 
   // Refetch on visibility change

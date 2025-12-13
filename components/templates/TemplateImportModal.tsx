@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import NextImage from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import {
     Dialog,
@@ -16,7 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Image, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExtractedTemplate {
@@ -39,7 +40,7 @@ export function TemplateImportModal({
     open,
     onOpenChange,
     onImportComplete,
-}: TemplateImportModalProps) {
+}: Readonly<TemplateImportModalProps>) {
     const [status, setStatus] = useState<ImportStatus>('idle');
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
@@ -145,7 +146,7 @@ export function TemplateImportModal({
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <Image className="h-5 w-5" />
+                        <ImageIcon className="h-5 w-5" />
                         Import Template from Image
                     </DialogTitle>
                     <DialogDescription>
@@ -185,11 +186,13 @@ export function TemplateImportModal({
                     {preview && status !== 'success' && (
                         <div className="space-y-4">
                             <div className="relative rounded-lg overflow-hidden border bg-muted/20">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
+                                <NextImage
                                     src={preview}
                                     alt="Template preview"
+                                    width={800}
+                                    height={192}
                                     className="w-full h-48 object-contain"
+                                    unoptimized
                                 />
                                 {status === 'idle' && (
                                     <button
@@ -199,6 +202,7 @@ export function TemplateImportModal({
                                             setPreview(null);
                                         }}
                                         className="absolute top-2 right-2 p-1 bg-background/80 rounded-full hover:bg-background"
+                                        title="Clear selected image"
                                     >
                                         <AlertCircle className="h-4 w-4" />
                                     </button>
@@ -252,7 +256,7 @@ export function TemplateImportModal({
                         </Button>
                         {status === 'idle' && selectedFile && (
                             <Button onClick={handleImport}>
-                                <Image className="mr-2 h-4 w-4" />
+                                <ImageIcon className="mr-2 h-4 w-4" />
                                 Extract Template
                             </Button>
                         )}

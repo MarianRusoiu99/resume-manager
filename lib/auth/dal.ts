@@ -145,7 +145,7 @@ export const requireUserId = cache(async (): Promise<string> => {
  * @param requiredRole - The role to check for (currently unused)
  * @returns true if user is authenticated, false otherwise
  */
-export const checkRole = cache(async (_requiredRole: string): Promise<boolean> => {
+export const checkRole = cache(async (): Promise<boolean> => {
   const session = await getSession();
   if (!session) return false;
   

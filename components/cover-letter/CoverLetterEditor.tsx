@@ -18,7 +18,7 @@ import { Button, Card } from '@/components/ui';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import type { BlockNoteEditorMethods } from '@/components/editor/BlockNoteEditorWrapper.client';
 import { MarkdownPreview } from '@/components/editor/MarkdownPreview';
-import { Copy, Edit, Check, X, Sparkles } from 'lucide-react';
+import { Copy, Edit, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AIEnhanceButton, AIEnhanceModal } from '@/components/ai-enhance';
 

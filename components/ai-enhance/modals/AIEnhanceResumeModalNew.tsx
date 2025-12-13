@@ -82,7 +82,6 @@ export function AIEnhanceResumeModalNew({
   onOpenChange,
   resume,
   onAccept,
-  profileId,
   templateId,
   title = 'Enhance Resume with AI',
   description = 'AI will improve your entire resume: better wording, stronger impact, and professional tone.',

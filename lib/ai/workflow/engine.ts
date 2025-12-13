@@ -8,7 +8,6 @@ import type {
   WorkflowConfig,
   WorkflowContext,
   WorkflowResult,
-  WorkflowResults,
   ProgressCallback,
 } from './types';
 import type { Resume } from '@/lib/validations/jsonresume';

@@ -209,7 +209,7 @@ export function scrollToPage(
 
   // Calculate the translation needed to show the desired page
   // No padding offset needed - content handles its own margins via @page CSS
-  const translateY = -(pageNumber - 1) * pageHeight;
+
 
   // Debug: Translation details
   // console.log(`📄 Translating page container by ${translateY}px (page ${pageNumber}, page height: ${pageHeight}px)`);
