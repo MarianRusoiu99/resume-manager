@@ -30,7 +30,7 @@ import { PromptInput } from './prompt/PromptInput';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiJson } from '@/lib/utils/api-client';
 
 interface AIEnhanceTemplateModalProps {
     open: boolean;
@@ -115,7 +115,7 @@ ${originalCss}`;
                 attachmentsContext,
             ].filter(Boolean);
 
-            const response = await fetch(API_V1.AI.ENHANCE, {
+            const result = await apiJson<{ enhancedContent?: string }>(API_V1.AI.ENHANCE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -135,12 +135,11 @@ Make sure to preserve both sections and the exact separator format.`,
                 }),
             });
 
-            if (!response.ok) {
-                throw new Error(await readApiErrorMessage(response, 'Enhancement failed'));
+            if (result.error) {
+                throw new Error(result.error);
             }
 
-            const data = await parseApiJson<{ enhancedContent?: string }>(response);
-            const enhanced = data.enhancedContent ?? '';
+            const enhanced = result.data?.enhancedContent ?? '';
 
             // Parse the combined response
             const htmlMatch = enhanced.match(/=== HTML TEMPLATE ===\s*([\s\S]*?)(?:=== CSS STYLES ===|$)/);

@@ -8,8 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiFetch } from "@/lib/utils/api-client";
-import { parseApiJson, readApiErrorMessage } from "@/lib/utils/api-response";
+import { apiJson } from "@/lib/utils/api-client";
 import { createComponentLogger } from "@/lib/utils/client-logger";
 import { API_V1 } from "@/lib/constants";
 
@@ -37,14 +36,13 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const loadProfile = useCallback(async () => {
     try {
-      const response = await apiFetch(API_V1.PROFILE.GET(profileId));
+      const result = await apiJson<Profile>(API_V1.PROFILE.GET(profileId));
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Failed to load profile'));
+      if (result.error || !result.data) {
+        throw new Error(result.error ?? 'Failed to load profile');
       }
 
-      const data = await parseApiJson<Profile>(response);
-      setProfile(data);
+      setProfile(result.data);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to load profile";
       toast.error(message);
@@ -58,16 +56,17 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const response = await apiFetch(API_V1.PROFILE.GET(profileId));
+      const result = await apiJson<Profile>(API_V1.PROFILE.GET(profileId), { skipSessionCheck: true });
 
-      if (response.status === 200) {
-        const data = await parseApiJson<Profile>(response);
-        return data?.resume ?? null;
-      } else if (response.status === 404) {
+      if (result.status === 404) {
         return null;
       }
 
-      throw new Error("Failed to load profile");
+      if (result.error || !result.data) {
+        throw new Error(result.error ?? "Failed to load profile");
+      }
+
+      return result.data.resume ?? null;
     } catch (error) {
       logger.error('Error loading profile', error);
       return null;
@@ -76,16 +75,15 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const response = await apiFetch(API_V1.PROFILE.GET(profileId), {
+      const result = await apiJson<unknown>(API_V1.PROFILE.GET(profileId), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume }),
       });
 
-      if (!response.ok) {
-        const message = await readApiErrorMessage(response, "Failed to save profile");
-        logger.error('Profile save error', new Error(message));
-        throw new Error(message);
+      if (result.error) {
+        logger.error('Profile save error', new Error(result.error));
+        throw new Error(result.error);
       }
 
       return true;
@@ -97,14 +95,14 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleProfileNameChange = async (name: string) => {
     try {
-      const response = await apiFetch(API_V1.PROFILE.GET(profileId), {
+      const result = await apiJson<unknown>(API_V1.PROFILE.GET(profileId), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name }),
       });
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, "Failed to update profile name"));
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       toast.success("Profile name updated");
@@ -118,20 +116,18 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleTogglePublic = async () => {
     try {
-      const response = await apiFetch(API_V1.PROFILE.PUBLIC(profileId), {
+      const result = await apiJson<{ isPublic?: boolean; publicSlug?: string | null }>(API_V1.PROFILE.PUBLIC(profileId), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isPublic: !profile?.isPublic }),
       });
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, "Failed to update public status"));
+      if (result.error || !result.data) {
+        throw new Error(result.error ?? "Failed to update public status");
       }
 
-      const data = await parseApiJson<{ isPublic?: boolean; publicSlug?: string | null }>(response);
-
-      const isPublic = Boolean(data?.isPublic ?? profile?.isPublic);
-      const publicSlug = data?.publicSlug ?? profile?.publicSlug;
+      const isPublic = Boolean(result.data.isPublic ?? profile?.isPublic);
+      const publicSlug = result.data.publicSlug ?? profile?.publicSlug;
 
       toast.success(isPublic ? "Profile is now public" : "Profile is now private");
       setProfile((prev) => prev ? { ...prev, isPublic, publicSlug } : null);

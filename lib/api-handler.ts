@@ -25,13 +25,14 @@ type Session = {
  * Handler return type - can be NextResponse or ServiceResult
  * ServiceResult will be automatically converted to NextResponse
  */
-type ApiHandlerReturn<T> = NextResponse<T> | NextResponse<unknown> | ServiceResult<T>;
+type ApiHandlerReturn<T> = Response | NextResponse<T> | ServiceResult<T>;
 
 type ApiHandler<T = unknown, TBody = unknown> = (
     request: Request,
     context: ApiHandlerContext,
     session: Session,
-    body?: TBody
+    body: TBody | undefined,
+    meta: { requestId: string }
 ) => Promise<ApiHandlerReturn<T>>;
 
 interface ApiHandlerOptions<TBody = unknown> {
@@ -138,13 +139,14 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                 }
             } : null;
 
-             // Execute handler
-              const handlerResult = await handler(
-                  request, 
-                  context, 
-                  apiSession as unknown as Session,
-                  body
-              );
+              // Execute handler
+               const handlerResult = await handler(
+                   request, 
+                   context, 
+                   apiSession as unknown as Session,
+                   body,
+                   { requestId }
+               );
   
               // Convert ServiceResult to Response if needed
               let response: Response;

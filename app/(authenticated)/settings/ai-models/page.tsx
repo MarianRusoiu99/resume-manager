@@ -2,9 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { apiFetch } from '@/lib/utils/api-client';
-import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { ROUTES } from '@/lib/constants';
+import {
+  getAISettings,
+  updateAIPreference,
+  type AISettings,
+  type ModelInfo,
+} from '@/lib/client/ai-models.client';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
@@ -18,39 +22,6 @@ import {
 import { Cpu, RefreshCw, AlertCircle, Check } from 'lucide-react';
 import Link from 'next/link';
 
-interface ModelInfo {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-interface ProviderWithModels {
-  id: string;
-  name: string;
-  provider: string;
-  models: ModelInfo[];
-  isActive: boolean;
-}
-
-interface FeatureConfig {
-  id: string;
-  name: string;
-  description: string;
-}
-
-interface FeatureModelSelection {
-  feature: FeatureConfig;
-  providerId: string | null;
-  providerName: string | null;
-  modelId: string | null;
-  modelName: string | null;
-}
-
-interface AISettings {
-  features: FeatureModelSelection[];
-  availableProviders: ProviderWithModels[];
-}
-
 export default function AIModelsSettingsPage() {
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -62,26 +33,31 @@ export default function AIModelsSettingsPage() {
   const loadSettings = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiFetch(API_V1.SETTINGS.AI_MODELS);
-      if (response.ok) {
-        const body = await response.json();
-        const data: AISettings = body?.data ?? body;
-        setSettings(data);
+      const result = await getAISettings();
 
-        // Initialize selections from loaded data
-        const initialSelections: Record<string, { providerId: string; modelId: string }> = {};
-        for (const f of data.features) {
-          if (f.providerId && f.modelId) {
-            initialSelections[f.feature.id] = {
-              providerId: f.providerId,
-              modelId: f.modelId,
-            };
-          }
-        }
-        setSelections(initialSelections);
-      } else {
-        toast.error(await readApiErrorMessage(response, 'Failed to load AI settings'));
+      if (result.error) {
+        toast.error(result.error);
+        return;
       }
+
+      if (!result.data) {
+        toast.error('Failed to load AI settings');
+        return;
+      }
+
+      setSettings(result.data);
+
+      // Initialize selections from loaded data
+      const initialSelections: Record<string, { providerId: string; modelId: string }> = {};
+      for (const f of result.data.features) {
+        if (f.providerId && f.modelId) {
+          initialSelections[f.feature.id] = {
+            providerId: f.providerId,
+            modelId: f.modelId,
+          };
+        }
+      }
+      setSelections(initialSelections);
     } catch (error) {
       console.error('Error loading settings:', error);
       toast.error('Failed to load AI settings');
@@ -124,20 +100,19 @@ export default function AIModelsSettingsPage() {
     try {
       setSavingFeature(featureId);
 
-      const response = await apiFetch(API_V1.SETTINGS.AI_MODELS, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          feature: featureId,
-          providerId: selection?.providerId || null,
-          modelId: selection?.modelId || null,
-        }),
+      const result = await updateAIPreference({
+        feature: featureId,
+        providerId: selection?.providerId || null,
+        modelId: selection?.modelId || null,
       });
 
-      if (response.ok) {
-        toast.success('Preference saved');
-        await loadSettings(); // Refresh to get updated names
-      } else { toast.error(await readApiErrorMessage(response, 'Failed to save preference')); }
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success('Preference saved');
+      await loadSettings(); // Refresh to get updated names
     } catch (error) {
       console.error('Error saving preference:', error);
       toast.error('Failed to save preference');
@@ -150,27 +125,24 @@ export default function AIModelsSettingsPage() {
     try {
       setSavingFeature(featureId);
 
-      const response = await apiFetch(API_V1.SETTINGS.AI_MODELS, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          feature: featureId,
-          providerId: null,
-          modelId: null,
-        }),
+      const result = await updateAIPreference({
+        feature: featureId,
+        providerId: null,
+        modelId: null,
       });
 
-      if (response.ok) {
-        toast.success('Preference cleared - will use default');
-        setSelections((prev) => {
-          const updated = { ...prev };
-          delete updated[featureId];
-          return updated;
-        });
-        await loadSettings();
-      } else {
-        toast.error(await readApiErrorMessage(response, 'Failed to clear preference'));
+      if (result.error) {
+        toast.error(result.error);
+        return;
       }
+
+      toast.success('Preference cleared - will use default');
+      setSelections((prev) => {
+        const updated = { ...prev };
+        delete updated[featureId];
+        return updated;
+      });
+      await loadSettings();
     } catch (error) {
       console.error('Error clearing preference:', error);
       toast.error('Failed to clear preference');
@@ -217,7 +189,7 @@ export default function AIModelsSettingsPage() {
             You need to add at least one API provider before configuring AI model preferences.
           </p>
           <Button asChild>
-            <Link href="/settings/api-keys">Add API Provider</Link>
+            <Link href={ROUTES.SETTINGS_API_KEYS}>Add API Provider</Link>
           </Button>
         </Card>
       );
@@ -363,7 +335,7 @@ export default function AIModelsSettingsPage() {
 
         <div className="mt-8 flex justify-between items-center">
           <Button variant="outline" asChild>
-            <Link href="/settings/api-keys">Manage API Keys</Link>
+            <Link href={ROUTES.SETTINGS_API_KEYS}>Manage API Keys</Link>
           </Button>
           <Button variant="ghost" onClick={loadSettings} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />

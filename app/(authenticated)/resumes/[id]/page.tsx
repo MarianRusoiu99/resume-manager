@@ -11,9 +11,8 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Edit } from 'lucide-react';
-import { apiFetch } from '@/lib/utils/api-client';
+import { apiFetch, apiJson } from '@/lib/utils/api-client';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import type { GeneratedResume } from '@/lib/types';
 
@@ -37,18 +36,20 @@ export default function ResumeDetailPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await apiFetch(API_V1.RESUME.GET(resumeId));
+      const result = await apiJson<GeneratedResume>(API_V1.RESUME.GET(resumeId));
 
-      if (!response.ok) {
-        if (response.status === 404) {
+      if (result.error || !result.data) {
+        if (result.status === 404) {
           throw new Error('Resume not found');
         }
-        throw new Error('Failed to fetch resume');
+        throw new Error(result.error || 'Failed to fetch resume');
       }
 
-      const data = await parseApiJson<GeneratedResume>(response);
-      logger.debug('Fetched resume data', { templateId: data.templateId, pdfUrl: data.pdfUrl });
-      setResume(data);
+      logger.debug('Fetched resume data', {
+        templateId: result.data.templateId,
+        pdfUrl: result.data.pdfUrl,
+      });
+      setResume(result.data);
     } catch (err) {
       logger.error('Failed to fetch resume', err);
       setError(err instanceof Error ? err.message : 'Failed to load resume');
@@ -100,11 +101,16 @@ export default function ResumeDetailPage() {
     try {
       setIsDuplicating(true);
 
-      const response = await apiFetch(API_V1.RESUME.DUPLICATE(resumeId), {
+      const result = await apiJson<{ resume: { id: string } }>(API_V1.RESUME.DUPLICATE(resumeId), {
         method: 'POST',
       });
 
-      if (!response.ok) { throw new Error(await readApiErrorMessage(response, 'Failed to duplicate resume')); } const data = await parseApiJson<{ resume: { id: string } }>(response); toast.success('Resume duplicated successfully');      // Redirect to the duplicated resume      router.push(`/resumes/${data.resume.id}`);
+      if (result.error || !result.data) {
+        throw new Error(result.error || 'Failed to duplicate resume');
+      }
+
+      toast.success('Resume duplicated successfully');
+      router.push(`/resumes/${result.data.resume.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to duplicate resume');
     } finally {
@@ -118,7 +124,7 @@ export default function ResumeDetailPage() {
     try {
       setError(null);
 
-      const response = await apiFetch(API_V1.RESUME.COVER_LETTER(resumeId), {
+      const result = await apiJson<{ resume: { coverLetter: string; updatedAt: string } }>(API_V1.RESUME.COVER_LETTER(resumeId), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -128,18 +134,15 @@ export default function ResumeDetailPage() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Failed to save cover letter'));
+      if (result.error || !result.data) {
+        throw new Error(result.error || 'Failed to save cover letter');
       }
 
-      const data = await parseApiJson<{ resume: { coverLetter: string; updatedAt: string } }>(response);
-
-      // Update local state
       if (resume) {
         setResume({
           ...resume,
-          coverLetter: data.resume.coverLetter,
-          updatedAt: data.resume.updatedAt,
+          coverLetter: result.data.resume.coverLetter,
+          updatedAt: result.data.resume.updatedAt,
         });
       }
 

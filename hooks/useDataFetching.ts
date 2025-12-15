@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { parseApiJson, readApiErrorMessage } from "@/lib/utils/api-response";
+import { apiJson } from "@/lib/utils/api-client";
 
 /**
  * Options for data fetching hooks
@@ -72,21 +72,21 @@ export function useFetch<T>(
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(url, {
+      const result = await apiJson<unknown>(url, {
         signal: abortControllerRef.current.signal,
       });
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, `Failed to fetch: ${response.statusText}`));
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      let result: unknown = await parseApiJson(response);
+      let transformed: unknown = result.data;
 
       if (transformRef.current) {
-        result = transformRef.current(result);
+        transformed = transformRef.current(transformed);
       }
 
-      setData(result as T);
+      setData(transformed as T);
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         return; // Ignore aborted requests

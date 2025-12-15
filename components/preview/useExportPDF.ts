@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiJson } from '@/lib/utils/api-client';
 
 const logger = createComponentLogger('useExportPDF');
 
@@ -53,7 +53,7 @@ export function useExportPDF() {
         });
 
         if (!response.ok) {
-          throw new Error(await readApiErrorMessage(response, 'Failed to export PDF'));
+          throw new Error('Failed to export PDF');
         }
 
         await downloadPDF(response);
@@ -66,12 +66,12 @@ export function useExportPDF() {
         throw new Error('No template selected');
       }
 
-      const templateResponse = await fetch(API_V1.TEMPLATE.GET(templateId));
-      if (!templateResponse.ok) {
-        throw new Error(await readApiErrorMessage(templateResponse, 'Failed to fetch template'));
+      const templateResult = await apiJson<{ htmlTemplate: string; cssStyles: string }>(API_V1.TEMPLATE.GET(templateId));
+      if (templateResult.error || !templateResult.data) {
+        throw new Error(templateResult.error ?? 'Failed to fetch template');
       }
 
-      const template = await parseApiJson<{ htmlTemplate: string; cssStyles: string }>(templateResponse);
+      const template = templateResult.data;
 
       // Call universal PDF export API
       const response = await fetch(API_V1.EXPORT.PDF, {
@@ -90,7 +90,7 @@ export function useExportPDF() {
       });
 
       if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Failed to export PDF'));
+        throw new Error('Failed to export PDF');
       }
 
       await downloadPDF(response);

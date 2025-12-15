@@ -20,9 +20,8 @@ import { FileText, Image as ImageIcon, FileType, ClipboardPaste, Upload, Chevron
 import { toast } from "sonner";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiFetch } from "@/lib/utils/api-client";
+import { apiJson } from "@/lib/utils/api-client";
 import { API_V1 } from "@/lib/constants";
-import { parseApiJson, readApiErrorMessage } from "@/lib/utils/api-response";
 
 interface ResumeImportButtonProps {
     onImportSuccess: (resume: Resume) => void;
@@ -59,19 +58,17 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
         formData.append("fileType", currentFileType);
 
         try {
-            const response = await apiFetch(API_V1.RESUME.IMPORT, {
+            const result = await apiJson<{ resume?: unknown }>(API_V1.RESUME.IMPORT, {
                 method: "POST",
                 body: formData,
             });
 
-            if (!response.ok) {
-                throw new Error(await readApiErrorMessage(response, "Failed to import resume"));
+            if (result.error || !result.data?.resume) {
+                throw new Error(result.error ?? "Failed to import resume");
             }
 
-            const data = await parseApiJson<{ resume?: unknown }>(response);
-
             // Validate the extracted resume data
-            const validation = resumeSchema.safeParse(data.resume);
+            const validation = resumeSchema.safeParse(result.data.resume);
             console.log("Validation result:", validation);
             if (!validation.success) {
                 console.error("Validation errors:", validation.error.issues);

@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/utils/api-client";
+import { apiFetch, apiJson } from "@/lib/utils/api-client";
 import { API_V1 } from "@/lib/constants";
-import { parseApiJson, readApiErrorMessage } from "@/lib/utils/api-response";
 
 /**
  * Resume Edit Page - Full-screen editor like profile editor
@@ -29,10 +28,9 @@ export default function ResumeEditPage() {
   useEffect(() => {
     const loadJobTitle = async () => {
       try {
-        const response = await apiFetch(API_V1.RESUME.GET(resumeId));
-        if (response.ok) {
-          const data = await parseApiJson<{ jobMetadata?: { jobTitle?: string } }>(response);
-          setJobTitle(data.jobMetadata?.jobTitle || "");
+        const result = await apiJson<{ jobMetadata?: { jobTitle?: string } }>(API_V1.RESUME.GET(resumeId));
+        if (!result.error && result.data) {
+          setJobTitle(result.data.jobMetadata?.jobTitle || "");
         }
       } catch (error) {
         console.error("Error loading job title:", error);
@@ -46,9 +44,13 @@ export default function ResumeEditPage() {
    */
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const response = await apiFetch(API_V1.RESUME.GET(resumeId));
+      const result = await apiJson<{ content: Resume }>(API_V1.RESUME.GET(resumeId));
 
-      if (!response.ok) { throw new Error(await readApiErrorMessage(response, "Failed to load resume")); } const data = await parseApiJson<{ content: Resume }>(response); return data.content;
+      if (result.error || !result.data) {
+        throw new Error(result.error || "Failed to load resume");
+      }
+
+      return result.data.content;
     } catch (error) {
       console.error("Error loading resume:", error);
       return null;
@@ -60,14 +62,14 @@ export default function ResumeEditPage() {
    */
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const response = await apiFetch(API_V1.RESUME.GET(resumeId), {
+      const result = await apiJson(API_V1.RESUME.GET(resumeId), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume }),
       });
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, "Failed to save resume"));
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       return true;

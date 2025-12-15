@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiFetch } from "@/lib/utils/api-client";
+import { apiJson } from "@/lib/utils/api-client";
 import { API_V1 } from "@/lib/constants";
-import { parseApiJson, readApiErrorMessage } from "@/lib/utils/api-response";
 
 interface Profile {
   userId: string;
@@ -43,7 +42,7 @@ export function useProfileSave() {
     setIsSaving(true);
 
     try {
-      const response = await apiFetch(API_V1.PROFILE.LIST, {
+      const result = await apiJson<Profile>(API_V1.PROFILE.LIST, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -51,11 +50,11 @@ export function useProfileSave() {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, `Failed to save ${sectionLabels[section]}`));
+      if (result.error || !result.data) {
+        throw new Error(result.error ?? `Failed to save ${sectionLabels[section]}`);
       }
 
-      const updatedProfile = await parseApiJson<Profile>(response);
+      const updatedProfile = result.data;
       onSuccess(updatedProfile);
       toast.success(`${sectionLabels[section]} saved successfully!`);
       return true;

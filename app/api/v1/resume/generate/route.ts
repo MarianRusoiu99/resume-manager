@@ -9,17 +9,10 @@
  */
 
 import { resumeService } from '@/lib/services/resume.service';
-import { z } from 'zod';
 import { resumesCache } from '@/lib/cache/resumes-cache';
 import { createApiHandler } from '@/lib/api-handler';
 import { logger } from '@/lib/utils/logger';
-
-const generateResumeSchema = z.object({
-  jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
-  profileId: z.string().optional(),
-  templateId: z.string().optional(),
-  modelId: z.string().optional(),
-});
+import { generateResumeSchema } from '@/lib/validations/api-schemas';
 
 export const POST = createApiHandler(
   async (request, context, session, body) => {

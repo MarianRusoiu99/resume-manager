@@ -16,8 +16,7 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ArrowLeft, Trash2, ExternalLink, FileText } from 'lucide-react';
 import { API_V1 } from '@/lib/constants';
-import { apiFetch } from '@/lib/utils/api-client';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiFetch, apiJson } from '@/lib/utils/api-client';
 
 interface CoverLetter {
   id: string;
@@ -54,23 +53,22 @@ export default function CoverLetterDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const fetchCoverLetter = async () => {
+       const fetchCoverLetter = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-       const response = await apiFetch(API_V1.COVER_LETTER.GET(coverLetterId));
- 
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('Cover letter not found');
-          }
-          throw new Error(await readApiErrorMessage(response, 'Failed to fetch cover letter'));
+      const result = await apiJson<CoverLetter>(API_V1.COVER_LETTER.GET(coverLetterId));
+
+      if (result.error || !result.data) {
+        if (result.status === 404) {
+          throw new Error('Cover letter not found');
         }
-  
-        const data = await parseApiJson<CoverLetter>(response);
-        setCoverLetter(data);
-     } catch (err) {
+        throw new Error(result.error || 'Failed to fetch cover letter');
+      }
+
+      setCoverLetter(result.data);
+    } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load cover letter');
       toast.error(err instanceof Error ? err.message : 'Failed to load cover letter');
     } finally {
@@ -87,7 +85,7 @@ export default function CoverLetterDetailPage() {
 
   const handleSaveCoverLetter = async (content: string, contentJson: string) => {
     try {
-      const response = await apiFetch(API_V1.COVER_LETTER.GET(coverLetterId), {
+      const result = await apiJson<CoverLetter>(API_V1.COVER_LETTER.GET(coverLetterId), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -95,12 +93,11 @@ export default function CoverLetterDetailPage() {
         body: JSON.stringify({ content, contentJson }),
       });
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Failed to save cover letter'));
+      if (result.error || !result.data) {
+        throw new Error(result.error || 'Failed to save cover letter');
       }
 
-      const data = await parseApiJson<CoverLetter>(response);
-      setCoverLetter(data);
+      setCoverLetter(result.data);
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : 'Failed to save cover letter');
     }

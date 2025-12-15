@@ -6,6 +6,7 @@
  */
 
 import { triggerSessionExpiry } from "@/lib/auth/session-expiry";
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 type FetchOptions = RequestInit & {
   /** Skip session expiry handling for this request */
@@ -74,17 +75,16 @@ export async function apiJson<T>(
 ): Promise<{ data: T | null; error: string | null; status: number }> {
   try {
     const response = await apiFetch(input, init);
-    
+
     if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({}));
       return {
         data: null,
-        error: errorBody.error || `Request failed with status ${response.status}`,
+        error: await readApiErrorMessage(response, `Request failed with status ${response.status}`),
         status: response.status,
       };
     }
-    
-    const data = await response.json();
+
+    const data = await parseApiJson<T>(response);
     return { data, error: null, status: response.status };
   } catch (error) {
     return {

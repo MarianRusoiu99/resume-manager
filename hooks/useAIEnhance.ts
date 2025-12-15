@@ -15,7 +15,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useAIModels, type AIModel } from './useAIModels';
 import type { ContentType } from '@/lib/validations/settings';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiJson } from '@/lib/utils/api-client';
 
 interface UseAIEnhanceOptions {
   /** Content type for enhancement */
@@ -122,7 +122,7 @@ export function useAIEnhance(options: UseAIEnhanceOptions = {}): UseAIEnhanceRet
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(API_V1.AI.ENHANCE, {
+      const result = await apiJson<{ enhancedContent?: string }>(API_V1.AI.ENHANCE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -134,12 +134,11 @@ export function useAIEnhance(options: UseAIEnhanceOptions = {}): UseAIEnhanceRet
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Enhancement failed'));
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const data = await parseApiJson<{ enhancedContent?: string }>(response);
-      setEnhancedContent(data.enhancedContent ?? '');
+      setEnhancedContent(result.data?.enhancedContent ?? '');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Enhancement failed';
       setError(message);

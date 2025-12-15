@@ -54,7 +54,9 @@ export {
   
   // Notification
   notificationQuerySchema,
+  notificationActionSchema,
   type NotificationQuery,
+  type NotificationAction,
   
   // Common
   paginationSchema,

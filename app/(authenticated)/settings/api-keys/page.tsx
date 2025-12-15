@@ -2,9 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { apiFetch } from '@/lib/utils/api-client';
-import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import {
+  addApiProvider,
+  deleteApiProvider,
+  listApiProvidersForSettings,
+  toggleApiProvider,
+  type ApiProvider,
+} from '@/lib/client/api-providers.client';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
@@ -30,16 +34,6 @@ interface ModelInfo {
   description?: string;
 }
 
-interface ApiProvider {
-  id: string;
-  name: string;
-  provider: string;
-  keyPreview: string;
-  models: ModelInfo[]; // Changed from string[] to ModelInfo[]
-  isActive: boolean;
-  createdAt: string;
-  lastUsedAt: string | null;
-}
 
 export default function ApiKeysPage() {
   const [providers, setProviders] = useState<ApiProvider[]>([]);
@@ -63,13 +57,12 @@ export default function ApiKeysPage() {
   const loadProviders = async () => {
     try {
       setIsLoading(true);
-      const response = await apiFetch(API_V1.SETTINGS.API_PROVIDERS);
-      if (response.ok) {
-        const data = await parseApiJson<ApiProvider[]>(response);
-        setProviders(data);
-      } else {
-        toast.error(await readApiErrorMessage(response, 'Failed to load API providers'));
+      const result = await listApiProvidersForSettings();
+      if (result.error || !result.data) {
+        toast.error(result.error ?? 'Failed to load API providers');
+        return;
       }
+      setProviders(result.data);
     } catch (error) {
       console.error('Error loading providers:', error);
       toast.error('Failed to load API providers');
@@ -88,17 +81,13 @@ export default function ApiKeysPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await apiFetch(API_V1.SETTINGS.API_PROVIDERS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newProvider.name,
-          provider: newProvider.provider,
-          apiKey: newProvider.apiKey,
-        }),
+      const result = await addApiProvider({
+        name: newProvider.name,
+        provider: newProvider.provider,
+        apiKey: newProvider.apiKey,
       });
 
-      if (response.ok) {
+      if (!result.error) {
         toast.success('API provider added successfully');
         setShowAddDialog(false);
         setNewProvider({
@@ -108,7 +97,7 @@ export default function ApiKeysPage() {
         });
         loadProviders();
       } else {
-        toast.error(await readApiErrorMessage(response, 'Failed to add provider'));
+        toast.error(result.error ?? 'Failed to add provider');
       }
     } catch (error) {
       console.error('Error adding provider:', error);
@@ -124,11 +113,14 @@ export default function ApiKeysPage() {
     }
 
     try {
-      const response = await apiFetch(API_V1.SETTINGS.API_PROVIDER(id), {
-        method: 'DELETE',
-      });
+      const result = await deleteApiProvider(id);
 
-      if (response.ok) {\n        toast.success('Provider deleted successfully');\n        loadProviders();\n      } else {\n        toast.error(await readApiErrorMessage(response, 'Failed to delete provider'));\n      }
+      if (!result.error) {
+        toast.success('Provider deleted successfully');
+        loadProviders();
+      } else {
+        toast.error(result.error ?? 'Failed to delete provider');
+      }
     } catch (error) {
       console.error('Error deleting provider:', error);
       toast.error('Failed to delete provider');
@@ -137,17 +129,13 @@ export default function ApiKeysPage() {
 
   const handleToggleProvider = async (id: string, isActive: boolean) => {
     try {
-      const response = await apiFetch(API_V1.SETTINGS.API_PROVIDER(id), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !isActive }),
-      });
+      const result = await toggleApiProvider(id, !isActive);
 
-      if (response.ok) {
+      if (!result.error) {
         toast.success(`Provider ${isActive ? 'disabled' : 'enabled'}`);
         loadProviders();
       } else {
-        toast.error(await readApiErrorMessage(response, 'Failed to toggle provider'));
+        toast.error(result.error ?? 'Failed to toggle provider');
       }
     } catch (error) {
       console.error('Error toggling provider:', error);

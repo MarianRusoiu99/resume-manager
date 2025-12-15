@@ -6,11 +6,10 @@
  * Supports configurable workflows via the `workflow` parameter
  */
 
-import { NextRequest } from 'next/server';
-import { getSession } from '@/lib/auth/dal';
 import { z } from 'zod';
+import { createApiHandler } from '@/lib/api-handler';
+import { generateResumeSchema } from '@/lib/validations/api-schemas';
 import { logger } from '@/lib/utils/logger';
-import { RateLimitConfigs, applyRateLimit, getClientIdentifier } from '@/lib/middleware/rate-limit';
 import { profileService } from '@/lib/services/profile.service';
 import { apiProviderService } from '@/lib/services/api-provider.service';
 import { resumeSchema } from '@/lib/validations/jsonresume';
@@ -19,12 +18,7 @@ import { getWorkflow, createCustomWorkflow } from '@/lib/ai/workflow';
 import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
 import { notificationService } from '@/lib/services/notification.service';
 
-// Request validation schema
-const generateResumeSchema = z.object({
-  jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
-  profileId: z.string().optional(),
-  templateId: z.string().optional(),
-  modelId: z.string().optional(),
+const generateResumeStreamSchema = generateResumeSchema.extend({
   /** Workflow type: 'resume', 'cover-letter', or 'full' */
   workflowType: z.enum(['resume', 'cover-letter', 'full']).optional().default('resume'),
   /** Custom workflow steps (overrides workflowType) */
@@ -36,7 +30,6 @@ const generateResumeSchema = z.object({
  */
 async function resolveProvider(userId: string, modelId?: string) {
   if (modelId) {
-    const { apiProviderService } = await import('@/lib/services/api-provider.service');
     const modelsResult = await apiProviderService.getAvailableModels(userId);
     if (!modelsResult.success) {
       throw new Error('No API providers configured. Please add one in Settings → API Keys');
@@ -72,45 +65,11 @@ async function resolveProvider(userId: string, modelId?: string) {
 /**
  * POST /api/resume/generate-stream - Generate resume with progress streaming
  */
-export async function POST(request: NextRequest) {
-  const requestId = `req_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
-
-  try {
-    // Check authentication via DAL
-    const session = await getSession();
-    if (!session?.userId) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized', requestId }),
-        { status: 401, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Apply rate limiting
-    const identifier = getClientIdentifier(request, session.userId);
-    const rateLimitResponse = applyRateLimit(identifier, RateLimitConfigs.resumeGeneration, requestId);
-    if (rateLimitResponse) {
-      return rateLimitResponse;
-    }
-
-    // Parse and validate request body
-    const body = await request.json();
-    const validation = generateResumeSchema.safeParse(body);
-
-    if (!validation.success) {
-      return new Response(
-        JSON.stringify({
-          error: 'Invalid request',
-          details: validation.error.issues.map(e => ({
-            field: e.path.join('.'),
-            message: e.message
-          }))
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const { jobDescription, profileId, templateId, modelId, workflowType, customSteps } = validation.data;
-    const userId = session.userId;
+export const POST = createApiHandler(
+  async (request, context, session, body, meta) => {
+    const { jobDescription, profileId, templateId, modelId, workflowType, customSteps } = body!;
+    const userId = session.user.id;
+    const requestId = meta.requestId;
 
     logger.info('SSE: Resume generation started', {
       userId,
@@ -289,7 +248,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const response = new Response(stream, {
+    return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -297,16 +256,11 @@ export async function POST(request: NextRequest) {
         'X-Accel-Buffering': 'no',
       },
     });
-
-    return response;
-
-  } catch (error) {
-    logger.error('SSE: Error setting up stream', error);
-    return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : 'Failed to start generation'
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+  },
+  {
+    verifyUser: true,
+    rateLimit: 'resumeGeneration',
+    bodySchema: generateResumeStreamSchema,
   }
-}
+);
+

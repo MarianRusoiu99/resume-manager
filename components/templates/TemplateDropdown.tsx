@@ -13,9 +13,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import type { TemplateBase } from '@/lib/types/template';
-import { apiFetch } from '@/lib/utils/api-client';
+import { apiFetch, apiJson } from '@/lib/utils/api-client';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 interface TemplateDropdownProps {
   currentTemplateId: string | null;
@@ -37,13 +36,12 @@ export function TemplateDropdown({
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(API_V1.TEMPLATE.LIST);
-        if (!response.ok) {
-          throw new Error(await readApiErrorMessage(response, 'Failed to fetch templates'));
+        const result = await apiJson<{ templates?: TemplateBase[] }>(API_V1.TEMPLATE.LIST);
+        if (result.error) {
+          throw new Error(result.error);
         }
 
-        const data = await parseApiJson<{ templates?: TemplateBase[] }>(response);
-        setTemplates(data.templates ?? []);
+        setTemplates(result.data?.templates ?? []);
       } catch (error) {
         console.error('Error fetching templates:', error);
         toast.error('Failed to load templates');
@@ -76,7 +74,7 @@ export function TemplateDropdown({
       });
 
       if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Failed to update template'));
+        throw new Error('Failed to update template');
       }
 
       toast.success('Template updated successfully');

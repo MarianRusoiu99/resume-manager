@@ -12,7 +12,7 @@ import React, {
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiJson } from '@/lib/utils/api-client';
 
 /**
  * Notification type from the API
@@ -78,14 +78,13 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(API_V1.NOTIFICATIONS.ROOT);
+      const result = await apiJson<{ notifications?: Notification[]; unreadCount?: number }>(API_V1.NOTIFICATIONS.ROOT);
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Failed to fetch notifications'));
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const data = await parseApiJson<{ notifications?: Notification[]; unreadCount?: number }>(response);
-
+      const data = result.data;
       setNotifications(data?.notifications || []);
       setUnreadCount(data?.unreadCount || 0);
     } catch (error) {
@@ -100,12 +99,11 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const response = await fetch(API_V1.NOTIFICATIONS.COUNT);
+      const result = await apiJson<{ count?: number }>(API_V1.NOTIFICATIONS.COUNT);
 
-      if (!response.ok) return;
+      if (result.error) return;
 
-      const data = await parseApiJson<{ count?: number }>(response);
-      setUnreadCount(data?.count || 0);
+      setUnreadCount(result.data?.count || 0);
     } catch (error) {
       console.error('Error fetching notification count:', error);
     }

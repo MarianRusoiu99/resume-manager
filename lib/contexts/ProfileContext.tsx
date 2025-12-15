@@ -4,9 +4,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useSession } from "next-auth/react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
-import { apiFetch } from "@/lib/utils/api-client";
+import { apiJson } from "@/lib/utils/api-client";
 import { API_V1 } from "@/lib/constants";
-import { parseApiJson, readApiErrorMessage } from "@/lib/utils/api-response";
 
 interface Profile {
   id: string;
@@ -51,13 +50,12 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
       setLoading(true);
       setError(null);
 
-      const response = await apiFetch(API_V1.PROFILE.LIST);
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Failed to load profiles'));
+      const result = await apiJson<Profile[]>(API_V1.PROFILE.LIST);
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const data = await parseApiJson<Profile[]>(response);
-      const profilesData = (Array.isArray(data) ? data : []) as Profile[];
+      const profilesData = (Array.isArray(result.data) ? result.data : []) as Profile[];
 
       setProfiles(profilesData);
 

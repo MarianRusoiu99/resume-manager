@@ -1,22 +1,16 @@
 import { NextResponse } from 'next/server';
 import { notificationService } from '@/lib/services/notification.service';
 import { createApiHandler } from '@/lib/api-handler';
-import { z } from 'zod';
-
-// Query params schema
-const querySchema = z.object({
-  limit: z.coerce.number().min(1).max(100).default(50),
-  includeRead: z.coerce.boolean().default(true),
-});
+import { notificationActionSchema, notificationQuerySchema } from '@/lib/validations/api-schemas';
 
 /**
  * GET /api/notifications - Get all notifications for the current user
  */
 export const GET = createApiHandler(async (request, context, session) => {
   const { searchParams } = new URL(request.url);
-  const params = querySchema.parse({
-    limit: searchParams.get('limit') || '50',
-    includeRead: searchParams.get('includeRead') !== 'false',
+  const params = notificationQuerySchema.parse({
+    limit: searchParams.get('limit') ?? undefined,
+    includeRead: searchParams.get('includeRead') ?? undefined,
   });
 
   const result = await notificationService.getNotifications(session.user.id, {
@@ -37,51 +31,35 @@ export const GET = createApiHandler(async (request, context, session) => {
   });
 });
 
-// Action schema for POST requests
-const actionSchema = z.object({
-  action: z.enum(['markAllRead', 'cleanup']),
-  daysOld: z.number().min(1).max(365).optional(),
-});
-
 /**
  * POST /api/notifications - Mark all notifications as read or cleanup
  */
-export const POST = createApiHandler(async (request, context, session) => {
-  const body = await request.json();
-  const { action, daysOld } = actionSchema.parse(body);
+export const POST = createApiHandler(
+  async (request, context, session, body) => {
+    const { action, daysOld } = body!;
 
-   if (action === 'markAllRead') {
-     const result = await notificationService.markAllAsRead(session.user.id);
- 
-     if (!result.success) {
-       return result;
-     }
- 
-     return NextResponse.json({
-       success: true,
-       message: `Marked ${result.data.count} notifications as read`,
-     });
-   }
+    if (action === 'markAllRead') {
+      const result = await notificationService.markAllAsRead(session.user.id);
 
+      if (!result.success) {
+        return result;
+      }
 
-  if (action === 'cleanup') {
-    const result = await notificationService.cleanupOldNotifications(
-      session.user.id,
-      daysOld ?? 30
-    );
+      return NextResponse.json({
+        message: `Marked ${result.data.count} notifications as read`,
+      });
+    }
+
+    const result = await notificationService.cleanupOldNotifications(session.user.id, daysOld ?? 30);
 
     if (!result.success) {
       return result;
     }
 
     return NextResponse.json({
-      success: true,
       message: `Deleted ${result.data.count} old notifications`,
     });
-  }
+  },
+  { bodySchema: notificationActionSchema }
+);
 
-  return NextResponse.json(
-    { error: 'Invalid action' },
-    { status: 400 }
-  );
-});

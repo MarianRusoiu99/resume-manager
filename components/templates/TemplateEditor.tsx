@@ -24,8 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, Code, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiFetch } from '@/lib/utils/api-client';
-import { readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiFetch, apiJson } from '@/lib/utils/api-client';
 import { API_V1 } from '@/lib/constants';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
@@ -128,14 +127,14 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
 
       const method = isNew ? 'POST' : 'PATCH';
 
-      const response = await apiFetch(url, {
+      const result = await apiJson(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Failed to save template'));
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       // Clear draft

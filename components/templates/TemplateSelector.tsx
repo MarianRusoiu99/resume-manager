@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import type { TemplateBase } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiJson } from '@/lib/utils/api-client';
 
 const logger = createComponentLogger('TemplateSelector');
 
@@ -26,13 +26,12 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(API_V1.TEMPLATE.LIST);
-        if (!response.ok) {
-          throw new Error(await readApiErrorMessage(response, 'Failed to fetch templates'));
+        const result = await apiJson<{ templates?: TemplateBase[] }>(API_V1.TEMPLATE.LIST);
+        if (result.error) {
+          throw new Error(result.error);
         }
 
-        const data = await parseApiJson<{ templates?: TemplateBase[] }>(response);
-        setTemplates(data.templates ?? []);
+        setTemplates(result.data?.templates ?? []);
       } catch (error) {
         logger.error('Error fetching templates', error);
         toast.error('Failed to load templates');
@@ -54,7 +53,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
 
     try {
       setIsUpdating(true);
-      const response = await fetch(API_V1.RESUME.TEMPLATE(resumeId), {
+      const result = await apiJson<unknown>(API_V1.RESUME.TEMPLATE(resumeId), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -64,8 +63,8 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Failed to update template'));
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       toast.success('Template updated successfully');

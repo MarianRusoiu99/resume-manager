@@ -15,20 +15,13 @@ import { ResumePreview } from '@/components/resume/ResumePreview';
 import { ExternalLink } from 'lucide-react';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { PageHeader } from '@/components/layout';
-import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-}
-
-interface Profile {
-  id: string;
-  name: string;
-  isDefault: boolean;
-}
+import { ROUTES } from '@/lib/constants';
+import { listTemplates } from '@/lib/client/templates.client';
+import { listProfiles, type ProfileListItem } from '@/lib/client/profiles.client';
+import { listApiProviders } from '@/lib/client/providers.client';
+import { generateCoverLetter } from '@/lib/client/cover-letters.client';
+import { generateResumeStream } from '@/lib/client/resumes.client';
+import type { TemplateBase } from '@/lib/types/template';
 
 interface GeneratedResume {
   id: string;
@@ -46,7 +39,7 @@ export default function GeneratePage() {
   const tabParam = searchParams.get('tab');
 
   // Common state
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<ProfileListItem[]>([]);
   const [hasAIProviders, setHasAIProviders] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -54,7 +47,7 @@ export default function GeneratePage() {
   const [resumeJobDescription, setResumeJobDescription] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedResumeProfileId, setSelectedResumeProfileId] = useState<string>('');
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [isGeneratingResume, setIsGeneratingResume] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
@@ -76,21 +69,19 @@ export default function GeneratePage() {
 
   // Load templates on mount
   useEffect(() => {
-        const loadTemplates = async () => {
-      try {
-        const response = await fetch(API_V1.TEMPLATE.LIST);
-        if (response.ok) {
-          const body = await response.json();
-          const data = body?.data ?? body;
-          setTemplates(data.templates || []);
-          if (data.templates && data.templates.length > 0) {
-            setSelectedTemplateId(data.templates[0].id);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load templates:', err);
+    const loadTemplates = async () => {
+      const result = await listTemplates();
+      if (result.error || !result.data) {
+        console.error('Failed to load templates:', result.error);
+        return;
+      }
+
+      setTemplates(result.data.templates);
+      if (result.data.templates.length > 0) {
+        setSelectedTemplateId(result.data.templates[0].id);
       }
     };
+
     loadTemplates();
   }, []);
 
@@ -99,30 +90,26 @@ export default function GeneratePage() {
     const loadData = async () => {
       setIsLoadingData(true);
       try {
-        // Load profiles and check for AI providers in parallel
-          const [profilesRes, providersRes] = await Promise.all([
-            fetch(API_V1.PROFILE.LIST),
-            fetch(API_V1.SETTINGS.API_PROVIDERS),
-          ]);
+        const [profilesResult, providersResult] = await Promise.all([
+          listProfiles(),
+          listApiProviders(),
+        ]);
 
-        if (profilesRes.ok) {
-          const data = await parseApiJson<Profile[]>(profilesRes);
-          setProfiles(data);
-          const defaultProfile = data.find((p: Profile) => p.isDefault);
+        if (!profilesResult.error && profilesResult.data) {
+          setProfiles(profilesResult.data);
+
+          const defaultProfile = profilesResult.data.find((p) => p.isDefault);
           if (defaultProfile) {
             setSelectedResumeProfileId(defaultProfile.id);
             setSelectedCoverLetterProfileId(defaultProfile.id);
-          } else if (data.length > 0) {
-            setSelectedResumeProfileId(data[0].id);
-            setSelectedCoverLetterProfileId(data[0].id);
+          } else if (profilesResult.data.length > 0) {
+            setSelectedResumeProfileId(profilesResult.data[0].id);
+            setSelectedCoverLetterProfileId(profilesResult.data[0].id);
           }
         }
 
-        if (providersRes.ok) {
-          const data = await parseApiJson<Array<{ isActive: boolean }>>(providersRes);
-          // Check if user has at least one active provider
-          const hasProviders = Array.isArray(data) && data.some((p) => p.isActive);
-          setHasAIProviders(hasProviders);
+        if (!providersResult.error && providersResult.data) {
+          setHasAIProviders(providersResult.data.some((p) => p.isActive));
         }
       } catch (err) {
         console.error('Failed to load data:', err);
@@ -130,6 +117,7 @@ export default function GeneratePage() {
         setIsLoadingData(false);
       }
     };
+
     loadData();
   }, []);
 
@@ -217,7 +205,7 @@ export default function GeneratePage() {
           action: {
             label: 'View Resume',
             onClick: () => {
-              globalThis.location.href = `/resumes/${data.resumeId}/edit`;
+              globalThis.location.href = ROUTES.RESUME_EDIT(data.resumeId!);
             },
           },
           duration: 8000,
@@ -269,21 +257,15 @@ export default function GeneratePage() {
     resetResumeProgress();
 
     try {
-      const response = await fetch(API_V1.RESUME.GENERATE_STREAM, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jobDescription: resumeJobDescription,
-          profileId: selectedResumeProfileId,
-          templateId: selectedTemplateId || undefined,
-        }),
+      const response = await generateResumeStream({
+        jobDescription: resumeJobDescription,
+        profileId: selectedResumeProfileId,
+        templateId: selectedTemplateId || undefined,
       });
 
-      if (!response.ok) { 
-         throw new Error(await readApiErrorMessage(response, 'Failed to generate resume'));
-      }
+       if (!response.ok) {
+          throw new Error((await response.text()) || 'Failed to generate resume');
+       }
 
       const reader = response.body?.getReader();
 
@@ -329,34 +311,29 @@ export default function GeneratePage() {
     setGeneratedCoverLetter(null);
 
     try {
-      const response = await fetch(API_V1.COVER_LETTER.GENERATE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jobDescription: coverLetterJobDescription,
-          personalInstructions: coverLetterPersonalInstructions.trim() || undefined,
-          profileId: profileId,
-        }),
+      const result = await generateCoverLetter({
+        jobDescription: coverLetterJobDescription,
+        personalInstructions: coverLetterPersonalInstructions,
+        profileId,
       });
 
-      if (!response.ok) {  
-         throw new Error(await readApiErrorMessage(response, 'Failed to generate cover letter')); 
+      if (result.error || !result.data) {
+        throw new Error(result.error ?? 'Failed to generate cover letter');
       }
 
-      const data = await parseApiJson<{ coverLetter: string; coverLetterId?: string }>(response);
-      setGeneratedCoverLetter(data.coverLetter);
+      setGeneratedCoverLetter(result.data.coverLetter);
       
       // Show toast with action to view cover letter
       toast.success('Cover letter generated successfully!', {
         description: 'Your cover letter is ready to view and edit.',
-        action: data.coverLetterId ? {
-          label: 'View Cover Letter',
-          onClick: () => {
-            globalThis.location.href = `/cover-letters/${data.coverLetterId}`;
-          },
-        } : undefined,
+        action: result.data?.coverLetterId
+          ? {
+              label: 'View Cover Letter',
+              onClick: () => {
+                globalThis.location.href = `/cover-letters/${result.data?.coverLetterId}`;
+              },
+            }
+          : undefined,
         duration: 8000,
       });
     } catch (err) {
@@ -477,7 +454,7 @@ export default function GeneratePage() {
                       <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
                         <p className="text-sm text-yellow-800 dark:text-yellow-200">
                           ⚠️ No AI providers configured. Please add an API key in{' '}
-                          <Link href="/settings/api-keys" className="underline font-medium">
+                          <Link href={ROUTES.SETTINGS_API_KEYS} className="underline font-medium">
                             Settings → API Keys
                           </Link>{' '}
                           to generate resumes.
@@ -575,7 +552,7 @@ export default function GeneratePage() {
                   <div className="space-y-6">
                     {/* Action Button */}
                     <div className="flex justify-end">
-                      <Link href={`/resumes/${generatedResumeId}/edit`}>
+                      <Link href={ROUTES.RESUME_EDIT(generatedResumeId)}>
                         <Button variant="default">
                           <ExternalLink className="w-4 h-4 mr-2" />
                           Open in Resume Editor
@@ -688,7 +665,7 @@ export default function GeneratePage() {
                       <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
                         <p className="text-sm text-yellow-800 dark:text-yellow-200">
                           ⚠️ No AI providers configured. Please add an API key in{' '}
-                          <Link href="/settings/api-keys" className="underline font-medium">
+                          <Link href={ROUTES.SETTINGS_API_KEYS} className="underline font-medium">
                             Settings → API Keys
                           </Link>{' '}
                           to generate cover letters.

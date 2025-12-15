@@ -33,7 +33,7 @@ import { PromptInput } from './prompt/PromptInput';
 import { useTemplatePreview } from '@/hooks/useTemplatePreview';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiJson } from '@/lib/utils/api-client';
 
 interface AIEnhanceResumeModalProps {
     open: boolean;
@@ -360,7 +360,7 @@ export function AIEnhanceResumeModal({
                 attachmentsContext,
             ].filter(Boolean);
 
-            const response = await fetch(API_V1.AI.ENHANCE, {
+            const result = await apiJson<{ enhancedContent?: string }>(API_V1.AI.ENHANCE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -383,12 +383,11 @@ CRITICAL INSTRUCTIONS:
                 }),
             });
 
-            if (!response.ok) {
-                throw new Error(await readApiErrorMessage(response, 'Enhancement failed'));
+            if (result.error) {
+                throw new Error(result.error);
             }
 
-            const data = await parseApiJson<{ enhancedContent?: string }>(response);
-            let enhanced = (data.enhancedContent ?? '').trim();
+            let enhanced = (result.data?.enhancedContent ?? '').trim();
 
             // Remove markdown code blocks if present
             if (enhanced.startsWith('```')) {

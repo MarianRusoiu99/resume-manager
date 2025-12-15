@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiJson } from '@/lib/utils/api-client';
 
 const logger = createComponentLogger('useTemplateSelection');
 
@@ -29,32 +29,26 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
     if (!entityId) return null;
     
     const endpoint = isProfile ? API_V1.PROFILE.GET(entityId) : API_V1.RESUME.GET(entityId);
-    const response = await fetch(endpoint);
-    
-    if (response.ok) {
-      const data = await parseApiJson<{ selectedTemplateId?: string | null; templateId?: string | null }>(response);
+    const result = await apiJson<{ selectedTemplateId?: string | null; templateId?: string | null }>(endpoint);
+    if (result.error || !result.data) return null;
 
-      if (isProfile) {
-        return data.selectedTemplateId ?? null;
-      }
-
-      return data.templateId ?? null;
+    if (isProfile) {
+      return result.data.selectedTemplateId ?? null;
     }
-    
-    return null;
+
+    return result.data.templateId ?? null;
   }, [entityId, isProfile]);
 
   // Helper: Load default template
   const loadDefaultTemplate = useCallback(async (): Promise<string | null> => {
-    const response = await fetch(`${API_V1.TEMPLATE.LIST}?limit=1`);
-    if (response.ok) {
-      const data = await parseApiJson<{ templates?: Array<{ id: string }> }>(response);
-      const templates = data.templates;
+    const result = await apiJson<{ templates?: Array<{ id: string }> }>(`${API_V1.TEMPLATE.LIST}?limit=1`);
+    if (result.error || !result.data) return null;
 
-      if (templates && templates.length > 0) {
-        return templates[0].id;
-      }
+    const templates = result.data.templates;
+    if (templates && templates.length > 0) {
+      return templates[0].id;
     }
+
     return null;
   }, []);
 
@@ -118,16 +112,15 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
         const body = isProfile 
           ? { selectedTemplateId: templateId }
           : { templateId };
-        
-        const response = await fetch(endpoint, {
+
+        const result = await apiJson<unknown>(endpoint, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
-        
-        if (!response.ok) {
-          const message = await readApiErrorMessage(response, 'Unknown error');
-          logger.error('Failed to save template selection', new Error(message));
+
+        if (result.error) {
+          logger.error('Failed to save template selection', new Error(result.error));
         }
       } catch (error) {
         logger.error('Error saving template', error);

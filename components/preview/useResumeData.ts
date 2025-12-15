@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson } from '@/lib/utils/api-response';
+import { apiJson } from '@/lib/utils/api-client';
 
 const logger = createComponentLogger('useResumeData');
 
@@ -30,13 +30,9 @@ export function useResumeData({
     if (resumeId) {
       const fetchResume = async () => {
         try {
-          const response = await fetch(API_V1.RESUME.GET(resumeId));
-          if (response.ok) {
-            const data = await parseApiJson<{ content?: Resume }>(response);
-
-            if (data.content) {
-              setResume(data.content);
-            }
+          const result = await apiJson<{ content?: Resume }>(API_V1.RESUME.GET(resumeId));
+          if (!result.error && result.data?.content) {
+            setResume(result.data.content);
           }
         } catch (error) {
           logger.error('Error fetching resume', error);

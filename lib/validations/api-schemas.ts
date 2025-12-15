@@ -106,11 +106,12 @@ export type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>;
  * Schema for resume generation input
  */
 export const generateResumeSchema = z.object({
-  profileId: z.string().min(1, 'Profile ID is required'),
-  jobDescription: z.string().min(10, 'Job description must be at least 10 characters'),
+  jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
+  profileId: z.string().optional(),
+  templateId: z.string().optional(),
+  modelId: z.string().optional(),
   jobTitle: z.string().optional(),
   companyName: z.string().optional(),
-  templateId: z.string().optional(),
   personalInstructions: z.string().max(1000).optional(),
 });
 
@@ -224,14 +225,35 @@ export type UpdateApiProviderInput = z.infer<typeof updateApiProviderSchema>;
 // ============================================================================
 
 /**
+ * Boolean query param parser that treats 'true'/'false' correctly.
+ */
+const queryBooleanSchema = z.preprocess(
+  (value) => {
+    if (typeof value === 'string') {
+      const normalized = value.toLowerCase();
+      if (normalized === 'true') return true;
+      if (normalized === 'false') return false;
+    }
+    return value;
+  },
+  z.boolean()
+);
+
+/**
  * Schema for notification query parameters
  */
 export const notificationQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(50),
-  includeRead: z.coerce.boolean().default(false),
+  includeRead: queryBooleanSchema.default(true),
+});
+
+export const notificationActionSchema = z.object({
+  action: z.enum(['markAllRead', 'cleanup']),
+  daysOld: z.number().min(1).max(365).optional(),
 });
 
 export type NotificationQuery = z.infer<typeof notificationQuerySchema>;
+export type NotificationAction = z.infer<typeof notificationActionSchema>;
 
 // ============================================================================
 // COMMON SCHEMAS

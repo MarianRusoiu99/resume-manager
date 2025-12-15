@@ -4,17 +4,33 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import 'swagger-ui-react/swagger-ui.css';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 // Dynamically import SwaggerUI to avoid SSR issues
 const SwaggerUI = dynamic(() => import('swagger-ui-react'), { ssr: false });
 
 export default function ApiDocsPage() {
-  const [spec, setSpec] = useState(null);
+  const [spec, setSpec] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {\n    const load = async () => {\n      try {\n        const response = await fetch('/api/v1/docs');\n        if (!response.ok) {\n          throw new Error(await readApiErrorMessage(response, 'Failed to load documentation'));\n        }\n        const data = await parseApiJson(response);\n        setSpec(data);\n      } catch (err) {\n        setError(err instanceof Error ? err.message : 'Failed to load documentation');\n      } finally {\n        setLoading(false);\n      }\n    };\n\n    load();\n  }, []);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const response = await fetch('/api/v1/docs');
+        if (!response.ok) {
+          throw new Error((await response.text()) || 'Failed to load documentation');
+        }
+        const data = (await response.json()) as Record<string, unknown>;
+        setSpec(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load documentation');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, []);
 
   if (loading) {
     return (

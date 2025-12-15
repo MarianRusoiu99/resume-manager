@@ -6,6 +6,7 @@ import type { Template } from "@/lib/types/template";
 import { useTemplatePreview } from "./useTemplatePreview";
 import { createComponentLogger } from "@/lib/utils/client-logger";
 import { API_V1 } from "@/lib/constants";
+import { apiJson } from "@/lib/utils/api-client";
 
 const logger = createComponentLogger('useCardPreview');
 
@@ -126,16 +127,16 @@ export function useExportPdf({
           throw new Error("Failed to load template");
         }
 
-        const templatesBody = await templatesResponse.json();
-        const templatesData = templatesBody?.data ?? templatesBody;
-        const templates =
-          templatesData && typeof templatesData === 'object' && 'templates' in templatesData
-            ? (templatesData as { templates?: Template[] }).templates
-            : undefined;
+        const templatesResult = await apiJson<{ templates?: Template[] }>(`${API_V1.TEMPLATE.LIST}?limit=1`);
+        if (templatesResult.error) {
+          throw new Error(templatesResult.error);
+        }
 
+        const templates = templatesResult.data?.templates;
         if (!templates || templates.length === 0) {
           throw new Error("No templates available");
         }
+
         template = templates[0];
       }
 

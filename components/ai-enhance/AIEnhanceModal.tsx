@@ -41,7 +41,7 @@ import { useAIModels } from '@/hooks';
 import { PromptInput } from './prompt/PromptInput';
 import type { ContentType } from '@/lib/validations/settings';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiJson } from '@/lib/utils/api-client';
 
 interface AIEnhanceModalProps {
     open: boolean;
@@ -149,7 +149,7 @@ export function AIEnhanceModal({
                 attachmentsContext,
             ].filter(Boolean);
 
-            const response = await fetch(API_V1.AI.ENHANCE, {
+            const result = await apiJson<{ enhancedContent?: string }>(API_V1.AI.ENHANCE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -162,12 +162,11 @@ export function AIEnhanceModal({
                 }),
             });
 
-            if (!response.ok) {
-                throw new Error(await readApiErrorMessage(response, 'Enhancement failed'));
+            if (result.error) {
+                throw new Error(result.error);
             }
 
-            const data = await parseApiJson<{ enhancedContent?: string }>(response);
-            setEnhancedContent(data.enhancedContent ?? '');
+            setEnhancedContent(result.data?.enhancedContent ?? '');
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Enhancement failed');
         } finally {

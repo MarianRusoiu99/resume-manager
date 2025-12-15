@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { API_V1 } from '@/lib/constants';
-import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
+import { apiJson } from '@/lib/utils/api-client';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 
 const logger = createComponentLogger('useAIModels');
@@ -61,13 +61,13 @@ export function useAIModels(options: UseAIModelsOptions = {}): UseAIModelsReturn
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(API_V1.SETTINGS.MODELS);
+      const result = await apiJson<{ allModels?: unknown[] }>(API_V1.SETTINGS.MODELS);
 
-      if (!response.ok) {
-        throw new Error(await readApiErrorMessage(response, 'Failed to fetch models'));
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const data = await parseApiJson<{ allModels?: unknown[] }>(response);
+      const data = result.data;
 
       // API returns { allModels: [...], byProvider: {...} }
       const rawModels = data?.allModels ?? [];
