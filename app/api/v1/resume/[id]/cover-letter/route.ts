@@ -5,87 +5,75 @@
  * Updates the cover letter content for an existing resume
  */
 
-import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { createApiHandler } from '@/lib/api-handler';
+import { requireFound, requireOwnership } from '@/lib/auth/guards';
+import { success } from '@/lib/types/service-result';
 
-// Validation schema
 const updateCoverLetterSchema = z.object({
   coverLetter: z.string().min(1, 'Cover letter cannot be empty'),
 });
 
-export const PUT = createApiHandler(async (request, { params }, session) => {
-  const { id: resumeId } = await params;
+type UpdateCoverLetterBody = z.infer<typeof updateCoverLetterSchema>;
 
-  // Parse and validate request body
-  const body = await request.json();
-  const validationResult = updateCoverLetterSchema.safeParse(body);
+type CoverLetterResponseData = {
+  resume: { coverLetter: string; updatedAt: string };
+};
 
-  if (!validationResult.success) {
-    return NextResponse.json(
-      {
-        error: 'Validation failed',
-        details: validationResult.error.issues
-      },
-      { status: 400 }
+export const PUT = createApiHandler<CoverLetterResponseData, UpdateCoverLetterBody>(
+  async (_request, { params }, session, body) => {
+    const { id: resumeId } = await params;
+
+    const existingResume = requireFound(
+      await prisma.generatedResume.findUnique({
+        where: { id: resumeId },
+        select: {
+          userId: true,
+          jobDescription: true,
+        },
+      }),
+      'Resume'
     );
-  }
 
-  const { coverLetter } = validationResult.data;
+    requireOwnership({
+      resourceUserId: existingResume.userId,
+      sessionUserId: session.user.id,
+      message: 'Forbidden - You do not have access to this resume',
+    });
 
-  // Check if resume exists and belongs to user
-  const existingResume = await prisma.generatedResume.findUnique({
-    where: { id: resumeId },
-    select: {
-      userId: true,
-      jobDescription: true,
-    },
-  });
-
-  if (!existingResume) {
-    return NextResponse.json(
-      { error: 'Resume not found' },
-      { status: 404 }
-    );
-  }
-
-  if (existingResume.userId !== session.user.id) {
-    return NextResponse.json(
-      { error: 'Forbidden - You do not have access to this resume' },
-      { status: 403 }
-    );
-  }
-
-  // Update the cover letter
-  const updatedResume = await prisma.generatedResume.update({
-    where: { id: resumeId },
-    data: {
-      coverLetter: {
-        upsert: {
-          create: {
-            userId: session.user.id,
-            content: coverLetter,
-            jobDescription: existingResume.jobDescription,
-            metadata: {},
+    const updatedResume = await prisma.generatedResume.update({
+      where: { id: resumeId },
+      data: {
+        coverLetter: {
+          upsert: {
+            create: {
+              userId: session.user.id,
+              content: body!.coverLetter,
+              jobDescription: existingResume.jobDescription,
+              metadata: {},
+            },
+            update: {
+              content: body!.coverLetter,
+              updatedAt: new Date(),
+            },
           },
-          update: {
-            content: coverLetter,
-            updatedAt: new Date(),
-          }
-        }
+        },
+        updatedAt: new Date(),
       },
-      updatedAt: new Date(),
-    },
-    select: {
-      id: true,
-      coverLetter: true,
-      updatedAt: true,
-    },
-  });
+      select: {
+        coverLetter: { select: { content: true } },
+        updatedAt: true,
+      },
+    });
 
-  return NextResponse.json({
-    success: true,
-    resume: updatedResume,
-  });
-});
+    return success({
+      resume: {
+        coverLetter: updatedResume.coverLetter?.content ?? body!.coverLetter,
+        updatedAt: updatedResume.updatedAt.toISOString(),
+      },
+    });
+  },
+  { bodySchema: updateCoverLetterSchema, verifyUser: true }
+);
+

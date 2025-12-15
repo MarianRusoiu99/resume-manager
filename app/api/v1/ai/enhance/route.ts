@@ -16,6 +16,7 @@ import {
   ModelNotFoundError,
 } from '@/lib/errors/ai';
 import { createApiHandler } from '@/lib/api-handler';
+import { success } from '@/lib/types/service-result';
 
 /**
  * Get system prompt based on content type
@@ -150,17 +151,14 @@ Please enhance the content according to the instructions above. Return ONLY the 
             enhancedLength: enhancedContent.length,
         });
 
-        return {
-            success: true,
-            data: {
-                enhancedContent,
-                metadata: {
-                    model: resolvedModelId,
-                    provider: providerType,
-                    contentType,
-                },
+        return success({
+            enhancedContent,
+            metadata: {
+                model: resolvedModelId,
+                provider: providerType,
+                contentType,
             },
-        };
+        });
     },
     {
         verifyUser: true,

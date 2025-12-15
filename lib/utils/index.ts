@@ -4,6 +4,11 @@
  */
 
 export { logger, withTiming, createTimedLogger } from './logger';
+export {
+  isServiceResult,
+  serviceResultToActionResult,
+  failureActionResult,
+} from './result';
 export { clientLogger, createComponentLogger, ClientLogger } from './client-logger';
 export { cn } from './cn';
 export {

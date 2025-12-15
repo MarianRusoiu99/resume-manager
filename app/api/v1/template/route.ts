@@ -3,12 +3,13 @@
  * POST /api/template - Create a new template
  */
 
-import { NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { templateRepository } from '@/lib/repositories/template.repository';
 import { templateService } from '@/lib/services/template.service';
 import { createApiHandler } from '@/lib/api-handler';
 import { createTemplateSchema } from '@/lib/validations/api-schemas';
+import { success } from '@/lib/types/service-result';
+
 
 export const GET = createApiHandler(
   async (request) => {
@@ -19,7 +20,7 @@ export const GET = createApiHandler(
       ? await templateRepository.findByCategory(category)
       : await templateRepository.findAllPublic();
 
-    return NextResponse.json({
+    return success({
       templates,
       count: templates.length,
     });
@@ -28,12 +29,8 @@ export const GET = createApiHandler(
 );
 
 export const POST = createApiHandler(
-  async (request, context, session, body) => {
-    if (!body) {
-      return NextResponse.json({ error: 'Missing request body' }, { status: 400 });
-    }
-
-    const result = await templateService.createTemplate(body);
+  async (_request, _context, _session, body) => {
+    const result = await templateService.createTemplate(body!);
 
     if (!result.success) {
       return result;
@@ -42,7 +39,7 @@ export const POST = createApiHandler(
     // Revalidate the templates page to show the new template
     revalidatePath('/templates');
 
-    return NextResponse.json(result.data, { status: 201 });
+    return result;
   },
   { bodySchema: createTemplateSchema, verifyUser: true }
 );

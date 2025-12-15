@@ -12,9 +12,9 @@
  *   - Kept for backward compatibility
  */
 
-import { NextResponse } from 'next/server';
 import { resumeService } from '@/lib/services/resume.service';
 import { createApiHandler } from '@/lib/api-handler';
+import { success } from '@/lib/types/service-result';
 
 /**
  * GET /api/resume/[id] - Get a specific resume
@@ -39,7 +39,7 @@ export const DELETE = createApiHandler(async (request, { params }, session) => {
     return result;
   }
 
-  return NextResponse.json({ success: true, message: 'Resume deleted successfully' });
+  return success({ message: 'Resume deleted successfully' });
 });
 
 /**
@@ -51,32 +51,10 @@ export const PATCH = createApiHandler(async (request, { params }, session) => {
 
   // Handle template update separately if only templateId is provided
   if (body.templateId !== undefined && !body.resume) {
-    const result = await resumeService.updateResumeTemplate(
-      id,
-      session.user.id,
-      body.templateId
-    );
-
-    if (!result.success) {
-      return result;
-    }
-
-    // Cache invalidation handled in service
-    return NextResponse.json(result.data);
+    return resumeService.updateResumeTemplate(id, session.user.id, body.templateId);
   }
 
   // Update the resume content
-  const result = await resumeService.updateResumeContent(
-    id,
-    session.user.id,
-    body.resume
-  );
-
-  if (!result.success) {
-    return result;
-  }
-
-  // Cache invalidation handled in service
-  return NextResponse.json(result.data);
+  return resumeService.updateResumeContent(id, session.user.id, body.resume);
 });
 

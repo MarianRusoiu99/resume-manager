@@ -3,70 +3,61 @@
  * Handles file uploads (PDF, Image, Word) and triggers AI extraction
  */
 
-import { NextResponse } from "next/server";
 import { parseResumeFromText, parseResumeFromImage } from "@/lib/ai/resume-parser";
 import mammoth from "mammoth";
 import { createApiHandler } from "@/lib/api-handler";
 import { apiProviderService } from "@/lib/services/api-provider.service";
+import { failure, success } from "@/lib/types/service-result";
 
-export const POST = createApiHandler(async (request, context, session) => {
+export const POST = createApiHandler<{ resume: unknown }>(async (request, context, session) => {
     const formData = await request.formData();
-    const file = formData.get("file") as File;
-    const fileType = formData.get("fileType") as string;
+    const fileValue = formData.get("file");
+    const fileTypeValue = formData.get("fileType");
 
-    if (!file) {
-        return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    if (!(fileValue instanceof File)) {
+        return failure("No file provided", "VALIDATION_ERROR");
     }
+
+    if (typeof fileTypeValue !== "string" || !fileTypeValue.trim()) {
+        return failure("No file type provided", "VALIDATION_ERROR");
+    }
+
+    const file = fileValue;
+    const fileType = fileTypeValue;
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-        return NextResponse.json(
-            { error: "File size must be less than 10MB" },
-            { status: 400 }
-        );
+        return failure("File size must be less than 10MB", "VALIDATION_ERROR");
     }
 
     // Get API key from user's configured providers
     const providerResult = await apiProviderService.getFirstActiveProvider(session.user.id);
     if (!providerResult.success) {
-        return NextResponse.json(
-            { error: providerResult.error },
-            { status: 400 }
-        );
+        // Treat missing API key as a user-fixable 400 for this endpoint.
+        const mappedCode = providerResult.code === "NOT_FOUND" ? "VALIDATION_ERROR" : providerResult.code;
+        return failure(providerResult.error, mappedCode);
     }
+
     const { apiKey } = providerResult.data;
 
-    let resumeData;
+    let resumeData: unknown;
 
     if (fileType === "pdf") {
-        // For PDFs, we'll treat them as images and use Vision API
-        // This is more reliable than text extraction
+        // For PDFs, we treat them as images and use Vision API.
         const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const base64 = buffer.toString("base64");
-
-        // Use Vision API to extract from PDF (treating it as an image)
+        const base64 = Buffer.from(arrayBuffer).toString("base64");
         resumeData = await parseResumeFromImage(base64, "application/pdf", apiKey);
     } else if (fileType === "image") {
-        // Parse Image using Vision API
         const arrayBuffer = await file.arrayBuffer();
         const base64 = Buffer.from(arrayBuffer).toString("base64");
         resumeData = await parseResumeFromImage(base64, file.type, apiKey);
     } else if (fileType === "word") {
-        // Parse Word document
         const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const result = await mammoth.extractRawText({ buffer });
+        const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) });
         resumeData = await parseResumeFromText(result.value, apiKey);
     } else {
-        return NextResponse.json(
-            { error: "Unsupported file type" },
-            { status: 400 }
-        );
+        return failure("Unsupported file type", "VALIDATION_ERROR");
     }
 
-    return NextResponse.json({
-        success: true,
-        resume: resumeData,
-    });
+    return success({ resume: resumeData });
 });

@@ -13,6 +13,7 @@ import { resumesCache } from '@/lib/cache/resumes-cache';
 import { createApiHandler } from '@/lib/api-handler';
 import { logger } from '@/lib/utils/logger';
 import { generateResumeSchema } from '@/lib/validations/api-schemas';
+import { success } from '@/lib/types/service-result';
 
 export const POST = createApiHandler(
   async (request, context, session, body) => {
@@ -58,7 +59,7 @@ export const GET = createApiHandler(
       resumesCache.set(cacheKey, resumes);
     }
 
-    return { success: true, data: resumes };
+    return success(resumes);
   },
   {
     verifyUser: false,

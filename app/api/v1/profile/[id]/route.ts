@@ -13,10 +13,10 @@
  *   - Kept for backward compatibility
  */
 
-import { NextResponse } from 'next/server';
 import { profileService } from '@/lib/services/profile.service';
 import { createApiHandler } from '@/lib/api-handler';
 import { updateProfileSchema } from '@/lib/validations/api-schemas';
+import { success } from '@/lib/types/service-result';
 
 export const GET = createApiHandler(async (request, { params }, session) => {
   const { id } = await params;
@@ -37,10 +37,10 @@ export const DELETE = createApiHandler(async (request, { params }, session) => {
 
   const result = await profileService.deleteProfile(id, session.user.id);
 
-  // Backward compatibility: return { success: true } on success
-  if (result.success) {
-    return NextResponse.json({ success: true });
+  if (!result.success) {
+    return result;
   }
 
-  return result;
+  // Backward-compatible payload for callers that ignore the body
+  return success({ success: true });
 });

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
 import { logger } from "@/lib/utils/logger";
 import { createApiHandler, ServiceError } from "@/lib/api-handler";
+import { success } from "@/lib/types/service-result";
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -40,13 +41,10 @@ export const POST = createApiHandler(
 
     logger.info("User registered", { userId: user.id });
 
-    return {
-      success: true,
-      data: {
-        message: "User created successfully",
-        user,
-      },
-    };
+    return success({
+      message: "User created successfully",
+      user,
+    });
   },
   {
     isPublic: true,

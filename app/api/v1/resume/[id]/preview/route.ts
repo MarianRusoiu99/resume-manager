@@ -4,52 +4,41 @@
  * Returns rendered HTML for iframe preview
  */
 
-import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createApiHandler } from '@/lib/api-handler';
+import { requireFound } from '@/lib/auth/guards';
 
-export const GET = createApiHandler(async (req, { params }, session) => {
+export const GET = createApiHandler(async (_req, { params }, session) => {
   const { id } = await params;
 
-  // Fetch resume with template
-  const resume = await prisma.generatedResume.findUnique({
-    where: { id },
-    include: { template: true },
-  });
-
-  if (!resume) {
-    return new NextResponse('Resume not found', { status: 404 });
-  }
-
-  if (resume.userId !== session.user.id) {
-    return new NextResponse('Forbidden', { status: 403 });
-  }
+  // Fetch resume (ownership-safe) with template
+  const resume = requireFound(
+    await prisma.generatedResume.findFirst({
+      where: { id, userId: session.user.id },
+      include: { template: true },
+    }),
+    'Resume'
+  );
 
   // Get template (use default if none selected)
   let template = resume.template;
 
   if (!template) {
-    // Get first available template as fallback
-    template = await prisma.resumeTemplate.findFirst({
-      where: { isPublic: true },
-    });
-
-    if (!template) {
-      return new NextResponse('No template available', { status: 500 });
-    }
+    template = requireFound(
+      await prisma.resumeTemplate.findFirst({ where: { isPublic: true } }),
+      'Template'
+    );
   }
 
-  // Render HTML
   const html = renderCompleteDocument(
     template.htmlTemplate,
     template.cssStyles,
     resume.resume as Resume
   );
 
-  // Return HTML for iframe
-  return new NextResponse(html, {
+  return new Response(html, {
     headers: {
       'Content-Type': 'text/html',
       'Cache-Control': 'no-cache, no-store, must-revalidate',

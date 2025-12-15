@@ -13,10 +13,10 @@
  *   - Kept for backward compatibility
  */
 
-import { NextResponse } from 'next/server';
 import { createApiHandler } from '@/lib/api-handler';
 import { coverLetterService } from '@/lib/services/cover-letter.service';
 import { updateCoverLetterSchema } from '@/lib/validations/api-schemas';
+import { success } from '@/lib/types/service-result';
 
 export const GET = createApiHandler(async (request, { params }, session) => {
   const { id } = await params;
@@ -37,9 +37,10 @@ export const DELETE = createApiHandler(async (request, { params }, session) => {
   const { id } = await params;
   const result = await coverLetterService.deleteCoverLetter(id, session.user.id);
 
-  // For delete, return { success: true } on success for backward compatibility
-  if (result.success) {
-    return NextResponse.json({ success: true });
+  if (!result.success) {
+    return result;
   }
-  return result;
+
+  // Backward-compatible payload for callers that ignore the body
+  return success({ success: true });
 });

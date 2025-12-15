@@ -11,7 +11,8 @@ export const getResumes = withServerAction(
     'getResumes',
     async (session) => {
         const result = await resumeService.getUserResumes(session.user.id);
-        return result || [];
+        if (!result.success) return result;
+        return { success: true, data: result.data };
     },
     { resourceType: 'resume' }
 );
@@ -21,15 +22,7 @@ export const getResumes = withServerAction(
  */
 export const getResume = withServerAction(
     'getResume',
-    async (session, resumeId: string) => {
-        const result = await resumeService.getResume(resumeId, session.user.id);
-
-        if (!result) {
-            throw new Error('Resume not found');
-        }
-
-        return result;
-    },
+    async (session, resumeId: string) => resumeService.getResume(resumeId, session.user.id),
     { resourceType: 'resume' }
 );
 
@@ -38,15 +31,7 @@ export const getResume = withServerAction(
  */
 export const deleteResume = withServerAction(
     'deleteResume',
-    async (session, resumeId: string) => {
-        const result = await resumeService.deleteResume(resumeId, session.user.id);
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return undefined;
-    },
+    async (session, resumeId: string) => resumeService.deleteResume(resumeId, session.user.id),
     {
         auditAction: 'RESUME_DELETE',
         resourceType: 'resume',
@@ -78,13 +63,7 @@ export const generateResume = withServerAction(
             companyName: options?.companyName,
         };
 
-        const result = await resumeService.generateResume(input);
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return result.data;
+        return resumeService.generateResume(input);
     },
     {
         auditAction: 'RESUME_GENERATE',

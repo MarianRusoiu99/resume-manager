@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
 import { notificationService } from '@/lib/services/notification.service';
 import { createApiHandler } from '@/lib/api-handler';
+import { success } from '@/lib/types/service-result';
 
 /**
  * GET /api/notifications/count - Get unread notification count
@@ -13,7 +13,7 @@ export const GET = createApiHandler(async (request, context, session) => {
     return result;
   }
 
-  return NextResponse.json({
+  return success({
     count: result.data.count,
   });
 });

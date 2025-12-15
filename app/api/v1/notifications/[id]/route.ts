@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
 import { notificationService } from '@/lib/services/notification.service';
 import { createApiHandler } from '@/lib/api-handler';
+import { success } from '@/lib/types/service-result';
 
 /**
  * PATCH /api/notifications/[id] - Mark a notification as read
@@ -11,16 +11,10 @@ export const PATCH = createApiHandler(async (request, { params }, session) => {
   const result = await notificationService.markAsRead(id, session.user.id);
 
   if (!result.success) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
-    );
+    return result;
   }
 
-  return NextResponse.json({
-    success: true,
-    notification: result.data,
-  });
+  return success({ notification: result.data });
 });
 
 /**
@@ -32,14 +26,8 @@ export const DELETE = createApiHandler(async (request, { params }, session) => {
   const result = await notificationService.deleteNotification(id, session.user.id);
 
   if (!result.success) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: result.code === 'NOT_FOUND' ? 404 : 500 }
-    );
+    return result;
   }
 
-  return NextResponse.json({
-    success: true,
-    message: 'Notification deleted',
-  });
+  return success({ message: 'Notification deleted' });
 });

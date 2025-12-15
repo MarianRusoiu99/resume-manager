@@ -6,9 +6,9 @@
  *   - Kept for backward compatibility
  */
 
-import { NextResponse } from 'next/server';
 import { profileService } from '@/lib/services/profile.service';
 import { createApiHandler } from '@/lib/api-handler';
+import { success } from '@/lib/types/service-result';
 
 export const POST = createApiHandler(async (request, { params }, session) => {
   const { id } = await params;
@@ -19,11 +19,9 @@ export const POST = createApiHandler(async (request, { params }, session) => {
   );
 
   if (!result.success) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: 400 }
-    );
+    return result;
   }
 
-  return NextResponse.json({ success: true });
+  // Backward-compatible payload shape for callers that ignore the body
+  return success({ success: true });
 });

@@ -19,7 +19,7 @@
  */
 
 import { getSession } from '@/lib/auth/dal';
-import { logger } from '@/lib/utils';
+import { logger, isServiceResult, serviceResultToActionResult, failureActionResult } from '@/lib/utils';
 import { auditLog } from '@/lib/services/audit-log.service';
 import { revalidatePath } from 'next/cache';
 import type { ActionResult } from '@/lib/actions/types';
@@ -68,9 +68,11 @@ export interface ServerActionOptions {
  * @param options - Optional configuration
  * @returns Wrapped action function
  */
+type MaybeServiceResult<T> = T | import('@/lib/types/service-result').ServiceResult<T>;
+
 export function withServerAction<TArgs extends unknown[], TResult>(
   actionName: string,
-  handler: (session: ActionSession, ...args: TArgs) => Promise<TResult>,
+  handler: (session: ActionSession, ...args: TArgs) => Promise<MaybeServiceResult<TResult>>,
   options: ServerActionOptions = {}
 ): (...args: TArgs) => Promise<ActionResult<TResult>> {
   return async (...args: TArgs): Promise<ActionResult<TResult>> => {
@@ -82,7 +84,7 @@ export function withServerAction<TArgs extends unknown[], TResult>(
       
       if (!options.isPublic && !session?.userId) {
         logger.warn(`Unauthorized ${actionName} attempt`);
-        return { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' };
+        return failureActionResult('Unauthorized', 'UNAUTHORIZED');
       }
 
       const actionSession: ActionSession = {
@@ -94,7 +96,45 @@ export function withServerAction<TArgs extends unknown[], TResult>(
       };
 
       // Execute the handler
-      const result = await handler(actionSession, ...args);
+      const handlerResult = await handler(actionSession, ...args);
+
+      // If handler returns a ServiceResult, unwrap consistently
+      if (isServiceResult<TResult>(handlerResult)) {
+        if (!handlerResult.success) {
+          if (options.auditAction && session?.userId) {
+            auditLog.failure(options.auditAction, session.userId, handlerResult.error, {
+              resourceType: options.resourceType,
+            });
+          }
+          return serviceResultToActionResult(handlerResult);
+        }
+
+        const duration = Date.now() - startTime;
+
+        logger.info(`${actionName} completed`, {
+          userId: actionSession.user.id,
+          duration,
+        });
+
+        if (options.revalidatePaths) {
+          for (const path of options.revalidatePaths) {
+            revalidatePath(path);
+          }
+        }
+
+        if (options.auditAction && session?.userId) {
+          const resourceId = extractResourceId(handlerResult.data);
+          auditLog.success(options.auditAction, session.userId, {
+            resourceType: options.resourceType,
+            resourceId,
+            metadata: { duration },
+          });
+        }
+
+        return { success: true, data: handlerResult.data };
+      }
+
+      const result = handlerResult as TResult;
 
       // Calculate duration
       const duration = Date.now() - startTime;
@@ -148,11 +188,7 @@ export function withServerAction<TArgs extends unknown[], TResult>(
         );
       }
 
-      return {
-        success: false,
-        error: wrapped.message,
-        code: wrapped.code,
-      };
+      return failureActionResult(wrapped.message, wrapped.code);
     }
   };
 }
@@ -186,11 +222,7 @@ export function withPublicAction<TArgs extends unknown[], TResult>(
 
       const wrapped = isAppError(error) ? error : wrapError(error, errorMessage);
 
-      return {
-        success: false,
-        error: wrapped.message,
-        code: wrapped.code,
-      };
+      return failureActionResult(wrapped.message, wrapped.code);
     }
   };
 }

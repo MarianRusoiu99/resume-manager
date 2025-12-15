@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
 import { createApiHandler } from "@/lib/api-handler";
 import { profileRepository } from "@/lib/repositories/profile.repository";
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import { failure, success } from "@/lib/types/service-result";
 
 const togglePublicSchema = z.object({
   isPublic: z.boolean(),
@@ -19,7 +19,7 @@ export const POST = createApiHandler(
     // Verify ownership
     const profile = await profileRepository.findById(id, session.user.id);
     if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+      return failure("Profile not found", "NOT_FOUND");
     }
 
     // Generate slug if making public and doesn't have one
@@ -34,8 +34,7 @@ export const POST = createApiHandler(
       publicSlug: body!.isPublic ? publicSlug : null,
     });
 
-    return NextResponse.json({
-      success: true,
+    return success({
       isPublic: updated.isPublic,
       publicSlug: updated.publicSlug,
     });

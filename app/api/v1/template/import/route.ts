@@ -5,10 +5,10 @@
  * POST /api/template/import - Upload image, extract template
  */
 
-import { NextResponse } from "next/server";
 import { parseTemplateFromImage } from "@/lib/ai/template-parser";
 import { createApiHandler } from "@/lib/api-handler";
 import { apiProviderService } from "@/lib/services/api-provider.service";
+import { failure, success } from "@/lib/types/service-result";
 
 // Supported image MIME types
 const SUPPORTED_IMAGE_TYPES = [
@@ -19,38 +19,37 @@ const SUPPORTED_IMAGE_TYPES = [
     "image/gif",
 ];
 
-export const POST = createApiHandler(async (request, context, session) => {
+export const POST = createApiHandler<{ template: unknown }>(async (request, context, session) => {
     const formData = await request.formData();
-    const file = formData.get("file") as File;
+    const fileValue = formData.get("file");
 
-    if (!file) {
-        return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    if (!(fileValue instanceof File)) {
+        return failure("No file provided", "VALIDATION_ERROR");
     }
+
+    const file = fileValue;
 
     // Validate file type
     if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
-        return NextResponse.json(
-            { error: `Unsupported file type. Supported types: PNG, JPEG, WebP, GIF` },
-            { status: 400 }
+        return failure(
+            "Unsupported file type. Supported types: PNG, JPEG, WebP, GIF",
+            "VALIDATION_ERROR"
         );
     }
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
-        return NextResponse.json(
-            { error: "File size must be less than 10MB" },
-            { status: 400 }
-        );
+        return failure("File size must be less than 10MB", "VALIDATION_ERROR");
     }
 
     // Get API key from user's configured providers
     const providerResult = await apiProviderService.getFirstActiveProvider(session.user.id);
     if (!providerResult.success) {
-        return NextResponse.json(
-            { error: providerResult.error },
-            { status: 400 }
-        );
+        // Treat missing API key as a user-fixable 400 for this endpoint.
+        const mappedCode = providerResult.code === "NOT_FOUND" ? "VALIDATION_ERROR" : providerResult.code;
+        return failure(providerResult.error, mappedCode);
     }
+
     const { apiKey, providerType } = providerResult.data;
 
     try {
@@ -66,20 +65,10 @@ export const POST = createApiHandler(async (request, context, session) => {
             providerType: providerType as 'openai' | 'anthropic' | 'google',
         });
 
-        return NextResponse.json({
-            success: true,
-            template: templateData,
-        });
+        return success({ template: templateData });
     } catch (error) {
-        console.error("Template import error:", error);
-        return NextResponse.json(
-            {
-                error: error instanceof Error
-                    ? error.message
-                    : "Failed to extract template from image"
-            },
-            { status: 500 }
-        );
+        const message = error instanceof Error ? error.message : "Failed to extract template from image";
+        return failure(message, "INTERNAL_ERROR");
     }
 });
 

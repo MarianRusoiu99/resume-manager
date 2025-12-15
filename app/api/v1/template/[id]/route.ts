@@ -10,6 +10,7 @@ import { templateRepository } from '@/lib/repositories/template.repository';
 import { templateService } from '@/lib/services/template.service';
 import { createApiHandler } from '@/lib/api-handler';
 import { updateTemplateSchema } from '@/lib/validations/api-schemas';
+import { success } from '@/lib/types/service-result';
 
 export const GET = createApiHandler(
   async (request, { params }) => {
@@ -59,5 +60,5 @@ export const DELETE = createApiHandler(async (request, { params }) => {
   // Revalidate the templates page after deletion
   revalidatePath('/templates');
 
-  return NextResponse.json({ success: true });
+  return success({ success: true });
 }, { verifyUser: true });

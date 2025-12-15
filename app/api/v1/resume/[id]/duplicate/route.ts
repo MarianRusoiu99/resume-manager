@@ -3,24 +3,24 @@
  * Creates a duplicate copy of an existing resume
  */
 
-import { NextResponse } from 'next/server';
-import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createApiHandler } from '@/lib/api-handler';
+import { requireFound, requireOwnership } from '@/lib/auth/guards';
+import { success } from '@/lib/types/service-result';
+import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
 
 export const POST = createApiHandler(async (request, { params }, session) => {
   const { id: resumeId } = await params;
 
-  // Verify resume exists and belongs to user
-  const originalResume = await generatedResumeRepository.findById(resumeId);
+  const originalResume = requireFound(
+    await generatedResumeRepository.findById(resumeId),
+    'Resume'
+  );
 
-  if (!originalResume) {
-    return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
-  }
-
-  if (originalResume.userId !== session.user.id) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+  requireOwnership({
+    resourceUserId: originalResume.userId,
+    sessionUserId: session.user.id,
+  });
 
   // Create duplicate with modified metadata using JSON Resume format
   const duplicatedResume = await generatedResumeRepository.create({
@@ -36,16 +36,11 @@ export const POST = createApiHandler(async (request, { params }, session) => {
     },
   });
 
-  return NextResponse.json({
-    success: true,
+  return success({
     resume: {
       id: duplicatedResume.id,
-      jobTitle:
-        (originalResume.jobMetadata as { jobTitle?: string })?.jobTitle ||
-        null,
-      companyName:
-        (originalResume.jobMetadata as { companyName?: string })
-          ?.companyName || null,
+      jobTitle: (originalResume.jobMetadata as { jobTitle?: string })?.jobTitle || null,
+      companyName: (originalResume.jobMetadata as { companyName?: string })?.companyName || null,
       createdAt: duplicatedResume.createdAt,
     },
   });
