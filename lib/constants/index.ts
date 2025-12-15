@@ -2,7 +2,7 @@
  * Application constants barrel file
  */
 
-export { ROUTES, API, EXTERNAL_LINKS } from './routes';
+export { ROUTES, API_V1, EXTERNAL_LINKS } from './routes';
 
 export {
   PAGINATION,

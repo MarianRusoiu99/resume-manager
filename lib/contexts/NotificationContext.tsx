@@ -11,6 +11,8 @@ import React, {
 } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 /**
  * Notification type from the API
@@ -76,15 +78,16 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/notifications');
+      const response = await fetch(API_V1.NOTIFICATIONS.ROOT);
 
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications');
+        throw new Error(await readApiErrorMessage(response, 'Failed to fetch notifications'));
       }
 
-      const data = await response.json();
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
+      const data = await parseApiJson<{ notifications?: Notification[]; unreadCount?: number }>(response);
+
+      setNotifications(data?.notifications || []);
+      setUnreadCount(data?.unreadCount || 0);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -97,12 +100,12 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const response = await fetch('/api/notifications/count');
+      const response = await fetch(API_V1.NOTIFICATIONS.COUNT);
 
-      if (response.ok) {
-        const data = await response.json();
-        setUnreadCount(data.count || 0);
-      }
+      if (!response.ok) return;
+
+      const data = await parseApiJson<{ count?: number }>(response);
+      setUnreadCount(data?.count || 0);
     } catch (error) {
       console.error('Error fetching notification count:', error);
     }
@@ -113,7 +116,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const markAsRead = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/notifications/${id}`, {
+      const response = await fetch(API_V1.NOTIFICATIONS.ITEM(id), {
         method: 'PATCH',
       });
 
@@ -136,7 +139,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const markAllAsRead = useCallback(async () => {
     try {
-      const response = await fetch('/api/notifications', {
+      const response = await fetch(API_V1.NOTIFICATIONS.ROOT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'markAllRead' }),
@@ -159,7 +162,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const deleteNotification = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/notifications/${id}`, {
+      const response = await fetch(API_V1.NOTIFICATIONS.ITEM(id), {
         method: 'DELETE',
       });
 
@@ -189,7 +192,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
 
     try {
       // Mark all read first (preserves current API behavior)
-      const markResponse = await fetch('/api/notifications', {
+      const markResponse = await fetch(API_V1.NOTIFICATIONS.ROOT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'markAllRead' }),
@@ -201,7 +204,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
 
       await Promise.all(
         idsToDelete.map((id) =>
-          fetch(`/api/notifications/${id}`, { method: 'DELETE' })
+          fetch(API_V1.NOTIFICATIONS.ITEM(id), { method: 'DELETE' })
         )
       );
 
@@ -285,13 +288,15 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
     // Initial fetch of notifications
     fetchUnreadCount();
 
+    let isClosing = false;
+
     // Set up SSE connection for real-time updates
-    const eventSource = new EventSource('/api/notifications/stream');
-    
+    const eventSource = new EventSource(API_V1.NOTIFICATIONS.STREAM);
+
     eventSource.addEventListener('connected', (event) => {
       console.log('[SSE] Connected to notifications stream:', JSON.parse(event.data));
     });
-    
+
     eventSource.addEventListener('notification', (event) => {
       try {
         const notification = JSON.parse(event.data);
@@ -314,17 +319,22 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
         console.error('[SSE] Error parsing notification:', error);
       }
     });
-    
+
     eventSource.addEventListener('heartbeat', () => {
       // Connection is alive, no action needed
     });
-    
+
     eventSource.onerror = (error) => {
+      // In dev, navigation/HMR unmounts can interrupt the request and surface as an error.
+      // Ignore disconnects caused by our own cleanup.
+      if (isClosing || eventSource.readyState === EventSource.CLOSED) return;
+
       console.error('[SSE] Connection error:', error);
       // EventSource will automatically try to reconnect
     };
 
     return () => {
+      isClosing = true;
       eventSource.close();
     };
   }, [fetchUnreadCount, addNotification]);

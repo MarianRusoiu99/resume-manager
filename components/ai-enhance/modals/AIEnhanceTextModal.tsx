@@ -22,6 +22,8 @@ import { Check, X } from 'lucide-react';
 import { useAIModels } from '@/hooks';
 import { AIEnhanceBaseModal } from './AIEnhanceBaseModal';
 import { PromptInput } from '../prompt/PromptInput';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 import { ComparisonTabs } from '../preview/ComparisonTabs';
 import { TEXT_PRESETS } from '../types';
 import type { AIEnhanceTextModalProps } from '../types';
@@ -79,7 +81,7 @@ export function AIEnhanceTextModal({
         .filter(Boolean)
         .join('\n\n');
 
-      const response = await fetch('/api/ai/enhance', {
+      const response = await fetch(API_V1.AI.ENHANCE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -92,12 +94,11 @@ export function AIEnhanceTextModal({
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Enhancement failed');
+        throw new Error(await readApiErrorMessage(response, 'Enhancement failed'));
       }
 
-      const data = await response.json();
-      setEnhancedContent(data.enhancedContent);
+      const data = await parseApiJson<{ enhancedContent?: string }>(response);
+      setEnhancedContent(data.enhancedContent ?? '');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Enhancement failed');
     } finally {

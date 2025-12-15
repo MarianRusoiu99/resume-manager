@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { parseApiJson, readApiErrorMessage } from "@/lib/utils/api-response";
 
 /**
  * Options for data fetching hooks
@@ -35,7 +36,7 @@ interface UseFetchResult<T> {
  * @example
  * ```tsx
  * const { data: resumes, isLoading, error, refetch } = useFetch<Resume[]>(
- *   '/api/resume/generate',
+ *   '/api/v1/resume/generate',
  *   { refetchOnFocus: true }
  * );
  * ```
@@ -76,17 +77,16 @@ export function useFetch<T>(
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Failed to fetch: ${response.statusText}`);
+        throw new Error(await readApiErrorMessage(response, `Failed to fetch: ${response.statusText}`));
       }
 
-      let result = await response.json();
-      
+      let result: unknown = await parseApiJson(response);
+
       if (transformRef.current) {
         result = transformRef.current(result);
       }
 
-      setData(result);
+      setData(result as T);
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         return; // Ignore aborted requests
@@ -174,7 +174,7 @@ interface UseActionResult<T, Args extends unknown[]> {
  * ```
  */
 export function useAction<T, Args extends unknown[]>(
-  action: (...args: Args) => Promise<{ success: true; data: T } | { success: false; error: string }>,
+  action: (...args: Args) => Promise<{ success: true; data: T } | { success: false; error: string; code?: string }>,
   options: UseActionOptions<T> = {}
 ): UseActionResult<T, Args> {
   const { initialData, immediate = false, refetchOnFocus = false } = options;

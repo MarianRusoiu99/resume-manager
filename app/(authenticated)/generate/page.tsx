@@ -15,6 +15,8 @@ import { ResumePreview } from '@/components/resume/ResumePreview';
 import { ExternalLink } from 'lucide-react';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { PageHeader } from '@/components/layout';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 interface Template {
   id: string;
   name: string;
@@ -74,11 +76,12 @@ export default function GeneratePage() {
 
   // Load templates on mount
   useEffect(() => {
-    const loadTemplates = async () => {
+        const loadTemplates = async () => {
       try {
-        const response = await fetch('/api/template');
+        const response = await fetch(API_V1.TEMPLATE.LIST);
         if (response.ok) {
-          const data = await response.json();
+          const body = await response.json();
+          const data = body?.data ?? body;
           setTemplates(data.templates || []);
           if (data.templates && data.templates.length > 0) {
             setSelectedTemplateId(data.templates[0].id);
@@ -97,13 +100,13 @@ export default function GeneratePage() {
       setIsLoadingData(true);
       try {
         // Load profiles and check for AI providers in parallel
-        const [profilesRes, providersRes] = await Promise.all([
-          fetch('/api/profile'),
-          fetch('/api/settings/api-providers'),
-        ]);
+          const [profilesRes, providersRes] = await Promise.all([
+            fetch(API_V1.PROFILE.LIST),
+            fetch(API_V1.SETTINGS.API_PROVIDERS),
+          ]);
 
         if (profilesRes.ok) {
-          const data = await profilesRes.json();
+          const data = await parseApiJson<Profile[]>(profilesRes);
           setProfiles(data);
           const defaultProfile = data.find((p: Profile) => p.isDefault);
           if (defaultProfile) {
@@ -116,9 +119,9 @@ export default function GeneratePage() {
         }
 
         if (providersRes.ok) {
-          const data = await providersRes.json();
+          const data = await parseApiJson<Array<{ isActive: boolean }>>(providersRes);
           // Check if user has at least one active provider
-          const hasProviders = Array.isArray(data) && data.some((p: { isActive: boolean }) => p.isActive);
+          const hasProviders = Array.isArray(data) && data.some((p) => p.isActive);
           setHasAIProviders(hasProviders);
         }
       } catch (err) {
@@ -266,7 +269,7 @@ export default function GeneratePage() {
     resetResumeProgress();
 
     try {
-      const response = await fetch('/api/resume/generate-stream', {
+      const response = await fetch(API_V1.RESUME.GENERATE_STREAM, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -278,9 +281,8 @@ export default function GeneratePage() {
         }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to generate resume');
+      if (!response.ok) { 
+         throw new Error(await readApiErrorMessage(response, 'Failed to generate resume'));
       }
 
       const reader = response.body?.getReader();
@@ -327,7 +329,7 @@ export default function GeneratePage() {
     setGeneratedCoverLetter(null);
 
     try {
-      const response = await fetch('/api/cover-letter/generate', {
+      const response = await fetch(API_V1.COVER_LETTER.GENERATE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -339,12 +341,11 @@ export default function GeneratePage() {
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to generate cover letter');
+      if (!response.ok) {  
+         throw new Error(await readApiErrorMessage(response, 'Failed to generate cover letter')); 
       }
 
-      const data = await response.json();
+      const data = await parseApiJson<{ coverLetter: string; coverLetterId?: string }>(response);
       setGeneratedCoverLetter(data.coverLetter);
       
       // Show toast with action to view cover letter

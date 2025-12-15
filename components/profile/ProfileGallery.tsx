@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createProfile } from "@/app/actions/profile";
 import { apiFetch } from "@/lib/utils/api-client";
+import { API_V1 } from "@/lib/constants";
+import { parseApiJson } from "@/lib/utils/api-response";
 
 interface Profile {
   id: string;
@@ -34,13 +36,13 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
   // Refresh profiles when the page becomes visible
   useEffect(() => {
     const refreshProfiles = async () => {
-      try {
-        const response = await apiFetch("/api/profile");
-        if (response.ok) {
-          const data = await response.json();
-          setProfiles(data);
-        }
-      } catch (error) {
+        try {
+          const response = await apiFetch(API_V1.PROFILE.LIST);
+          if (response.ok) {
+            const data = await parseApiJson<Profile[]>(response);
+            setProfiles(data);
+          }
+        } catch (error) {
         console.error("Failed to refresh profiles:", error);
       }
     };

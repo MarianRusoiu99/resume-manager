@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { API_V1 } from '@/lib/constants';
 
 interface TemplateCardProps {
   template: ResumeTemplate;
@@ -104,7 +105,7 @@ export function TemplateCard({
   const handleExportPDF = async () => {
     try {
       // Use universal PDF export endpoint with sample data
-      const response = await fetch('/api/export/pdf', {
+      const response = await fetch(API_V1.EXPORT.PDF, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,7 +142,7 @@ export function TemplateCard({
 
   const handleDelete = async () => {
     try {
-      const response = await fetch(`/api/template/${template.id}`, {
+      const response = await fetch(API_V1.TEMPLATE.GET(template.id), {
         method: 'DELETE',
       });
 
@@ -160,7 +161,7 @@ export function TemplateCard({
 
   const handleDuplicate = async () => {
     try {
-      const response = await fetch(`/api/template/${template.id}/duplicate`, {
+      const response = await fetch(API_V1.TEMPLATE.DUPLICATE(template.id), {
         method: 'POST',
       });
 

@@ -31,6 +31,7 @@ export const ErrorCode = {
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
+
 /**
  * Map error codes to HTTP status codes
  */

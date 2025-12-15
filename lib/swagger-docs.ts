@@ -1,6 +1,6 @@
 /**
  * @swagger
- * /api/auth/register:
+ * /api/v1/auth/register:
  *   post:
  *     tags:
  *       - Authentication
@@ -52,7 +52,7 @@
 
 /**
  * @swagger
- * /api/profile:
+ * /api/v1/profile:
  *   get:
  *     tags:
  *       - Profile
@@ -136,7 +136,7 @@
 
 /**
  * @swagger
- * /api/resume/generate:
+ * /api/v1/resume/generate:
  *   post:
  *     tags:
  *       - Resumes
@@ -196,7 +196,7 @@
 
 /**
  * @swagger
- * /api/resume/generate-stream:
+ * /api/v1/resume/generate-stream:
  *   post:
  *     tags:
  *       - Resumes
@@ -240,7 +240,7 @@
 
 /**
  * @swagger
- * /api/resume:
+ * /api/v1/resume:
  *   get:
  *     tags:
  *       - Resumes
@@ -279,7 +279,7 @@
 
 /**
  * @swagger
- * /api/resume/{id}:
+ * /api/v1/resume/{id}:
  *   get:
  *     tags:
  *       - Resumes
@@ -355,7 +355,7 @@
 
 /**
  * @swagger
- * /api/resume/{id}/content:
+ * /api/v1/resume/{id}/content:
  *   get:
  *     tags:
  *       - Resumes
@@ -408,7 +408,7 @@
 
 /**
  * @swagger
- * /api/resume/{id}/duplicate:
+ * /api/v1/resume/{id}/duplicate:
  *   post:
  *     tags:
  *       - Resumes
@@ -436,7 +436,7 @@
 
 /**
  * @swagger
- * /api/resume/{id}/export:
+ * /api/v1/resume/{id}/export:
  *   get:
  *     tags:
  *       - Resumes
@@ -464,7 +464,7 @@
 
 /**
  * @swagger
- * /api/resume/{id}/export-cover-letter:
+ * /api/v1/resume/{id}/export-cover-letter:
  *   get:
  *     tags:
  *       - Resumes
@@ -492,7 +492,7 @@
 
 /**
  * @swagger
- * /api/resume/{id}/preview:
+ * /api/v1/resume/{id}/preview:
  *   get:
  *     tags:
  *       - Resumes
@@ -518,7 +518,7 @@
 
 /**
  * @swagger
- * /api/resume/{id}/section-order:
+ * /api/v1/resume/{id}/section-order:
  *   put:
  *     tags:
  *       - Resumes
@@ -555,7 +555,7 @@
 
 /**
  * @swagger
- * /api/resume/{id}/template:
+ * /api/v1/resume/{id}/template:
  *   patch:
  *     tags:
  *       - Resumes
@@ -588,7 +588,7 @@
 
 /**
  * @swagger
- * /api/resume/{id}/template-customization:
+ * /api/v1/resume/{id}/template-customization:
  *   get:
  *     tags:
  *       - Resumes
@@ -669,7 +669,7 @@
 
 /**
  * @swagger
- * /api/cover-letter/generate:
+ * /api/v1/cover-letter/generate:
  *   post:
  *     tags:
  *       - Cover Letters
@@ -710,7 +710,7 @@
 
 /**
  * @swagger
- * /api/cover-letter/export-pdf:
+ * /api/v1/cover-letter/export-pdf:
  *   post:
  *     tags:
  *       - Cover Letters
@@ -759,7 +759,7 @@
 
 /**
  * @swagger
- * /api/template:
+ * /api/v1/template:
  *   get:
  *     tags:
  *       - Templates
@@ -789,7 +789,7 @@
 
 /**
  * @swagger
- * /api/template/{id}:
+ * /api/v1/template/{id}:
  *   get:
  *     tags:
  *       - Templates
@@ -818,7 +818,7 @@
 
 /**
  * @swagger
- * /api/settings/api-keys:
+ * /api/v1/settings/api-keys:
  *   get:
  *     tags:
  *       - Settings
@@ -879,7 +879,7 @@
 
 /**
  * @swagger
- * /api/settings/api-keys/{id}:
+ * /api/v1/settings/api-keys/{id}:
  *   delete:
  *     tags:
  *       - Settings
@@ -907,7 +907,7 @@
 
 /**
  * @swagger
- * /api/admin/templates:
+ * /api/v1/admin/templates:
  *   get:
  *     tags:
  *       - Admin
@@ -964,7 +964,7 @@
 
 /**
  * @swagger
- * /api/admin/templates/{id}:
+ * /api/v1/admin/templates/{id}:
  *   get:
  *     tags:
  *       - Admin

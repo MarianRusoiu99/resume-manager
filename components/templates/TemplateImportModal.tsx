@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Upload, Image as ImageIcon, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 interface ExtractedTemplate {
     htmlTemplate: string;
@@ -109,7 +111,7 @@ export function TemplateImportModal({
                 setProgress((prev) => Math.min(prev + 10, 90));
             }, 1000);
 
-            const response = await fetch('/api/template/import', {
+            const response = await fetch(API_V1.TEMPLATE.IMPORT, {
                 method: 'POST',
                 body: formData,
             });
@@ -117,11 +119,16 @@ export function TemplateImportModal({
             clearInterval(progressInterval);
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to import template');
+                throw new Error(await readApiErrorMessage(response, 'Failed to import template'));
             }
 
-            const data = await response.json();
+            const data = await parseApiJson<{ template: ExtractedTemplate }>(response);
+
+            if (!data?.template) {
+                throw new Error('Template import returned no template');
+            }
+
+            const template = data.template;
 
             setProgress(100);
             setStatus('success');
@@ -130,7 +137,7 @@ export function TemplateImportModal({
 
             // Wait a moment to show success state
             setTimeout(() => {
-                onImportComplete(data.template);
+                onImportComplete(template);
                 handleClose();
             }, 500);
         } catch (err) {

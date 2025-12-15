@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
 
 export const authConfig: NextAuthConfig = {
+  basePath: "/api/v1/auth",
   providers: [
     Credentials({
       name: "credentials",

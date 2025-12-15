@@ -14,6 +14,8 @@ import {
 import { Button } from '@/components/ui/button';
 import type { TemplateBase } from '@/lib/types/template';
 import { apiFetch } from '@/lib/utils/api-client';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 interface TemplateDropdownProps {
   currentTemplateId: string | null;
@@ -35,12 +37,13 @@ export function TemplateDropdown({
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/template');
+        const response = await fetch(API_V1.TEMPLATE.LIST);
         if (!response.ok) {
-          throw new Error('Failed to fetch templates');
+          throw new Error(await readApiErrorMessage(response, 'Failed to fetch templates'));
         }
-        const data = await response.json();
-        setTemplates(data.templates || []);
+
+        const data = await parseApiJson<{ templates?: TemplateBase[] }>(response);
+        setTemplates(data.templates ?? []);
       } catch (error) {
         console.error('Error fetching templates:', error);
         toast.error('Failed to load templates');
@@ -62,7 +65,7 @@ export function TemplateDropdown({
 
     try {
       setIsUpdating(true);
-      const response = await apiFetch(`/api/resume/${resumeId}/template`, {
+      const response = await apiFetch(API_V1.RESUME.TEMPLATE(resumeId), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -73,8 +76,7 @@ export function TemplateDropdown({
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update template');
+        throw new Error(await readApiErrorMessage(response, 'Failed to update template'));
       }
 
       toast.success('Template updated successfully');

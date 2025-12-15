@@ -22,7 +22,8 @@ import { getSession } from '@/lib/auth/dal';
 import { logger } from '@/lib/utils';
 import { auditLog } from '@/lib/services/audit-log.service';
 import { revalidatePath } from 'next/cache';
-import type { ActionResult } from '@/app/actions/types';
+import type { ActionResult } from '@/lib/actions/types';
+import { isAppError, wrapError } from '@/lib/errors';
 
 // Import AuditAction type - may not exist if migration hasn't run
 type AuditAction = 
@@ -81,7 +82,7 @@ export function withServerAction<TArgs extends unknown[], TResult>(
       
       if (!options.isPublic && !session?.userId) {
         logger.warn(`Unauthorized ${actionName} attempt`);
-        return { success: false, error: 'Unauthorized' };
+        return { success: false, error: 'Unauthorized', code: 'UNAUTHORIZED' };
       }
 
       const actionSession: ActionSession = {
@@ -131,23 +132,26 @@ export function withServerAction<TArgs extends unknown[], TResult>(
         duration,
       });
 
+      const wrapped = isAppError(error) ? error : wrapError(error, errorMessage);
+
       // Audit log failure if configured
       if (options.auditAction) {
         const session = await getSession().catch(() => null);
         auditLog.failure(
           options.auditAction,
           session?.userId,
-          errorMessage,
+          wrapped.message,
           {
             resourceType: options.resourceType,
-            metadata: { duration },
+            metadata: { duration, code: wrapped.code },
           }
         );
       }
 
       return {
         success: false,
-        error: errorMessage,
+        error: wrapped.message,
+        code: wrapped.code,
       };
     }
   };
@@ -180,9 +184,12 @@ export function withPublicAction<TArgs extends unknown[], TResult>(
 
       logger.error(`${actionName} failed`, error, { duration });
 
+      const wrapped = isAppError(error) ? error : wrapError(error, errorMessage);
+
       return {
         success: false,
-        error: errorMessage,
+        error: wrapped.message,
+        code: wrapped.code,
       };
     }
   };

@@ -58,4 +58,5 @@ export {
   telemetry,
   TelemetryClient,
   type TelemetryConfig,
+  startRequestTelemetry,
 } from './client';

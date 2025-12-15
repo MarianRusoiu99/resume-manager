@@ -10,6 +10,8 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { ContentType } from '@/lib/validations/settings';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 /**
  * Options for text enhancement
@@ -114,7 +116,7 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
         .filter(Boolean)
         .join('\n\n');
 
-      const response = await fetch('/api/ai/enhance', {
+      const response = await fetch(API_V1.AI.ENHANCE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -127,12 +129,11 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Enhancement failed');
+        throw new Error(await readApiErrorMessage(response, 'Enhancement failed'));
       }
 
-      const data = await response.json();
-      setEnhancedContent(data.enhancedContent);
+      const data = await parseApiJson<{ enhancedContent?: string }>(response);
+      setEnhancedContent(data.enhancedContent ?? '');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Enhancement failed';
       setError(message);
@@ -196,7 +197,7 @@ export function useResumeEnhancement<T>(): UseAIEnhancementReturn<T> & {
         attachmentsContext,
       ].filter(Boolean);
 
-      const response = await fetch('/api/ai/enhance', {
+      const response = await fetch(API_V1.AI.ENHANCE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -217,12 +218,13 @@ CRITICAL INSTRUCTIONS:
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Enhancement failed');
+        throw new Error(await readApiErrorMessage(response, 'Enhancement failed'));
       }
 
-      const data = await response.json();
-      const parsedResume = parseResumeJson<T>(data.enhancedContent);
+      const data = await parseApiJson<{ enhancedContent?: string }>(response);
+      const enhancedContent = data.enhancedContent;
+
+      const parsedResume = parseResumeJson<T>(enhancedContent || '');
       setEnhancedContent(parsedResume);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Enhancement failed';
@@ -296,7 +298,7 @@ ${templateData.css}`;
         attachmentsContext,
       ].filter(Boolean);
 
-      const response = await fetch('/api/ai/enhance', {
+      const response = await fetch(API_V1.AI.ENHANCE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -317,12 +319,13 @@ Make sure to preserve both sections and the exact separator format.`,
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Enhancement failed');
+        throw new Error(await readApiErrorMessage(response, 'Enhancement failed'));
       }
 
-      const data = await response.json();
-      const parsed = parseTemplateResponse(data.enhancedContent, templateData.css);
+      const data = await parseApiJson<{ enhancedContent?: string }>(response);
+      const enhancedContent = data.enhancedContent;
+
+      const parsed = parseTemplateResponse(enhancedContent || '', templateData.css);
       setEnhancedContent(parsed);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Enhancement failed';

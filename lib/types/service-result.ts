@@ -24,6 +24,7 @@ export type ServiceErrorCode =
   | 'CONFLICT'
   | 'RATE_LIMITED'
   | 'EXTERNAL_SERVICE_ERROR'
+  | 'CONFIGURATION_ERROR'
   | 'INTERNAL_ERROR';
 
 /**
@@ -99,6 +100,8 @@ export function errorCodeToStatus(code?: ServiceErrorCode): number {
       return 429;
     case 'EXTERNAL_SERVICE_ERROR':
       return 502;
+    case 'CONFIGURATION_ERROR':
+      return 500;
     case 'INTERNAL_ERROR':
     default:
       return 500;

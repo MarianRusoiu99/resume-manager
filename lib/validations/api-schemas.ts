@@ -79,7 +79,6 @@ export const createTemplateSchema = z.object({
       (value) => {
         if (!value) return true;
         try {
-          // eslint-disable-next-line no-new
           new URL(value);
           return true;
         } catch {

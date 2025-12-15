@@ -12,7 +12,7 @@ import { Button } from '@/components/ui';
 import { CoverLetterList, type CoverLetterListItem } from '@/components/cover-letter/CoverLetterList';
 import { ErrorState } from '@/components/shared/states';
 import { useFetch } from '@/hooks/useDataFetching';
-import { API, ROUTES } from '@/lib/constants';
+import { API_V1, ROUTES } from '@/lib/constants';
 import { FileText } from 'lucide-react';
 
 interface CoverLetter extends CoverLetterListItem {
@@ -46,7 +46,7 @@ export default function CoverLettersPage() {
     error,
     refetch,
     mutate,
-  } = useFetch<CoverLettersResponse>(API.COVER_LETTER.LIST);
+  } = useFetch<CoverLettersResponse>(API_V1.COVER_LETTER.LIST);
 
   const coverLetters = data?.coverLetters ?? [];
 

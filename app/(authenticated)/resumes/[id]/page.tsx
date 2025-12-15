@@ -12,6 +12,8 @@ import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Edit } from 'lucide-react';
 import { apiFetch } from '@/lib/utils/api-client';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import type { GeneratedResume } from '@/lib/types';
 
@@ -35,7 +37,7 @@ export default function ResumeDetailPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await apiFetch(`/api/resume/${resumeId}`);
+      const response = await apiFetch(API_V1.RESUME.GET(resumeId));
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -44,7 +46,7 @@ export default function ResumeDetailPage() {
         throw new Error('Failed to fetch resume');
       }
 
-      const data = await response.json();
+      const data = await parseApiJson<GeneratedResume>(response);
       logger.debug('Fetched resume data', { templateId: data.templateId, pdfUrl: data.pdfUrl });
       setResume(data);
     } catch (err) {
@@ -72,7 +74,7 @@ export default function ResumeDetailPage() {
     try {
       setIsDeleting(true);
 
-      const response = await apiFetch(`/api/resume/${resumeId}`, {
+      const response = await apiFetch(API_V1.RESUME.GET(resumeId), {
         method: 'DELETE',
       });
 
@@ -98,19 +100,11 @@ export default function ResumeDetailPage() {
     try {
       setIsDuplicating(true);
 
-      const response = await apiFetch(`/api/resume/${resumeId}/duplicate`, {
+      const response = await apiFetch(API_V1.RESUME.DUPLICATE(resumeId), {
         method: 'POST',
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to duplicate resume');
-      }
-
-      const data = await response.json();
-      toast.success('Resume duplicated successfully');
-
-      // Redirect to the duplicated resume
-      router.push(`/resumes/${data.resume.id}`);
+      if (!response.ok) { throw new Error(await readApiErrorMessage(response, 'Failed to duplicate resume')); } const data = await parseApiJson<{ resume: { id: string } }>(response); toast.success('Resume duplicated successfully');      // Redirect to the duplicated resume      router.push(`/resumes/${data.resume.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to duplicate resume');
     } finally {
@@ -124,7 +118,7 @@ export default function ResumeDetailPage() {
     try {
       setError(null);
 
-      const response = await apiFetch(`/api/resume/${resumeId}/cover-letter`, {
+      const response = await apiFetch(API_V1.RESUME.COVER_LETTER(resumeId), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -135,11 +129,10 @@ export default function ResumeDetailPage() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to save cover letter');
+        throw new Error(await readApiErrorMessage(response, 'Failed to save cover letter'));
       }
 
-      const data = await response.json();
+      const data = await parseApiJson<{ resume: { coverLetter: string; updatedAt: string } }>(response);
 
       // Update local state
       if (resume) {

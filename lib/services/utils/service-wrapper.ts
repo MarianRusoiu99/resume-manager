@@ -36,6 +36,7 @@ function appErrorToServiceCode(error: AppError): ServiceErrorCode {
     CONFLICT: 'CONFLICT',
     RATE_LIMITED: 'RATE_LIMITED',
     EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',
+    CONFIGURATION_ERROR: 'CONFIGURATION_ERROR',
     INTERNAL_ERROR: 'INTERNAL_ERROR',
   };
   return codeMap[error.code] ?? 'INTERNAL_ERROR';

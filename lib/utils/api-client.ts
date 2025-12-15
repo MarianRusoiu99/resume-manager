@@ -5,7 +5,7 @@
  * When a 401 response is received, it triggers the session expiry flow.
  */
 
-import { triggerSessionExpiry } from "@/components/providers/AuthProvider";
+import { triggerSessionExpiry } from "@/lib/auth/session-expiry";
 
 type FetchOptions = RequestInit & {
   /** Skip session expiry handling for this request */
@@ -22,7 +22,7 @@ type FetchOptions = RequestInit & {
  * ```tsx
  * import { apiFetch } from '@/lib/utils/api-client';
  * 
- * const response = await apiFetch('/api/profile');
+ * const response = await apiFetch('/api/v1/profile');
  * if (!response.ok) {
  *   // Handle other errors (401 is already handled)
  * }
@@ -48,7 +48,7 @@ export async function apiFetch(
       url = input.url;
     }
     
-    const isAuthEndpoint = url.includes('/api/auth/');
+    const isAuthEndpoint = url.includes('/api/v1/auth/');
     
     if (!isAuthEndpoint) {
       // Trigger session expiry flow
@@ -64,7 +64,8 @@ export async function apiFetch(
  * 
  * @example
  * ```tsx
- * const data = await apiJson<Profile>('/api/profile');
+  * const data = await apiJson<Profile>('/api/v1/profile');
+
  * ```
  */
 export async function apiJson<T>(

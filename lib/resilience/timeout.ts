@@ -104,7 +104,7 @@ export async function withTimeout<T>(
  * @example
  * ```typescript
  * const withApiTimeout = createTimeoutWrapper({ timeoutMs: 10000 });
- * const result = await withApiTimeout(() => fetch('/api/data'));
+ * const result = await withApiTimeout(() => fetch('/api/v1/data'));
  * ```
  */
 export function createTimeoutWrapper(defaultOptions: TimeoutOptions) {

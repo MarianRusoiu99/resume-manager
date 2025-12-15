@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/utils/api-client';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -60,11 +62,12 @@ export default function AIModelsSettingsPage() {
   const loadSettings = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiFetch('/api/settings/ai-models');
+      const response = await apiFetch(API_V1.SETTINGS.AI_MODELS);
       if (response.ok) {
-        const data: AISettings = await response.json();
+        const body = await response.json();
+        const data: AISettings = body?.data ?? body;
         setSettings(data);
-        
+
         // Initialize selections from loaded data
         const initialSelections: Record<string, { providerId: string; modelId: string }> = {};
         for (const f of data.features) {
@@ -77,7 +80,7 @@ export default function AIModelsSettingsPage() {
         }
         setSelections(initialSelections);
       } else {
-        toast.error('Failed to load AI settings');
+        toast.error(await readApiErrorMessage(response, 'Failed to load AI settings'));
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -95,7 +98,7 @@ export default function AIModelsSettingsPage() {
     // When provider changes, reset model to first available
     const provider = settings?.availableProviders.find((p) => p.id === providerId);
     const firstModel = provider?.models[0];
-    
+
     setSelections((prev) => ({
       ...prev,
       [featureId]: {
@@ -117,11 +120,11 @@ export default function AIModelsSettingsPage() {
 
   const handleSavePreference = async (featureId: string) => {
     const selection = selections[featureId];
-    
+
     try {
       setSavingFeature(featureId);
-      
-      const response = await apiFetch('/api/settings/ai-models', {
+
+      const response = await apiFetch(API_V1.SETTINGS.AI_MODELS, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -134,10 +137,7 @@ export default function AIModelsSettingsPage() {
       if (response.ok) {
         toast.success('Preference saved');
         await loadSettings(); // Refresh to get updated names
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to save preference');
-      }
+      } else { toast.error(await readApiErrorMessage(response, 'Failed to save preference')); }
     } catch (error) {
       console.error('Error saving preference:', error);
       toast.error('Failed to save preference');
@@ -149,8 +149,8 @@ export default function AIModelsSettingsPage() {
   const handleClearPreference = async (featureId: string) => {
     try {
       setSavingFeature(featureId);
-      
-      const response = await apiFetch('/api/settings/ai-models', {
+
+      const response = await apiFetch(API_V1.SETTINGS.AI_MODELS, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -169,8 +169,7 @@ export default function AIModelsSettingsPage() {
         });
         await loadSettings();
       } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to clear preference');
+        toast.error(await readApiErrorMessage(response, 'Failed to clear preference'));
       }
     } catch (error) {
       console.error('Error clearing preference:', error);
@@ -188,11 +187,11 @@ export default function AIModelsSettingsPage() {
   const hasChanges = (featureId: string): boolean => {
     const feature = settings?.features.find((f) => f.feature.id === featureId);
     const selection = selections[featureId];
-    
+
     if (!feature) return false;
     if (!selection && !feature.providerId) return false;
     if (!selection && feature.providerId) return false;
-    
+
     return (
       selection?.providerId !== feature.providerId ||
       selection?.modelId !== feature.modelId
@@ -245,7 +244,7 @@ export default function AIModelsSettingsPage() {
                     <h3 className="text-lg font-semibold">{feature.name}</h3>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">{feature.description}</p>
-                  
+
                   {/* Current Selection Display */}
                   {featureSetting.providerName && featureSetting.modelName && (
                     <div className="flex items-center gap-2 text-sm">
@@ -354,7 +353,7 @@ export default function AIModelsSettingsPage() {
         <div className="mb-6">
           <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4">
             <p className="text-sm text-blue-900 dark:text-blue-100">
-              <strong>Tip:</strong> Configure your preferred AI model for each feature. 
+              <strong>Tip:</strong> Configure your preferred AI model for each feature.
               If not set, the system will use the first available model from your configured providers.
             </p>
           </div>

@@ -41,10 +41,10 @@ export const DEFAULT_AUTH_REDIRECT = '/login';
  * Routes that are completely public (including API routes for public data)
  */
 export const PUBLIC_API_ROUTES = [
-  '/api/auth',
-  '/api/health',
-  '/api/docs',
-  '/api/public',
+  '/api/v1/auth',
+  '/api/v1/health',
+  '/api/v1/docs',
+  '/api/v1/public',
 ] as const;
 
 /**
@@ -81,7 +81,6 @@ export function isPublicApiRoute(pathname: string): boolean {
 export function shouldSkipProxy(pathname: string): boolean {
   return (
     pathname.startsWith('/_next/') ||
-    pathname.startsWith('/api/') ||
     pathname.includes('.') // Static files (images, fonts, etc.)
   );
 }

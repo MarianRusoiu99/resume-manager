@@ -1,27 +1,14 @@
 import { TemplateRepository, templateRepository } from '@/lib/repositories/template.repository';
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { z } from 'zod';
 import { type ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, NotFoundError, ConflictError } from '@/lib/services/utils';
 import type { ITemplateService } from './interfaces';
-
-// Validation schemas
-const templateCategorySchema = z.enum(['PROFESSIONAL', 'MODERN', 'CREATIVE', 'ATS_OPTIMIZED', 'MINIMAL']);
-
-const createTemplateSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
-  category: templateCategorySchema,
-  description: z.string().min(1, 'Description is required').max(500, 'Description too long'),
-  htmlTemplate: z.string().min(1, 'HTML template is required'),
-  cssStyles: z.string().min(1, 'CSS styles are required'),
-  previewUrl: z.url('Invalid preview URL').optional(),
-  isPublic: z.boolean().default(true),
-});
-
-const updateTemplateSchema = createTemplateSchema.partial();
-
-export type CreateTemplateInput = z.infer<typeof createTemplateSchema>;
-export type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>;
+import {
+  createTemplateSchema,
+  updateTemplateSchema,
+  type CreateTemplateInput,
+  type UpdateTemplateInput,
+} from '@/lib/validations/api-schemas';
 
 /**
  * Service for managing resume templates

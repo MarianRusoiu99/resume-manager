@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { TemplateBase } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 const logger = createComponentLogger('TemplateSelector');
 
@@ -24,12 +26,13 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/template');
+        const response = await fetch(API_V1.TEMPLATE.LIST);
         if (!response.ok) {
-          throw new Error('Failed to fetch templates');
+          throw new Error(await readApiErrorMessage(response, 'Failed to fetch templates'));
         }
-        const data = await response.json();
-        setTemplates(data.templates || []);
+
+        const data = await parseApiJson<{ templates?: TemplateBase[] }>(response);
+        setTemplates(data.templates ?? []);
       } catch (error) {
         logger.error('Error fetching templates', error);
         toast.error('Failed to load templates');
@@ -51,7 +54,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
 
     try {
       setIsUpdating(true);
-      const response = await fetch(`/api/resume/${resumeId}/template`, {
+      const response = await fetch(API_V1.RESUME.TEMPLATE(resumeId), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -62,8 +65,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update template');
+        throw new Error(await readApiErrorMessage(response, 'Failed to update template'));
       }
 
       toast.success('Template updated successfully');

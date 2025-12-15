@@ -29,6 +29,8 @@ import { Sparkles, Check, X, Loader2, Code, Eye, FileText } from 'lucide-react';
 import { PromptInput } from './prompt/PromptInput';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 interface AIEnhanceTemplateModalProps {
     open: boolean;
@@ -113,7 +115,7 @@ ${originalCss}`;
                 attachmentsContext,
             ].filter(Boolean);
 
-            const response = await fetch('/api/ai/enhance', {
+            const response = await fetch(API_V1.AI.ENHANCE, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -134,12 +136,11 @@ Make sure to preserve both sections and the exact separator format.`,
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Enhancement failed');
+                throw new Error(await readApiErrorMessage(response, 'Enhancement failed'));
             }
 
-            const data = await response.json();
-            const enhanced = data.enhancedContent;
+            const data = await parseApiJson<{ enhancedContent?: string }>(response);
+            const enhanced = data.enhancedContent ?? '';
 
             // Parse the combined response
             const htmlMatch = enhanced.match(/=== HTML TEMPLATE ===\s*([\s\S]*?)(?:=== CSS STYLES ===|$)/);

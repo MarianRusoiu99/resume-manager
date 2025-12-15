@@ -21,6 +21,8 @@ import { toast } from "sonner";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { apiFetch } from "@/lib/utils/api-client";
+import { API_V1 } from "@/lib/constants";
+import { parseApiJson, readApiErrorMessage } from "@/lib/utils/api-response";
 
 interface ResumeImportButtonProps {
     onImportSuccess: (resume: Resume) => void;
@@ -57,17 +59,16 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
         formData.append("fileType", currentFileType);
 
         try {
-            const response = await apiFetch("/api/resume/import", {
+            const response = await apiFetch(API_V1.RESUME.IMPORT, {
                 method: "POST",
                 body: formData,
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Failed to import resume");
+                throw new Error(await readApiErrorMessage(response, "Failed to import resume"));
             }
 
-            const data = await response.json();
+            const data = await parseApiJson<{ resume?: unknown }>(response);
 
             // Validate the extracted resume data
             const validation = resumeSchema.safeParse(data.resume);

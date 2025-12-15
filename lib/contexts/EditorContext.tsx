@@ -62,15 +62,15 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
  * ```tsx
  * <EditorProvider
  *   onLoad={async () => {
- *     const res = await fetch('/api/profile');
- *     const data = await res.json();
- *     return data.resume;
+*     const res = await fetch('/api/v1/profile');
+*     const data = await res.json();
+*     return data.resume;
  *   }}
  *   onSave={async (resume) => {
- *     await fetch('/api/profile', {
- *       method: 'PUT',
- *       body: JSON.stringify({ resume })
- *     });
+*     await fetch('/api/v1/profile', {
+*       method: 'PUT',
+*       body: JSON.stringify({ resume })
+*     });
  *     return true;
  *   }}
  * >
@@ -82,7 +82,7 @@ const EditorContext = createContext<EditorContextType | undefined>(undefined);
  * ```tsx
  * <EditorProvider
  *   onLoad={async () => {
- *     const res = await fetch(`/api/resume/${id}`);
+ *     const res = await fetch(`/api/v1/resume/${id}`);
  *     const data = await res.json();
  *     return data.content;
  *   }}

@@ -22,6 +22,8 @@ import { ResumePreviewComparison } from '../preview/ResumePreviewComparison';
 import { RESUME_PRESETS } from '../types';
 import type { AIEnhanceResumeModalProps } from '../types';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 /**
  * Convert resume to readable text format for display
@@ -118,7 +120,7 @@ export function AIEnhanceResumeModalNew({
         attachmentsContext,
       ].filter(Boolean);
 
-      const response = await fetch('/api/ai/enhance', {
+      const response = await fetch(API_V1.AI.ENHANCE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -142,12 +144,11 @@ CRITICAL INSTRUCTIONS:
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Enhancement failed');
+        throw new Error(await readApiErrorMessage(response, 'Enhancement failed'));
       }
 
-      const data = await response.json();
-      let enhanced = data.enhancedContent.trim();
+      const data = await parseApiJson<{ enhancedContent?: string }>(response);
+      let enhanced = (data.enhancedContent ?? '').trim();
 
       // Remove markdown code blocks if present
       if (enhanced.startsWith('```')) {

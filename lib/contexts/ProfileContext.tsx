@@ -5,6 +5,8 @@ import { useSession } from "next-auth/react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
 import { apiFetch } from "@/lib/utils/api-client";
+import { API_V1 } from "@/lib/constants";
+import { parseApiJson, readApiErrorMessage } from "@/lib/utils/api-response";
 
 interface Profile {
   id: string;
@@ -49,17 +51,19 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
       setLoading(true);
       setError(null);
 
-      const response = await apiFetch("/api/profile");
+      const response = await apiFetch(API_V1.PROFILE.LIST);
       if (!response.ok) {
-        throw new Error("Failed to load profiles");
+        throw new Error(await readApiErrorMessage(response, 'Failed to load profiles'));
       }
 
-      const data = await response.json();
-      setProfiles(data);
+      const data = await parseApiJson<Profile[]>(response);
+      const profilesData = (Array.isArray(data) ? data : []) as Profile[];
+
+      setProfiles(profilesData);
 
       // Set active profile to default if not already set
-      if (!activeProfileId && data.length > 0) {
-        const defaultProfile = data.find((p: Profile) => p.isDefault) || data[0];
+      if (!activeProfileId && profilesData.length > 0) {
+        const defaultProfile = profilesData.find((p: Profile) => p.isDefault) || profilesData[0];
         setActiveProfileId(defaultProfile.id);
       }
     } catch (err) {

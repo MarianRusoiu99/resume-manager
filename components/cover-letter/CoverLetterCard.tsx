@@ -11,7 +11,7 @@ import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import { toast } from 'sonner';
 import { deleteCoverLetter } from '@/app/actions/cover-letter';
 import { formatDate } from '@/lib/utils';
-import { API, ROUTES } from '@/lib/constants';
+import { API_V1, ROUTES } from '@/lib/constants';
 
 interface CoverLetterCardProps {
   id: string;
@@ -51,7 +51,7 @@ export function CoverLetterCard({
 
   const handleExport = async () => {
     try {
-      const response = await fetch(API.COVER_LETTER.EXPORT(id), {
+      const response = await fetch(API_V1.COVER_LETTER.EXPORT(id), {
         method: 'POST',
       });
 

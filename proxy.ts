@@ -48,7 +48,12 @@ async function hasSessionCookie(): Promise<boolean> {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip proxy for static assets and API routes
+  // API routes handle auth themselves; never redirect.
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next();
+  }
+
+  // Skip proxy for static assets
   if (shouldSkipProxy(pathname)) {
     return NextResponse.next();
   }

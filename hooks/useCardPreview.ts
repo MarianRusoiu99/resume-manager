@@ -5,6 +5,7 @@ import type { Resume } from "@/lib/validations/jsonresume";
 import type { Template } from "@/lib/types/template";
 import { useTemplatePreview } from "./useTemplatePreview";
 import { createComponentLogger } from "@/lib/utils/client-logger";
+import { API_V1 } from "@/lib/constants";
 
 const logger = createComponentLogger('useCardPreview');
 
@@ -110,7 +111,7 @@ export function useExportPdf({
 
       if (templateId) {
         try {
-          const templateResponse = await fetch(`/api/template/${templateId}`);
+          const templateResponse = await fetch(API_V1.TEMPLATE.GET(templateId));
           if (templateResponse.ok) {
             template = await templateResponse.json();
           }
@@ -120,12 +121,18 @@ export function useExportPdf({
       }
 
       if (!template) {
-        const templatesResponse = await fetch("/api/template?limit=1");
+        const templatesResponse = await fetch(`${API_V1.TEMPLATE.LIST}?limit=1`);
         if (!templatesResponse.ok) {
           throw new Error("Failed to load template");
         }
 
-        const { templates } = await templatesResponse.json();
+        const templatesBody = await templatesResponse.json();
+        const templatesData = templatesBody?.data ?? templatesBody;
+        const templates =
+          templatesData && typeof templatesData === 'object' && 'templates' in templatesData
+            ? (templatesData as { templates?: Template[] }).templates
+            : undefined;
+
         if (!templates || templates.length === 0) {
           throw new Error("No templates available");
         }
@@ -133,7 +140,7 @@ export function useExportPdf({
       }
 
       // Export PDF
-      const response = await fetch("/api/export/pdf", {
+      const response = await fetch(API_V1.EXPORT.PDF, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

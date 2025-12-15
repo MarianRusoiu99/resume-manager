@@ -5,6 +5,8 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Template } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson } from '@/lib/utils/api-response';
 
 const logger = createComponentLogger('useTemplatePreview');
 
@@ -43,10 +45,11 @@ async function fetchTemplate(templateId?: string | null, useFallback = true): Pr
   // Try specific template first
   if (templateId) {
     try {
-      const response = await fetch(`/api/template/${templateId}`);
-      if (response.ok) {
-        return await response.json();
-      }
+        const response = await fetch(API_V1.TEMPLATE.GET(templateId));
+        if (response.ok) {
+          const data = await parseApiJson<Template>(response);
+          return data;
+        }
     } catch {
       // Fall through to fallback
     }
@@ -54,9 +57,11 @@ async function fetchTemplate(templateId?: string | null, useFallback = true): Pr
 
   // Fallback to default template
   if (useFallback) {
-    const response = await fetch('/api/template?limit=1');
+    const response = await fetch(`${API_V1.TEMPLATE.LIST}?limit=1`);
     if (response.ok) {
-      const { templates } = await response.json();
+      const data = await parseApiJson<{ templates?: Template[] }>(response);
+      const templates = data.templates;
+
       if (templates && templates.length > 0) {
         return templates[0];
       }

@@ -28,7 +28,8 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import { API } from '@/lib/constants/routes';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 
 const logger = createComponentLogger('SettingsContext');
@@ -115,14 +116,13 @@ export function SettingsProvider({
       setIsLoadingProviders(true);
       setProvidersError(null);
 
-      const response = await fetch(API.SETTINGS.API_PROVIDERS);
-      
+      const response = await fetch(API_V1.SETTINGS.API_PROVIDERS);
+
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to fetch providers');
+        throw new Error(await readApiErrorMessage(response, 'Failed to fetch providers'));
       }
 
-      const data = await response.json();
+      const data = await parseApiJson<ApiProvider[]>(response);
       setProviders(data);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch providers';
@@ -141,14 +141,13 @@ export function SettingsProvider({
       setIsLoadingAISettings(true);
       setAISettingsError(null);
 
-      const response = await fetch(API.SETTINGS.AI_MODELS);
-      
+      const response = await fetch(API_V1.SETTINGS.AI_MODELS);
+
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to fetch AI settings');
+        throw new Error(await readApiErrorMessage(response, 'Failed to fetch AI settings'));
       }
 
-      const data = await response.json();
+      const data = await parseApiJson<AISettings>(response);
       setAISettings(data);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch AI settings';

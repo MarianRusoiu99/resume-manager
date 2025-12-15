@@ -14,6 +14,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { TemplateBase } from '@/lib/types/template';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 interface PreviewTemplateSelectorProps {
   selectedTemplateId: string | null;
@@ -36,12 +38,15 @@ export function PreviewTemplateSelector({
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/template');
+        const response = await fetch(API_V1.TEMPLATE.LIST);
         if (!response.ok) {
-          throw new Error('Failed to fetch templates');
+          throw new Error(await readApiErrorMessage(response, 'Failed to fetch templates'));
         }
-        const data = await response.json();
-        setTemplates(data.templates || []);
+
+        const data = await parseApiJson<{ templates?: TemplateBase[] }>(response);
+        const templates = data.templates ?? [];
+
+        setTemplates(templates || []);
       } catch (error) {
         console.error('Error fetching templates:', error);
         toast.error('Failed to load templates');

@@ -1,11 +1,7 @@
 /**
- * Shared types for Server Actions
+ * Shared types for Server Actions.
+ *
+ * Source of truth lives in `lib/` so lower layers never import from `app/`.
  */
 
-/**
- * Standard result type for all Server Actions
- * Provides consistent error handling across the application
- */
-export type ActionResult<T> =
-    | { success: true; data: T }
-    | { success: false; error: string };
+export type { ActionResult } from "@/lib/actions/types";

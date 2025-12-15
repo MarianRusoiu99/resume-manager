@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { API_V1 } from '@/lib/constants';
+import { parseApiJson, readApiErrorMessage } from '@/lib/utils/api-response';
 
 const logger = createComponentLogger('useExportPDF');
 
@@ -35,7 +37,7 @@ export function useExportPDF() {
 
       // If custom template is provided, use it directly
       if (templateHtml) {
-        const response = await fetch('/api/export/pdf', {
+        const response = await fetch(API_V1.EXPORT.PDF, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -51,8 +53,7 @@ export function useExportPDF() {
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to export PDF');
+          throw new Error(await readApiErrorMessage(response, 'Failed to export PDF'));
         }
 
         await downloadPDF(response);
@@ -65,15 +66,15 @@ export function useExportPDF() {
         throw new Error('No template selected');
       }
 
-      const templateResponse = await fetch(`/api/template/${templateId}`);
+      const templateResponse = await fetch(API_V1.TEMPLATE.GET(templateId));
       if (!templateResponse.ok) {
-        throw new Error('Failed to fetch template');
+        throw new Error(await readApiErrorMessage(templateResponse, 'Failed to fetch template'));
       }
 
-      const template = await templateResponse.json();
+      const template = await parseApiJson<{ htmlTemplate: string; cssStyles: string }>(templateResponse);
 
       // Call universal PDF export API
-      const response = await fetch('/api/export/pdf', {
+      const response = await fetch(API_V1.EXPORT.PDF, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,8 +90,7 @@ export function useExportPDF() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to export PDF');
+        throw new Error(await readApiErrorMessage(response, 'Failed to export PDF'));
       }
 
       await downloadPDF(response);
