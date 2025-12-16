@@ -176,7 +176,9 @@ export async function parseTemplateFromImage(input: ParseTemplateInput): Promise
 
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      logger.error(`Template parsing attempt ${attempt + 1} failed:`, lastError.message);
+      logger.error(`Template parsing attempt ${attempt + 1} failed`, lastError, {
+        attempt: attempt + 1,
+      });
 
       // Don't retry on validation errors (they won't get better)
       if (lastError.message.includes('Invalid AI response')) {

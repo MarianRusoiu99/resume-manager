@@ -277,9 +277,7 @@ export async function GET(request: Request): Promise<NextResponse<HealthCheckRes
       },
     });
   } catch (error) {
-    logger.error('Health check failed', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    logger.error('Health check failed', error);
     
     // Return unhealthy status on unexpected errors
     const response: HealthCheckResponse = {

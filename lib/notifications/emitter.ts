@@ -7,6 +7,7 @@
  */
 
 import { getPubSubProvider } from '@/lib/redis';
+import { logger } from '@/lib/utils/logger';
 import { SseHub, type SseController } from './sse-hub';
 export type { NotificationPayload } from './types';
 import type { NotificationPayload } from './types';
@@ -39,7 +40,7 @@ async function ensureSubscribed(userId: string): Promise<void> {
   });
   
   subscribedUsers.set(userId, unsubscribe);
-  console.log(`[SSE] Subscribed to PubSub channel: ${channel}`);
+  logger.info('SSE subscribed to PubSub channel', { userId, channel });
 }
 
 /**
@@ -52,7 +53,7 @@ async function unsubscribeIfNoClients(userId: string): Promise<void> {
   if (unsubscribe) {
     await unsubscribe();
     subscribedUsers.delete(userId);
-    console.log(`[SSE] Unsubscribed from PubSub channel: ${getChannelName(userId)}`);
+    logger.info('SSE unsubscribed from PubSub channel', { userId, channel: getChannelName(userId) });
   }
 }
 
@@ -62,7 +63,7 @@ async function unsubscribeIfNoClients(userId: string): Promise<void> {
 export async function addConnection(userId: string, controller: SseController): Promise<void> {
   const count = hub.addConnection(userId, controller);
   await ensureSubscribed(userId);
-  console.log(`[SSE] Client connected for user ${userId}. Total local connections: ${count}`);
+  logger.info('SSE client connected', { userId, count });
 }
 
 /**
@@ -73,7 +74,7 @@ export async function removeConnection(userId: string, controller: SseController
   if (remaining === 0) {
     await unsubscribeIfNoClients(userId);
   }
-  console.log(`[SSE] Client disconnected for user ${userId}. Remaining: ${remaining}`);
+  logger.info('SSE client disconnected', { userId, remaining });
 }
 
 /**
@@ -86,8 +87,8 @@ export async function emitNotification(userId: string, notification: Notificatio
   
   // Publish to PubSub - all subscribed instances will receive this
   await pubsub.publish(channel, notification);
-  
-  console.log(`[SSE] Published notification to channel: ${channel}`);
+
+  logger.debug('SSE published notification', { userId, channel });
 }
 
 /**
@@ -125,5 +126,5 @@ export async function shutdown(): Promise<void> {
 
   hub.closeAll();
   
-  console.log('[SSE] Shutdown complete');
+  logger.info('SSE shutdown complete');
 }

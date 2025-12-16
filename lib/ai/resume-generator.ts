@@ -14,6 +14,7 @@ import {
   type ProgressCallback,
 } from '@/lib/ai/workflow';
 import type { OptimizedResume, OptimizeResumeResult } from '@/lib/ai/agents';
+import { logger } from '@/lib/utils/logger';
 
 // Re-export types for convenience
 export type { OptimizedResume, OptimizeResumeResult };
@@ -72,8 +73,8 @@ export async function generateResume(
 ): Promise<GenerateResumeResult> {
   const workflow = input.workflow || resumeGenerationWorkflow;
 
-  console.log(`🚀 Starting resume generation with workflow: ${workflow.name}`);
-  console.log('   Profile is the source of truth - no fabrication allowed');
+  logger.info('Starting resume generation', { workflow: workflow.name });
+  logger.info('Profile is the source of truth - no fabrication allowed', { workflow: workflow.name });
 
   const result = await executeWorkflow({
     config: workflow,
@@ -86,7 +87,7 @@ export async function generateResume(
   });
 
   if (!result.success) {
-    console.error('❌ Workflow failed:', result.error);
+    logger.error('Workflow failed', undefined, { error: result.error });
     return {
       success: false,
       error: result.error,
@@ -95,7 +96,7 @@ export async function generateResume(
     };
   }
 
-  console.log(`✅ Resume generation complete in ${result.executionTime}ms`);
+  logger.info('Resume generation complete', { executionTime: result.executionTime });
 
   return {
     success: true,

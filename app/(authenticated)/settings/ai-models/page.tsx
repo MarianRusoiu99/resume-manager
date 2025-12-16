@@ -16,8 +16,10 @@ import {
 } from '@/components/ui/select';
 import { Cpu, RefreshCw, AlertCircle, Check } from 'lucide-react';
 import Link from 'next/link';
+import { useComponentLogger } from '@/hooks';
 
 export default function AIModelsSettingsPage() {
+  const log = useComponentLogger('AIModelsSettingsPage');
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [savingFeature, setSavingFeature] = useState<string | null>(null);
@@ -54,12 +56,12 @@ export default function AIModelsSettingsPage() {
       }
       setSelections(initialSelections);
     } catch (error) {
-      console.error('Error loading settings:', error);
+      log.error('Error loading settings', error);
       toast.error('Failed to load AI settings');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [log]);
 
   useEffect(() => {
     loadSettings();
@@ -109,7 +111,7 @@ export default function AIModelsSettingsPage() {
       toast.success('Preference saved');
       await loadSettings(); // Refresh to get updated names
     } catch (error) {
-      console.error('Error saving preference:', error);
+      log.error('Error saving preference', error, { featureId });
       toast.error('Failed to save preference');
     } finally {
       setSavingFeature(null);
@@ -139,7 +141,7 @@ export default function AIModelsSettingsPage() {
       });
       await loadSettings();
     } catch (error) {
-      console.error('Error clearing preference:', error);
+      log.error('Error clearing preference', error, { featureId });
       toast.error('Failed to clear preference');
     } finally {
       setSavingFeature(null);

@@ -28,6 +28,7 @@ export { useKeyboardShortcut } from './useKeyboardShortcut';
 
 export { useAutoSave } from './useAutoSave';
 export { useFetch, useAction } from './useDataFetching';
+export { useComponentLogger } from './useComponentLogger';
 
 // ============================================================================
 // Feature Hooks - Domain-specific business logic

@@ -17,6 +17,7 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import { PageHeader } from '@/components/layout';
 import { ROUTES } from '@/lib/constants';
 import { apiV1, type ApiProvider, type ProfileListItem } from '@/lib/client';
+import { useComponentLogger } from '@/hooks';
 import type { TemplateBase } from '@/lib/types/template';
 
 interface GeneratedResume {
@@ -31,6 +32,7 @@ interface GeneratedResume {
 }
 
 export default function GeneratePage() {
+  const log = useComponentLogger('GeneratePage');
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
 
@@ -68,7 +70,7 @@ export default function GeneratePage() {
     const loadTemplates = async () => {
       const result = await apiV1.TEMPLATE.LIST.get<{ templates: TemplateBase[]; count: number }>();
       if (result.error || !result.data) {
-        console.error('Failed to load templates:', result.error);
+        log.error('Failed to load templates', undefined, { error: result.error });
         return;
       }
 
@@ -79,7 +81,7 @@ export default function GeneratePage() {
     };
 
     loadTemplates();
-  }, []);
+  }, [log]);
 
   // Load profiles and check for AI providers on mount
   useEffect(() => {
@@ -116,14 +118,14 @@ export default function GeneratePage() {
           setHasAIProviders(providersResult.data.some((p) => p.isActive));
         }
       } catch (err) {
-        console.error('Failed to load data:', err);
+        log.error('Failed to load data', err);
       } finally {
         setIsLoadingData(false);
       }
     };
 
     loadData();
-  }, []);
+  }, [log]);
 
 
 
@@ -165,7 +167,7 @@ export default function GeneratePage() {
 
     switch (eventType) {
       case 'connected':
-        console.log('Connected to stream');
+        log.debug('Connected to stream');
         break;
 
       case 'start':

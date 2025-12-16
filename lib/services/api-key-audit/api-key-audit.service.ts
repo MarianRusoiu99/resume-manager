@@ -41,14 +41,13 @@ export class ApiKeyAuditService {
         success,
         action,
       });
-    } catch (error) {
-      logger.error('Failed to create API key audit log', {
-        error,
-        providerId,
-        action,
-        userId: context.userId,
-      });
-    }
+     } catch (error) {
+       logger.error('Failed to create API key audit log', error, {
+         providerId,
+         action,
+         userId: context.userId,
+       });
+     }
   }
 
   async logKeyCreated(
@@ -131,7 +130,7 @@ export class ApiKeyAuditService {
         },
       });
     } catch (error) {
-      logger.error('Failed to update provider usage count', { error, providerId });
+      logger.error('Failed to update provider usage count', error, { providerId });
     }
   }
 

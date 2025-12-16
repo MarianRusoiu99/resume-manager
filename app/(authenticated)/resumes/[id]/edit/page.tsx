@@ -10,6 +10,7 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { apiV1 } from "@/lib/client";
 import type { ResumeDetails } from "@/lib/services/resume-crud";
+import { useComponentLogger } from "@/hooks";
 
 /**
  * Resume Edit Page - Full-screen editor like profile editor
@@ -19,6 +20,7 @@ import type { ResumeDetails } from "@/lib/services/resume-crud";
  * ResumeEditor includes the preview panel built-in.
  */
 export default function ResumeEditPage() {
+  const log = useComponentLogger("ResumeEditPage");
   const params = useParams();
   const router = useRouter();
   const resumeId = params.id as string;
@@ -33,11 +35,11 @@ export default function ResumeEditPage() {
           setJobTitle(result.data.jobTitle);
         }
       } catch (error) {
-        console.error("Error loading job title:", error);
+        log.error("Error loading job title", error);
       }
     };
     loadJobTitle();
-  }, [resumeId]);
+  }, [resumeId, log]);
 
   /**
    * Load specific resume data from API
@@ -52,7 +54,7 @@ export default function ResumeEditPage() {
 
       return result.data.content as Resume;
     } catch (error) {
-      console.error("Error loading resume:", error);
+      log.error("Error loading resume", error);
       return null;
     }
   };
@@ -70,7 +72,7 @@ export default function ResumeEditPage() {
 
       return true;
     } catch (error) {
-      console.error("Error saving resume:", error);
+      log.error("Error saving resume", error);
       return false;
     }
   };
@@ -89,7 +91,7 @@ export default function ResumeEditPage() {
       setJobTitle(newTitle);
       toast.success("Job title updated successfully");
     } catch (error) {
-      console.error("Error saving job title:", error);
+      log.error("Error saving job title", error);
       toast.error("Failed to save job title");
     }
   };

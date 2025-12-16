@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import type { TemplateBase } from '@/lib/types/template';
+import { useComponentLogger } from '@/hooks';
 import { apiV1 } from '@/lib/client';
 
 interface TemplateDropdownProps {
@@ -26,6 +27,7 @@ export function TemplateDropdown({
   resumeId, 
   onTemplateChange 
 }: Readonly<TemplateDropdownProps>) {
+  const log = useComponentLogger('TemplateDropdown');
   const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -42,7 +44,7 @@ export function TemplateDropdown({
 
         setTemplates(result.data?.templates ?? []);
       } catch (error) {
-        console.error('Error fetching templates:', error);
+        log.error('Error fetching templates', error);
         toast.error('Failed to load templates');
       } finally {
         setIsLoading(false);
@@ -52,7 +54,7 @@ export function TemplateDropdown({
     if (isOpen && templates.length === 0) {
       fetchTemplates();
     }
-  }, [isOpen, templates.length]);
+  }, [isOpen, templates.length, log]);
 
   const handleTemplateSelect = async (templateId: string) => {
     if (templateId === currentTemplateId) {
@@ -72,7 +74,7 @@ export function TemplateDropdown({
       setIsOpen(false);
       onTemplateChange();
     } catch (error) {
-      console.error('Error updating template:', error);
+      log.error('Error updating template', error, { templateId });
       toast.error(error instanceof Error ? error.message : 'Failed to update template');
     } finally {
       setIsUpdating(false);

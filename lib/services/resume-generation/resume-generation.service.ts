@@ -253,7 +253,9 @@ export class ResumeGenerationService implements IResumeGenerationService {
       const saveResult = await coverLetterService.createCoverLetter(coverLetterData);
 
       if (!saveResult.success) {
-        logger.error('Failed to save cover letter', { error: saveResult.error });
+        logger.error('Failed to save cover letter', new Error(saveResult.error), {
+          userId: input.userId,
+        });
         return failure(saveResult.error, 'INTERNAL_ERROR');
       }
 

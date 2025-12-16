@@ -6,6 +6,7 @@
  */
 
 import { env } from '@/lib/config';
+import { logger } from '@/lib/utils/logger';
 import { CacheProvider, PubSubProvider } from './types';
 import { MemoryCacheProvider, MemoryPubSubProvider } from './memory-provider';
 import { RedisCacheProvider, RedisPubSubProvider, RedisProvider, RedisOptions } from './redis-provider';
@@ -79,10 +80,10 @@ export function getCacheProvider(config?: ClientConfig): CacheProvider {
       ...mergedConfig.redis,
       keyPrefix: mergedConfig.keyPrefix,
     });
-    console.log('[Cache] Using Redis provider');
+    logger.info('Using Redis cache provider');
   } else {
     cacheInstance = new MemoryCacheProvider();
-    console.log('[Cache] Using in-memory provider (not suitable for multi-instance deployments)');
+    logger.warn('Using in-memory cache provider (not suitable for multi-instance deployments)');
   }
   
   return cacheInstance;
@@ -102,10 +103,10 @@ export function getPubSubProvider(config?: ClientConfig): PubSubProvider {
       ...mergedConfig.redis,
       keyPrefix: mergedConfig.keyPrefix,
     });
-    console.log('[PubSub] Using Redis provider');
+    logger.info('Using Redis pubsub provider');
   } else {
     pubsubInstance = new MemoryPubSubProvider();
-    console.log('[PubSub] Using in-memory provider (not suitable for multi-instance deployments)');
+    logger.warn('Using in-memory pubsub provider (not suitable for multi-instance deployments)');
   }
   
   return pubsubInstance;
@@ -125,7 +126,7 @@ export function getRedisClient(config?: ClientConfig): CacheProvider & PubSubPro
       ...mergedConfig.redis,
       keyPrefix: mergedConfig.keyPrefix,
     });
-    console.log('[Redis] Using Redis provider for cache and pubsub');
+    logger.info('Using Redis provider for cache and pubsub');
   } else {
     // Create a combined memory provider
     const cache = new MemoryCacheProvider();
@@ -154,7 +155,7 @@ export function getRedisClient(config?: ClientConfig): CacheProvider & PubSubPro
         await Promise.all([cache.disconnect(), pubsub.disconnect()]);
       },
     };
-    console.log('[Redis] Using in-memory provider for cache and pubsub (not suitable for multi-instance deployments)');
+    logger.warn('Using in-memory provider for cache and pubsub (not suitable for multi-instance deployments)');
   }
   
   return combinedInstance;

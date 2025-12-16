@@ -14,6 +14,7 @@ import {
   RESUME_OPTIMIZATION_SYSTEM_PROMPT, 
   buildResumeOptimizationPrompt 
 } from './prompt';
+import { logger } from '@/lib/utils/logger';
 
 // ============================================================================
 // Schema
@@ -152,12 +153,15 @@ export async function optimizeResume(
 ): Promise<OptimizeResumeResult> {
   const model = input.provider.createLanguageModel(input.modelId);
 
-  console.log('🔧 Resume optimization started');
-  console.log('   Job description length:', input.jobDescription?.length || 0);
-  console.log('   Job description preview:', input.jobDescription?.slice(0, 200) || 'EMPTY');
-
+  logger.debug('Resume optimization started');
+  logger.debug('Job description received', {
+    jobDescriptionLength: input.jobDescription?.length || 0,
+    jobDescriptionPreview: input.jobDescription?.slice(0, 200) || 'EMPTY',
+  });
+ 
   const prompt = buildResumeOptimizationPrompt(input.jobDescription, input.userResume);
-  console.log('   Prompt length:', prompt.length);
+  logger.debug('Resume optimization prompt built', { promptLength: prompt.length });
+
 
   const result = await generateText({
     model,
@@ -165,31 +169,32 @@ export async function optimizeResume(
     prompt,
   });
 
-  console.log('🤖 AI response received');
-  console.log('   Response length:', result.text.length);
-  console.log('   Response preview:', result.text.slice(0, 500));
+  logger.debug('AI response received');
+  logger.debug('AI response stats', {
+    responseLength: result.text.length,
+    responsePreview: result.text.slice(0, 500),
+  });
 
   try {
     const jsonStr = extractJSON(result.text);
-    console.log('   Extracted JSON length:', jsonStr.length);
-    
+    logger.debug('Extracted JSON', { jsonLength: jsonStr.length });
+
     const parsed = JSON.parse(jsonStr);
-    console.log('   Parsed object keys:', Object.keys(parsed));
-    
+    logger.debug('Parsed optimized resume JSON', { parsedKeys: Object.keys(parsed) });
+
     // Extract metadata
     const jobTitle = parsed.jobTitle || 'Position';
     const companyName = parsed.companyName || 'Company';
-    console.log('   Extracted job title:', jobTitle);
-    console.log('   Extracted company:', companyName);
-    
+    logger.debug('Extracted metadata', { jobTitle, companyName });
+
     // Parse and validate the resume
     const resume = optimizedResumeSchema.parse(parsed.resume || parsed);
-    console.log('   Resume sections:', Object.keys(resume));
-    
+    logger.debug('Validated optimized resume', { resumeSections: Object.keys(resume) });
+
     return { resume, jobTitle, companyName };
   } catch (error) {
     // Fallback: return original resume structure if parsing fails
-    console.error('Failed to parse optimized resume:', error);
+    logger.error('Failed to parse optimized resume', error);
     return {
       resume: {
         basics: input.userResume.basics,

@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { GalleryCardPreview } from '@/components/shared/GalleryCardPreview';
 import { GalleryCardActionsMenu } from '@/components/shared/GalleryCardActionsMenu';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 
 /**
  * Action item for dropdown menu
@@ -92,6 +93,8 @@ export interface GalleryCardProps {
  * Displays a card with preview, title, metadata, and actions dropdown
  * Square aspect ratio: Preview on LEFT (50%), content on RIGHT (50%)
  */
+const log = createComponentLogger('GalleryCard');
+
 export function GalleryCard({
   id,
   title,
@@ -122,7 +125,7 @@ export function GalleryCard({
       setIsActionLoading(true);
       await action.onClick();
     } catch (error) {
-      console.error('Action failed:', error);
+      log.error('Action failed', error);
     } finally {
       setIsActionLoading(false);
     }

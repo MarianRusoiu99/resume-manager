@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { TemplateBase } from '@/lib/types/template';
+import { useComponentLogger } from '@/hooks';
 import { apiV1 } from '@/lib/client';
 
 interface PreviewTemplateSelectorProps {
@@ -29,6 +30,7 @@ export function PreviewTemplateSelector({
   variant = 'outline',
   size = 'sm'
 }: Readonly<PreviewTemplateSelectorProps>) {
+  const log = useComponentLogger('PreviewTemplateSelector');
   const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -44,7 +46,7 @@ export function PreviewTemplateSelector({
 
         setTemplates(result.data?.templates ?? []);
       } catch (error) {
-        console.error('Error fetching templates:', error);
+        log.error('Error fetching templates', error);
         toast.error('Failed to load templates');
       } finally {
         setIsLoading(false);
@@ -54,7 +56,7 @@ export function PreviewTemplateSelector({
     if (isOpen && templates.length === 0) {
       fetchTemplates();
     }
-  }, [isOpen, templates.length]);
+  }, [isOpen, templates.length, log]);
 
   const handleTemplateSelect = (templateId: string | null) => {
     onTemplateChange(templateId);

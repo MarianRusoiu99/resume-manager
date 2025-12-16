@@ -12,7 +12,7 @@ import React, {
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { apiV1 } from '@/lib/client';
-import type { NotificationPayload } from '@/lib/notifications/types';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 
 export type Notification = {
   id: string;
@@ -63,6 +63,8 @@ interface NotificationProviderProps {
   children: ReactNode;
 }
 
+const log = createComponentLogger('NotificationProvider');
+
 export function NotificationProvider({ children }: Readonly<NotificationProviderProps>) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -85,7 +87,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
       setNotifications(result.data?.notifications ?? []);
       setUnreadCount(result.data?.unreadCount ?? 0);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      log.error('Error fetching notifications', error);
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +104,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
 
       setUnreadCount(result.data?.count ?? 0);
     } catch (error) {
-      console.error('Error fetching notification count:', error);
+      log.error('Error fetching notification count', error);
     }
   }, []);
 
@@ -122,7 +124,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      log.error('Error marking notification as read', error, { id });
     }
   }, []);
 
@@ -140,7 +142,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      log.error('Error marking all notifications as read', error);
     }
   }, []);
 
@@ -163,7 +165,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
         return prev.filter((n) => n.id !== id);
       });
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      log.error('Error deleting notification', error, { id });
     }
   }, []);
 
@@ -186,7 +188,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
       setNotifications([]);
       setUnreadCount(0);
     } catch (error) {
-      console.error('Error clearing all notifications:', error);
+      log.error('Error clearing all notifications', error);
     }
   }, [notifications]);
 
@@ -268,8 +270,14 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
     // Set up SSE connection for real-time updates
     const eventSource = new EventSource(apiV1.NOTIFICATIONS.STREAM.url);
 
+    const sseLog = log.withContext({ action: 'notifications-sse' });
+
     eventSource.addEventListener('connected', (event) => {
-      console.log('[SSE] Connected to notifications stream:', JSON.parse(event.data));
+      try {
+        sseLog.debug('Connected to notifications stream', { data: JSON.parse(event.data) });
+      } catch {
+        sseLog.debug('Connected to notifications stream');
+      }
     });
 
     eventSource.addEventListener('notification', (event) => {
@@ -291,7 +299,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
         };
         addNotification(fullNotification);
       } catch (error) {
-        console.error('[SSE] Error parsing notification:', error);
+        sseLog.error('Error parsing notification', error);
       }
     });
 
@@ -304,7 +312,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
       // Ignore disconnects caused by our own cleanup.
       if (isClosing || eventSource.readyState === EventSource.CLOSED) return;
 
-      console.error('[SSE] Connection error:', error);
+      sseLog.error('Connection error', error);
       // EventSource will automatically try to reconnect
     };
 

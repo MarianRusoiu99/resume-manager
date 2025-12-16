@@ -5,6 +5,7 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { BaseAIProvider, type AIModel, type ProviderConfig } from './base';
 import type { LanguageModel } from 'ai';
+import { logger } from '@/lib/utils/logger';
 
 interface OpenAIModelResponse {
   data: Array<{
@@ -76,7 +77,7 @@ export class OpenAIProvider extends BaseAIProvider {
 
       return gptModels;
     } catch (error) {
-      console.error('Error fetching OpenAI models:', error);
+      logger.error('Error fetching OpenAI models', error);
       throw new Error(
         `Failed to fetch models from OpenAI: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

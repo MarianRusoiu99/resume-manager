@@ -60,9 +60,7 @@ export async function GET(): Promise<NextResponse> {
       }
     );
   } catch (error) {
-    logger.error('Readiness check failed', {
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
+    logger.error('Readiness check failed', error);
     
     return NextResponse.json(
       { 

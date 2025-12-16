@@ -5,6 +5,7 @@
 
 import type { LanguageModel } from 'ai';
 import { BaseAIProvider, type AIModel, type ProviderConfig } from './base';
+import { logger } from '@/lib/utils/logger';
 
 interface GoogleModelResponse {
   models: Array<{
@@ -85,7 +86,7 @@ export class GoogleProvider extends BaseAIProvider {
 
       return models;
     } catch (error) {
-      console.error('Error fetching Google models:', error);
+      logger.error('Error fetching Google models', error);
       throw new Error(
         `Failed to fetch models from Google AI: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createProfile } from "@/app/actions/profile";
 import { apiV1 } from "@/lib/client";
+import { useComponentLogger } from "@/hooks";
 
 interface Profile {
   id: string;
@@ -27,6 +28,7 @@ interface ProfileGalleryProps {
 }
 
 export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps>) {
+  const log = useComponentLogger("ProfileGallery");
   const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
@@ -45,7 +47,7 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
           );
         }
       } catch (error) {
-        console.error("Failed to refresh profiles:", error);
+        log.error("Failed to refresh profiles", error);
       }
     };
 
@@ -57,7 +59,7 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
+  }, [log]);
 
   const handleCreateProfile = () => {
     startTransition(async () => {

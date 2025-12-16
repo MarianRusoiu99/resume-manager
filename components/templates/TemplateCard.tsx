@@ -14,6 +14,7 @@ import { useToastAction } from '@/hooks';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { useComponentLogger } from '@/hooks';
 import { apiV1 } from '@/lib/client';
 
 interface TemplateCardProps {
@@ -73,6 +74,7 @@ export function TemplateCard({
   onDelete,
   onDuplicate,
 }: Readonly<TemplateCardProps>) {
+  const log = useComponentLogger('TemplateCard');
   const { runWithToast } = useToastAction();
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | undefined>(undefined);
@@ -93,14 +95,14 @@ export function TemplateCard({
 
         setPreviewHtml(html);
       } catch (error) {
-        console.error('Failed to generate preview:', error);
+        log.error('Failed to generate preview', error);
       } finally {
         setIsLoadingPreview(false);
       }
     }
 
     generatePreview();
-  }, [template]);
+  }, [template, log]);
 
   const handleExportPDF = async () => {
     await runWithToast(

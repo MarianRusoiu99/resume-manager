@@ -5,6 +5,7 @@
 
 import type { LanguageModel } from 'ai';
 import { BaseAIProvider, type AIModel, type ProviderConfig } from './base';
+import { logger } from '@/lib/utils/logger';
 
 interface AnthropicModelResponse {
   data: Array<{
@@ -70,7 +71,7 @@ export class AnthropicProvider extends BaseAIProvider {
 
       return models;
     } catch (error) {
-      console.error('Error fetching Anthropic models:', error);
+      logger.error('Error fetching Anthropic models', error);
       throw new Error(
         `Failed to fetch models from Anthropic: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

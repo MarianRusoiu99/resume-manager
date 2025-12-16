@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { apiV1 } from '@/lib/client';
+import { apiFetch } from '@/lib/utils/api-client';
 import 'swagger-ui-react/swagger-ui.css';
 
 // Dynamically import SwaggerUI to avoid SSR issues
@@ -16,12 +18,13 @@ export default function ApiDocsPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await fetch('/api/v1/docs');
+        const response = await apiFetch(apiV1.DOCS.url);
         if (!response.ok) {
           throw new Error((await response.text()) || 'Failed to load documentation');
         }
         const data = (await response.json()) as Record<string, unknown>;
         setSpec(data);
+        // NOTE: docs endpoint is public; apiFetch keeps behavior consistent.
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load documentation');
       } finally {

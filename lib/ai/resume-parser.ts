@@ -7,6 +7,7 @@ import { generateText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { resumeSchema } from "@/lib/validations/jsonresume";
+import { logger } from "@/lib/utils/logger";
 
 /**
  * Default model configuration
@@ -165,21 +166,21 @@ export async function parseResumeFromText(
         const normalizedData = normalizeDates(extractedData);
 
         const validation = resumeSchema.safeParse(normalizedData);
-
+ 
         if (!validation.success) {
-            console.error("Validation errors:", validation.error.issues);
-
+            logger.error("Resume parsing validation errors", undefined, { issues: validation.error.issues });
+ 
             // Provide more helpful error message
             const errorDetails = validation.error.issues
                 .map(issue => `${issue.path.join('.')}: ${issue.message}`)
                 .join(', ');
-
+ 
             throw new Error(`Resume data validation failed: ${errorDetails}`);
         }
-
+ 
         return validation.data;
     } catch (error) {
-        console.error("Resume parsing error:", error);
+        logger.error("Resume parsing error", error);
         throw error;
     }
 }
@@ -226,26 +227,26 @@ export async function parseResumeFromImage(
         }
 
         const extractedData = JSON.parse(jsonText);
-
+ 
         // Normalize dates before validation
         const normalizedData = normalizeDates(extractedData);
-
+ 
         const validation = resumeSchema.safeParse(normalizedData);
-
+ 
         if (!validation.success) {
-            console.error("Validation errors:", validation.error.issues);
-
+            logger.error("Image parsing validation errors", undefined, { issues: validation.error.issues });
+ 
             // Provide more helpful error message
             const errorDetails = validation.error.issues
                 .map(issue => `${issue.path.join('.')}: ${issue.message}`)
                 .join(', ');
-
+ 
             throw new Error(`Resume data validation failed: ${errorDetails}`);
         }
-
+ 
         return validation.data;
     } catch (error) {
-        console.error("Image parsing error:", error);
+        logger.error("Image parsing error", error);
         throw error;
     }
 }

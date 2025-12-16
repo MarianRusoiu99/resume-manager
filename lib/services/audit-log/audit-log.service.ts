@@ -45,10 +45,7 @@ export class AuditLogService {
         success: entry.success ?? true,
       });
     } catch (error) {
-      logger.error('Failed to write audit log', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        entry,
-      });
+      logger.error('Failed to write audit log', error, { entry });
     }
   }
 

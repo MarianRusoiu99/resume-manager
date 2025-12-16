@@ -10,6 +10,7 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import type { AIProvider } from '@/lib/ai/providers';
 import { extractJSON } from '../shared/utils';
 import { COVER_LETTER_SYSTEM_PROMPT, buildCoverLetterPrompt } from './prompt';
+import { logger } from '@/lib/utils/logger';
 
 // ============================================================================
 // Types
@@ -62,7 +63,7 @@ export async function generateCoverLetter(
     };
   } catch (error) {
     // Fallback: return raw text if JSON parsing fails
-    console.error('Failed to parse cover letter response:', error);
+    logger.error('Failed to parse cover letter response', error);
     return {
       content: result.text.trim(),
       tone: 'professional',

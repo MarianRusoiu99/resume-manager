@@ -20,7 +20,9 @@ import type { BlockNoteEditorMethods } from '@/components/editor/BlockNoteEditor
 import { MarkdownPreview } from '@/components/editor/MarkdownPreview';
 import { Copy, Edit, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 import { AIEnhanceButton, AIEnhanceTextModal } from '@/components/ai-enhance';
+
 
 interface CoverLetterEditorProps {
   /**
@@ -78,6 +80,7 @@ export function CoverLetterEditor({
   showCard = true,
   title = 'Generated Cover Letter',
 }: Readonly<CoverLetterEditorProps>) {
+  const log = createComponentLogger('CoverLetterEditor');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
@@ -89,7 +92,7 @@ export function CoverLetterEditor({
       await navigator.clipboard.writeText(content);
       toast.success('Cover letter copied to clipboard!');
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error);
+      log.error('Failed to copy to clipboard', error);
       toast.error('Failed to copy to clipboard');
     }
   };
@@ -118,7 +121,7 @@ export function CoverLetterEditor({
       setIsEditing(false);
       toast.success('Cover letter saved successfully!');
     } catch (error) {
-      console.error('Save failed:', error);
+      log.error('Save failed', error);
       toast.error('Failed to save cover letter');
     } finally {
       setIsSaving(false);
@@ -215,7 +218,7 @@ export function CoverLetterEditor({
         setEditedContent(enhancedContent);
         toast.success('Cover letter enhanced successfully!');
       } catch (error) {
-        console.error('Failed to save enhanced content:', error);
+        log.error('Failed to save enhanced content', error);
         toast.error('Failed to save changes');
       } finally {
         setIsSaving(false);

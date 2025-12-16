@@ -2,6 +2,7 @@
 
 import { Component, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { createComponentLogger } from "@/lib/utils/client-logger";
 
 interface Props {
   children: ReactNode;
@@ -12,6 +13,8 @@ interface State {
   hasError: boolean;
   error?: Error;
 }
+
+const log = createComponentLogger("ErrorBoundary");
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
@@ -24,7 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught an error:", error, errorInfo);
+    log.error('Caught an error', error, { errorInfo });
   }
 
   render() {

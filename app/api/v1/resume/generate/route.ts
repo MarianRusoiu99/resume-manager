@@ -31,7 +31,9 @@ export const POST = createApiHandler(
     });
 
     if (!result.success) {
-      logger.error('API: Resume generation failed', { error: result.error });
+      logger.error('API: Resume generation failed', new Error(result.error), {
+        userId: session.user.id,
+      });
     }
 
     return result;

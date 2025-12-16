@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 
 interface PaginationControlsProps {
   currentPage: number;
@@ -16,16 +17,17 @@ export function PaginationControls({
   onPageChange,
   className = '',
 }: Readonly<PaginationControlsProps>) {
+  const log = createComponentLogger('PaginationControls');
   const handlePrevious = () => {
     if (currentPage > 1) {
-      console.log('🔄 Pagination: Going to previous page:', currentPage - 1);
+      log.debug('Going to previous page', { page: currentPage - 1 });
       onPageChange(currentPage - 1);
     }
   };
 
   const handleNext = () => {
     if (currentPage < totalPages) {
-      console.log('🔄 Pagination: Going to next page:', currentPage + 1);
+      log.debug('Going to next page', { page: currentPage + 1 });
       onPageChange(currentPage + 1);
     }
   };

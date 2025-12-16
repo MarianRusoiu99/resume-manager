@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertCircle, RefreshCw, Sparkles, Home } from 'lucide-react';
 import Link from 'next/link';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -17,10 +18,11 @@ interface ErrorProps {
  * Handles errors specific to the resume generation section.
  * Provides recovery options for AI generation failures.
  */
+const log = createComponentLogger('GenerateError');
+
 export default function GenerateError({ error, reset }: ErrorProps) {
   useEffect(() => {
-    // Log the error to an error reporting service
-    console.error('Generate error:', error);
+    log.error('Generate error', error);
   }, [error]);
 
   // Detect common AI/API errors

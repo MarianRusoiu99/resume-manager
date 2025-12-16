@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { FileText } from 'lucide-react';
 import { RouteErrorCard } from '@/components/shared/RouteErrorCard';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -14,9 +15,11 @@ interface ErrorProps {
  * 
  * Handles errors specific to the resumes section with relevant recovery options.
  */
+const log = createComponentLogger('ResumesError');
+
 export default function ResumesError({ error, reset }: ErrorProps) {
   useEffect(() => {
-    console.error('Resumes error:', error);
+    log.error('Resumes error', error);
   }, [error]);
 
   return (

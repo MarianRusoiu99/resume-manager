@@ -15,6 +15,7 @@
  */
 
 import { z } from 'zod';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Environment variable schema
@@ -62,10 +63,12 @@ function parseEnv(): EnvConfig {
   if (!parsed.success) {
     // In development, just warn about issues
     if (process.env.NODE_ENV !== 'production') {
-      console.warn('⚠️ Environment variable validation warnings:');
-      for (const issue of parsed.error.issues) {
-        console.warn(`   ${issue.path.join('.')}: ${issue.message}`);
-      }
+      logger.warn('Environment variable validation warnings', {
+        issues: parsed.error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        })),
+      });
       // Return a default config for development
       return {
         NODE_ENV: 'development',
@@ -84,10 +87,12 @@ function parseEnv(): EnvConfig {
     }
 
     // In production, fail fast with clear errors
-    console.error('❌ Invalid environment variables:');
-    for (const issue of parsed.error.issues) {
-      console.error(`   ${issue.path.join('.')}: ${issue.message}`);
-    }
+    logger.error('Invalid environment variables', undefined, {
+      issues: parsed.error.issues.map((issue) => ({
+        path: issue.path.join('.'),
+        message: issue.message,
+      })),
+    });
     throw new Error('Invalid environment configuration');
   }
 

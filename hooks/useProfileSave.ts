@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { apiV1 } from "@/lib/client";
+import { createComponentLogger } from "@/lib/utils/client-logger";
 
 interface Profile {
   id: string;
@@ -11,6 +12,8 @@ interface Profile {
 }
 
 type ResumeSection = keyof Omit<Resume, "$schema" | "meta">;
+
+const log = createComponentLogger("useProfileSave");
 
 export function useProfileSave() {
   const [isSaving, setIsSaving] = useState(false);
@@ -53,7 +56,7 @@ export function useProfileSave() {
       toast.success(`${sectionLabels[section]} saved successfully!`);
       return true;
     } catch (error) {
-      console.error(`Error saving ${section}:`, error);
+      log.error(`Error saving ${section}`, error, { section });
       toast.error(`Failed to save ${sectionLabels[section]}`);
       return false;
     } finally {
