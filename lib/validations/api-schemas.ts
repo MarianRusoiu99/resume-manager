@@ -16,6 +16,12 @@
  * ```
  */
 import { z } from 'zod';
+import {
+  aiProviderSchema,
+  addApiProviderInputSchema,
+  type AIProviderType,
+  type AddApiProviderInput,
+} from './shared-inputs';
 
 // ============================================================================
 // PROFILE SCHEMAS
@@ -188,25 +194,20 @@ export type UpdateCoverLetterInput = z.infer<typeof updateCoverLetterSchema>;
 
 /**
  * Supported AI providers
- * 
+ *
  * IMPORTANT: This must match the providers in:
  * - lib/ai/providers/factory.ts (SUPPORTED_PROVIDERS)
- * - lib/validations/settings.ts (SUPPORTED_PROVIDERS)
- * 
+ * - lib/validations/shared-inputs.ts (aiProviderSchema)
+ *
  * Only include providers with working implementations.
  */
-export const aiProviderSchema = z.enum(['openai']);
-
-export type AIProviderType = z.infer<typeof aiProviderSchema>;
+export { aiProviderSchema };
+export type { AIProviderType };
 
 /**
  * Schema for adding an API provider
  */
-export const addApiProviderSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  provider: aiProviderSchema,
-  apiKey: z.string().min(10, 'API key is required').max(500, 'API key too long'),
-});
+export const addApiProviderSchema = addApiProviderInputSchema;
 
 /**
  * Schema for updating an API provider
@@ -217,7 +218,7 @@ export const updateApiProviderSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export type AddApiProviderInput = z.infer<typeof addApiProviderSchema>;
+export type { AddApiProviderInput };
 export type UpdateApiProviderInput = z.infer<typeof updateApiProviderSchema>;
 
 // ============================================================================

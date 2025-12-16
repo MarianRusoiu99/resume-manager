@@ -16,6 +16,14 @@ import type { TemplateBase } from '@/lib/types/template';
 import { useComponentLogger } from '@/hooks';
 import { apiV1 } from '@/lib/client';
 
+type UpdateResumeTemplateResponse = {
+  resume: {
+    id: string;
+    templateId: string | null;
+  };
+  message: string;
+};
+
 interface TemplateDropdownProps {
   currentTemplateId: string | null;
   resumeId: string;
@@ -64,13 +72,15 @@ export function TemplateDropdown({
 
     try {
       setIsUpdating(true);
-      const response = await apiV1.RESUME.TEMPLATE(resumeId).patchFetch({ templateId });
+      const result = await apiV1.RESUME.TEMPLATE(resumeId).patch<UpdateResumeTemplateResponse>({
+        templateId,
+      });
 
-      if (!response.ok) {
-        throw new Error('Failed to update template');
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      toast.success('Template updated successfully');
+      toast.success(result.data?.message ?? 'Template updated successfully');
       setIsOpen(false);
       onTemplateChange();
     } catch (error) {

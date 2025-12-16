@@ -109,14 +109,14 @@ export function useExportPdf({
       let template: Template | null = null;
 
       if (templateId) {
-        const result = await apiV1.TEMPLATE.GET(templateId).get<{ template: Template }>();
+        const result = await apiV1.TEMPLATE.GET(templateId).get<Template>();
         if (!result.error && result.data) {
-          template = result.data.template;
+          template = result.data;
         }
       }
 
       if (!template) {
-        const templatesResult = await apiV1.TEMPLATE.LIST.get<{ templates: Template[] }>();
+        const templatesResult = await apiV1.TEMPLATE.LIST.get<{ templates: Template[]; count: number }>();
         const fallback = templatesResult.data?.templates?.[0] ?? null;
         if (templatesResult.error || !fallback) {
           throw new Error(templatesResult.error ?? 'No templates available');

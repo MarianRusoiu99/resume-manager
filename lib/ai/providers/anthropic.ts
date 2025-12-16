@@ -4,6 +4,7 @@
  */
 
 import type { LanguageModel } from 'ai';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { BaseAIProvider, type AIModel, type ProviderConfig } from './base';
 import { logger } from '@/lib/utils/logger';
 
@@ -21,17 +22,16 @@ interface AnthropicModelResponse {
 
 /**
  * Anthropic Provider
- * PLACEHOLDER: Install @ai-sdk/anthropic to enable Anthropic support
  */
 export class AnthropicProvider extends BaseAIProvider {
   readonly type = 'anthropic';
   readonly name = 'Anthropic';
 
+  private readonly anthropic: ReturnType<typeof createAnthropic>;
+
   constructor(config: ProviderConfig) {
     super(config);
-    throw new Error(
-      'Anthropic provider not yet configured. Install @ai-sdk/anthropic package to enable Anthropic support.'
-    );
+    this.anthropic = createAnthropic({ apiKey: config.apiKey });
   }
 
   /**
@@ -94,8 +94,8 @@ export class AnthropicProvider extends BaseAIProvider {
   /**
    * Create language model instance
    */
-  createLanguageModel(): LanguageModel {
-    throw new Error('Anthropic provider not yet configured');
+  createLanguageModel(modelId: string): LanguageModel {
+    return this.anthropic(modelId);
   }
 
   getKeyPreview(apiKey: string): string {

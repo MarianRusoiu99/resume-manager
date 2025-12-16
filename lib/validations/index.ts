@@ -14,6 +14,18 @@ export {
   registerSchema,
 } from './auth';
 
+// Shared prisma-free input schemas
+export {
+  aiProviderSchema,
+  aiFeatureSchema,
+  addApiProviderInputSchema,
+  updateAIPreferenceInputSchema,
+  type AIProviderType,
+  type AIFeature,
+  type AddApiProviderInput,
+  type UpdateAIPreferenceInput,
+} from './shared-inputs';
+
 // API schemas
 export {
   // Profile
@@ -45,11 +57,8 @@ export {
   type UpdateCoverLetterInput,
   
   // API Provider
-  aiProviderSchema,
   addApiProviderSchema,
   updateApiProviderSchema,
-  type AIProviderType,
-  type AddApiProviderInput,
   type UpdateApiProviderInput,
   
   // Notification

@@ -42,14 +42,14 @@ interface UseTemplatePreviewReturn {
  */
 async function fetchTemplate(templateId?: string | null, useFallback = true): Promise<Template | null> {
   if (templateId) {
-    const result = await apiV1.TEMPLATE.GET(templateId).get<{ template: Template }>();
+    const result = await apiV1.TEMPLATE.GET(templateId).get<Template>();
     if (!result.error && result.data) {
-      return result.data.template;
+      return result.data;
     }
   }
 
   if (useFallback) {
-    const listResult = await apiV1.TEMPLATE.LIST.get<{ templates: Template[] }>();
+    const listResult = await apiV1.TEMPLATE.LIST.get<{ templates: Template[]; count: number }>();
     if (!listResult.error && listResult.data?.templates?.length) {
       return listResult.data.templates[0];
     }

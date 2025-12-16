@@ -3,24 +3,26 @@
  * Creates AI provider instances based on provider type
  * 
  * IMPORTANT: Only providers with complete implementations are included.
- * Placeholder providers (Anthropic, Google) are NOT exposed until implemented.
+ * Providers are only exposed once implemented.
  * 
  * To add a new provider:
  * 1. Create the provider class extending BaseAIProvider
  * 2. Implement all required methods (constructor must NOT throw)
  * 3. Add to PROVIDER_REGISTRY below
- * 4. Update lib/validations/settings.ts SUPPORTED_PROVIDERS
+ * 4. Update lib/validations/shared-inputs.ts aiProviderSchema
  */
 
 import type { AIProvider, ProviderConfig } from './base';
 import { OpenAIProvider } from './openai';
+import { AnthropicProvider } from './anthropic';
+import { GoogleProvider } from './google';
 import { UnsupportedProviderError } from '@/lib/errors/ai';
 
 /**
  * Supported provider types
  * Only include providers that have working implementations
  */
-export const SUPPORTED_PROVIDERS = ['openai'] as const;
+export const SUPPORTED_PROVIDERS = ['openai', 'anthropic', 'google'] as const;
 export type SupportedProvider = typeof SUPPORTED_PROVIDERS[number];
 
 /**
@@ -29,9 +31,8 @@ export type SupportedProvider = typeof SUPPORTED_PROVIDERS[number];
  */
 const PROVIDER_REGISTRY: Record<SupportedProvider, new (config: ProviderConfig) => AIProvider> = {
   openai: OpenAIProvider,
-  // Add more providers here as they are implemented:
-  // anthropic: AnthropicProvider,
-  // google: GoogleProvider,
+  anthropic: AnthropicProvider,
+  google: GoogleProvider,
 };
 
 /**
@@ -39,8 +40,8 @@ const PROVIDER_REGISTRY: Record<SupportedProvider, new (config: ProviderConfig) 
  */
 const PROVIDER_NAMES: Record<SupportedProvider, string> = {
   openai: 'OpenAI',
-  // anthropic: 'Anthropic',
-  // google: 'Google AI',
+  anthropic: 'Anthropic',
+  google: 'Google AI',
 };
 
 /**

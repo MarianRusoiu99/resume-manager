@@ -215,11 +215,7 @@ export type AISettings = {
   availableProviders: ProviderWithModels[];
 };
 
-export type UpdateAIPreferenceInput = {
-  feature: string;
-  providerId: string | null;
-  modelId: string | null;
-};
+export type { UpdateAIPreferenceInput } from '@/lib/validations/shared-inputs';
 
 export type ProviderWithModelsDetailed = {
   id: string;
@@ -249,11 +245,7 @@ export type ApiProvider = {
   lastUsedAt: string | null;
 };
 
-export type AddApiProviderInput = {
-  name: string;
-  provider: string;
-  apiKey: string;
-};
+export type { AddApiProviderInput } from '@/lib/validations/shared-inputs';
 
 export type ProfileListItem = {
   id: string;
