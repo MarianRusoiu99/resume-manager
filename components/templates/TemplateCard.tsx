@@ -6,11 +6,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Edit, Trash2, Eye, Copy, Download } from 'lucide-react';
-import { GalleryCard, type GalleryCardAction } from "@/components/shared/GalleryCard";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Edit, Eye, Copy, Download } from 'lucide-react';
+import { EntityCard, createCardAction } from '@/components/shared/EntityCard';
+import type { GalleryCardAction } from '@/components/shared/GalleryCard';
 import { TemplatePreviewModal } from './TemplatePreviewModal';
-import { toast } from 'sonner';
+import { useToastAction } from '@/hooks';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
@@ -73,7 +73,7 @@ export function TemplateCard({
   onDelete,
   onDuplicate,
 }: Readonly<TemplateCardProps>) {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { runWithToast } = useToastAction();
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | undefined>(undefined);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
@@ -103,76 +103,92 @@ export function TemplateCard({
   }, [template]);
 
   const handleExportPDF = async () => {
-    try {
-      // Use universal PDF export endpoint with sample data
-      const response = await fetch(API_V1.EXPORT.PDF, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          resume: SAMPLE_RESUME,
-          template: {
-            htmlTemplate: template.htmlTemplate,
-            cssStyles: template.cssStyles,
+    await runWithToast(
+      async () => {
+        // Use universal PDF export endpoint with sample data
+        const response = await fetch(API_V1.EXPORT.PDF, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
-        }),
-      });
+          body: JSON.stringify({
+            resume: SAMPLE_RESUME,
+            template: {
+              htmlTemplate: template.htmlTemplate,
+              cssStyles: template.cssStyles,
+            },
+            fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to export PDF');
-      }
+        if (!response.ok) {
+          throw new Error('Failed to export PDF');
+        }
 
-      const blob = await response.blob();
-      const url = globalThis.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      globalThis.URL.revokeObjectURL(url);
-      a.remove();
+        const blob = await response.blob();
+        const url = globalThis.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        globalThis.URL.revokeObjectURL(url);
+        anchor.remove();
 
-      toast.success('PDF exported successfully');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to export PDF');
-    }
+        return true;
+      },
+      {
+        successMessage: 'PDF exported successfully',
+        errorMessage: 'Failed to export PDF',
+      },
+    );
   };
 
   const handleDelete = async () => {
-    try {
-      const response = await fetch(API_V1.TEMPLATE.GET(template.id), {
-        method: 'DELETE',
-      });
+    const result = await runWithToast(
+      async () => {
+        const response = await fetch(API_V1.TEMPLATE.GET(template.id), {
+          method: 'DELETE',
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to delete template');
-      }
+        if (!response.ok) {
+          throw new Error('Failed to delete template');
+        }
 
-      toast.success('Template deleted successfully');
+        return true;
+      },
+      {
+        successMessage: 'Template deleted successfully',
+        errorMessage: 'Failed to delete template',
+      },
+    );
+
+    if (result) {
       onDelete?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete template');
-    } finally {
-      setShowDeleteDialog(false);
     }
   };
 
   const handleDuplicate = async () => {
-    try {
-      const response = await fetch(API_V1.TEMPLATE.DUPLICATE(template.id), {
-        method: 'POST',
-      });
+    const result = await runWithToast(
+      async () => {
+        const response = await fetch(API_V1.TEMPLATE.DUPLICATE(template.id), {
+          method: 'POST',
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to duplicate template');
-      }
+        if (!response.ok) {
+          throw new Error('Failed to duplicate template');
+        }
 
-      toast.success('Template duplicated successfully');
+        return true;
+      },
+      {
+        successMessage: 'Template duplicated successfully',
+        errorMessage: 'Failed to duplicate template',
+      },
+    );
+
+    if (result) {
       onDuplicate?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to duplicate template');
     }
   };
 
@@ -182,38 +198,24 @@ export function TemplateCard({
       icon: <Eye className="h-4 w-4" />,
       onClick: () => setShowPreviewModal(true),
     },
-    {
-      label: 'Export PDF',
-      icon: <Download className="h-4 w-4" />,
-      onClick: handleExportPDF,
-    },
+    createCardAction.export(handleExportPDF, <Download className="h-4 w-4" />),
     ...(showAdminActions
       ? [
-        {
-          label: 'Edit',
-          icon: <Edit className="h-4 w-4" />,
-          onClick: () => {
+          createCardAction.edit(() => {
             globalThis.location.href = `/templates/${template.id}`;
+          }, <Edit className="h-4 w-4" />),
+          {
+            label: 'Duplicate',
+            icon: <Copy className="h-4 w-4" />,
+            onClick: handleDuplicate,
           },
-        },
-        {
-          label: 'Duplicate',
-          icon: <Copy className="h-4 w-4" />,
-          onClick: handleDuplicate,
-        },
-        {
-          label: 'Delete',
-          icon: <Trash2 className="h-4 w-4" />,
-          onClick: () => setShowDeleteDialog(true),
-          variant: 'destructive' as const,
-        },
-      ]
+        ]
       : []),
   ];
 
   return (
     <>
-      <GalleryCard
+      <EntityCard
         id={template.id}
         title={template.name}
         subtitle={template.description}
@@ -228,6 +230,11 @@ export function TemplateCard({
           },
         ]}
         actions={actions}
+        onDelete={showAdminActions ? handleDelete : undefined}
+        deleteDialog={{
+          title: 'Delete Template',
+          message: 'Are you sure you want to delete this template? This action cannot be undone.',
+        }}
       />
 
       {showPreviewModal && (
@@ -236,16 +243,6 @@ export function TemplateCard({
           onClose={() => setShowPreviewModal(false)}
         />
       )}
-
-      <ConfirmDialog
-        isOpen={showDeleteDialog}
-        onCancel={() => setShowDeleteDialog(false)}
-        onConfirm={handleDelete}
-        title="Delete Template"
-        message="Are you sure you want to delete this template? This action cannot be undone."
-        confirmText="Delete"
-        variant="danger"
-      />
     </>
   );
 }

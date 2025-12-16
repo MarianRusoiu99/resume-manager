@@ -6,7 +6,6 @@
  *   - Kept for backward compatibility
  */
 
-import { NextResponse } from 'next/server';
 import { profileService } from '@/lib/services/profile.service';
 import { z } from 'zod';
 import { createApiHandler } from '@/lib/api-handler';
@@ -16,21 +15,10 @@ const duplicateSchema = z.object({
 });
 
 export const POST = createApiHandler(
-  async (request, { params }, session, body) => {
+  async (_request, { params }, session, body) => {
     const { id } = await params;
 
-    const result = await profileService.duplicateProfile(
-      id,
-      session.user.id,
-      body?.name
-    );
-
-    if (!result.success) {
-      // ServiceResult already has proper error codes, but for 201 status we need custom handling
-      return result;
-    }
-
-    return NextResponse.json(result.data, { status: 201 });
+    return profileService.duplicateProfile(id, session.user.id, body?.name);
   },
   { bodySchema: duplicateSchema }
 );

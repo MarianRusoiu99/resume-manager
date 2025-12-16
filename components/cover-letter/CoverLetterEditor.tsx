@@ -20,7 +20,7 @@ import type { BlockNoteEditorMethods } from '@/components/editor/BlockNoteEditor
 import { MarkdownPreview } from '@/components/editor/MarkdownPreview';
 import { Copy, Edit, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AIEnhanceButton, AIEnhanceModal } from '@/components/ai-enhance';
+import { AIEnhanceButton, AIEnhanceTextModal } from '@/components/ai-enhance';
 
 interface CoverLetterEditorProps {
   /**
@@ -233,7 +233,7 @@ export function CoverLetterEditor({
           </div>
           {renderContent()}
         </div>
-        <AIEnhanceModal
+        <AIEnhanceTextModal
           open={enhanceModalOpen}
           onOpenChange={setEnhanceModalOpen}
           originalContent={content}
@@ -255,7 +255,7 @@ export function CoverLetterEditor({
         </div>
         {renderContent()}
       </Card>
-      <AIEnhanceModal
+      <AIEnhanceTextModal
         open={enhanceModalOpen}
         onOpenChange={setEnhanceModalOpen}
         originalContent={content}

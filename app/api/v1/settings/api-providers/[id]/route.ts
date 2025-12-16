@@ -7,7 +7,6 @@
  * Rate limited to 10 requests per minute for security
  */
 
-import { NextResponse } from 'next/server';
 import { createApiHandler } from '@/lib/api-handler';
 import { apiProviderService } from '@/lib/services/api-provider.service';
 import { updateApiProviderSchema } from '@/lib/validations/api-schemas';
@@ -23,17 +22,7 @@ export const PATCH = createApiHandler(
       userAgent: request.headers.get('user-agent') || undefined,
     };
 
-    const result = await apiProviderService.updateProvider(
-      id,
-      session.user.id,
-      { ...body!, auditContext }
-    );
-
-    if (!result.success) {
-      return result;
-    }
-
-    return NextResponse.json({ message: result.data.message });
+    return apiProviderService.updateProvider(id, session.user.id, { ...body!, auditContext });
   },
   { bodySchema: updateApiProviderSchema, rateLimit: 'apiKeys' }
 );
@@ -49,13 +38,7 @@ export const DELETE = createApiHandler(
       userAgent: request.headers.get('user-agent') || undefined,
     };
 
-    const result = await apiProviderService.deleteProvider(id, session.user.id, auditContext);
-
-    if (!result.success) {
-      return result;
-    }
-
-    return NextResponse.json({ message: result.data.message });
+    return apiProviderService.deleteProvider(id, session.user.id, auditContext);
   },
   { rateLimit: 'apiKeys' }
 );

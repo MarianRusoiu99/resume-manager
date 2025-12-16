@@ -6,7 +6,6 @@
  * Rate limited to 10 requests per minute for security.
  */
 
-import { NextResponse } from 'next/server';
 import { createApiHandler } from '@/lib/api-handler';
 import { apiProviderService } from '@/lib/services/api-provider.service';
 import { z } from 'zod';
@@ -26,18 +25,7 @@ export const POST = createApiHandler(
       userAgent: request.headers.get('user-agent') || undefined,
     };
 
-    const result = await apiProviderService.revokeProvider(
-      id,
-      session.user.id,
-      auditContext,
-      body?.reason
-    );
-
-    if (!result.success) {
-      return result;
-    }
-
-    return NextResponse.json({ message: result.data.message });
+    return apiProviderService.revokeProvider(id, session.user.id, auditContext, body?.reason);
   },
   { bodySchema: revokeSchema, rateLimit: 'apiKeys' }
 );

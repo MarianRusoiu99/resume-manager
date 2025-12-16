@@ -5,12 +5,12 @@
  * Generates a standalone cover letter without creating a full resume
  */
 
-import { NextResponse } from 'next/server';
 import { resumeService } from '@/lib/services/resume.service';
 import { notificationService } from '@/lib/services/notification.service';
 import { createApiHandler } from '@/lib/api-handler';
 import { logger } from '@/lib/utils/logger';
 import { generateStandaloneCoverLetterSchema } from '@/lib/validations/api-schemas';
+import { success } from '@/lib/types/service-result';
 
 export const POST = createApiHandler(
   async (request, context, session, body) => {
@@ -43,7 +43,7 @@ export const POST = createApiHandler(
       userId: session.user.id,
     });
 
-    return NextResponse.json({
+    return success({
       coverLetter: result.data.coverLetter,
       coverLetterId: result.data.coverLetterId,
       metadata: result.data.metadata,

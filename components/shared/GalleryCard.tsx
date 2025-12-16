@@ -15,17 +15,9 @@
 import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MoreVertical } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
 import { GalleryCardPreview } from '@/components/shared/GalleryCardPreview';
+import { GalleryCardActionsMenu } from '@/components/shared/GalleryCardActionsMenu';
 
 /**
  * Action item for dropdown menu
@@ -181,47 +173,12 @@ export function GalleryCard({
               </Badge>
             ))}
 
-            {/* Actions Dropdown */}
-            {actions.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => e.stopPropagation()}
-                    disabled={isActionLoading}
-                  >
-                    <MoreVertical className="h-3.5 w-3.5" />
-                    <span className="sr-only">Open menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                  {actions.map((action, index) => (
-                    <div key={`${id}-action-${index}`}>
-                      {action.variant === 'destructive' && index > 0 && (
-                        <DropdownMenuSeparator />
-                      )}
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleActionClick(action);
-                        }}
-                        disabled={action.disabled || isActionLoading}
-                        className={
-                          action.variant === 'destructive'
-                            ? 'text-destructive focus:text-destructive'
-                            : ''
-                        }
-                      >
-                        {action.icon && <span className="mr-2">{action.icon}</span>}
-                        {action.label}
-                      </DropdownMenuItem>
-                    </div>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            <GalleryCardActionsMenu
+              id={id}
+              actions={actions}
+              isActionLoading={isActionLoading}
+              onActionClick={handleActionClick}
+            />
           </div>
         </div>
 

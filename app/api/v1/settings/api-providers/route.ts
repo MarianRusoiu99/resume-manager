@@ -6,7 +6,6 @@
  * Rate limited to 10 requests per minute for security
  */
 
-import { NextResponse } from 'next/server';
 import { createApiHandler } from '@/lib/api-handler';
 import { apiProviderService } from '@/lib/services/api-provider.service';
 import { addApiProviderSchema } from '@/lib/validations/api-schemas';
@@ -20,7 +19,7 @@ export const GET = createApiHandler(
 );
 
 export const POST = createApiHandler(
-  async (request, context, session, body) => {
+  async (request, _context, session, body) => {
     // Extract audit context from request
     const auditContext = {
       userId: session.user.id,
@@ -28,17 +27,11 @@ export const POST = createApiHandler(
       userAgent: request.headers.get('user-agent') || undefined,
     };
 
-    const result = await apiProviderService.addProvider({
+    return apiProviderService.addProvider({
       userId: session.user.id,
       ...body!,
       auditContext,
     });
-
-    if (!result.success) {
-      return result;
-    }
-
-    return NextResponse.json(result.data, { status: 201 });
   },
   { bodySchema: addApiProviderSchema, rateLimit: 'apiKeys', verifyUser: true }
 );

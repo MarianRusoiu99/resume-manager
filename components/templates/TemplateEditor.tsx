@@ -24,12 +24,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, Code, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiFetch, apiJson } from '@/lib/utils/api-client';
+import { apiJson } from '@/lib/utils/api-client';
 import { API_V1 } from '@/lib/constants';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
 import { TemplateImportModal } from './TemplateImportModal';
-import { AIEnhanceButton, AIEnhanceTemplateModal } from '@/components/ai-enhance';
+import { AIEnhanceButton, AIEnhanceTemplateModalUnified } from '@/components/ai-enhance';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -348,12 +348,14 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       />
 
       {/* AI Enhancement Modal */}
-      <AIEnhanceTemplateModal
+      <AIEnhanceTemplateModalUnified
         open={templateEnhanceModalOpen}
         onOpenChange={setTemplateEnhanceModalOpen}
         originalHtml={formData.htmlTemplate}
         originalCss={formData.cssStyles}
-        onAccept={(enhancedHtml, enhancedCss) => setFormData({ ...formData, htmlTemplate: enhancedHtml, cssStyles: enhancedCss })}
+        onAccept={(enhancedHtml: string, enhancedCss: string) =>
+          setFormData({ ...formData, htmlTemplate: enhancedHtml, cssStyles: enhancedCss })
+        }
       />
     </div>
   );

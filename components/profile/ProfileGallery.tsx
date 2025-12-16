@@ -162,9 +162,11 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
           <ResumeImportButton onImportSuccess={handleImportSuccess} />
         ),
       }}
-      headerActions={headerActions}
-      showCount
-      countLabel={{ singular: "profile", plural: "profiles" }}
+      header={{
+        showCount: true,
+        countLabel: { singular: "profile", plural: "profiles" },
+        actions: headerActions,
+      }}
       renderItem={(profile) => (
         <ProfileCard
           key={profile.id}

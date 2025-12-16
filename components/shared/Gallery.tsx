@@ -24,13 +24,21 @@ export interface GalleryFilterOption {
 }
 
 /**
+ * Count label configuration
+ */
+interface CountLabelConfig {
+  singular: string;
+  plural: string;
+}
+
+/**
  * Gallery Header configuration
  */
 interface GalleryHeaderConfig {
   /** Show item count (e.g., "5 profiles") */
   showCount?: boolean;
-  /** Label for count (e.g., "profile" -> "5 profiles") */
-  countLabel?: string;
+  /** Label for count (e.g., "5 profiles") */
+  countLabel?: CountLabelConfig;
   /** Action buttons to show in header */
   actions?: ReactNode;
   /** Filter options for category filtering */
@@ -56,14 +64,6 @@ interface GalleryEmptyConfig {
   };
   /** Secondary action (e.g., import button alongside create) */
   secondaryAction?: ReactNode;
-}
-
-/**
- * Count label configuration
- */
-interface CountLabelConfig {
-  singular: string;
-  plural: string;
 }
 
 /**
@@ -94,22 +94,8 @@ export interface GalleryProps<T> {
   /** Clear search callback */
   onClearSearch?: () => void;
   
-  /** Header configuration (alternative to individual props) */
+  /** Header configuration */
   header?: GalleryHeaderConfig;
-  
-  // Top-level header props (alternative to header object)
-  /** Show item count in header */
-  showCount?: boolean;
-  /** Count label config */
-  countLabel?: string | CountLabelConfig;
-  /** Header action buttons */
-  headerActions?: ReactNode;
-  /** Filter options */
-  filters?: GalleryFilterOption[];
-  /** Current filter value */
-  selectedFilter?: string;
-  /** Filter change handler */
-  onFilterChange?: (value: string) => void;
   
   /** Grid column configuration */
   gridCols?: GridConfig;
@@ -149,9 +135,11 @@ const DEFAULT_GRID_COLS: GridConfig = {
  *       icon: <Plus />,
  *     },
  *   }}
- *   showCount
- *   countLabel={{ singular: "profile", plural: "profiles" }}
- *   headerActions={<Button onClick={handleCreate}>New Profile</Button>}
+ *   header={{
+ *     showCount: true,
+ *     countLabel: { singular: "profile", plural: "profiles" },
+ *     actions: <Button onClick={handleCreate}>New Profile</Button>,
+ *   }}
  * />
  * ```
  */
@@ -165,13 +153,6 @@ export function Gallery<T>({
   searchTerm,
   onClearSearch,
   header,
-  // Top-level header props
-  showCount,
-  countLabel,
-  headerActions,
-  filters,
-  selectedFilter,
-  onFilterChange,
   gridCols = DEFAULT_GRID_COLS,
   className,
 }: GalleryProps<T>) {
@@ -215,28 +196,16 @@ export function Gallery<T>({
     gridCols.xl === 4 && "xl:grid-cols-4",
   );
 
-  // Merge header object with top-level props (top-level takes precedence)
-  const normalizedCountLabel = typeof countLabel === 'string' 
-    ? countLabel 
-    : countLabel 
-      ? `${countLabel.singular}|${countLabel.plural}` 
-      : header?.countLabel;
-  
-  const hasHeader = header || showCount || headerActions || filters;
+  const hasHeader =
+    header?.showCount ||
+    header?.actions ||
+    (header?.filters && header.filters.length > 0);
 
   return (
     <div className={cn("space-y-6", className)}>
       {/* Header Section */}
       {hasHeader && (
-        <GalleryHeader
-          itemCount={items.length}
-          showCount={showCount ?? header?.showCount}
-          countLabel={normalizedCountLabel}
-          actions={headerActions ?? header?.actions}
-          filters={filters ?? header?.filters}
-          selectedFilter={selectedFilter ?? header?.selectedFilter}
-          onFilterChange={onFilterChange ?? header?.onFilterChange}
-        />
+        <GalleryHeader itemCount={items.length} {...header} />
       )}
 
       {/* Grid Section */}
@@ -261,21 +230,19 @@ interface GalleryHeaderProps extends GalleryHeaderConfig {
 function GalleryHeader({
   itemCount,
   showCount = false,
-  countLabel = "item",
+  countLabel,
   actions,
   filters,
   selectedFilter,
   onFilterChange,
 }: GalleryHeaderProps) {
-  // Handle plural form: "item" -> "items" or "profile|profiles" format
   let countText: string | null = null;
+
   if (showCount) {
-    if (countLabel?.includes('|')) {
-      const [singular, plural] = countLabel.split('|');
-      countText = `${itemCount} ${itemCount === 1 ? singular : plural}`;
-    } else {
-      countText = `${itemCount} ${itemCount === 1 ? countLabel : `${countLabel}s`}`;
-    }
+    const singular = countLabel?.singular ?? "item";
+    const plural = countLabel?.plural ?? "items";
+
+    countText = `${itemCount} ${itemCount === 1 ? singular : plural}`;
   }
 
   return (

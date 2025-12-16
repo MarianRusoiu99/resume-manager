@@ -4,7 +4,6 @@
  * PATCH /api/v1/settings/ai-models - Update a feature's model preference
  */
 
-import { NextResponse } from 'next/server';
 import { createApiHandler } from '@/lib/api-handler';
 import { userAISettingsService } from '@/lib/services/user-ai-settings.service';
 import { updateAIPreferenceSchema } from '@/lib/validations/settings';
@@ -69,19 +68,13 @@ export const GET = createApiHandler(
  *         description: Unauthorized
  */
 export const PATCH = createApiHandler(
-  async (request, context, session, body) => {
-    const result = await userAISettingsService.updateFeaturePreference({
+  async (_request, _context, session, body) => {
+    return userAISettingsService.updateFeaturePreference({
       userId: session.user.id,
       feature: body!.feature,
       providerId: body!.providerId,
       modelId: body!.modelId,
     });
-
-    if (!result.success) {
-      return result;
-    }
-
-    return NextResponse.json(result.data);
   },
   { bodySchema: updateAIPreferenceSchema, rateLimit: 'apiKeys' }
 );

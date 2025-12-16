@@ -15,17 +15,13 @@
  * - Modal components compose these primitives for specific use cases
  */
 
-// Main components (backwards compatible)
+// Main components
 export { AIEnhanceButton } from './AIEnhanceButton';
-export { AIEnhanceModal } from './AIEnhanceModal';
-export { AIEnhanceTemplateModal } from './AIEnhanceTemplateModal';
-export { AIEnhanceResumeModal } from './AIEnhanceResumeModal';
 export { AIEnhanceTextarea } from './AIEnhanceTextarea';
 
-// Modular modal components
-export { 
-  AIEnhanceTextModal, 
-  AIEnhanceResumeModalNew, 
+// Modal components
+export {
+  AIEnhanceTextModal,
   AIEnhanceBaseModal,
   AIEnhanceResumeModalUnified,
   AIEnhanceTemplateModalUnified,
@@ -34,11 +30,11 @@ export {
 // Prompt components
 export { PromptInput, PromptPresets, FileAttachment, FileAttachmentList } from './prompt';
 
-// Preview components (both legacy and new modular)
+// Preview components
 export { ContentPreview, ComparisonTabs, ResumePreviewComparison, ResumePreviewSideBySide } from './preview';
-export { 
-  SideBySideComparison, 
-  EmptyPanelContent, 
+export {
+  SideBySideComparison,
+  EmptyPanelContent,
   PreviewIframe,
   ResumeVisualComparison,
   ResumeTextComparison,
@@ -63,7 +59,6 @@ export type {
   PreviewMode,
   AIEnhanceBaseModalProps,
   AIEnhanceTextModalProps,
-  AIEnhanceResumeModalProps,
   EnhancementState,
   EnhancementResult,
 } from './types';
