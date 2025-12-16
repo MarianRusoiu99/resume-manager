@@ -135,6 +135,53 @@ export class ResumeCrudService implements IResumeCrudService {
       };
     });
   }
+
+  /**
+   * Update job metadata (job title/company name/job description)
+   */
+  async updateResumeJobDetails(
+    resumeId: string,
+    userId: string,
+    input: {
+      jobTitle?: string;
+      companyName?: string;
+      jobDescription?: string;
+    }
+  ): Promise<ServiceResult<UpdatedResumeData>> {
+    return withServiceError('update resume job details', async () => {
+      const existingResume = await this.repository.findByIdAndUserId(resumeId, userId);
+
+      if (!existingResume) {
+        throw new NotFoundError('Resume');
+      }
+
+      const existingJobMetadata = (existingResume.jobMetadata ?? {}) as Record<string, unknown>;
+
+      const updatedJobMetadata: Record<string, unknown> = {
+        ...existingJobMetadata,
+        ...(input.jobTitle === undefined ? {} : { jobTitle: input.jobTitle }),
+        ...(input.companyName === undefined ? {} : { companyName: input.companyName }),
+      };
+
+      const updatedResume = await this.repository.updateJobDetails(resumeId, {
+        ...(input.jobDescription === undefined ? {} : { jobDescription: input.jobDescription }),
+        jobMetadata: updatedJobMetadata,
+      });
+
+      invalidateUserResumesCache(userId);
+
+      return {
+        id: updatedResume.id,
+        resume: updatedResume.resume,
+        jobDescription: updatedResume.jobDescription,
+        jobMetadata: updatedResume.jobMetadata,
+        template: null,
+        metadata: updatedResume.metadata,
+        createdAt: updatedResume.createdAt,
+        updatedAt: updatedResume.updatedAt,
+      };
+    });
+  }
 }
 
 // Export singleton instance

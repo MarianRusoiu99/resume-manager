@@ -11,7 +11,8 @@ import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import { useToastAction } from '@/hooks';
 import { deleteCoverLetter } from '@/app/actions/cover-letter';
 import { formatDate } from '@/lib/utils';
-import { API_V1, ROUTES } from '@/lib/constants';
+import { ROUTES } from '@/lib/constants';
+import { apiV1 } from '@/lib/client';
 
 interface CoverLetterCardProps {
   id: string;
@@ -53,9 +54,7 @@ export function CoverLetterCard({
   const handleExport = async () => {
     await runWithToast(
       async () => {
-        const response = await fetch(API_V1.COVER_LETTER.EXPORT(id), {
-          method: 'POST',
-        });
+        const response = await apiV1.COVER_LETTER.EXPORT(id).postFetch();
 
         if (!response.ok) {
           throw new Error('Failed to export cover letter');

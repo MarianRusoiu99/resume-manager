@@ -28,8 +28,9 @@ export {
 export {
   NotificationProvider,
   useNotifications,
-  type Notification
 } from './NotificationContext';
+
+export type { Notification } from './NotificationContext';
 
 // Settings Context - for API providers and AI settings
 export {

@@ -193,6 +193,19 @@ export interface IResumeCrudService {
     userId: string,
     templateId: string | null
   ): Promise<ServiceResult<UpdatedResumeData>>;
+
+  /**
+   * Update job-related fields for a resume
+   */
+  updateResumeJobDetails(
+    resumeId: string,
+    userId: string,
+    input: {
+      jobTitle?: string;
+      companyName?: string;
+      jobDescription?: string;
+    }
+  ): Promise<ServiceResult<UpdatedResumeData>>;
 }
 
 /**

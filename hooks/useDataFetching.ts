@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { apiJson } from "@/lib/utils/api-client";
+import { clientJson } from "@/lib/client";
 
 /**
  * Options for data fetching hooks
@@ -72,7 +72,7 @@ export function useFetch<T>(
       setIsLoading(true);
       setError(null);
 
-      const result = await apiJson<unknown>(url, {
+      const result = await clientJson<unknown>(url, {
         signal: abortControllerRef.current.signal,
       });
 

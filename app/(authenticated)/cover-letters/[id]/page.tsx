@@ -15,50 +15,34 @@ import { Button, Card } from '@/components/ui';
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ArrowLeft, Trash2, ExternalLink, FileText } from 'lucide-react';
-import { API_V1 } from '@/lib/constants';
-import { apiFetch, apiJson } from '@/lib/utils/api-client';
+import { apiV1 } from '@/lib/client';
+import type { CoverLetterWithResume } from '@/lib/types/cover-letter';
 
-interface CoverLetter {
-  id: string;
-  content: string;
-  contentJson?: string | null; // Yoopta JSON state
-  jobDescription: string;
-  jobTitle: string | null;
-  companyName: string | null;
-  resumeId: string | null;
-  resume: {
-    id: string;
-    jobDescription: string;
-    resume: unknown;
-    createdAt: string;
-  } | null;
-  metadata: {
-    model?: string;
-    tokens?: number;
-    generationTime?: number;
-    personalInstructions?: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+type CoverLetterMetadata = {
+  model?: string;
+  tokens?: number;
+  generationTime?: number;
+  personalInstructions?: string;
+  contentJson?: string;
+};
 
 export default function CoverLetterDetailPage() {
   const router = useRouter();
   const params = useParams();
   const coverLetterId = params?.id as string;
 
-  const [coverLetter, setCoverLetter] = useState<CoverLetter | null>(null);
+  const [coverLetter, setCoverLetter] = useState<CoverLetterWithResume | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-       const fetchCoverLetter = async () => {
+  const fetchCoverLetter = async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const result = await apiJson<CoverLetter>(API_V1.COVER_LETTER.GET(coverLetterId));
+      const result = await apiV1.COVER_LETTER.GET(coverLetterId).get<CoverLetterWithResume>();
 
       if (result.error || !result.data) {
         if (result.status === 404) {
@@ -85,12 +69,9 @@ export default function CoverLetterDetailPage() {
 
   const handleSaveCoverLetter = async (content: string, contentJson: string) => {
     try {
-      const result = await apiJson<CoverLetter>(API_V1.COVER_LETTER.GET(coverLetterId), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content, contentJson }),
+      const result = await apiV1.COVER_LETTER.GET(coverLetterId).put<CoverLetterWithResume>({
+        content,
+        contentJson,
       });
 
       if (result.error || !result.data) {
@@ -111,12 +92,10 @@ export default function CoverLetterDetailPage() {
     try {
       setIsDeleting(true);
 
-      const response = await apiFetch(API_V1.COVER_LETTER.GET(coverLetterId), {
-        method: 'DELETE',
-      });
+      const result = await apiV1.COVER_LETTER.GET(coverLetterId).delete<{ success: boolean }>();
 
-      if (!response.ok) {
-        throw new Error('Failed to delete cover letter');
+      if (result.error) {
+        throw new Error(result.error || 'Failed to delete cover letter');
       }
 
       toast.success('Cover letter deleted successfully');
@@ -130,6 +109,14 @@ export default function CoverLetterDetailPage() {
 
   const cancelDelete = () => {
     setDeleteDialogOpen(false);
+  };
+
+  const getMetadata = (): CoverLetterMetadata => {
+    if (!coverLetter) return {};
+    if (coverLetter.metadata && typeof coverLetter.metadata === 'object' && !Array.isArray(coverLetter.metadata)) {
+      return coverLetter.metadata as unknown as CoverLetterMetadata;
+    }
+    return {};
   };
 
   const getPageTitle = (): string => {
@@ -227,37 +214,41 @@ export default function CoverLetterDetailPage() {
         </div>
 
         {/* Metadata Card */}
-        {(coverLetter.resume || coverLetter.metadata?.model) && (
-          <Card className="p-4 mb-6 bg-blue-50 border-blue-200">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                {coverLetter.resume && (
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-900">Linked to Resume</span>
-                    <Link
-                      href={`/resumes/${coverLetter.resume.id}`}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      View Resume →
-                    </Link>
-                  </div>
-                )}
-                {coverLetter.metadata?.model && (
-                  <div className="text-xs text-blue-700">
-                    Generated with {coverLetter.metadata.model}
-                    {coverLetter.metadata.tokens && ` • ${coverLetter.metadata.tokens} tokens`}
-                  </div>
-                )}
+        {(() => {
+          const metadata = getMetadata();
+          return coverLetter.generatedResume || metadata.model ? (
+            <Card className="p-4 mb-6 bg-blue-50 border-blue-200">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  {coverLetter.generatedResume && (
+                    <div className="flex items-center gap-2">
+                      <ExternalLink className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-900">Linked to Resume</span>
+                      <Link
+                        href={`/resumes/${coverLetter.generatedResume.id}`}
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        View Resume →
+                      </Link>
+                    </div>
+                  )}
+
+                  {metadata.model && (
+                    <div className="text-xs text-blue-700">
+                      Generated with {metadata.model}
+                      {metadata.tokens && ` • ${metadata.tokens} tokens`}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </Card>
-        )}
+            </Card>
+          ) : null;
+        })()}
 
         {/* Cover Letter Editor */}
         <CoverLetterEditor
           content={coverLetter.content}
-          contentJson={coverLetter.contentJson || undefined}
+          contentJson={getMetadata().contentJson}
           editable={true}
           onSave={handleSaveCoverLetter}
           title="Cover Letter"
@@ -271,11 +262,11 @@ export default function CoverLetterDetailPage() {
               {coverLetter.jobDescription}
             </pre>
           </div>
-          {coverLetter.metadata?.personalInstructions && (
+          {getMetadata().personalInstructions && (
             <div className="mt-4">
               <h4 className="text-sm font-semibold mb-2">Personal Instructions</h4>
               <div className="bg-blue-50 p-3 rounded-md border">
-                <p className="text-sm ">{coverLetter.metadata.personalInstructions}</p>
+                <p className="text-sm ">{getMetadata().personalInstructions}</p>
               </div>
             </div>
           )}

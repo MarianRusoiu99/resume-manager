@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { apiFetch, apiJson } from "@/lib/utils/api-client";
-import { API_V1 } from "@/lib/constants";
+import { apiV1 } from "@/lib/client";
+import type { ResumeDetails } from "@/lib/services/resume-crud";
 
 /**
  * Resume Edit Page - Full-screen editor like profile editor
@@ -24,13 +24,13 @@ export default function ResumeEditPage() {
   const resumeId = params.id as string;
   const [jobTitle, setJobTitle] = useState("");
 
-  // Load job title from metadata
+  // Load job title from resume details
   useEffect(() => {
     const loadJobTitle = async () => {
       try {
-        const result = await apiJson<{ jobMetadata?: { jobTitle?: string } }>(API_V1.RESUME.GET(resumeId));
+        const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetails>();
         if (!result.error && result.data) {
-          setJobTitle(result.data.jobMetadata?.jobTitle || "");
+          setJobTitle(result.data.jobTitle);
         }
       } catch (error) {
         console.error("Error loading job title:", error);
@@ -44,13 +44,13 @@ export default function ResumeEditPage() {
    */
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const result = await apiJson<{ content: Resume }>(API_V1.RESUME.GET(resumeId));
+      const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetails>();
 
       if (result.error || !result.data) {
         throw new Error(result.error || "Failed to load resume");
       }
 
-      return result.data.content;
+      return result.data.content as Resume;
     } catch (error) {
       console.error("Error loading resume:", error);
       return null;
@@ -62,11 +62,7 @@ export default function ResumeEditPage() {
    */
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const result = await apiJson(API_V1.RESUME.GET(resumeId), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume }),
-      });
+      const result = await apiV1.RESUME.CONTENT(resumeId).patch<unknown>({ content: resume });
 
       if (result.error) {
         throw new Error(result.error);
@@ -84,16 +80,10 @@ export default function ResumeEditPage() {
    */
   const handleSaveJobTitle = async (newTitle: string) => {
     try {
-      const response = await apiFetch(API_V1.RESUME.GET(resumeId), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          jobMetadata: { jobTitle: newTitle }
-        }),
-      });
+      const result = await apiV1.RESUME.GET(resumeId).patch<unknown>({ jobTitle: newTitle });
 
-      if (!response.ok) {
-        throw new Error("Failed to save job title");
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       setJobTitle(newTitle);

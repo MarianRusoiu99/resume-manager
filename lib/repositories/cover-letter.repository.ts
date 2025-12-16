@@ -66,6 +66,14 @@ export class CoverLetterRepository implements ICoverLetterRepository {
         id,
         userId,
       },
+      include: {
+        generatedResume: {
+          select: {
+            id: true,
+            jobDescription: true,
+          },
+        },
+      },
     });
   }
 

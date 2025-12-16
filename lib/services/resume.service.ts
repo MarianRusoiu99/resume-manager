@@ -93,6 +93,14 @@ export class ResumeService implements IResumeService {
   updateResumeTemplate(resumeId: string, userId: string, templateId: string | null): Promise<ServiceResult<UpdatedResumeData>> {
     return this.crudService.updateResumeTemplate(resumeId, userId, templateId);
   }
+
+  updateResumeJobDetails(
+    resumeId: string,
+    userId: string,
+    input: { jobTitle?: string; companyName?: string; jobDescription?: string }
+  ): Promise<ServiceResult<UpdatedResumeData>> {
+    return this.crudService.updateResumeJobDetails(resumeId, userId, input);
+  }
 }
 
 // Export singleton instance for backward compatibility

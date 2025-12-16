@@ -8,7 +8,8 @@ import { ResumeList, type ResumeListItem } from '@/components/resume/ResumeList'
 import { Input } from '@/components/ui/input';
 import { ErrorState } from '@/components/shared/states';
 import { useFetch } from '@/hooks/useDataFetching';
-import { API_V1, ROUTES } from '@/lib/constants';
+import { ROUTES } from '@/lib/constants';
+import { apiV1 } from '@/lib/client';
 import type { GeneratedResume } from '@/lib/types';
 
 export default function ResumesPage() {
@@ -22,7 +23,7 @@ export default function ResumesPage() {
     error, 
     refetch,
     mutate 
-  } = useFetch<GeneratedResume[]>(API_V1.RESUME.LIST, {
+  } = useFetch<GeneratedResume[]>(apiV1.RESUME.LIST.url, {
     initialData: [],
     refetchOnFocus: true,
   });

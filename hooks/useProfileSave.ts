@@ -3,11 +3,10 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiJson } from "@/lib/utils/api-client";
-import { API_V1 } from "@/lib/constants";
+import { apiV1 } from "@/lib/client";
 
 interface Profile {
-  userId: string;
+  id: string;
   resume: Resume;
 }
 
@@ -42,13 +41,8 @@ export function useProfileSave() {
     setIsSaving(true);
 
     try {
-      const result = await apiJson<Profile>(API_V1.PROFILE.LIST, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resume: { ...profile.resume, [section]: data },
-        }),
-      });
+      const updatedResume = { ...profile.resume, [section]: data };
+      const result = await apiV1.PROFILE.GET(profile.id).patch<Profile>({ resume: updatedResume });
 
       if (result.error || !result.data) {
         throw new Error(result.error ?? `Failed to save ${sectionLabels[section]}`);

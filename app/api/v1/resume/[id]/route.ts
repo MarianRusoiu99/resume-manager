@@ -15,6 +15,7 @@
 import { resumeService } from '@/lib/services/resume.service';
 import { createApiHandler } from '@/lib/api-handler';
 import { success } from '@/lib/types/service-result';
+import { updateResumeContentSchema } from '@/lib/validations';
 
 /**
  * GET /api/resume/[id] - Get a specific resume
@@ -45,16 +46,47 @@ export const DELETE = createApiHandler(async (request, { params }, session) => {
 /**
  * PATCH /api/resume/[id] - Update resume content or template
  */
-export const PATCH = createApiHandler(async (request, { params }, session) => {
-  const { id } = await params;
-  const body = await request.json();
+export const PATCH = createApiHandler<unknown, Partial<{ templateId: string | null }> & Partial<{
+  resume: Record<string, unknown>;
+  jobTitle?: string;
+  companyName?: string;
+  jobDescription?: string;
+}>>(
+  async (_request, { params }, session, body) => {
+    const { id } = await params;
 
-  // Handle template update separately if only templateId is provided
-  if (body.templateId !== undefined && !body.resume) {
-    return resumeService.updateResumeTemplate(id, session.user.id, body.templateId);
-  }
+    // Backward-compatible template-only update
+    if (body && 'templateId' in body && !('resume' in body)) {
+      const templateId = (body as { templateId: string | null }).templateId;
+      return resumeService.updateResumeTemplate(id, session.user.id, templateId);
+    }
 
-  // Update the resume content
-  return resumeService.updateResumeContent(id, session.user.id, body.resume);
-});
+    const resume = (body as { resume?: Record<string, unknown> } | undefined)?.resume;
+    const jobTitle = (body as { jobTitle?: string } | undefined)?.jobTitle;
+    const companyName = (body as { companyName?: string } | undefined)?.companyName;
+    const jobDescription = (body as { jobDescription?: string } | undefined)?.jobDescription;
+
+    // If the request includes job fields, persist them first.
+    if (jobTitle !== undefined || companyName !== undefined || jobDescription !== undefined) {
+      const jobResult = await resumeService.updateResumeJobDetails(id, session.user.id, {
+        jobTitle,
+        companyName,
+        jobDescription,
+      });
+
+      if (!jobResult.success) {
+        return jobResult;
+      }
+    }
+
+    // If resume payload is present, update resume content.
+    if (resume !== undefined) {
+      return resumeService.updateResumeContent(id, session.user.id, resume as never);
+    }
+
+    // If only metadata was updated, return the updated record.
+    return resumeService.getResume(id, session.user.id);
+  },
+  { bodySchema: updateResumeContentSchema.partial().passthrough(), verifyUser: true }
+);
 

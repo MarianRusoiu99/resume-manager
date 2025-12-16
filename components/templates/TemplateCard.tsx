@@ -14,7 +14,7 @@ import { useToastAction } from '@/hooks';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { API_V1 } from '@/lib/constants';
+import { apiV1 } from '@/lib/client';
 
 interface TemplateCardProps {
   template: ResumeTemplate;
@@ -105,20 +105,13 @@ export function TemplateCard({
   const handleExportPDF = async () => {
     await runWithToast(
       async () => {
-        // Use universal PDF export endpoint with sample data
-        const response = await fetch(API_V1.EXPORT.PDF, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const response = await apiV1.EXPORT.PDF.postFetch({
+          resume: SAMPLE_RESUME,
+          template: {
+            htmlTemplate: template.htmlTemplate,
+            cssStyles: template.cssStyles,
           },
-          body: JSON.stringify({
-            resume: SAMPLE_RESUME,
-            template: {
-              htmlTemplate: template.htmlTemplate,
-              cssStyles: template.cssStyles,
-            },
-            fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
-          }),
+          fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
         });
 
         if (!response.ok) {
@@ -147,12 +140,9 @@ export function TemplateCard({
   const handleDelete = async () => {
     const result = await runWithToast(
       async () => {
-        const response = await fetch(API_V1.TEMPLATE.GET(template.id), {
-          method: 'DELETE',
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to delete template');
+        const { error } = await apiV1.TEMPLATE.GET(template.id).delete<unknown>();
+        if (error) {
+          throw new Error(error);
         }
 
         return true;
@@ -171,12 +161,9 @@ export function TemplateCard({
   const handleDuplicate = async () => {
     const result = await runWithToast(
       async () => {
-        const response = await fetch(API_V1.TEMPLATE.DUPLICATE(template.id), {
-          method: 'POST',
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to duplicate template');
+        const { error } = await apiV1.TEMPLATE.DUPLICATE(template.id).post<unknown>();
+        if (error) {
+          throw new Error(error);
         }
 
         return true;

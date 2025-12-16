@@ -5,8 +5,7 @@ import type { Resume } from "@/lib/validations/jsonresume";
 import type { Template } from "@/lib/types/template";
 import { useTemplatePreview } from "./useTemplatePreview";
 import { createComponentLogger } from "@/lib/utils/client-logger";
-import { API_V1 } from "@/lib/constants";
-import { apiJson } from "@/lib/utils/api-client";
+import { apiV1 } from '@/lib/client';
 
 const logger = createComponentLogger('useCardPreview');
 
@@ -107,57 +106,38 @@ export function useExportPdf({
       setIsExporting(true);
       setError(null);
 
-      // Fetch template
       let template: Template | null = null;
 
       if (templateId) {
-        try {
-          const templateResponse = await fetch(API_V1.TEMPLATE.GET(templateId));
-          if (templateResponse.ok) {
-            template = await templateResponse.json();
-          }
-        } catch {
-          // Fall through to default template
+        const result = await apiV1.TEMPLATE.GET(templateId).get<{ template: Template }>();
+        if (!result.error && result.data) {
+          template = result.data.template;
         }
       }
 
       if (!template) {
-        const templatesResponse = await fetch(`${API_V1.TEMPLATE.LIST}?limit=1`);
-        if (!templatesResponse.ok) {
-          throw new Error("Failed to load template");
+        const templatesResult = await apiV1.TEMPLATE.LIST.get<{ templates: Template[] }>();
+        const fallback = templatesResult.data?.templates?.[0] ?? null;
+        if (templatesResult.error || !fallback) {
+          throw new Error(templatesResult.error ?? 'No templates available');
         }
-
-        const templatesResult = await apiJson<{ templates?: Template[] }>(`${API_V1.TEMPLATE.LIST}?limit=1`);
-        if (templatesResult.error) {
-          throw new Error(templatesResult.error);
-        }
-
-        const templates = templatesResult.data?.templates;
-        if (!templates || templates.length === 0) {
-          throw new Error("No templates available");
-        }
-
-        template = templates[0];
+        template = fallback;
       }
 
-      // Export PDF
-      const response = await fetch(API_V1.EXPORT.PDF, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const response = await apiV1.EXPORT.PDF.postFetch(
+        {
           resume: content,
           template: {
-            htmlTemplate: template!.htmlTemplate,
-            cssStyles: template!.cssStyles,
+            htmlTemplate: template.htmlTemplate,
+            cssStyles: template.cssStyles,
           },
-          fileName: `${fileName.replaceAll(/\s+/g, "_")}.pdf`,
-        }),
-      });
+          fileName: `${fileName.replaceAll(/\s+/g, '_')}.pdf`,
+        },
+        { skipSessionCheck: true },
+      );
 
       if (!response.ok) {
-        throw new Error("Failed to export PDF");
+        throw new Error('Failed to export PDF');
       }
 
       // Download the PDF

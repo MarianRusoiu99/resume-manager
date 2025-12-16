@@ -6,8 +6,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { API_V1 } from '@/lib/constants';
-import { apiJson } from '@/lib/utils/api-client';
+import { apiV1 } from '@/lib/client';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 
 const logger = createComponentLogger('useAIModels');
@@ -61,7 +60,7 @@ export function useAIModels(options: UseAIModelsOptions = {}): UseAIModelsReturn
       setIsLoading(true);
       setError(null);
 
-      const result = await apiJson<{ allModels?: unknown[] }>(API_V1.SETTINGS.MODELS);
+      const result = await apiV1.SETTINGS.MODELS.get<{ allModels?: unknown[] }>();
 
       if (result.error) {
         throw new Error(result.error);

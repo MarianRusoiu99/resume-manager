@@ -24,8 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, Code, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiJson } from '@/lib/utils/api-client';
-import { API_V1 } from '@/lib/constants';
+import { apiV1 } from '@/lib/client';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
 import { TemplateImportModal } from './TemplateImportModal';
@@ -123,15 +122,14 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     try {
       setSaving(true);
 
-      const url = isNew ? API_V1.TEMPLATE.LIST : API_V1.TEMPLATE.GET(template?.id ?? '');
+      const templateId = template?.id;
+      if (!isNew && !templateId) {
+        throw new Error('Missing template id');
+      }
 
-      const method = isNew ? 'POST' : 'PATCH';
-
-      const result = await apiJson(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
+      const result = isNew
+        ? await apiV1.TEMPLATE.LIST.post<unknown>(formData)
+        : await apiV1.TEMPLATE.GET(templateId as string).patch<unknown>(formData);
 
       if (result.error) {
         throw new Error(result.error);

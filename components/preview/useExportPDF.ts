@@ -7,8 +7,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { API_V1 } from '@/lib/constants';
-import { apiJson } from '@/lib/utils/api-client';
+import { apiV1 } from '@/lib/client';
 
 const logger = createComponentLogger('useExportPDF');
 
@@ -37,20 +36,17 @@ export function useExportPDF() {
 
       // If custom template is provided, use it directly
       if (templateHtml) {
-        const response = await fetch(API_V1.EXPORT.PDF, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        const response = await apiV1.EXPORT.PDF.postFetch(
+          {
             resume,
             template: {
               htmlTemplate: templateHtml,
               cssStyles: templateCss || '',
             },
             fileName,
-          }),
-        });
+          },
+          { skipSessionCheck: true },
+        );
 
         if (!response.ok) {
           throw new Error('Failed to export PDF');
@@ -66,28 +62,28 @@ export function useExportPDF() {
         throw new Error('No template selected');
       }
 
-      const templateResult = await apiJson<{ htmlTemplate: string; cssStyles: string }>(API_V1.TEMPLATE.GET(templateId));
+      const templateResult = await apiV1.TEMPLATE.GET(templateId).get<{
+        id: string;
+        htmlTemplate: string;
+        cssStyles: string;
+      }>();
       if (templateResult.error || !templateResult.data) {
         throw new Error(templateResult.error ?? 'Failed to fetch template');
       }
 
       const template = templateResult.data;
 
-      // Call universal PDF export API
-      const response = await fetch(API_V1.EXPORT.PDF, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const response = await apiV1.EXPORT.PDF.postFetch(
+        {
           resume,
           template: {
             htmlTemplate: template.htmlTemplate,
             cssStyles: template.cssStyles,
           },
           fileName,
-        }),
-      });
+        },
+        { skipSessionCheck: true },
+      );
 
       if (!response.ok) {
         throw new Error('Failed to export PDF');

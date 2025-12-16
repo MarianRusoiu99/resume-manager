@@ -2,13 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import {
-  addApiProvider,
-  deleteApiProvider,
-  listApiProvidersForSettings,
-  toggleApiProvider,
-  type ApiProvider,
-} from '@/lib/client/api-providers.client';
+import { apiV1, type ApiProvider } from '@/lib/client';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
@@ -57,7 +51,7 @@ export default function ApiKeysPage() {
   const loadProviders = async () => {
     try {
       setIsLoading(true);
-      const result = await listApiProvidersForSettings();
+      const result = await apiV1.SETTINGS.API_PROVIDERS.get<ApiProvider[]>();
       if (result.error || !result.data) {
         toast.error(result.error ?? 'Failed to load API providers');
         return;
@@ -81,13 +75,13 @@ export default function ApiKeysPage() {
 
     try {
       setIsSubmitting(true);
-      const result = await addApiProvider({
+      const result = await apiV1.SETTINGS.API_PROVIDERS.post<unknown>({
         name: newProvider.name,
         provider: newProvider.provider,
         apiKey: newProvider.apiKey,
       });
 
-      if (!result.error) {
+       if (!result.error) {
         toast.success('API provider added successfully');
         setShowAddDialog(false);
         setNewProvider({
@@ -95,7 +89,7 @@ export default function ApiKeysPage() {
           provider: 'openai',
           apiKey: '',
         });
-        loadProviders();
+        await loadProviders();
       } else {
         toast.error(result.error ?? 'Failed to add provider');
       }
@@ -113,7 +107,7 @@ export default function ApiKeysPage() {
     }
 
     try {
-      const result = await deleteApiProvider(id);
+      const result = await apiV1.SETTINGS.API_PROVIDER(id).delete<unknown>();
 
       if (!result.error) {
         toast.success('Provider deleted successfully');
@@ -129,7 +123,7 @@ export default function ApiKeysPage() {
 
   const handleToggleProvider = async (id: string, isActive: boolean) => {
     try {
-      const result = await toggleApiProvider(id, !isActive);
+      const result = await apiV1.SETTINGS.API_PROVIDER(id).patch<unknown>({ isActive: !isActive });
 
       if (!result.error) {
         toast.success(`Provider ${isActive ? 'disabled' : 'enabled'}`);

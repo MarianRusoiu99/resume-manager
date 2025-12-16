@@ -97,13 +97,35 @@ export class GeneratedResumeRepository implements IGeneratedResumeRepository {
     return this.db.generatedResume.update({
       where: { id },
       data: {
-        template: templateId ? {
-          connect: { id: templateId }
-        } : {
-          disconnect: true
-        },
-        updatedAt: new Date()
-      }
+        template: templateId
+          ? {
+              connect: { id: templateId },
+            }
+          : {
+              disconnect: true,
+            },
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Update job-related fields (jobDescription/jobMetadata)
+   */
+  async updateJobDetails(
+    id: string,
+    data: {
+      jobDescription?: string;
+      jobMetadata: Record<string, unknown>;
+    }
+  ): Promise<GeneratedResume> {
+    return this.db.generatedResume.update({
+      where: { id },
+      data: {
+        ...(data.jobDescription === undefined ? {} : { jobDescription: data.jobDescription }),
+        jobMetadata: data.jobMetadata as Prisma.InputJsonValue,
+        updatedAt: new Date(),
+      },
     });
   }
 

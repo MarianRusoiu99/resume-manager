@@ -19,16 +19,9 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Upload, Image as ImageIcon, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { API_V1 } from '@/lib/constants';
-import { apiJson } from '@/lib/utils/api-client';
+import { apiV1 } from '@/lib/client';
+import type { ExtractedTemplate } from '@/lib/ai/template-parser';
 
-interface ExtractedTemplate {
-    htmlTemplate: string;
-    cssStyles: string;
-    name?: string;
-    category?: string;
-    description?: string;
-}
 
 interface TemplateImportModalProps {
     open: boolean;
@@ -111,10 +104,7 @@ export function TemplateImportModal({
                 setProgress((prev) => Math.min(prev + 10, 90));
             }, 1000);
 
-            const result = await apiJson<{ template: ExtractedTemplate }>(API_V1.TEMPLATE.IMPORT, {
-                method: 'POST',
-                body: formData,
-            });
+            const result = await apiV1.TEMPLATE.IMPORT.postForm<{ template?: ExtractedTemplate }>(formData);
 
             clearInterval(progressInterval);
 

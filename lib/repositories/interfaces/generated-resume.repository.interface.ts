@@ -69,6 +69,14 @@ export interface IGeneratedResumeRepository {
   updateTemplate(id: string, templateId?: string): Promise<GeneratedResumeData>;
 
   /**
+   * Update job-related fields (jobDescription/jobMetadata)
+   */
+  updateJobDetails(
+    id: string,
+    data: { jobDescription?: string; jobMetadata: Record<string, unknown> }
+  ): Promise<GeneratedResumeData>;
+
+  /**
    * Link a cover letter to a resume
    */
   linkCoverLetter(resumeId: string, coverLetterId: string): Promise<GeneratedResumeData>;

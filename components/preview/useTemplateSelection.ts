@@ -5,8 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { API_V1 } from '@/lib/constants';
-import { apiJson } from '@/lib/utils/api-client';
+import { apiV1 } from '@/lib/client';
 
 const logger = createComponentLogger('useTemplateSelection');
 
@@ -27,29 +26,24 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
   // Helper: Load template from entity (profile/resume)
   const loadFromEntity = useCallback(async (): Promise<string | null> => {
     if (!entityId) return null;
-    
-    const endpoint = isProfile ? API_V1.PROFILE.GET(entityId) : API_V1.RESUME.GET(entityId);
-    const result = await apiJson<{ selectedTemplateId?: string | null; templateId?: string | null }>(endpoint);
-    if (result.error || !result.data) return null;
 
     if (isProfile) {
-      return result.data.selectedTemplateId ?? null;
+      const profileResult = await apiV1.PROFILE.GET(entityId).get<{ profile: { selectedTemplateId: string | null } }>();
+      if (profileResult.error) return null;
+      return profileResult.data?.profile?.selectedTemplateId ?? null;
     }
 
-    return result.data.templateId ?? null;
+    const resumeResult = await apiV1.RESUME.GET(entityId).get<{ resume: { templateId: string | null } }>();
+    if (resumeResult.error) return null;
+    return resumeResult.data?.resume?.templateId ?? null;
   }, [entityId, isProfile]);
 
   // Helper: Load default template
   const loadDefaultTemplate = useCallback(async (): Promise<string | null> => {
-    const result = await apiJson<{ templates?: Array<{ id: string }> }>(`${API_V1.TEMPLATE.LIST}?limit=1`);
-    if (result.error || !result.data) return null;
+    const result = await apiV1.TEMPLATE.LIST.get<{ templates: { id: string }[] }>();
+    if (result.error || !result.data?.templates?.length) return null;
 
-    const templates = result.data.templates;
-    if (templates && templates.length > 0) {
-      return templates[0].id;
-    }
-
-    return null;
+    return result.data.templates[0].id;
   }, []);
 
   // Load template preference on mount
@@ -108,16 +102,9 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
     // Save template selection to the appropriate entity
     if (entityId && templateId) {
       try {
-        const endpoint = isProfile ? API_V1.PROFILE.GET(entityId) : API_V1.RESUME.GET(entityId);
-        const body = isProfile 
-          ? { selectedTemplateId: templateId }
-          : { templateId };
-
-        const result = await apiJson<unknown>(endpoint, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
+        const result = isProfile
+          ? await apiV1.PROFILE.GET(entityId).patch<unknown>({ selectedTemplateId: templateId })
+          : await apiV1.RESUME.TEMPLATE(entityId).patch<unknown>({ templateId });
 
         if (result.error) {
           logger.error('Failed to save template selection', new Error(result.error));

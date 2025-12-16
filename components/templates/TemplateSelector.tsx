@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { TemplateBase } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { API_V1 } from '@/lib/constants';
-import { apiJson } from '@/lib/utils/api-client';
+import { apiV1 } from '@/lib/client';
 
 const logger = createComponentLogger('TemplateSelector');
 
@@ -26,7 +25,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const result = await apiJson<{ templates?: TemplateBase[] }>(API_V1.TEMPLATE.LIST);
+        const result = await apiV1.TEMPLATE.LIST.get<{ templates?: TemplateBase[] }>();
         if (result.error) {
           throw new Error(result.error);
         }
@@ -53,15 +52,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
 
     try {
       setIsUpdating(true);
-      const result = await apiJson<unknown>(API_V1.RESUME.TEMPLATE(resumeId), {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          templateId: selectedTemplateId,
-        }),
-      });
+      const result = await apiV1.RESUME.TEMPLATE(resumeId).patch<{ success?: boolean }>({ templateId: selectedTemplateId });
 
       if (result.error) {
         throw new Error(result.error);

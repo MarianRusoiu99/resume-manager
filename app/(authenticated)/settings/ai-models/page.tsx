@@ -3,12 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { ROUTES } from '@/lib/constants';
-import {
-  getAISettings,
-  updateAIPreference,
-  type AISettings,
-  type ModelInfo,
-} from '@/lib/client/ai-models.client';
+import { apiV1, type AISettings, type ModelInfo } from '@/lib/client';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Button, Card } from '@/components/ui';
@@ -33,7 +28,7 @@ export default function AIModelsSettingsPage() {
   const loadSettings = useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await getAISettings();
+      const result = await apiV1.SETTINGS.AI_MODELS.get<AISettings>();
 
       if (result.error) {
         toast.error(result.error);
@@ -100,7 +95,7 @@ export default function AIModelsSettingsPage() {
     try {
       setSavingFeature(featureId);
 
-      const result = await updateAIPreference({
+      const result = await apiV1.SETTINGS.AI_MODELS.patch<unknown>({
         feature: featureId,
         providerId: selection?.providerId || null,
         modelId: selection?.modelId || null,
@@ -125,7 +120,7 @@ export default function AIModelsSettingsPage() {
     try {
       setSavingFeature(featureId);
 
-      const result = await updateAIPreference({
+      const result = await apiV1.SETTINGS.AI_MODELS.patch<unknown>({
         feature: featureId,
         providerId: null,
         modelId: null,

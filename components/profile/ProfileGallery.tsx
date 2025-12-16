@@ -10,8 +10,7 @@ import { Plus, User } from "lucide-react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createProfile } from "@/app/actions/profile";
-import { apiJson } from "@/lib/utils/api-client";
-import { API_V1 } from "@/lib/constants";
+import { apiV1 } from "@/lib/client";
 
 interface Profile {
   id: string;
@@ -35,12 +34,17 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
   // Refresh profiles when the page becomes visible
   useEffect(() => {
     const refreshProfiles = async () => {
-        try {
-          const result = await apiJson<Profile[]>(API_V1.PROFILE.LIST);
-          if (!result.error && result.data) {
-            setProfiles(result.data);
-          }
-        } catch (error) {
+      try {
+        const result = await apiV1.PROFILE.LIST.get<Profile[]>();
+        if (!result.error && result.data) {
+          setProfiles(
+            result.data.map((p) => ({
+              ...p,
+              resume: p.resume as Resume | null,
+            }))
+          );
+        }
+      } catch (error) {
         console.error("Failed to refresh profiles:", error);
       }
     };

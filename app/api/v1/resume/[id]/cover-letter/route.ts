@@ -21,6 +21,25 @@ type CoverLetterResponseData = {
   resume: { coverLetter: string; updatedAt: string };
 };
 
+export const GET = createApiHandler(async (_request, { params }, session) => {
+  const { id: resumeId } = await params;
+
+  const resume = requireFound(
+    await prisma.generatedResume.findFirst({
+      where: { id: resumeId, userId: session.user.id },
+      select: {
+        coverLetter: { select: { content: true, metadata: true } },
+      },
+    }),
+    'Resume'
+  );
+
+  return success({
+    coverLetter: resume.coverLetter?.content ?? null,
+    metadata: resume.coverLetter?.metadata ?? null,
+  });
+});
+
 export const PUT = createApiHandler<CoverLetterResponseData, UpdateCoverLetterBody>(
   async (_request, { params }, session, body) => {
     const { id: resumeId } = await params;

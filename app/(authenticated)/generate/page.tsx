@@ -16,11 +16,7 @@ import { ExternalLink } from 'lucide-react';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { PageHeader } from '@/components/layout';
 import { ROUTES } from '@/lib/constants';
-import { listTemplates } from '@/lib/client/templates.client';
-import { listProfiles, type ProfileListItem } from '@/lib/client/profiles.client';
-import { listApiProviders } from '@/lib/client/providers.client';
-import { generateCoverLetter } from '@/lib/client/cover-letters.client';
-import { generateResumeStream } from '@/lib/client/resumes.client';
+import { apiV1, type ApiProvider, type ProfileListItem } from '@/lib/client';
 import type { TemplateBase } from '@/lib/types/template';
 
 interface GeneratedResume {
@@ -70,7 +66,7 @@ export default function GeneratePage() {
   // Load templates on mount
   useEffect(() => {
     const loadTemplates = async () => {
-      const result = await listTemplates();
+      const result = await apiV1.TEMPLATE.LIST.get<{ templates: TemplateBase[]; count: number }>();
       if (result.error || !result.data) {
         console.error('Failed to load templates:', result.error);
         return;
@@ -87,24 +83,32 @@ export default function GeneratePage() {
 
   // Load profiles and check for AI providers on mount
   useEffect(() => {
+    type ProfileListApiItem = { id: string; name: string; isDefault: boolean };
+
     const loadData = async () => {
       setIsLoadingData(true);
       try {
         const [profilesResult, providersResult] = await Promise.all([
-          listProfiles(),
-          listApiProviders(),
+          apiV1.PROFILE.LIST.get<ProfileListApiItem[]>(),
+          apiV1.SETTINGS.API_PROVIDERS.get<ApiProvider[]>(),
         ]);
 
         if (!profilesResult.error && profilesResult.data) {
-          setProfiles(profilesResult.data);
+          const profileItems: ProfileListItem[] = profilesResult.data.map((p) => ({
+            id: p.id,
+            name: p.name,
+            isDefault: p.isDefault,
+          }));
 
-          const defaultProfile = profilesResult.data.find((p) => p.isDefault);
+          setProfiles(profileItems);
+
+          const defaultProfile = profileItems.find((p) => p.isDefault);
           if (defaultProfile) {
             setSelectedResumeProfileId(defaultProfile.id);
             setSelectedCoverLetterProfileId(defaultProfile.id);
-          } else if (profilesResult.data.length > 0) {
-            setSelectedResumeProfileId(profilesResult.data[0].id);
-            setSelectedCoverLetterProfileId(profilesResult.data[0].id);
+          } else if (profileItems.length > 0) {
+            setSelectedResumeProfileId(profileItems[0].id);
+            setSelectedCoverLetterProfileId(profileItems[0].id);
           }
         }
 
@@ -257,7 +261,7 @@ export default function GeneratePage() {
     resetResumeProgress();
 
     try {
-      const response = await generateResumeStream({
+      const response = await apiV1.RESUME.GENERATE_STREAM.postFetch({
         jobDescription: resumeJobDescription,
         profileId: selectedResumeProfileId,
         templateId: selectedTemplateId || undefined,
@@ -311,7 +315,11 @@ export default function GeneratePage() {
     setGeneratedCoverLetter(null);
 
     try {
-      const result = await generateCoverLetter({
+      const result = await apiV1.COVER_LETTER.GENERATE.post<{
+        coverLetter: string;
+        coverLetterId: string;
+        metadata: unknown;
+      }>({
         jobDescription: coverLetterJobDescription,
         personalInstructions: coverLetterPersonalInstructions,
         profileId,

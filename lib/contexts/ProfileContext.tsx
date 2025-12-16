@@ -4,16 +4,15 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useSession } from "next-auth/react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
-import { apiJson } from "@/lib/utils/api-client";
-import { API_V1 } from "@/lib/constants";
+import { apiV1 } from "@/lib/client";
 
 interface Profile {
   id: string;
   name: string;
   isDefault: boolean;
   resume: Resume;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface ProfileContextType {
@@ -50,12 +49,20 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
       setLoading(true);
       setError(null);
 
-      const result = await apiJson<Profile[]>(API_V1.PROFILE.LIST);
+      const result = await apiV1.PROFILE.LIST.get<unknown>();
       if (result.error) {
         throw new Error(result.error);
       }
 
-      const profilesData = (Array.isArray(result.data) ? result.data : []) as Profile[];
+      const profilesData = Array.isArray(result.data)
+        ? (result.data as unknown[]).map((profile) => {
+            const p = profile as { resume: unknown } & Record<string, unknown>;
+            return {
+              ...(p as unknown as Profile),
+              resume: p.resume as Resume,
+            };
+          })
+        : [];
 
       setProfiles(profilesData);
 

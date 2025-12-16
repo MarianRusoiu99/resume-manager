@@ -8,9 +8,8 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiJson } from "@/lib/utils/api-client";
+import { apiV1 } from "@/lib/client";
 import { createComponentLogger } from "@/lib/utils/client-logger";
-import { API_V1 } from "@/lib/constants";
 
 const logger = createComponentLogger('ProfileEditor');
 
@@ -20,7 +19,7 @@ interface Profile {
   name: string;
   isDefault: boolean;
   isPublic?: boolean;
-  publicSlug?: string;
+  publicSlug?: string | null;
   resume: Resume | null;
   createdAt: string;
   updatedAt: string;
@@ -36,7 +35,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const loadProfile = useCallback(async () => {
     try {
-      const result = await apiJson<Profile>(API_V1.PROFILE.GET(profileId));
+      const result = await apiV1.PROFILE.GET(profileId).get<Profile>();
 
       if (result.error || !result.data) {
         throw new Error(result.error ?? 'Failed to load profile');
@@ -56,7 +55,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const result = await apiJson<Profile>(API_V1.PROFILE.GET(profileId), { skipSessionCheck: true });
+      const result = await apiV1.PROFILE.GET(profileId).get<Profile>({ skipSessionCheck: true });
 
       if (result.status === 404) {
         return null;
@@ -75,17 +74,14 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const result = await apiJson<unknown>(API_V1.PROFILE.GET(profileId), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume }),
-      });
+      const result = await apiV1.PROFILE.GET(profileId).patch<Profile>({ resume });
 
       if (result.error) {
         logger.error('Profile save error', new Error(result.error));
         throw new Error(result.error);
       }
 
+      setProfile((prev) => (prev ? { ...prev, resume } : prev));
       return true;
     } catch (error) {
       logger.error('Error saving profile', error);
@@ -95,11 +91,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleProfileNameChange = async (name: string) => {
     try {
-      const result = await apiJson<unknown>(API_V1.PROFILE.GET(profileId), {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
+      const result = await apiV1.PROFILE.GET(profileId).patch<Profile>({ name });
 
       if (result.error) {
         throw new Error(result.error);
@@ -116,21 +108,20 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleTogglePublic = async () => {
     try {
-      const result = await apiJson<{ isPublic?: boolean; publicSlug?: string | null }>(API_V1.PROFILE.PUBLIC(profileId), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isPublic: !profile?.isPublic }),
+      const nextIsPublic = !profile?.isPublic;
+      const result = await apiV1.PROFILE.PUBLIC(profileId).post<{ isPublic: boolean; publicSlug: string | null }>({
+        isPublic: nextIsPublic,
       });
 
-      if (result.error || !result.data) {
-        throw new Error(result.error ?? "Failed to update public status");
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const isPublic = Boolean(result.data.isPublic ?? profile?.isPublic);
-      const publicSlug = result.data.publicSlug ?? profile?.publicSlug;
+      const isPublic = Boolean(result.data?.isPublic ?? nextIsPublic);
+      const publicSlug = result.data?.publicSlug ?? profile?.publicSlug ?? null;
 
       toast.success(isPublic ? "Profile is now public" : "Profile is now private");
-      setProfile((prev) => prev ? { ...prev, isPublic, publicSlug } : null);
+      setProfile((prev) => (prev ? { ...prev, isPublic, publicSlug } : null));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to update public status";
       toast.error(message);
@@ -165,7 +156,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
             id={profileId}
             displayName={profile.name}
             isPublic={profile.isPublic}
-            publicSlug={profile.publicSlug}
+             publicSlug={profile.publicSlug ?? undefined}
             onDisplayNameChange={handleProfileNameChange}
             onTogglePublic={handleTogglePublic}
           />

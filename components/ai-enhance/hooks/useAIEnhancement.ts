@@ -10,8 +10,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { ContentType } from '@/lib/validations/settings';
-import { API_V1 } from '@/lib/constants';
-import { apiJson } from '@/lib/utils/api-client';
+import { apiV1 } from '@/lib/client';
 
 /**
  * Options for text enhancement
@@ -116,16 +115,12 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
         .filter(Boolean)
         .join('\n\n');
 
-      const result = await apiJson<{ enhancedContent?: string }>(API_V1.AI.ENHANCE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: options.content,
-          instructions,
-          context: fullContext || undefined,
-          contentType: options.contentType,
-          ...(options.modelId ? { modelId: options.modelId } : {}),
-        }),
+      const result = await apiV1.AI.ENHANCE.post<{ enhancedContent?: string }>({
+        content: options.content,
+        instructions,
+        context: fullContext || undefined,
+        contentType: options.contentType,
+        modelId: options.modelId,
       });
 
       if (result.error) {
@@ -196,13 +191,10 @@ export function useResumeEnhancement<T>(): UseAIEnhancementReturn<T> & {
         attachmentsContext,
       ].filter(Boolean);
 
-      const result = await apiJson<{ enhancedContent?: string }>(API_V1.AI.ENHANCE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: `RESUME DATA (JSON format - you MUST return valid JSON in this exact structure):
+      const result = await apiV1.AI.ENHANCE.post<{ enhancedContent?: string }>({
+        content: `RESUME DATA (JSON format - you MUST return valid JSON in this exact structure):
 ${resumeJson}`,
-          instructions: `${instructions}
+        instructions: `${instructions}
 
 CRITICAL INSTRUCTIONS:
 1. You MUST return ONLY valid JSON in the exact same structure as the input
@@ -211,9 +203,8 @@ CRITICAL INSTRUCTIONS:
 4. Improve text quality: better wording, stronger impact, professional tone
 5. Keep dates, company names, and factual information unchanged unless asked
 6. Return ONLY the JSON object, no explanations or markdown`,
-          context: contextParts.join('\n\n'),
-          contentType: 'text',
-        }),
+        context: contextParts.join('\n\n'),
+        contentType: 'text',
       });
 
       if (result.error) {
@@ -295,12 +286,9 @@ ${templateData.css}`;
         attachmentsContext,
       ].filter(Boolean);
 
-      const result = await apiJson<{ enhancedContent?: string }>(API_V1.AI.ENHANCE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: combinedContent,
-          instructions: `${instructions}
+      const result = await apiV1.AI.ENHANCE.post<{ enhancedContent?: string }>({
+        content: combinedContent,
+        instructions: `${instructions}
 
 IMPORTANT: You must return both the HTML and CSS in this exact format:
 === HTML TEMPLATE ===
@@ -310,9 +298,8 @@ IMPORTANT: You must return both the HTML and CSS in this exact format:
 [enhanced CSS here]
 
 Make sure to preserve both sections and the exact separator format.`,
-          context: contextParts.join('\n\n'),
-          contentType: 'html',
-        }),
+        context: contextParts.join('\n\n'),
+        contentType: 'html',
       });
 
       if (result.error) {

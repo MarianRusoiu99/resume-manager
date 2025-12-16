@@ -20,8 +20,7 @@ import { FileText, Image as ImageIcon, FileType, ClipboardPaste, Upload, Chevron
 import { toast } from "sonner";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiJson } from "@/lib/utils/api-client";
-import { API_V1 } from "@/lib/constants";
+import { apiV1 } from "@/lib/client";
 
 interface ResumeImportButtonProps {
     onImportSuccess: (resume: Resume) => void;
@@ -53,15 +52,13 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
         }
 
         setIsUploading(true);
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("fileType", currentFileType);
 
         try {
-            const result = await apiJson<{ resume?: unknown }>(API_V1.RESUME.IMPORT, {
-                method: "POST",
-                body: formData,
-            });
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("fileType", currentFileType);
+
+            const result = await apiV1.RESUME.IMPORT.postForm<{ resume?: unknown }>(formData);
 
             if (result.error || !result.data?.resume) {
                 throw new Error(result.error ?? "Failed to import resume");

@@ -11,15 +11,12 @@ import React, {
 } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { API_V1 } from '@/lib/constants';
-import { apiJson } from '@/lib/utils/api-client';
+import { apiV1 } from '@/lib/client';
+import type { NotificationPayload } from '@/lib/notifications/types';
 
-/**
- * Notification type from the API
- */
-export interface Notification {
+export type Notification = {
   id: string;
-  type: 'RESUME_GENERATED' | 'COVER_LETTER_GENERATED' | 'PROFILE_UPDATED' | 'EXPORT_COMPLETE' | 'SYSTEM';
+  type: string;
   title: string;
   message: string;
   isRead: boolean;
@@ -27,9 +24,10 @@ export interface Notification {
   actionLabel: string | null;
   resourceType: string | null;
   resourceId: string | null;
-  metadata: Record<string, unknown> | null;
+  metadata: unknown;
   createdAt: string;
-}
+};
+
 
 /**
  * Context state
@@ -78,15 +76,14 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await apiJson<{ notifications?: Notification[]; unreadCount?: number }>(API_V1.NOTIFICATIONS.ROOT);
+      const result = await apiV1.NOTIFICATIONS.ROOT.get<{ notifications?: Notification[]; unreadCount?: number }>();
 
       if (result.error) {
         throw new Error(result.error);
       }
 
-      const data = result.data;
-      setNotifications(data?.notifications || []);
-      setUnreadCount(data?.unreadCount || 0);
+      setNotifications(result.data?.notifications ?? []);
+      setUnreadCount(result.data?.unreadCount ?? 0);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -99,11 +96,11 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const result = await apiJson<{ count?: number }>(API_V1.NOTIFICATIONS.COUNT);
+      const result = await apiV1.NOTIFICATIONS.COUNT.get<{ count?: number }>();
 
       if (result.error) return;
 
-      setUnreadCount(result.data?.count || 0);
+      setUnreadCount(result.data?.count ?? 0);
     } catch (error) {
       console.error('Error fetching notification count:', error);
     }
@@ -114,12 +111,9 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const markAsRead = useCallback(async (id: string) => {
     try {
-      const response = await fetch(API_V1.NOTIFICATIONS.ITEM(id), {
-        method: 'PATCH',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to mark notification as read');
+      const result = await apiV1.NOTIFICATIONS.ITEM(id).patch<unknown>();
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       // Update local state
@@ -137,14 +131,9 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const markAllAsRead = useCallback(async () => {
     try {
-      const response = await fetch(API_V1.NOTIFICATIONS.ROOT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'markAllRead' }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to mark all notifications as read');
+      const result = await apiV1.NOTIFICATIONS.ROOT.post<unknown>({ action: 'markAllRead' });
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       // Update local state
@@ -160,12 +149,9 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const deleteNotification = useCallback(async (id: string) => {
     try {
-      const response = await fetch(API_V1.NOTIFICATIONS.ITEM(id), {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete notification');
+      const result = await apiV1.NOTIFICATIONS.ITEM(id).delete<unknown>();
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       // Update local state
@@ -190,21 +176,12 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
 
     try {
       // Mark all read first (preserves current API behavior)
-      const markResponse = await fetch(API_V1.NOTIFICATIONS.ROOT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'markAllRead' }),
-      });
-
-      if (!markResponse.ok) {
-        throw new Error('Failed to mark all notifications as read');
+      const markResult = await apiV1.NOTIFICATIONS.ROOT.post<unknown>({ action: 'markAllRead' });
+      if (markResult.error) {
+        throw new Error(markResult.error);
       }
 
-      await Promise.all(
-        idsToDelete.map((id) =>
-          fetch(API_V1.NOTIFICATIONS.ITEM(id), { method: 'DELETE' })
-        )
-      );
+      await Promise.all(idsToDelete.map((id) => apiV1.NOTIFICATIONS.ITEM(id).delete<unknown>()));
 
       setNotifications([]);
       setUnreadCount(0);
@@ -289,7 +266,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
     let isClosing = false;
 
     // Set up SSE connection for real-time updates
-    const eventSource = new EventSource(API_V1.NOTIFICATIONS.STREAM);
+    const eventSource = new EventSource(apiV1.NOTIFICATIONS.STREAM.url);
 
     eventSource.addEventListener('connected', (event) => {
       console.log('[SSE] Connected to notifications stream:', JSON.parse(event.data));

@@ -14,8 +14,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAIModels, type AIModel } from './useAIModels';
 import type { ContentType } from '@/lib/validations/settings';
-import { API_V1 } from '@/lib/constants';
-import { apiJson } from '@/lib/utils/api-client';
+import { apiV1 } from '@/lib/client';
 
 interface UseAIEnhanceOptions {
   /** Content type for enhancement */
@@ -122,16 +121,12 @@ export function useAIEnhance(options: UseAIEnhanceOptions = {}): UseAIEnhanceRet
       setIsLoading(true);
       setError(null);
 
-      const result = await apiJson<{ enhancedContent?: string }>(API_V1.AI.ENHANCE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: originalContent,
-          instructions,
-          context,
-          contentType,
-          modelId: selectedModel || undefined,
-        }),
+      const result = await apiV1.AI.ENHANCE.post<{ enhancedContent?: string }>({
+        content: originalContent,
+        instructions,
+        context,
+        contentType,
+        modelId: selectedModel || undefined,
       });
 
       if (result.error) {

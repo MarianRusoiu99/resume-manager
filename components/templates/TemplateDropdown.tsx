@@ -13,8 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import type { TemplateBase } from '@/lib/types/template';
-import { apiFetch, apiJson } from '@/lib/utils/api-client';
-import { API_V1 } from '@/lib/constants';
+import { apiV1 } from '@/lib/client';
 
 interface TemplateDropdownProps {
   currentTemplateId: string | null;
@@ -36,7 +35,7 @@ export function TemplateDropdown({
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const result = await apiJson<{ templates?: TemplateBase[] }>(API_V1.TEMPLATE.LIST);
+        const result = await apiV1.TEMPLATE.LIST.get<{ templates?: TemplateBase[] }>();
         if (result.error) {
           throw new Error(result.error);
         }
@@ -63,15 +62,7 @@ export function TemplateDropdown({
 
     try {
       setIsUpdating(true);
-      const response = await apiFetch(API_V1.RESUME.TEMPLATE(resumeId), {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          templateId: templateId,
-        }),
-      });
+      const response = await apiV1.RESUME.TEMPLATE(resumeId).patchFetch({ templateId });
 
       if (!response.ok) {
         throw new Error('Failed to update template');

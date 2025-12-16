@@ -28,11 +28,7 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import {
-  listApiProvidersForSettings,
-  type ApiProvider as SettingsApiProvider,
-} from '@/lib/client/api-providers.client';
-import { getAISettings, type AISettings as SettingsAISettings } from '@/lib/client/ai-models.client';
+import { apiV1, type AISettings as SettingsAISettings, type ApiProvider as SettingsApiProvider } from '@/lib/client';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 
 const logger = createComponentLogger('SettingsContext');
@@ -101,7 +97,7 @@ export function SettingsProvider({
       setIsLoadingProviders(true);
       setProvidersError(null);
 
-      const result = await listApiProvidersForSettings();
+      const result = await apiV1.SETTINGS.API_PROVIDERS.get<SettingsApiProvider[]>();
 
       if (result.error) {
         throw new Error(result.error);
@@ -125,7 +121,7 @@ export function SettingsProvider({
       setIsLoadingAISettings(true);
       setAISettingsError(null);
 
-      const result = await getAISettings();
+      const result = await apiV1.SETTINGS.AI_MODELS.get<SettingsAISettings>();
 
       if (result.error) {
         throw new Error(result.error);
