@@ -91,6 +91,18 @@ export const POST = createApiHandler(async (_request, { params }, session) => {
     });
 
     const page = await browser.newPage();
+
+    // Block all network requests during rendering to prevent SSRF/external loads.
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+      const url = req.url();
+      if (url.startsWith('data:') || url.startsWith('about:')) {
+        req.continue();
+        return;
+      }
+      req.abort();
+    });
+
     await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
 
     const pdfBuffer = await page.pdf(PDF_CONFIG);

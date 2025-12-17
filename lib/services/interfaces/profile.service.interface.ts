@@ -20,6 +20,11 @@ export interface ProfileServiceData {
   name: string;
   resume: JsonValue;
   templateId: string | null;
+  /**
+   * Backward-compatible alias for `templateId`.
+   * Used by client hooks/components.
+   */
+  selectedTemplateId: string | null;
   isDefault: boolean;
   isPublic: boolean;
   publicSlug: string | null;
@@ -36,6 +41,7 @@ export interface UpdateProfileServiceInput {
   isDefault?: boolean;
   isPublic?: boolean;
   publicSlug?: string | null;
+  selectedTemplateId?: string | null;
 }
 
 /**

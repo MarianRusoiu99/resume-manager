@@ -31,6 +31,7 @@ export type { ICache } from './interfaces';
 export {
   BaseRepository,
   UserOwnedRepository,
+  PrismaUserOwnedCrudRepository,
   createPaginatedResult,
   buildOrderBy,
   buildPagination,

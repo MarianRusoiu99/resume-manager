@@ -8,22 +8,11 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiV1 } from "@/lib/client";
+import { apiV1, type ProfileDto } from "@/lib/client";
 import { createComponentLogger } from "@/lib/utils/client-logger";
 
 const logger = createComponentLogger('ProfileEditor');
 
-interface Profile {
-  id: string;
-  userId: string;
-  name: string;
-  isDefault: boolean;
-  isPublic?: boolean;
-  publicSlug?: string | null;
-  resume: Resume | null;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface ProfileEditorProps {
   profileId: string;
@@ -31,11 +20,11 @@ interface ProfileEditorProps {
 
 export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<ProfileDto | null>(null);
 
   const loadProfile = useCallback(async () => {
     try {
-      const result = await apiV1.PROFILE.GET(profileId).get<Profile>();
+      const result = await apiV1.PROFILE.GET(profileId).get<ProfileDto>();
 
       if (result.error || !result.data) {
         throw new Error(result.error ?? 'Failed to load profile');
@@ -55,7 +44,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const result = await apiV1.PROFILE.GET(profileId).get<Profile>({ skipSessionCheck: true });
+      const result = await apiV1.PROFILE.GET(profileId).get<ProfileDto>({ skipSessionCheck: true });
 
       if (result.status === 404) {
         return null;
@@ -74,7 +63,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const result = await apiV1.PROFILE.GET(profileId).patch<Profile>({ resume });
+      const result = await apiV1.PROFILE.GET(profileId).patch<ProfileDto>({ resume });
 
       if (result.error) {
         logger.error('Profile save error', new Error(result.error));
@@ -91,7 +80,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleProfileNameChange = async (name: string) => {
     try {
-      const result = await apiV1.PROFILE.GET(profileId).patch<Profile>({ name });
+      const result = await apiV1.PROFILE.GET(profileId).patch<ProfileDto>({ name });
 
       if (result.error) {
         throw new Error(result.error);

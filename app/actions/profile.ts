@@ -56,7 +56,14 @@ export const updateProfile = withServerAction(
     async (
         session,
         profileId: string,
-        data: Partial<{ name: string; resume: Resume; isDefault: boolean }>
+        data: Partial<{
+            name: string;
+            resume: Resume;
+            isDefault: boolean;
+            isPublic: boolean;
+            publicSlug: string | null;
+            selectedTemplateId: string | null;
+        }>
     ) => {
         // Validate resume data if provided
         if (data.resume) {

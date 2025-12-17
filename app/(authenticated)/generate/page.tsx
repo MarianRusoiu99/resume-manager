@@ -17,7 +17,7 @@ import { ExternalLink } from 'lucide-react';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { PageHeader } from '@/components/layout';
 import { ROUTES } from '@/lib/constants';
-import { apiV1, type ApiProvider, type ProfileListItem } from '@/lib/client';
+import { apiV1, type ApiProvider, type ProfileListItem, type TemplateListResponseDto } from '@/lib/client';
 import { useComponentLogger } from '@/hooks';
 import type { TemplateBase } from '@/lib/types/template';
 
@@ -69,7 +69,7 @@ export default function GeneratePage() {
   // Load templates on mount
   useEffect(() => {
     const loadTemplates = async () => {
-      const result = await apiV1.TEMPLATE.LIST.get<{ templates: TemplateBase[]; count: number }>();
+      const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<TemplateBase>>();
       if (result.error || !result.data) {
         log.error('Failed to load templates', undefined, { error: result.error });
         return;

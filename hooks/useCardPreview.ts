@@ -5,7 +5,7 @@ import type { Resume } from "@/lib/validations/jsonresume";
 import type { Template } from "@/lib/types/template";
 import { useTemplatePreview } from "./useTemplatePreview";
 import { createComponentLogger } from "@/lib/utils/client-logger";
-import { apiV1 } from '@/lib/client';
+import { apiV1, type TemplateListResponseDto } from '@/lib/client';
 
 const logger = createComponentLogger('useCardPreview');
 
@@ -116,7 +116,7 @@ export function useExportPdf({
       }
 
       if (!template) {
-        const templatesResult = await apiV1.TEMPLATE.LIST.get<{ templates: Template[]; count: number }>();
+        const templatesResult = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<Template>>();
         const fallback = templatesResult.data?.templates?.[0] ?? null;
         if (templatesResult.error || !fallback) {
           throw new Error(templatesResult.error ?? 'No templates available');

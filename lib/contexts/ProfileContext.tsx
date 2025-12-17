@@ -4,21 +4,12 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useSession } from "next-auth/react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
-import { apiV1 } from "@/lib/client";
-
-interface Profile {
-  id: string;
-  name: string;
-  isDefault: boolean;
-  resume: Resume;
-  createdAt: string;
-  updatedAt: string;
-}
+import { apiV1, type ProfileDto } from "@/lib/client";
 
 interface ProfileContextType {
-  profiles: Profile[];
+  profiles: ProfileDto[];
   activeProfileId: string | null;
-  activeProfile: Profile | null;
+  activeProfile: ProfileDto | null;
   loading: boolean;
   error: string | null;
   setActiveProfileId: (profileId: string) => void;
@@ -33,7 +24,7 @@ const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export function ProfileProvider({ children }: ProfileProviderProps) {
   const { status } = useSession();
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<ProfileDto[]>([]);
   const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,26 +40,21 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
       setLoading(true);
       setError(null);
 
-      const result = await apiV1.PROFILE.LIST.get<unknown>();
+      const result = await apiV1.PROFILE.LIST.get<ProfileDto[]>();
       if (result.error) {
         throw new Error(result.error);
       }
 
-      const profilesData = Array.isArray(result.data)
-        ? (result.data as unknown[]).map((profile) => {
-            const p = profile as { resume: unknown } & Record<string, unknown>;
-            return {
-              ...(p as unknown as Profile),
-              resume: p.resume as Resume,
-            };
-          })
-        : [];
+      const profilesData = (result.data ?? []).map((profile) => ({
+        ...profile,
+        resume: profile.resume as Resume,
+      }));
 
       setProfiles(profilesData);
 
       // Set active profile to default if not already set
       if (!activeProfileId && profilesData.length > 0) {
-        const defaultProfile = profilesData.find((p: Profile) => p.isDefault) || profilesData[0];
+        const defaultProfile = profilesData.find((p) => p.isDefault) || profilesData[0];
         setActiveProfileId(defaultProfile.id);
       }
     } catch (err) {

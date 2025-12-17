@@ -10,26 +10,16 @@ import { Plus, User } from "lucide-react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createProfile } from "@/app/actions/profile";
-import { apiV1 } from "@/lib/client";
+import { apiV1, type ProfileDto } from "@/lib/client";
 import { useComponentLogger } from "@/hooks";
 
-interface Profile {
-  id: string;
-  userId: string;
-  name: string;
-  isDefault: boolean;
-  resume: Resume | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
 interface ProfileGalleryProps {
-  initialProfiles: Profile[];
+  initialProfiles: ProfileDto[];
 }
 
 export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps>) {
   const log = useComponentLogger("ProfileGallery");
-  const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
+  const [profiles, setProfiles] = useState<ProfileDto[]>(initialProfiles);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -37,7 +27,7 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
   useEffect(() => {
     const refreshProfiles = async () => {
       try {
-        const result = await apiV1.PROFILE.LIST.get<Profile[]>();
+        const result = await apiV1.PROFILE.LIST.get<ProfileDto[]>();
         if (!result.error && result.data) {
           setProfiles(
             result.data.map((p) => ({
@@ -72,15 +62,22 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
       if (result.success) {
         toast.success("Profile created successfully");
         // Add the new profile to the local state
-        setProfiles((prev) => [...prev, {
-          id: result.data.id,
-          userId: result.data.userId,
-          name: result.data.name,
-          isDefault: result.data.isDefault,
-          resume: result.data.resume as Resume | null,
-          createdAt: result.data.createdAt.toISOString(),
-          updatedAt: result.data.updatedAt.toISOString(),
-        }]);
+        setProfiles((prev) => [
+          ...prev,
+          {
+            id: result.data.id,
+            userId: result.data.userId,
+            name: result.data.name,
+            resume: result.data.resume as Resume | null,
+            templateId: result.data.templateId ?? null,
+            selectedTemplateId: result.data.selectedTemplateId ?? null,
+            isDefault: result.data.isDefault,
+            isPublic: result.data.isPublic,
+            publicSlug: result.data.publicSlug,
+            createdAt: result.data.createdAt.toISOString(),
+            updatedAt: result.data.updatedAt.toISOString(),
+          },
+        ]);
         // Navigate to edit the new profile
         router.push(`/profile/${result.data.id}`);
       } else {
@@ -122,15 +119,22 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
       if (result.success) {
         toast.success("Profile created from imported resume!");
         // Add the new profile to the local state
-        setProfiles((prev) => [...prev, {
-          id: result.data.id,
-          userId: result.data.userId,
-          name: result.data.name,
-          isDefault: result.data.isDefault,
-          resume: result.data.resume as Resume | null,
-          createdAt: result.data.createdAt.toISOString(),
-          updatedAt: result.data.updatedAt.toISOString(),
-        }]);
+        setProfiles((prev) => [
+          ...prev,
+          {
+            id: result.data.id,
+            userId: result.data.userId,
+            name: result.data.name,
+            resume: result.data.resume as Resume | null,
+            templateId: result.data.templateId ?? null,
+            selectedTemplateId: result.data.selectedTemplateId ?? null,
+            isDefault: result.data.isDefault,
+            isPublic: result.data.isPublic,
+            publicSlug: result.data.publicSlug,
+            createdAt: result.data.createdAt.toISOString(),
+            updatedAt: result.data.updatedAt.toISOString(),
+          },
+        ]);
         // Navigate to edit the new profile
         router.push(`/profile/${result.data.id}`);
       } else {

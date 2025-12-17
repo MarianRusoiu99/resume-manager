@@ -10,7 +10,7 @@ export {
   getSession,
   getCurrentUserId,
   requireUserId,
-  checkRole,
+  requireAdmin,
   getSessionCookie,
   hasSessionCookie,
   type SessionPayload,

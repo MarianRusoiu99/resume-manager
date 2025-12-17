@@ -6,7 +6,7 @@
  */
 
 import type { AIModel } from '@/lib/ai/providers';
-import type { AuditContext } from '../api-key-audit.service';
+import type { AuditContext } from '../api-key-audit';
 
 export interface AddApiProviderInput {
   userId: string;

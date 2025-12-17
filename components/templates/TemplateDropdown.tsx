@@ -14,15 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import type { TemplateBase } from '@/lib/types/template';
 import { useComponentLogger } from '@/hooks';
-import { apiV1 } from '@/lib/client';
-
-type UpdateResumeTemplateResponse = {
-  resume: {
-    id: string;
-    templateId: string | null;
-  };
-  message: string;
-};
+import { apiV1, type TemplateListResponseDto, type UpdateResumeTemplateResponseDto } from '@/lib/client';
 
 interface TemplateDropdownProps {
   currentTemplateId: string | null;
@@ -45,7 +37,7 @@ export function TemplateDropdown({
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const result = await apiV1.TEMPLATE.LIST.get<{ templates?: TemplateBase[] }>();
+        const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<TemplateBase>>();
         if (result.error) {
           throw new Error(result.error);
         }
@@ -72,7 +64,7 @@ export function TemplateDropdown({
 
     try {
       setIsUpdating(true);
-      const result = await apiV1.RESUME.TEMPLATE(resumeId).patch<UpdateResumeTemplateResponse>({
+      const result = await apiV1.RESUME.TEMPLATE(resumeId).patch<UpdateResumeTemplateResponseDto>({
         templateId,
       });
 

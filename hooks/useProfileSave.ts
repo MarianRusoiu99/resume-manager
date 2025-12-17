@@ -3,13 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiV1 } from "@/lib/client";
+import { apiV1, type ProfileDto } from "@/lib/client";
 import { createComponentLogger } from "@/lib/utils/client-logger";
-
-interface Profile {
-  id: string;
-  resume: Resume;
-}
 
 type ResumeSection = keyof Omit<Resume, "$schema" | "meta">;
 
@@ -19,10 +14,10 @@ export function useProfileSave() {
   const [isSaving, setIsSaving] = useState(false);
 
   const saveSection = async <T extends ResumeSection>(
-    profile: Profile | null,
+    profile: Pick<ProfileDto, 'id' | 'resume'> | null,
     section: T,
     data: Resume[T],
-    onSuccess: (updatedProfile: Profile) => void
+    onSuccess: (updatedProfile: Pick<ProfileDto, 'id' | 'resume'>) => void
   ): Promise<boolean> => {
     if (!profile) return false;
 
@@ -45,7 +40,7 @@ export function useProfileSave() {
 
     try {
       const updatedResume = { ...profile.resume, [section]: data };
-      const result = await apiV1.PROFILE.GET(profile.id).patch<Profile>({ resume: updatedResume });
+      const result = await apiV1.PROFILE.GET(profile.id).patch<Pick<ProfileDto, 'id' | 'resume'>>({ resume: updatedResume });
 
       if (result.error || !result.data) {
         throw new Error(result.error ?? `Failed to save ${sectionLabels[section]}`);

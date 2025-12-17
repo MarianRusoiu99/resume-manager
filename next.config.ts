@@ -8,41 +8,13 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /**
  * Security Headers Configuration
- * 
- * Implements defense-in-depth security headers:
- * - CSP: Controls resource loading
- * - X-Frame-Options: Prevents clickjacking
- * - X-Content-Type-Options: Prevents MIME sniffing
- * - Referrer-Policy: Controls referrer information
- * - Permissions-Policy: Restricts browser features
+ *
+ * Implements defense-in-depth security headers.
+ * Note: CSP is set in `middleware.ts` because Next.js `headers()` routing
+ * can't express a safe "catch-all except ..." without unsupported regex.
  */
-const securityHeaders = [
-  {
-    key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      // Scripts: self + inline (required for Next.js) + Monaco CDN
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.jsdelivr.net",
-      // Styles: self + inline (required for styled components and dynamic styles) + Monaco CDN
-      "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
-      // Images: self + data URIs (for inline images) + https (for external images)
-      "img-src 'self' data: https:",
-      // Fonts: self + Google Fonts + Monaco CDN
-      "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
-      // Connections: self + OpenAI API + other allowed APIs + Monaco CDN
-      "connect-src 'self' https://api.openai.com https://fonts.googleapis.com https://cdn.jsdelivr.net",
-      // Workers: self + blob (required for Monaco Editor web workers)
-      "worker-src 'self' blob:",
-      // Frames: none (prevent embedding in iframes)
-      "frame-ancestors 'none'",
-      // Forms: self only
-      "form-action 'self'",
-      // Base URI: self only
-      "base-uri 'self'",
-      // Object: none (no plugins)
-      "object-src 'none'",
-    ].join('; '),
-  },
+
+const securityHeadersBase = [
   {
     key: 'X-Frame-Options',
     value: 'DENY',
@@ -84,13 +56,13 @@ const nextConfig: NextConfig = {
     '@tiptap/extension-history',
   ],
   
-  // Apply security headers to all routes
+  // Apply security headers to routes.
+  // CSP is applied in `middleware.ts`.
   async headers() {
     return [
       {
-        // Apply to all routes
         source: '/:path*',
-        headers: securityHeaders,
+        headers: securityHeadersBase,
       },
     ];
   },

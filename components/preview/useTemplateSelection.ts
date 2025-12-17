@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { apiV1 } from '@/lib/client';
+import { apiV1, type ResumeDetailsDto, type TemplateListResponseDto } from '@/lib/client';
 
 const logger = createComponentLogger('useTemplateSelection');
 
@@ -28,23 +28,25 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
     if (!entityId) return null;
 
     if (isProfile) {
-      const profileResult = await apiV1.PROFILE.GET(entityId).get<{ profile: { selectedTemplateId: string | null } }>();
+      // API client unwraps the `{ data: ... }` envelope automatically
+      const profileResult = await apiV1.PROFILE.GET(entityId).get<{ selectedTemplateId: string | null }>();
       if (profileResult.error) return null;
-      return profileResult.data?.profile?.selectedTemplateId ?? null;
+      return profileResult.data?.selectedTemplateId ?? null;
     }
 
-    const resumeResult = await apiV1.RESUME.GET(entityId).get<{ resume: { templateId: string | null } }>();
+    const resumeResult = await apiV1.RESUME.GET(entityId).get<Pick<ResumeDetailsDto, 'templateId'>>();
     if (resumeResult.error) return null;
-    return resumeResult.data?.resume?.templateId ?? null;
+    return resumeResult.data?.templateId ?? null;
   }, [entityId, isProfile]);
 
   // Helper: Load default template
   const loadDefaultTemplate = useCallback(async (): Promise<string | null> => {
-    const result = await apiV1.TEMPLATE.LIST.get<{ templates: { id: string }[] }>();
+    const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto>();
     if (result.error || !result.data?.templates?.length) return null;
 
     return result.data.templates[0].id;
   }, []);
+
 
   // Load template preference on mount
   useEffect(() => {

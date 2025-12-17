@@ -1,12 +1,14 @@
 /**
  * Cover Letter Repository
- * 
+ *
  * Implements ICoverLetterRepository for data access abstraction.
  * Data access layer for cover letters with CRUD operations.
  */
 
 import { prisma } from '@/lib/db';
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+
+import { PrismaUserOwnedCrudRepository } from './base.repository';
 import type { ICoverLetterRepository } from './interfaces';
 
 export interface CreateCoverLetterInput {
@@ -31,36 +33,54 @@ export interface UpdateCoverLetterInput {
   metadata?: Prisma.InputJsonValue;
 }
 
+type CoverLetterEntity = Prisma.CoverLetterGetPayload<object>;
+
 /**
  * Cover Letter Repository Implementation
  */
-export class CoverLetterRepository implements ICoverLetterRepository {
-  private readonly db: PrismaClient;
+export class CoverLetterRepository
+  extends PrismaUserOwnedCrudRepository<CoverLetterEntity, CreateCoverLetterInput, UpdateCoverLetterInput>
+  implements ICoverLetterRepository
+{
+  protected readonly model = 'coverLetter' as const;
 
   constructor(dbClient: PrismaClient = prisma) {
-    this.db = dbClient;
+    super(dbClient);
   }
 
-  /**
-   * Create a new cover letter
-   */
-  async create(data: CreateCoverLetterInput) {
-    return this.db.coverLetter.create({
-      data: {
-        userId: data.userId,
-        content: data.content,
-        jobDescription: data.jobDescription,
-        jobTitle: data.jobTitle,
-        companyName: data.companyName,
-        metadata: data.metadata as Prisma.InputJsonValue,
-      },
-    });
+  protected override buildCreateData(input: CreateCoverLetterInput): Record<string, unknown> {
+    return {
+      userId: input.userId,
+      content: input.content,
+      jobDescription: input.jobDescription,
+      jobTitle: input.jobTitle,
+      companyName: input.companyName,
+      metadata: input.metadata as Prisma.InputJsonValue,
+    };
+  }
+
+  protected override buildUpdateData(input: UpdateCoverLetterInput): Record<string, unknown> {
+    return {
+      ...(input.content !== undefined && { content: input.content }),
+      ...(input.jobDescription !== undefined && { jobDescription: input.jobDescription }),
+      ...(input.jobTitle !== undefined && { jobTitle: input.jobTitle }),
+      ...(input.companyName !== undefined && { companyName: input.companyName }),
+      ...(input.metadata !== undefined && { metadata: input.metadata }),
+      updatedAt: new Date(),
+    };
   }
 
   /**
    * Find cover letter by ID
    */
-  async findById(id: string, userId: string) {
+  override async findById(
+    id: string,
+    userId: string
+  ): Promise<
+    Prisma.CoverLetterGetPayload<{
+      include: { generatedResume: { select: { id: true; jobDescription: true } } };
+    }> | null
+  > {
     return this.db.coverLetter.findFirst({
       where: {
         id,
@@ -80,6 +100,27 @@ export class CoverLetterRepository implements ICoverLetterRepository {
   /**
    * Find all cover letters for a user
    */
+  async update(id: string, userId: string, data: UpdateCoverLetterInput): Promise<CoverLetterEntity> {
+    const updated = await super.update(id, userId, data);
+    if (!updated) {
+      throw new Error('Cover letter not found');
+    }
+
+    return updated;
+  }
+
+  async delete(id: string, userId: string): Promise<CoverLetterEntity> {
+    const deleted = await super.delete(id, userId);
+    if (!deleted) {
+      throw new Error('Cover letter not found');
+    }
+
+    return deleted;
+  }
+
+  /**
+   * Find all cover letters for a user
+   */
   async findByUserId(
     userId: string,
     options?: {
@@ -88,7 +129,7 @@ export class CoverLetterRepository implements ICoverLetterRepository {
       orderBy?: 'createdAt' | 'updatedAt';
       orderDir?: 'asc' | 'desc';
     }
-  ) {
+  ): Promise<{ coverLetters: CoverLetterEntity[]; total: number }> {
     const { limit = 50, offset = 0, orderBy = 'createdAt', orderDir = 'desc' } = options || {};
 
     const [coverLetters, total] = await Promise.all([
@@ -102,51 +143,6 @@ export class CoverLetterRepository implements ICoverLetterRepository {
     ]);
 
     return { coverLetters, total };
-  }
-
-  /**
-   * Update a cover letter
-   */
-  async update(id: string, userId: string, data: UpdateCoverLetterInput) {
-    return this.db.coverLetter.update({
-      where: {
-        id,
-        userId,
-      },
-      data: {
-        ...(data.content !== undefined && { content: data.content }),
-        ...(data.jobDescription !== undefined && { jobDescription: data.jobDescription }),
-        ...(data.jobTitle !== undefined && { jobTitle: data.jobTitle }),
-        ...(data.companyName !== undefined && { companyName: data.companyName }),
-        ...(data.metadata !== undefined && { metadata: data.metadata }),
-        updatedAt: new Date(),
-      },
-    });
-  }
-
-  /**
-   * Delete a cover letter
-   */
-  async delete(id: string, userId: string) {
-    return this.db.coverLetter.delete({
-      where: {
-        id,
-        userId,
-      },
-    });
-  }
-
-  /**
-   * Check if cover letter exists and belongs to user
-   */
-  async exists(id: string, userId: string): Promise<boolean> {
-    const count = await this.db.coverLetter.count({
-      where: {
-        id,
-        userId,
-      },
-    });
-    return count > 0;
   }
 }
 

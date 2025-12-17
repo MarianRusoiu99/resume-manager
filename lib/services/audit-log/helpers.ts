@@ -1,7 +1,7 @@
 import type { AuditAction } from '@prisma/client';
 
 import type { AuditLogEntry } from './types';
-import { auditLogService } from './audit-log.service';
+import { auditLogService } from '.';
 
 /**
  * Convenience functions for common audit operations.

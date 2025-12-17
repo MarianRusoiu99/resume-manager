@@ -1,5 +1,8 @@
 import { API_V1 } from '@/lib/constants';
 import type { AIModel } from '@/lib/ai/providers';
+import type { Resume } from '@/lib/validations/jsonresume';
+import type { ResumeDetails } from '@/lib/services/resume-crud';
+import type { TemplateBase } from '@/lib/types/template';
 import { apiFetch, apiJson } from '@/lib/utils/api-client';
 
 export type RequestOptions = RequestInit & {
@@ -251,4 +254,58 @@ export type ProfileListItem = {
   id: string;
   name: string;
   isDefault: boolean;
+};
+
+export type ProfileDto = {
+  id: string;
+  userId: string;
+  name: string;
+  resume: Resume | null;
+  templateId: string | null;
+  selectedTemplateId: string | null;
+  isDefault: boolean;
+  isPublic: boolean;
+  publicSlug: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ResumeDetailsDto = Omit<ResumeDetails, 'createdAt' | 'updatedAt'> & {
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ResumeCoverLetterResponseDto = {
+  coverLetter: string | null;
+  metadata: unknown;
+};
+
+export type DuplicateResumeResponseDto = {
+  resume: {
+    id: string;
+    jobTitle: string | null;
+    companyName: string | null;
+    createdAt: string;
+  };
+};
+
+export type DeleteResumeResponseDto = {
+  message: string;
+};
+
+export type UpdateCoverLetterResponseDto = {
+  resume: { coverLetter: string; updatedAt: string };
+};
+
+export type UpdateResumeTemplateResponseDto = {
+  resume: {
+    id: string;
+    templateId: string | null;
+  };
+  message: string;
+};
+
+export type TemplateListResponseDto<TTemplate extends TemplateBase = TemplateBase> = {
+  templates: TTemplate[];
+  count: number;
 };

@@ -1,6 +1,6 @@
 import type { AIFeatureType } from '@/lib/repositories/user-ai-settings.repository';
 import { userAISettingsRepository } from '@/lib/repositories/user-ai-settings.repository';
-import { apiProviderService } from '../api-provider.service';
+import { apiProviderService } from '../api-provider';
 import { withServiceError } from '../utils';
 import { logger } from '@/lib/utils/logger';
 

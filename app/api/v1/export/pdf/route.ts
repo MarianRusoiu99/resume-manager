@@ -9,12 +9,12 @@ import { createApiHandler } from '@/lib/api-handler';
 import puppeteer from 'puppeteer';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
 import { PDF_CONFIG } from '@/lib/utils/pdf-renderer';
-import type { Resume } from '@/lib/validations/jsonresume';
+import { resumeSchema, type Resume } from '@/lib/validations/jsonresume';
 import { z } from 'zod';
 
 // Request schema validation
 const exportRequestSchema = z.object({
-  resume: z.any(), // Resume data (JSON Resume format) - validated by Resume type
+  resume: z.unknown(),
   template: z.object({
     htmlTemplate: z.string(),
     cssStyles: z.string(),
@@ -23,17 +23,19 @@ const exportRequestSchema = z.object({
 });
 
 export const POST = createApiHandler(
-  async (request, context, session, body) => {
+  async (_request, _context, _session, body) => {
     let browser;
 
     try {
       const { resume, template, fileName } = body!;
 
-      // Render HTML using unified renderer
+      const parsedResume = resumeSchema.parse(resume) as Resume;
+
+      // Render HTML using unified renderer (renderer sanitizes template HTML/CSS)
       const html = renderCompleteDocument(
         template.htmlTemplate,
         template.cssStyles,
-        resume as Resume
+        parsedResume
       );
 
       // Launch browser with optimal settings
@@ -41,7 +43,22 @@ export const POST = createApiHandler(
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox']
       });
+
       const page = await browser.newPage();
+
+      // Block all network requests during rendering to prevent SSRF/external loads.
+      await page.setRequestInterception(true);
+      page.on('request', (req) => {
+        const url = req.url();
+        if (url.startsWith('data:') || url.startsWith('about:')) {
+          req.continue();
+          return;
+        }
+
+        // The HTML is provided via setContent; its base URL is typically about:blank.
+        // Deny any attempted external fetches.
+        req.abort();
+      });
 
       // Set content and wait for render
       await page.setContent(html, {
@@ -49,17 +66,12 @@ export const POST = createApiHandler(
         timeout: 30000
       });
 
-      // Generate PDF with unified config
-      // Puppeteer's pdf options are compatible with the keys in PDF_CONFIG
-      // but we need to cast or ensure types match if strict.
-      // PDF_CONFIG has format: 'A4', printBackground: true, etc. which matches Puppeteer.
       const pdfBuffer = await page.pdf(PDF_CONFIG);
 
       await browser.close();
 
       // Generate filename from resume data or use provided name
-      const resumeData = resume as Resume;
-      const defaultFileName = resumeData.basics?.name?.replaceAll(/\s+/g, '_') || 'resume';
+      const defaultFileName = parsedResume.basics?.name?.replaceAll(/\s+/g, '_') || 'resume';
       const finalFileName = fileName || `${defaultFileName}.pdf`;
 
       // Return PDF with proper headers

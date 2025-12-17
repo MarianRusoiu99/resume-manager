@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { TemplateBase } from '@/lib/types/template';
 import { useComponentLogger } from '@/hooks';
-import { apiV1 } from '@/lib/client';
+import { apiV1, type TemplateListResponseDto } from '@/lib/client';
 
 interface PreviewTemplateSelectorProps {
   selectedTemplateId: string | null;
@@ -39,7 +39,7 @@ export function PreviewTemplateSelector({
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const result = await apiV1.TEMPLATE.LIST.get<{ templates?: TemplateBase[] }>();
+        const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<TemplateBase>>();
         if (result.error) {
           throw new Error(result.error);
         }

@@ -1,4 +1,4 @@
-import { profileService } from '@/lib/services/profile.service';
+import { profileRepository } from '@/lib/repositories';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { logger } from '@/lib/utils/logger';
@@ -13,21 +13,21 @@ export async function fetchAndValidateUserResume(
   profileId?: string,
   skipValidation = false
 ): Promise<ServiceResult<Resume>> {
-  const profileResult = profileId
-    ? await profileService.getProfileById(profileId, userId)
-    : await profileService.getProfile(userId);
+  const profileData = profileId
+    ? await profileRepository.findById(profileId, userId)
+    : await profileRepository.findDefaultByUserId(userId);
 
-  if (!profileResult.success || !profileResult.data) {
+  if (!profileData) {
     return failure(
       'User profile not found. Please complete your profile before generating a resume.',
       'NOT_FOUND'
     );
   }
 
-  const profileData = profileResult.data;
-  if (!profileData || typeof profileData !== 'object' || !('resume' in profileData)) {
+  if (typeof profileData !== 'object' || !('resume' in profileData)) {
     return failure('Profile structure is invalid. Please update your profile.', 'VALIDATION_ERROR');
   }
+
   if (!profileData.resume) {
     return failure('Profile does not contain resume data. Please complete your profile.', 'VALIDATION_ERROR');
   }

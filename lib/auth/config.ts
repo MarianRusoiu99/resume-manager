@@ -2,6 +2,7 @@ import NextAuth, { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { prisma } from "@/lib/db";
 import { verifyPassword } from "@/lib/auth/password";
+import { env } from "@/lib/config";
 
 export const authConfig: NextAuthConfig = {
   basePath: "/api/v1/auth",
@@ -17,8 +18,11 @@ export const authConfig: NextAuthConfig = {
           return null;
         }
 
+        const email = (credentials.email as string).toLowerCase();
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string }
+          where: { email },
+          select: { id: true, email: true, name: true, passwordHash: true, isAdmin: true },
         });
 
         if (!user) {
@@ -34,10 +38,13 @@ export const authConfig: NextAuthConfig = {
           return null;
         }
 
+        const isAdmin = user.isAdmin || env.adminEmails.includes(user.email.toLowerCase());
+
         return {
           id: user.id,
           email: user.email,
-          name: user.name
+          name: user.name,
+          isAdmin,
         };
       }
     })
@@ -49,12 +56,14 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.isAdmin = user.isAdmin;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.isAdmin = Boolean(token.isAdmin);
       }
       return session;
     }

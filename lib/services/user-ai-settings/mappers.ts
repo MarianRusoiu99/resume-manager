@@ -1,5 +1,5 @@
 import type { UserAISettingsData } from '@/lib/repositories/user-ai-settings.repository';
-import type { ProviderWithModels } from '../api-provider.service';
+import type { ProviderWithModels } from '../api-provider';
 import type { AIFeatureType, ModelPreference } from './types';
 
 export function extractPreference(

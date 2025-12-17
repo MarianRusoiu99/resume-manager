@@ -19,6 +19,7 @@ import {
   type AuthFormState,
 } from '@/lib/validations/auth';
 import { DEFAULT_LOGIN_REDIRECT } from '@/lib/auth/routes';
+import { sanitizeCallbackUrl } from '@/lib/utils/redirects';
 import { logger } from '@/lib/utils/logger';
 
 /**
@@ -144,10 +145,12 @@ export async function loginAndRedirect(
   callbackUrl?: string
 ) {
   try {
+    const redirectTo = sanitizeCallbackUrl(callbackUrl, DEFAULT_LOGIN_REDIRECT);
+
     await signIn('credentials', {
       email,
       password,
-      redirectTo: callbackUrl || DEFAULT_LOGIN_REDIRECT,
+      redirectTo,
     });
   } catch (error) {
     // Re-throw redirect errors (expected for successful login with redirect)

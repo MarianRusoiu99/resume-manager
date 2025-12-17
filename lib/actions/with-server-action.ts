@@ -43,6 +43,7 @@ export interface ActionSession {
     id: string;
     email?: string | null;
     name?: string | null;
+    isAdmin: boolean;
   };
 }
 
@@ -56,6 +57,8 @@ export interface ServerActionOptions {
   resourceType?: string;
   /** Whether to skip authentication (default: false) */
   isPublic?: boolean;
+  /** Whether to require admin (default: false) */
+  requireAdmin?: boolean;
   /** Paths to revalidate on success */
   revalidatePaths?: string[];
 }
@@ -87,11 +90,17 @@ export function withServerAction<TArgs extends unknown[], TResult>(
         return failureActionResult('Unauthorized', 'UNAUTHORIZED');
       }
 
+      if (options.requireAdmin && !session?.isAdmin) {
+        logger.warn(`Forbidden (admin required) ${actionName} attempt`, { userId: session?.userId });
+        return failureActionResult('Forbidden', 'FORBIDDEN');
+      }
+
       const actionSession: ActionSession = {
         user: {
           id: session?.userId || '',
           email: session?.email,
           name: session?.name,
+          isAdmin: Boolean(session?.isAdmin),
         },
       };
 

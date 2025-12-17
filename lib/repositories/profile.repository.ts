@@ -1,30 +1,85 @@
-import { prisma } from "@/lib/db";
-import { PrismaClient, Prisma } from "@prisma/client";
-import type { Resume } from "@/lib/validations/jsonresume";
-import type { IProfileRepository } from "./interfaces";
+import { prisma } from '@/lib/db';
+import { PrismaClient, Prisma } from '@prisma/client';
+import type { Resume } from '@/lib/validations/jsonresume';
+
+import { PrismaUserOwnedCrudRepository } from './base.repository';
+import type { IProfileRepository } from './interfaces';
+
+type ProfileEntity = Prisma.UserProfileGetPayload<object>;
 
 /**
  * Profile Repository
- * 
+ *
  * Implements IProfileRepository for data access abstraction.
  * Allows dependency injection of database client for testing.
  */
-export class ProfileRepository implements IProfileRepository {
-  private readonly db: PrismaClient;
+export class ProfileRepository
+  extends PrismaUserOwnedCrudRepository<
+    ProfileEntity,
+    {
+      userId: string;
+      name: string;
+      resume: Resume;
+      isDefault?: boolean;
+    },
+    Partial<{
+      name: string;
+      resume: Resume;
+      isDefault: boolean;
+      isPublic: boolean;
+      publicSlug: string | null;
+      selectedTemplateId: string | null;
+    }>
+  >
+  implements IProfileRepository
+{
+  protected readonly model = 'userProfile';
 
   constructor(dbClient: PrismaClient = prisma) {
-    this.db = dbClient;
+    super(dbClient);
   }
+
+  protected override buildCreateData(input: {
+    userId: string;
+    name: string;
+    resume: Resume;
+    isDefault?: boolean;
+  }): Record<string, unknown> {
+    return {
+      userId: input.userId,
+      name: input.name,
+      resume: input.resume as Prisma.InputJsonValue,
+      isDefault: input.isDefault ?? false,
+    };
+  }
+
+  protected override buildUpdateData(
+    input: Partial<{
+      name: string;
+      resume: Resume;
+      isDefault: boolean;
+      isPublic: boolean;
+      publicSlug: string | null;
+      selectedTemplateId: string | null;
+    }>
+  ): Record<string, unknown> {
+    return {
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.resume !== undefined && { resume: input.resume as Prisma.InputJsonValue }),
+      ...(input.isDefault !== undefined && { isDefault: input.isDefault }),
+      ...(input.isPublic !== undefined && { isPublic: input.isPublic }),
+      ...(input.publicSlug !== undefined && { publicSlug: input.publicSlug }),
+      ...(input.selectedTemplateId !== undefined && { templateId: input.selectedTemplateId }),
+    };
+  }
+
   /**
    * Find all profiles for a user
    */
   async findAllByUserId(userId: string) {
     return this.db.userProfile.findMany({
       where: { userId },
-      orderBy: [
-        { isDefault: 'desc' }, // Default profile first
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
@@ -68,14 +123,7 @@ export class ProfileRepository implements IProfileRepository {
     resume: Resume;
     isDefault?: boolean;
   }) {
-    return this.db.userProfile.create({
-      data: {
-        userId: data.userId,
-        name: data.name,
-        resume: data.resume as Prisma.InputJsonValue,
-        isDefault: data.isDefault ?? false,
-      },
-    });
+    return super.create(data);
   }
 
   /**
@@ -90,33 +138,27 @@ export class ProfileRepository implements IProfileRepository {
       isDefault: boolean;
       isPublic: boolean;
       publicSlug: string | null;
+      selectedTemplateId: string | null;
     }>
   ) {
-    return this.db.userProfile.update({
-      where: {
-        id: profileId,
-        userId,
-      },
-      data: {
-        ...(data.name && { name: data.name }),
-        ...(data.resume && { resume: data.resume as Prisma.InputJsonValue }),
-        ...(data.isDefault !== undefined && { isDefault: data.isDefault }),
-        ...(data.isPublic !== undefined && { isPublic: data.isPublic }),
-        ...(data.publicSlug !== undefined && { publicSlug: data.publicSlug }),
-      },
-    });
+    const updated = await super.update(profileId, userId, data);
+    if (!updated) {
+      throw new Error('Profile not found');
+    }
+
+    return updated;
   }
 
   /**
    * Delete a profile
    */
   async delete(profileId: string, userId: string) {
-    return this.db.userProfile.delete({
-      where: {
-        id: profileId,
-        userId,
-      },
-    });
+    const deleted = await super.delete(profileId, userId);
+    if (!deleted) {
+      throw new Error('Profile not found');
+    }
+
+    return deleted;
   }
 
   /**

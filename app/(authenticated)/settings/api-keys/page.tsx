@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { apiV1, type ApiProvider } from '@/lib/client';
+import { apiV1, type ApiProvider, type ApiProviderModelInfo } from '@/lib/client';
 import { Page } from '@/components/layout/Page';
 import { Button, Card } from '@/components/ui';
 import { Callout } from '@/components/shared';
@@ -23,12 +23,6 @@ const PROVIDER_NAMES: Record<string, string> = {
   anthropic: 'Anthropic',
   google: 'Google AI',
 };
-
-interface ModelInfo {
-  id: string;
-  name: string;
-  description?: string;
-}
 
 
 export default function ApiKeysPage() {
@@ -140,10 +134,10 @@ export default function ApiKeysPage() {
     }
   };
 
-  const getProviderConfig = (providerType: string): { name: string; models: ModelInfo[] } => {
+  const getProviderConfig = (providerType: string): { name: string; models: ApiProviderModelInfo[] } => {
     return {
       name: PROVIDER_NAMES[providerType] || providerType,
-      models: [] as ModelInfo[] // Models are now fetched dynamically from API
+      models: [] as ApiProviderModelInfo[],
     };
   };
 

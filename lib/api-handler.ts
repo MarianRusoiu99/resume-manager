@@ -38,6 +38,8 @@ type ApiHandler<T = unknown, TBody = unknown> = (
 interface ApiHandlerOptions<TBody = unknown> {
     /** Skip authentication (default: false) */
     isPublic?: boolean;
+    /** Whether to require admin (default: false) */
+    requireAdmin?: boolean;
     /** Zod schema for request body validation */
     bodySchema?: ZodSchema<TBody>;
     /** Rate limit configuration key or custom config */
@@ -97,6 +99,12 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                         { status: 401 }
                     );
                 }
+
+                if (options.requireAdmin && !session.isAdmin) {
+                    reqLogger.warn(`Forbidden (admin required) ${method} ${url}`, { userId: session.userId });
+                    recordTelemetry(403);
+                    return NextResponse.json({ error: 'Forbidden', requestId }, { status: 403 });
+                }
             }
 
             // Apply rate limiting if configured
@@ -126,18 +134,26 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                         recordTelemetry(400);
                         return handleValidationError(error, requestId);
                     }
+
+                    // Invalid JSON payload
+                    if (error instanceof SyntaxError) {
+                        recordTelemetry(400);
+                        return NextResponse.json({ error: 'Invalid JSON', requestId }, { status: 400 });
+                    }
+
                     throw error;
                 }
             }
 
             // Map DAL session to expected Session format
-            const apiSession = session ? {
-                user: {
-                    id: session.userId,
-                    email: session.email,
-                    name: session.name,
-                }
-            } : null;
+             const apiSession = session ? {
+                 user: {
+                     id: session.userId,
+                     email: session.email,
+                     name: session.name,
+                     isAdmin: session.isAdmin,
+                 }
+             } : null;
 
               // Execute handler
                const handlerResult = await handler(

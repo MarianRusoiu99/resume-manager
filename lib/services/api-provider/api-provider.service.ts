@@ -7,7 +7,7 @@
 
 import { apiProviderRepository } from '@/lib/repositories/api-provider.repository';
 import { encryptApiKey, decryptApiKey, createKeyPreview } from '@/lib/encryption/api-key';
-import { apiKeyAuditService, type AuditContext } from '../api-key-audit.service';
+import { apiKeyAuditService, type AuditContext } from '../api-key-audit';
 import {
   createProvider,
   getSupportedProviders,

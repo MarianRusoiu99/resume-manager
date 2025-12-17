@@ -9,6 +9,7 @@
 import { NextResponse } from 'next/server';
 import { metrics } from '@/lib/telemetry';
 import { circuitBreakerRegistry } from '@/lib/resilience';
+import { createApiHandler } from '@/lib/api-handler';
 
 /**
  * GET /api/v1/metrics
@@ -24,20 +25,20 @@ import { circuitBreakerRegistry } from '@/lib/resilience';
  * 
  * @returns Metrics data
  */
-export async function GET(): Promise<NextResponse> {
+export const GET = createApiHandler(async () => {
   const metricsData = metrics.getMetrics();
   const circuitBreakerStats = circuitBreakerRegistry.getAllStats();
-  
+
   const response = {
     timestamp: new Date().toISOString(),
     metrics: metricsData,
     circuitBreakers: circuitBreakerStats,
   };
-  
+
   return NextResponse.json(response, {
     headers: {
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Content-Type': 'application/json',
     },
   });
-}
+}, { requireAdmin: true });

@@ -164,3 +164,100 @@ export function buildPagination(
     skip: options?.offset,
   };
 }
+
+type PrismaUserOwnedDelegate<TEntity> = {
+  create(args: { data: Record<string, unknown> }): Promise<TEntity>;
+  findFirst(args: Record<string, unknown>): Promise<TEntity | null>;
+  update(args: { where: Record<string, unknown>; data: Record<string, unknown> }): Promise<TEntity>;
+  delete(args: { where: Record<string, unknown> }): Promise<TEntity>;
+  count(args: { where: Record<string, unknown> }): Promise<number>;
+};
+
+export abstract class PrismaUserOwnedCrudRepository<
+  TEntity,
+  TCreateInput,
+  TUpdateInput
+> {
+  protected readonly db: PrismaClient;
+
+  /** Prisma delegate name, e.g. `coverLetter`, `userProfile` */
+  protected abstract readonly model: string;
+
+  constructor(dbClient: PrismaClient = prisma) {
+    this.db = dbClient;
+  }
+
+  protected get delegate(): PrismaUserOwnedDelegate<TEntity> {
+    return (this.db as unknown as Record<string, unknown>)[this.model] as PrismaUserOwnedDelegate<TEntity>;
+  }
+
+  protected buildCreateData(input: TCreateInput): Record<string, unknown> {
+    return input as unknown as Record<string, unknown>;
+  }
+
+  protected buildUpdateData(input: TUpdateInput): Record<string, unknown> {
+    return input as unknown as Record<string, unknown>;
+  }
+
+  protected buildWhere(id: string, userId: string): Record<string, unknown> {
+    return {
+      id,
+      userId,
+    };
+  }
+
+  protected buildFindByIdArgs(id: string, userId: string): Record<string, unknown> {
+    return {
+      where: this.buildWhere(id, userId),
+    };
+  }
+
+  async create(input: TCreateInput): Promise<TEntity> {
+    return this.delegate.create({
+      data: this.buildCreateData(input),
+    });
+  }
+
+  async findById(id: string, userId: string): Promise<TEntity | null> {
+    return this.delegate.findFirst(this.buildFindByIdArgs(id, userId));
+  }
+
+  protected async updateExisting(where: Record<string, unknown>, input: TUpdateInput): Promise<TEntity> {
+    return this.delegate.update({
+      where,
+      data: this.buildUpdateData(input),
+    });
+  }
+
+  protected async deleteExisting(where: Record<string, unknown>): Promise<TEntity> {
+    return this.delegate.delete({
+      where,
+    });
+  }
+
+  async update(id: string, userId: string, input: TUpdateInput): Promise<TEntity | null> {
+    const existing = await this.findById(id, userId);
+    if (!existing) {
+      return null;
+    }
+
+    return this.updateExisting(this.buildWhere(id, userId), input);
+  }
+
+  async delete(id: string, userId: string): Promise<TEntity | null> {
+    const existing = await this.findById(id, userId);
+    if (!existing) {
+      return null;
+    }
+
+    return this.deleteExisting(this.buildWhere(id, userId));
+  }
+
+  async exists(id: string, userId: string): Promise<boolean> {
+    const count = await this.delegate.count({
+      where: this.buildWhere(id, userId),
+    });
+
+    return count > 0;
+  }
+}

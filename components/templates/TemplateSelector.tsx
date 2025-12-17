@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { TemplateBase } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { apiV1 } from '@/lib/client';
+import { apiV1, type TemplateListResponseDto } from '@/lib/client';
 
 const logger = createComponentLogger('TemplateSelector');
 
@@ -25,7 +25,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const result = await apiV1.TEMPLATE.LIST.get<{ templates?: TemplateBase[] }>();
+        const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<TemplateBase>>();
         if (result.error) {
           throw new Error(result.error);
         }

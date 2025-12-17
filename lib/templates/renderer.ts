@@ -6,6 +6,7 @@
 import Handlebars from 'handlebars';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { renderPDFDocument } from '@/lib/utils/pdf-renderer';
+import { sanitizeTemplateCss, sanitizeTemplateHtml } from '@/lib/utils/template-sanitizer';
 
 /**
  * Register Handlebars helpers for common formatting tasks
@@ -72,7 +73,8 @@ registerHelpers();
  * @returns Rendered HTML string
  */
 export function renderTemplate(htmlTemplate: string, resumeData: Resume): string {
-  const template = Handlebars.compile(htmlTemplate);
+  const safeHtmlTemplate = sanitizeTemplateHtml(htmlTemplate);
+  const template = Handlebars.compile(safeHtmlTemplate);
   return template(resumeData);
 }
 
@@ -89,5 +91,6 @@ export function renderCompleteDocument(
   resumeData: Resume
 ): string {
   const renderedContent = renderTemplate(htmlTemplate, resumeData);
-  return renderPDFDocument(renderedContent, cssStyles, resumeData);
+  const safeCss = sanitizeTemplateCss(cssStyles);
+  return renderPDFDocument(renderedContent, safeCss, resumeData);
 }

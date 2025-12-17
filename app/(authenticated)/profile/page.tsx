@@ -8,6 +8,7 @@ import { ProfileGallery } from "@/components/profile/ProfileGallery";
 import { profileService } from "@/lib/services/profile.service";
 import { verifySession } from "@/lib/auth/dal";
 import type { Resume } from "@/lib/validations/jsonresume";
+import type { ProfileDto } from "@/lib/client";
 
 export default async function ProfilesPage() {
   // Use DAL for auth - will redirect if not authenticated
@@ -24,12 +25,16 @@ export default async function ProfilesPage() {
   }
 
   // Map to expected format with proper typing
-  const profiles = result.data.map(p => ({
+  const profiles: ProfileDto[] = result.data.map((p) => ({
     id: p.id,
     userId: p.userId,
     name: p.name,
-    isDefault: p.isDefault,
     resume: p.resume as Resume | null,
+    templateId: p.templateId ?? null,
+    selectedTemplateId: p.selectedTemplateId ?? p.templateId ?? null,
+    isDefault: p.isDefault,
+    isPublic: p.isPublic,
+    publicSlug: p.publicSlug,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
   }));

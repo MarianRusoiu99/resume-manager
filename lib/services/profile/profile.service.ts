@@ -2,12 +2,14 @@ import { ProfileRepository, profileRepository } from '@/lib/repositories/profile
 import { profileCache } from '@/lib/cache/simple-cache';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { type ServiceResult } from '@/lib/types/service-result';
-import { withServiceError, NotFoundError, ConflictError } from '@/lib/services/utils';
+import { withServiceError, BaseCrudService, ConflictError } from '@/lib/services/utils';
 import type { IProfileService } from '../interfaces';
 import type { ICache } from '@/lib/repositories/interfaces';
 
 import { getProfileCacheKey, getUserProfilesCacheKey, invalidateProfileCache } from './cache';
 import type { Profile, ProfileList } from './types';
+
+type ServiceProfile = NonNullable<Profile> & { selectedTemplateId: string | null };
 
 /**
  * Profile Service
@@ -15,11 +17,13 @@ import type { Profile, ProfileList } from './types';
  * Implements IProfileService for business logic.
  * Uses constructor injection for dependencies.
  */
-export class ProfileService implements IProfileService {
+export class ProfileService extends BaseCrudService implements IProfileService {
   constructor(
     private readonly repository: ProfileRepository = profileRepository,
     private readonly cache: ICache = profileCache
-  ) {}
+  ) {
+    super();
+  }
 
   /**
    * Get all profiles for a user
@@ -29,14 +33,12 @@ export class ProfileService implements IProfileService {
       const cacheKey = getUserProfilesCacheKey(userId);
       const cached = this.cache.get(cacheKey);
       if (cached) {
-        return cached as ProfileList;
+        return (cached as Array<NonNullable<Profile>>).map(profile => this.withSelectedTemplateId(profile)) as ProfileList;
       }
 
-      const profiles = await this.repository.findAllByUserId(userId);
+      const profiles = (await this.repository.findAllByUserId(userId)).map(profile => this.withSelectedTemplateId(profile));
 
-      if (profiles) {
-        this.cache.set(cacheKey, profiles);
-      }
+      this.cache.set(cacheKey, profiles);
 
       return profiles;
     });
@@ -45,19 +47,17 @@ export class ProfileService implements IProfileService {
   /**
    * Get a specific profile by ID
    */
-  async getProfileById(profileId: string, userId: string): Promise<ServiceResult<NonNullable<Profile>>> {
+  async getProfileById(profileId: string, userId: string): Promise<ServiceResult<ServiceProfile>> {
     return withServiceError('fetch profile', async () => {
       const cacheKey = getProfileCacheKey(profileId);
       const cached = this.cache.get(cacheKey);
       if (cached) {
-        return cached as NonNullable<Profile>;
+        return cached as ServiceProfile;
       }
 
-      const profile = await this.repository.findById(profileId, userId);
-
-      if (!profile) {
-        throw new NotFoundError('Profile');
-      }
+      const profile = this.withSelectedTemplateId(
+        await this.requireFound(this.repository.findById(profileId, userId), 'Profile')
+      );
 
       this.cache.set(cacheKey, profile);
 
@@ -68,9 +68,10 @@ export class ProfileService implements IProfileService {
   /**
    * Get default profile for a user (for backward compatibility)
    */
-  async getProfile(userId: string): Promise<ServiceResult<Profile>> {
+  async getProfile(userId: string): Promise<ServiceResult<ServiceProfile | null>> {
     return withServiceError('fetch default profile', async () => {
-      return await this.repository.findDefaultByUserId(userId);
+      const profile = await this.repository.findDefaultByUserId(userId);
+      return profile ? this.withSelectedTemplateId(profile) : profile;
     });
   }
 
@@ -82,18 +83,20 @@ export class ProfileService implements IProfileService {
     name: string,
     data: Resume,
     isDefault: boolean = false
-  ): Promise<ServiceResult<NonNullable<Profile>>> {
+  ): Promise<ServiceResult<ServiceProfile>> {
     return withServiceError('create profile', async () => {
       if (isDefault) {
         await this.repository.unsetAllDefaults(userId);
       }
 
-      const profile = await this.repository.create({
-        userId,
-        name,
-        resume: data,
-        isDefault,
-      });
+      const profile = this.withSelectedTemplateId(
+        await this.repository.create({
+          userId,
+          name,
+          resume: data,
+          isDefault,
+        })
+      );
 
       invalidateProfileCache({ cache: this.cache, userId });
 
@@ -107,19 +110,23 @@ export class ProfileService implements IProfileService {
   async updateProfile(
     profileId: string,
     userId: string,
-    data: Partial<{ name: string; resume: Resume; isDefault: boolean; selectedTemplateId: string | null }>
-  ): Promise<ServiceResult<NonNullable<Profile>>> {
+    data: Partial<{
+      name: string;
+      resume: Resume;
+      isDefault: boolean;
+      isPublic: boolean;
+      publicSlug: string | null;
+      selectedTemplateId: string | null;
+    }>
+  ): Promise<ServiceResult<ServiceProfile>> {
     return withServiceError('update profile', async () => {
-      const existing = await this.repository.findById(profileId, userId);
-      if (!existing) {
-        throw new NotFoundError('Profile');
-      }
+      await this.requireFound(this.repository.findById(profileId, userId), 'Profile');
 
       if (data.isDefault) {
         await this.repository.unsetAllDefaults(userId);
       }
 
-      const profile = await this.repository.update(profileId, userId, data);
+      const profile = this.withSelectedTemplateId(await this.repository.update(profileId, userId, data));
 
       invalidateProfileCache({ cache: this.cache, userId, profileId });
 
@@ -132,10 +139,7 @@ export class ProfileService implements IProfileService {
    */
   async deleteProfile(profileId: string, userId: string): Promise<ServiceResult<void>> {
     return withServiceError('delete profile', async () => {
-      const profile = await this.repository.findById(profileId, userId);
-      if (!profile) {
-        throw new NotFoundError('Profile');
-      }
+      const profile = await this.requireFound(this.repository.findById(profileId, userId), 'Profile');
 
       const allProfiles = await this.repository.findAllByUserId(userId);
       if (allProfiles.length <= 1) {
@@ -160,10 +164,7 @@ export class ProfileService implements IProfileService {
    */
   async setDefaultProfile(profileId: string, userId: string): Promise<ServiceResult<void>> {
     return withServiceError('set default profile', async () => {
-      const profile = await this.repository.findById(profileId, userId);
-      if (!profile) {
-        throw new NotFoundError('Profile');
-      }
+      await this.requireFound(this.repository.findById(profileId, userId), 'Profile');
 
       await this.repository.unsetAllDefaults(userId);
       await this.repository.update(profileId, userId, { isDefault: true });
@@ -179,26 +180,29 @@ export class ProfileService implements IProfileService {
     profileId: string,
     userId: string,
     newName?: string
-  ): Promise<ServiceResult<NonNullable<Profile>>> {
+  ): Promise<ServiceResult<ServiceProfile>> {
     return withServiceError('duplicate profile', async () => {
-      const profile = await this.repository.findById(profileId, userId);
-      if (!profile) {
-        throw new NotFoundError('Profile');
-      }
+      const profile = await this.requireFound(this.repository.findById(profileId, userId), 'Profile');
 
       const duplicateName = newName || `${profile.name} (Copy)`;
 
-      const newProfile = await this.repository.create({
-        userId,
-        name: duplicateName,
-        resume: profile.resume as Resume,
-        isDefault: false,
-      });
+      const newProfile = this.withSelectedTemplateId(
+        await this.repository.create({
+          userId,
+          name: duplicateName,
+          resume: profile.resume as Resume,
+          isDefault: false,
+        })
+      );
 
       invalidateProfileCache({ cache: this.cache, userId });
 
       return newProfile;
     });
+  }
+
+  private withSelectedTemplateId(profile: NonNullable<Profile>): ServiceProfile {
+    return { ...profile, selectedTemplateId: profile.templateId ?? null };
   }
 }
 

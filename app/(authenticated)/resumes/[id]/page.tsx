@@ -11,31 +11,8 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Edit } from 'lucide-react';
-import { apiV1 } from '@/lib/client';
+import { apiV1, type DeleteResumeResponseDto, type DuplicateResumeResponseDto, type ResumeCoverLetterResponseDto, type ResumeDetailsDto, type UpdateCoverLetterResponseDto } from '@/lib/client';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import type { ResumeDetails } from '@/lib/services/resume-crud';
-
-type ResumeDetailsClient = Omit<ResumeDetails, 'createdAt' | 'updatedAt'> & {
-  createdAt: string;
-  updatedAt: string;
-};
-
-type ResumeCoverLetterResponse = {
-  coverLetter: string | null;
-  metadata: unknown;
-};
-
-type DuplicateResumeResponse = {
-  resume: { id: string };
-};
-
-type DeleteResumeResponse = {
-  message: string;
-};
-
-type UpdateCoverLetterResponse = {
-  resume: { coverLetter: string; updatedAt: string };
-};
 
 const logger = createComponentLogger('ResumeDetailPage');
 
@@ -44,7 +21,7 @@ export default function ResumeDetailPage() {
   const params = useParams();
   const resumeId = params?.id as string;
 
-  const [resume, setResume] = useState<(ResumeDetailsClient & { coverLetter: string | null }) | null>(null);
+  const [resume, setResume] = useState<(ResumeDetailsDto & { coverLetter: string | null }) | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -58,8 +35,8 @@ export default function ResumeDetailPage() {
       setError(null);
 
       const [resumeResult, coverLetterResult] = await Promise.all([
-        apiV1.RESUME.GET(resumeId).get<ResumeDetailsClient>(),
-        apiV1.RESUME.COVER_LETTER(resumeId).get<ResumeCoverLetterResponse>(),
+        apiV1.RESUME.GET(resumeId).get<ResumeDetailsDto>(),
+        apiV1.RESUME.COVER_LETTER(resumeId).get<ResumeCoverLetterResponseDto>(),
       ]);
 
       if (resumeResult.error || !resumeResult.data) {
@@ -106,7 +83,7 @@ export default function ResumeDetailPage() {
     try {
       setIsDeleting(true);
 
-      const result = await apiV1.RESUME.GET(resumeId).delete<DeleteResumeResponse>();
+      const result = await apiV1.RESUME.GET(resumeId).delete<DeleteResumeResponseDto>();
 
       if (result.error) {
         throw new Error(result.error || 'Failed to delete resume');
@@ -130,7 +107,7 @@ export default function ResumeDetailPage() {
     try {
       setIsDuplicating(true);
 
-      const result = await apiV1.RESUME.DUPLICATE(resumeId).post<DuplicateResumeResponse>();
+      const result = await apiV1.RESUME.DUPLICATE(resumeId).post<DuplicateResumeResponseDto>();
 
       if (result.error || !result.data) {
         throw new Error(result.error || 'Failed to duplicate resume');
@@ -151,7 +128,7 @@ export default function ResumeDetailPage() {
     try {
       setError(null);
 
-      const result = await apiV1.RESUME.COVER_LETTER(resumeId).put<UpdateCoverLetterResponse>({
+      const result = await apiV1.RESUME.COVER_LETTER(resumeId).put<UpdateCoverLetterResponseDto>({
         coverLetter: markdown,
       });
 

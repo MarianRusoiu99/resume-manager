@@ -3,7 +3,7 @@ import {
   type AIFeatureType,
   type ModelPreference,
 } from '@/lib/repositories/user-ai-settings.repository';
-import { apiProviderService } from '../api-provider.service';
+import { apiProviderService } from '../api-provider';
 import type { ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, NotFoundError, ValidationError } from '../utils';
 import { AI_FEATURES } from './features';

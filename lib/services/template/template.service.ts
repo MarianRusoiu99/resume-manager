@@ -7,6 +7,7 @@ import type { CreateTemplateInput, UpdateTemplateInput } from '@/lib/validations
 
 import { validateCreateTemplateInput, validateUpdateTemplateInput } from './validation';
 import { validateHandlebarsTemplateSyntax } from './syntax';
+import { sanitizeTemplate } from '@/lib/utils/template-sanitizer';
 
 /**
  * Service for managing resume templates
@@ -55,7 +56,16 @@ export class TemplateService implements ITemplateService {
   async createTemplate(input: CreateTemplateInput): Promise<ServiceResult<ResumeTemplate>> {
     return withServiceError('create template', async () => {
       const validatedData = validateCreateTemplateInput(input);
-      return await this.repository.create(validatedData);
+      const sanitized = sanitizeTemplate({
+        htmlTemplate: validatedData.htmlTemplate,
+        cssStyles: validatedData.cssStyles,
+      });
+
+      return await this.repository.create({
+        ...validatedData,
+        htmlTemplate: sanitized.htmlTemplate,
+        cssStyles: sanitized.cssStyles,
+      });
     });
   }
 
@@ -73,7 +83,18 @@ export class TemplateService implements ITemplateService {
       }
 
       const validatedData = validateUpdateTemplateInput(input);
-      return await this.repository.update(id, validatedData);
+
+      // Sanitize only the fields that can introduce script execution.
+      const sanitized = sanitizeTemplate({
+        htmlTemplate: validatedData.htmlTemplate ?? existing.htmlTemplate,
+        cssStyles: validatedData.cssStyles ?? existing.cssStyles,
+      });
+
+      return await this.repository.update(id, {
+        ...validatedData,
+        ...(validatedData.htmlTemplate !== undefined ? { htmlTemplate: sanitized.htmlTemplate } : {}),
+        ...(validatedData.cssStyles !== undefined ? { cssStyles: sanitized.cssStyles } : {}),
+      });
     });
   }
 

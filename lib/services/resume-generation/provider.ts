@@ -1,6 +1,9 @@
 import { logger } from '@/lib/utils/logger';
 import { failure, success, type ServiceResult } from '@/lib/types/service-result';
 
+import { apiProviderService } from '@/lib/services/api-provider';
+import { userAISettingsService } from '@/lib/services/user-ai-settings';
+
 import type { ResolvedProviderResult } from './types';
 
 export type ResumeGenerationFeature = 'resume' | 'coverLetter' | 'enhance' | 'template';
@@ -14,9 +17,6 @@ export async function resolveProvider(
   modelId?: string,
   feature: ResumeGenerationFeature = 'resume'
 ): Promise<ServiceResult<ResolvedProviderResult>> {
-  const { apiProviderService } = await import('@/lib/services/api-provider.service');
-  const { userAISettingsService } = await import('@/lib/services/user-ai-settings.service');
-
   try {
     const modelsResult = await apiProviderService.getAvailableModels(userId);
     if (!modelsResult.success || modelsResult.data.allModels.length === 0) {
@@ -40,9 +40,7 @@ export async function resolveProvider(
       if (preferenceResult.success && preferenceResult.data) {
         targetModel =
           modelsResult.data.allModels.find(
-            (m) =>
-              m.id === preferenceResult.data!.modelId &&
-              m.providerId === preferenceResult.data!.providerId
+            (m) => m.id === preferenceResult.data!.modelId && m.providerId === preferenceResult.data!.providerId
           ) ?? null;
 
         if (targetModel) {

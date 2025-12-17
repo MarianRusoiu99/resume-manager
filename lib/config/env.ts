@@ -47,6 +47,9 @@ const envSchema = z.object({
   APP_VERSION: z.string().default('1.0.0'),
   APP_NAME: z.string().default('Resume Manager'),
 
+  // Admin access (comma-separated emails)
+  ADMIN_EMAILS: z.string().optional(),
+
   // Feature flags
   ANALYZE: z.string().transform(v => v === 'true').optional(),
 });
@@ -82,6 +85,7 @@ function parseEnv(): EnvConfig {
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
         APP_VERSION: process.env.APP_VERSION || '1.0.0',
         APP_NAME: process.env.APP_NAME || 'Resume Manager',
+        ADMIN_EMAILS: process.env.ADMIN_EMAILS,
         ANALYZE: process.env.ANALYZE === 'true',
       };
     }
@@ -138,6 +142,17 @@ class EnvironmentConfig {
   // Application
   get APP_VERSION() { return this.config.APP_VERSION; }
   get APP_NAME() { return this.config.APP_NAME; }
+
+  // Admin access
+  get ADMIN_EMAILS() { return this.config.ADMIN_EMAILS; }
+  get adminEmails(): string[] {
+    const raw = this.config.ADMIN_EMAILS;
+    if (!raw) return [];
+    return raw
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+  }
 
   // Feature flags
   get shouldAnalyze() { return this.config.ANALYZE ?? false; }

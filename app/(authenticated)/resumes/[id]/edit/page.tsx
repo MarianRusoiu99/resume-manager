@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { apiV1 } from "@/lib/client";
-import type { ResumeDetails } from "@/lib/services/resume-crud";
+import { apiV1, type ResumeDetailsDto } from "@/lib/client";
 import { useComponentLogger } from "@/hooks";
 
 /**
@@ -30,7 +29,7 @@ export default function ResumeEditPage() {
   useEffect(() => {
     const loadJobTitle = async () => {
       try {
-        const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetails>();
+      const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetailsDto>();
         if (!result.error && result.data) {
           setJobTitle(result.data.jobTitle);
         }
@@ -46,7 +45,7 @@ export default function ResumeEditPage() {
    */
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetails>();
+      const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetailsDto>();
 
       if (result.error || !result.data) {
         throw new Error(result.error || "Failed to load resume");
