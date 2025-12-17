@@ -46,14 +46,16 @@ export default async function PublicResumePage({ params }: PublicResumePageProps
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="container max-w-5xl mx-auto py-8 px-4">
+    <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="container   mx-auto py-8 px-4">
         {/* Resume rendered with the user's selected template */}
-        <div 
-          className="bg-white rounded-lg shadow-2xl overflow-hidden"
-          dangerouslySetInnerHTML={{ __html: renderedHtml }}
-        />
-        
+        <div className="flex justify-center">
+          <div
+            className="w-full bg-white rounded-lg shadow-2xl overflow-hidden"
+            dangerouslySetInnerHTML={{ __html: renderedHtml }}
+          />
+        </div>
+
         {/* Footer watermark */}
         <div className="text-center mt-6 text-sm text-gray-500">
           <a 

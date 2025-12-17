@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { apiV1, type ApiProvider } from '@/lib/client';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
+import { Page } from '@/components/layout/Page';
 import { Button, Card } from '@/components/ui';
+import { Callout } from '@/components/shared';
+import { EmptyState, LoadingState } from '@/components/shared/states';
 import { Plus, Trash2, Eye, EyeOff, Key, CheckCircle, XCircle } from 'lucide-react';
 import {
   Dialog,
@@ -148,26 +149,21 @@ export default function ApiKeysPage() {
 
   const renderContent = () => {
     if (isLoading) {
-      return (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Loading providers...</p>
-        </div>
-      );
+      return <LoadingState message="Loading providers..." minHeight="240px" size="sm" />;
     }
 
     if (providers.length === 0) {
       return (
-        <Card className="p-12 text-center">
-          <Key className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No API Providers Yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Add your first API provider to start generating resumes
-          </p>
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Provider
-          </Button>
-        </Card>
+        <EmptyState
+          icon={Key}
+          title="No API Providers Yet"
+          description="Add your first API provider to start generating resumes"
+          action={{
+            label: 'Add Provider',
+            onClick: () => setShowAddDialog(true),
+            icon: <Plus className="h-4 w-4" />,
+          }}
+        />
       );
     }
 
@@ -244,26 +240,22 @@ export default function ApiKeysPage() {
 
   return (
     <>
-      <PageHeader
+      <Page
         title="API Keys"
         description="Manage your AI provider API keys securely"
         breadcrumbs={[
           { label: 'Settings', href: '/settings' },
           { label: 'API Keys' },
         ]}
-      />
-
-      <PageContainer>
-        <div className="mb-6 flex justify-end">
+        actions={
           <Button onClick={() => setShowAddDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Provider
           </Button>
-        </div>
-
+        }
+      >
         {renderContent()}
-      </PageContainer>
-
+      </Page>
 
       {/* Add Provider Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -340,11 +332,11 @@ export default function ApiKeysPage() {
               </p>
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4">
-              <p className="text-sm text-blue-900 dark:text-blue-100">
+            <Callout>
+              <p>
                 <strong>Note:</strong> Available models will be automatically detected from your API key when you add the provider.
               </p>
-            </div>
+            </Callout>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button

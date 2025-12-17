@@ -1,5 +1,4 @@
-import { PageHeader } from "@/components/layout/PageHeader";
-import { PageContainer } from "@/components/layout/PageContainer";
+import { Page } from "@/components/layout/Page";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -12,13 +11,12 @@ export default async function DashboardPage() {
   const user = { name: session.name, email: session.email };
 
   return (
-    <>
-      <PageHeader
-        title={`Welcome back, ${user?.name || 'User'}`}
-        description="Here's an overview of your resume optimization activity"
-      />
-      <PageContainer>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <Page
+      title={`Welcome back, ${user?.name || "User"}`}
+      description="Here's an overview of your resume optimization activity"
+      breadcrumbs={[{ label: "Dashboard" }]}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -107,7 +105,6 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
         </div>
-      </PageContainer>
-    </>
+    </Page>
   );
 }

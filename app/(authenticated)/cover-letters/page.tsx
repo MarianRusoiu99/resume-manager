@@ -63,15 +63,15 @@ export default function CoverLettersPage() {
       title="My Cover Letters"
       description="Manage all your generated cover letters"
       breadcrumbs={[{ label: "Cover Letters" }]}
-    >
-      <div className="flex justify-end mb-6">
+      actions={
         <Link href={ROUTES.GENERATE_COVER_LETTER}>
           <Button>
             <FileText className="w-4 h-4 mr-2" />
             Generate New
           </Button>
         </Link>
-      </div>
+      }
+    >
 
       {error && (
         <ErrorState

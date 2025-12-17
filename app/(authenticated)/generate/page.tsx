@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Callout, Spinner } from '@/components/shared';
 import { Button, Card, Textarea, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
@@ -461,38 +462,38 @@ export default function GeneratePage() {
 
                     {/* AI Provider Check */}
                     {!isLoadingData && !hasAIProviders && (
-                      <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <Callout variant="warning" tone="soft" className="p-3">
+                        <p>
                           ⚠️ No AI providers configured. Please add an API key in{' '}
                           <Link href={ROUTES.SETTINGS_API_KEYS} className="underline font-medium">
                             Settings → API Keys
                           </Link>{' '}
                           to generate resumes.
                         </p>
-                      </div>
+                      </Callout>
                     )}
 
                     {resumeError && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-600">{resumeError}</p>
-                      </div>
+                      <Callout variant="danger" tone="soft" className="p-3">
+                        <p>{resumeError}</p>
+                      </Callout>
                     )}
 
                     {/* Progress Bar */}
                     {isGeneratingResume && useStreaming && progressPercent > 0 && (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-blue-900">{progressStep}</span>
-                          <span className="text-blue-700">{progressPercent}%</span>
-                        </div>
-                        <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
-                          <div
-                            className="bg-blue-600 h-full transition-all duration-300 ease-out"
-                            style={{ width: `${progressPercent}%` }}
-                          />
-                        </div>
-                        <p className="text-xs text-blue-700">{progressMessage}</p>
-                      </div>
+                        <Callout className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium">{progressStep}</span>
+                            <span>{progressPercent}%</span>
+                          </div>
+                          <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-blue-600 h-full transition-all duration-300 ease-out"
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                          </div>
+                          <p className="text-xs">{progressMessage}</p>
+                        </Callout>
                     )}
 
               
@@ -506,22 +507,16 @@ export default function GeneratePage() {
                         if (isLoadingData) {
                           return (
                             <>
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Loading...
+                               <Spinner size="sm" className="-ml-1 mr-3" />
+                               Loading...
                             </>
                           );
                         }
                         if (isGeneratingResume) {
                           return (
                             <>
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Generating Resume...
+                               <Spinner size="sm" className="-ml-1 mr-3" />
+                               Generating Resume...
                             </>
                           );
                         }
@@ -638,25 +633,22 @@ export default function GeneratePage() {
                     {isLoadingData && (
                       <div className="p-3 bg-muted rounded-md">
                         <div className="flex items-center gap-2">
-                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
+                           <Spinner size="sm" className="h-4 w-4" />
                           <span className="text-sm text-muted-foreground">Loading...</span>
                         </div>
                       </div>
                     )}
 
                     {!isLoadingData && !hasAIProviders && (
-                      <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <Callout variant="warning" tone="soft" className="p-3">
+                        <p>
                           ⚠️ No AI providers configured. Please add an API key in{' '}
                           <Link href={ROUTES.SETTINGS_API_KEYS} className="underline font-medium">
                             Settings → API Keys
                           </Link>{' '}
                           to generate cover letters.
                         </p>
-                      </div>
+                      </Callout>
                     )}
 
                     <div>
@@ -679,21 +671,21 @@ export default function GeneratePage() {
 
                     {/* Warning if no profiles */}
                     {profiles.length === 0 && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                        <p className="text-sm text-yellow-800">
+                      <Callout variant="warning" tone="soft" className="p-3">
+                        <p>
                           ⚠️ No profiles found. Please{' '}
                           <Link href="/profile" className="underline font-medium">
                             create a profile
                           </Link>{' '}
                           before generating a cover letter.
                         </p>
-                      </div>
+                      </Callout>
                     )}
 
                     {coverLetterError && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-600">{coverLetterError}</p>
-                      </div>
+                      <Callout variant="danger" tone="soft" className="p-3">
+                        <p>{coverLetterError}</p>
+                      </Callout>
                     )}
 
                     <div className="flex gap-3">
@@ -704,20 +696,14 @@ export default function GeneratePage() {
                       >
                         {isLoadingData && (
                           <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Loading...
+                             <Spinner size="sm" className="-ml-1 mr-3" />
+                             Loading...
                           </>
                         )}
                         {isGeneratingCoverLetter && !isLoadingData && (
                           <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Generating...
+                             <Spinner size="sm" className="-ml-1 mr-3" />
+                             Generating...
                           </>
                         )}
                         {!isLoadingData && !isGeneratingCoverLetter && 'Generate Cover Letter'}
@@ -763,15 +749,15 @@ export default function GeneratePage() {
                   </Card>
                 )}
 
-                {isGeneratingCoverLetter && (
-                  <Card className="p-6">
-                    <div className="text-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-gray-600">Analyzing job and crafting your cover letter...</p>
-                      <p className="text-sm text-gray-500 mt-2">This typically takes 10-20 seconds</p>
-                    </div>
-                  </Card>
-                )}
+                 {isGeneratingCoverLetter && (
+                   <Card className="p-6">
+                     <div className="text-center py-12">
+                       <Spinner className="mx-auto mb-4" />
+                       <p className="text-gray-600">Analyzing job and crafting your cover letter...</p>
+                       <p className="text-sm text-gray-500 mt-2">This typically takes 10-20 seconds</p>
+                     </div>
+                   </Card>
+                 )}
 
                 {generatedCoverLetter && (
                   <CoverLetterEditor

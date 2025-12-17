@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
+import { Page } from '@/components/layout/Page';
 import { Button, Card } from '@/components/ui';
+import { ErrorState, LoadingState } from '@/components/shared/states';
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
@@ -176,86 +176,57 @@ export default function ResumeDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading resume...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading resume..." />;
   }
 
   if (error || !resume) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="p-8 text-center">
-          <div className="max-w-md mx-auto">
-            <svg
-              className="w-16 h-16 mx-auto mb-4 text-red-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            <h2 className="text-xl font-semibold mb-2">Error Loading Resume</h2>
-            <p className="text-gray-600 mb-6">{error || 'Resume not found'}</p>
-            <Button onClick={() => router.push('/resumes')}>
-              Back to Resumes
-            </Button>
-          </div>
-        </Card>
-      </div>
+      <ErrorState
+        title="Error Loading Resume"
+        message={error || 'Resume not found'}
+        onRetry={() => router.push('/resumes')}
+        retryText="Back to Resumes"
+      />
     );
   }
 
   return (
-    <>
-      <PageHeader
-        title={resume.jobTitle || 'Untitled Resume'}
-        description={resume.companyName || undefined}
-        breadcrumbs={[
-          { label: "Resumes", href: "/resumes" },
-          { label: resume.jobTitle || 'Resume' },
-        ]}
-      />
-      <PageContainer className="resume-content max-w-5xl">
-        <div className="no-print">
-          <div className="flex justify-end gap-2 mb-6">
-            <Link href={`/resumes/${resumeId}/edit`}>
-              <Button variant="outline">
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Resume
-              </Button>
-            </Link>
-
-
-            <Button
-              onClick={handleDuplicate}
-              variant="secondary"
-              disabled={isDuplicating}
-            >
-              {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+    <Page
+      title={resume.jobTitle || 'Untitled Resume'}
+      description={resume.companyName || undefined}
+      breadcrumbs={[
+        { label: 'Resumes', href: '/resumes' },
+        { label: resume.jobTitle || 'Resume' },
+      ]}
+      maxWidth="2xl"
+      className="resume-content max-w-5xl"
+      toolbar={
+        <div className="no-print flex justify-end gap-2">
+          <Link href={`/resumes/${resumeId}/edit`}>
+            <Button variant="outline">
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Resume
             </Button>
+          </Link>
 
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </Button>
-          </div>
+          <Button
+            onClick={handleDuplicate}
+            variant="secondary"
+            disabled={isDuplicating}
+          >
+            {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+          </Button>
+
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
         </div>
-
+      }
+    >
         {/* Resume HTML Preview */}
         <ResumePreview
           resumeData={resume.content}
@@ -296,7 +267,6 @@ export default function ResumeDetailPage() {
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
         />
-      </PageContainer>
-    </>
+    </Page>
   );
 }

@@ -4,9 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { ROUTES } from '@/lib/constants';
 import { apiV1, type AISettings, type ModelInfo } from '@/lib/client';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
+import { Page } from '@/components/layout/Page';
 import { Button, Card } from '@/components/ui';
+import { Callout } from '@/components/shared';
+import { EmptyState, LoadingState } from '@/components/shared/states';
 import {
   Select,
   SelectContent,
@@ -169,26 +170,22 @@ export default function AIModelsSettingsPage() {
 
   const renderContent = () => {
     if (isLoading) {
-      return (
-        <div className="text-center py-12">
-          <RefreshCw className="h-8 w-8 mx-auto text-muted-foreground animate-spin mb-4" />
-          <p className="text-muted-foreground">Loading AI settings...</p>
-        </div>
-      );
+      return <LoadingState message="Loading AI settings..." minHeight="240px" size="sm" />;
     }
 
     if (!settings || settings.availableProviders.length === 0) {
       return (
-        <Card className="p-12 text-center">
-          <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No API Providers Configured</h3>
-          <p className="text-muted-foreground mb-4">
-            You need to add at least one API provider before configuring AI model preferences.
-          </p>
-          <Button asChild>
-            <Link href={ROUTES.SETTINGS_API_KEYS}>Add API Provider</Link>
-          </Button>
-        </Card>
+        <EmptyState
+          icon={AlertCircle}
+          title="No API Providers Configured"
+          description="You need to add at least one API provider before configuring AI model preferences."
+          secondaryAction={
+            <Button asChild>
+              <Link href={ROUTES.SETTINGS_API_KEYS}>Add API Provider</Link>
+            </Button>
+          }
+          withCard={true}
+        />
       );
     }
 
@@ -308,38 +305,32 @@ export default function AIModelsSettingsPage() {
   };
 
   return (
-    <>
-      <PageHeader
-        title="AI Model Settings"
-        description="Configure which AI models to use for each feature"
-        breadcrumbs={[
-          { label: 'Settings', href: '/settings' },
-          { label: 'AI Models' },
-        ]}
-      />
+    <Page
+      title="AI Model Settings"
+      description="Configure which AI models to use for each feature"
+      breadcrumbs={[
+        { label: 'Settings', href: '/settings' },
+        { label: 'AI Models' },
+      ]}
+      toolbar={
+        <Callout>
+          <p>
+            <strong>Tip:</strong> Configure your preferred AI model for each feature. If not set, the system will use the first available model from your configured providers.
+          </p>
+        </Callout>
+      }
+    >
+      {renderContent()}
 
-      <PageContainer>
-        <div className="mb-6">
-          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4">
-            <p className="text-sm text-blue-900 dark:text-blue-100">
-              <strong>Tip:</strong> Configure your preferred AI model for each feature.
-              If not set, the system will use the first available model from your configured providers.
-            </p>
-          </div>
-        </div>
-
-        {renderContent()}
-
-        <div className="mt-8 flex justify-between items-center">
-          <Button variant="outline" asChild>
-            <Link href={ROUTES.SETTINGS_API_KEYS}>Manage API Keys</Link>
-          </Button>
-          <Button variant="ghost" onClick={loadSettings} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </PageContainer>
-    </>
+      <div className="mt-8 flex justify-between items-center">
+        <Button variant="outline" asChild>
+          <Link href={ROUTES.SETTINGS_API_KEYS}>Manage API Keys</Link>
+        </Button>
+        <Button variant="ghost" onClick={loadSettings} disabled={isLoading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+    </Page>
   );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { apiV1 } from '@/lib/client';
+import { Spinner } from '@/components/shared';
 import { apiFetch } from '@/lib/utils/api-client';
 import 'swagger-ui-react/swagger-ui.css';
 
@@ -39,7 +40,7 @@ export default function ApiDocsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <Spinner className="mx-auto mb-4" />
           <p className="text-gray-600">Loading API Documentation...</p>
         </div>
       </div>

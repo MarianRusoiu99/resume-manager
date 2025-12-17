@@ -16,6 +16,8 @@ interface PageProps {
   breadcrumbs?: BreadcrumbItem[];
   /** Action buttons displayed in header area */
   actions?: ReactNode;
+  /** Optional toolbar shown above content */
+  toolbar?: ReactNode;
   /** Maximum width of page content */
   maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
   /** Page content */
@@ -51,6 +53,7 @@ export function Page({
   description,
   breadcrumbs,
   actions,
+  toolbar,
   maxWidth = "2xl",
   children,
   className,
@@ -63,11 +66,8 @@ export function Page({
         breadcrumbs={breadcrumbs}
       />
       <PageContainer maxWidth={maxWidth} className={className}>
-        {actions && (
-          <div className="flex justify-end mb-6">
-            {actions}
-          </div>
-        )}
+        {toolbar && <div className="mb-6">{toolbar}</div>}
+        {actions && <div className="flex justify-end mb-6">{actions}</div>}
         {children}
       </PageContainer>
     </>
@@ -95,6 +95,7 @@ export function PageWithSidebar({
   description,
   breadcrumbs,
   actions,
+  toolbar,
   maxWidth = "full",
   children,
   sidebar,
@@ -122,11 +123,8 @@ export function PageWithSidebar({
         breadcrumbs={breadcrumbs}
       />
       <PageContainer maxWidth={maxWidth} className={className}>
-        {actions && (
-          <div className="flex justify-end mb-6">
-            {actions}
-          </div>
-        )}
+        {toolbar && <div className="mb-6">{toolbar}</div>}
+        {actions && <div className="flex justify-end mb-6">{actions}</div>}
         <div className="flex gap-6">
           {sidebarPosition === "left" && sidebarContent}
           {mainContent}

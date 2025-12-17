@@ -9,12 +9,13 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
+import { Page } from '@/components/layout/Page';
 import { Button, Card } from '@/components/ui';
+import { Callout } from '@/components/shared';
+import { ErrorState, LoadingState } from '@/components/shared/states';
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
-import { ArrowLeft, Trash2, ExternalLink, FileText } from 'lucide-react';
+import { ArrowLeft, Trash2, ExternalLink } from 'lucide-react';
 import { apiV1 } from '@/lib/client';
 import type { CoverLetterWithResume } from '@/lib/types/cover-letter';
 
@@ -135,67 +136,50 @@ export default function CoverLetterDetailPage() {
 
   if (isLoading) {
     return (
-      <>
-        <PageHeader
-          title="Loading..."
-          description="Fetching cover letter details"
-          breadcrumbs={[
-            { label: "Cover Letters", href: "/cover-letters" },
-            { label: "..." },
-          ]}
-        />
-        <PageContainer>
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        </PageContainer>
-      </>
+      <Page
+        title="Loading..."
+        description="Fetching cover letter details"
+        breadcrumbs={[
+          { label: 'Cover Letters', href: '/cover-letters' },
+          { label: '...' },
+        ]}
+      >
+        <LoadingState message="Loading cover letter..." />
+      </Page>
     );
   }
 
   if (error || !coverLetter) {
     return (
-      <>
-        <PageHeader
-          title="Error"
-          description="Failed to load cover letter"
-          breadcrumbs={[
-            { label: "Cover Letters", href: "/cover-letters" },
-            { label: "Error" },
-          ]}
+      <Page
+        title="Error"
+        description="Failed to load cover letter"
+        breadcrumbs={[
+          { label: 'Cover Letters', href: '/cover-letters' },
+          { label: 'Error' },
+        ]}
+      >
+        <ErrorState
+          title="Cover Letter Not Found"
+          message={error || 'Cover letter not found'}
+          variant="full"
+          onRetry={() => router.push('/cover-letters')}
+          retryText="Back to Cover Letters"
         />
-        <PageContainer>
-          <Card className="p-6">
-            <div className="text-center">
-              <FileText className="w-16 h-16 mx-auto mb-4 text-red-300" />
-              <h3 className="text-xl font-semibold mb-2 text-red-600">Cover Letter Not Found</h3>
-              <p className="text-gray-600 mb-6">{error}</p>
-              <Link href="/cover-letters">
-                <Button>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Cover Letters
-                </Button>
-              </Link>
-            </div>
-          </Card>
-        </PageContainer>
-      </>
+      </Page>
     );
   }
 
   return (
-    <>
-      <PageHeader
-        title={getPageTitle()}
-        description="View and edit your cover letter"
-        breadcrumbs={[
-          { label: "Cover Letters", href: "/cover-letters" },
-          { label: getPageTitle() },
-        ]}
-      />
-      <PageContainer>
-        {/* Action Bar */}
-        <div className="flex justify-between items-center mb-6">
+    <Page
+      title={getPageTitle()}
+      description="View and edit your cover letter"
+      breadcrumbs={[
+        { label: 'Cover Letters', href: '/cover-letters' },
+        { label: getPageTitle() },
+      ]}
+      toolbar={
+        <div className="flex justify-between items-center">
           <Link href="/cover-letters">
             <Button variant="ghost">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -212,12 +196,13 @@ export default function CoverLetterDetailPage() {
             Delete
           </Button>
         </div>
-
+      }
+    >
         {/* Metadata Card */}
         {(() => {
           const metadata = getMetadata();
           return coverLetter.generatedResume || metadata.model ? (
-            <Card className="p-4 mb-6 bg-blue-50 border-blue-200">
+            <Callout className="mb-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   {coverLetter.generatedResume && (
@@ -241,7 +226,7 @@ export default function CoverLetterDetailPage() {
                   )}
                 </div>
               </div>
-            </Card>
+            </Callout>
           ) : null;
         })()}
 
@@ -265,9 +250,9 @@ export default function CoverLetterDetailPage() {
           {getMetadata().personalInstructions && (
             <div className="mt-4">
               <h4 className="text-sm font-semibold mb-2">Personal Instructions</h4>
-              <div className="bg-blue-50 p-3 rounded-md border">
-                <p className="text-sm ">{getMetadata().personalInstructions}</p>
-              </div>
+               <Callout tone="soft" className="p-3">
+                 <p className="text-sm">{getMetadata().personalInstructions}</p>
+               </Callout>
             </div>
           )}
         </Card>
@@ -283,7 +268,6 @@ export default function CoverLetterDetailPage() {
           cancelText="Cancel"
           variant="danger"
         />
-      </PageContainer>
-    </>
+    </Page>
   );
 }

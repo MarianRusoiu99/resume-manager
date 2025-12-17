@@ -58,12 +58,12 @@ export default function ResumesPage() {
       title="My Resumes"
       description="Manage your AI-generated resumes"
       breadcrumbs={[{ label: "Resumes" }]}
-    >
-      <div className="flex justify-end mb-6">
+      actions={
         <Button onClick={() => router.push(ROUTES.GENERATE)}>
           Generate New Resume
         </Button>
-      </div>
+      }
+    >
 
       {/* Search Bar */}
       {(resumes?.length ?? 0) > 0 && (
