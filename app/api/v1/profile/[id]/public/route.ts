@@ -13,7 +13,7 @@ const togglePublicSchema = z.object({
  * POST /api/profile/[id]/public
  */
 export const POST = createApiHandler(
-  async (request, { params }, session, body) => {
+  async (_request, { params }, session, body) => {
     const { id } = await params;
 
     // Verify ownership
@@ -29,10 +29,10 @@ export const POST = createApiHandler(
     }
 
     // Update profile
-    const updated = await profileRepository.update(id, session.user.id, {
+    const updated = await profileRepository.update(id, {
       isPublic: body!.isPublic,
       publicSlug: body!.isPublic ? publicSlug : null,
-    });
+    }, session.user.id);
 
     return success({
       isPublic: updated.isPublic,

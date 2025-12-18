@@ -1,4 +1,4 @@
-import type { AIFeatureType, ModelPreference } from '@/lib/repositories/user-ai-settings.repository';
+import type { AIFeatureType, ModelPreference } from '@/lib/repositories/interfaces';
 import type { ProviderWithModels } from '../api-provider';
 
 /**

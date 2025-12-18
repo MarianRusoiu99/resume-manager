@@ -7,6 +7,7 @@
 
 import { PrismaClient, User } from '@prisma/client';
 import { prisma } from '@/lib/db';
+import { GenericRepository } from './generic.repository';
 
 /**
  * Input for creating a new user
@@ -34,11 +35,9 @@ export type SafeUser = Omit<User, 'passwordHash'>;
 /**
  * Repository for managing users in the database
  */
-export class UserRepository {
-  private readonly db: PrismaClient;
-
+export class UserRepository extends GenericRepository<User, CreateUserInput, UpdateUserInput, any> {
   constructor(dbClient: PrismaClient = prisma) {
-    this.db = dbClient;
+    super('user', dbClient);
   }
 
   /**
@@ -57,8 +56,8 @@ export class UserRepository {
   /**
    * Find user by ID
    */
-  async findById(id: string): Promise<User | null> {
-    return this.db.user.findUnique({
+  override async findById(id: string): Promise<User | null> {
+    return this.delegate.findUnique({
       where: { id },
     });
   }
@@ -67,12 +66,13 @@ export class UserRepository {
    * Find user by ID without password hash
    */
   async findByIdSafe(id: string): Promise<SafeUser | null> {
-    const user = await this.db.user.findUnique({
+    const user = await this.delegate.findUnique({
       where: { id },
       select: {
         id: true,
         email: true,
         name: true,
+        isAdmin: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -84,7 +84,7 @@ export class UserRepository {
    * Find user by email
    */
   async findByEmail(email: string): Promise<User | null> {
-    return this.db.user.findUnique({
+    return this.delegate.findUnique({
       where: { email },
     });
   }
@@ -93,7 +93,7 @@ export class UserRepository {
    * Check if user exists by email
    */
   async existsByEmail(email: string): Promise<boolean> {
-    const count = await this.db.user.count({
+    const count = await this.delegate.count({
       where: { email },
     });
     return count > 0;
@@ -103,7 +103,7 @@ export class UserRepository {
    * Check if user exists by ID
    */
   async existsById(id: string): Promise<boolean> {
-    const count = await this.db.user.count({
+    const count = await this.delegate.count({
       where: { id },
     });
     return count > 0;
@@ -112,8 +112,8 @@ export class UserRepository {
   /**
    * Update user
    */
-  async update(id: string, data: UpdateUserInput): Promise<User> {
-    return this.db.user.update({
+  override async update(id: string, data: UpdateUserInput): Promise<User> {
+    return this.delegate.update({
       where: { id },
       data: {
         ...(data.email !== undefined && { email: data.email }),
@@ -127,7 +127,7 @@ export class UserRepository {
    * Update user password
    */
   async updatePassword(id: string, passwordHash: string): Promise<User> {
-    return this.db.user.update({
+    return this.delegate.update({
       where: { id },
       data: { passwordHash },
     });
@@ -136,17 +136,22 @@ export class UserRepository {
   /**
    * Delete user and all related data (cascade)
    */
-  async delete(id: string): Promise<void> {
-    await this.db.user.delete({
+  override async delete(id: string): Promise<User> {
+    const user = await this.findById(id);
+    if (!user) throw new Error('User not found');
+
+    await this.delegate.delete({
       where: { id },
     });
+
+    return user;
   }
 
   /**
    * Get user with profile count
    */
   async findWithStats(id: string): Promise<(User & { _count: { profiles: number; resumes: number } }) | null> {
-    return this.db.user.findUnique({
+    return this.delegate.findUnique({
       where: { id },
       include: {
         _count: {

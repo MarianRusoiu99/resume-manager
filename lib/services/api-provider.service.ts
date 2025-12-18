@@ -11,6 +11,7 @@ export type {
   UpdateApiProviderInput,
   ProviderWithModels,
   ProviderInfo,
+  ConfiguredModelInfo,
   ProviderListItem,
   ProviderInstanceData,
   AvailableModelsData,

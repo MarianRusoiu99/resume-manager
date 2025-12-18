@@ -25,7 +25,7 @@ export const GET = createApiHandler(async (_request, { params }, session) => {
   const { id: resumeId } = await params;
 
   const resume = requireFound(
-    await prisma.generatedResume.findFirst({
+    await prisma.resume.findFirst({
       where: { id: resumeId, userId: session.user.id },
       select: {
         coverLetter: { select: { content: true, metadata: true } },
@@ -45,11 +45,18 @@ export const PUT = createApiHandler<CoverLetterResponseData, UpdateCoverLetterBo
     const { id: resumeId } = await params;
 
     const existingResume = requireFound(
-      await prisma.generatedResume.findUnique({
+      await prisma.resume.findUnique({
         where: { id: resumeId },
         select: {
           userId: true,
-          jobDescription: true,
+          jobPosting: {
+            select: {
+              id: true,
+              description: true,
+              title: true,
+              company: { select: { name: true } },
+            },
+          },
         },
       }),
       'Resume'
@@ -61,7 +68,7 @@ export const PUT = createApiHandler<CoverLetterResponseData, UpdateCoverLetterBo
       message: 'Forbidden - You do not have access to this resume',
     });
 
-    const updatedResume = await prisma.generatedResume.update({
+    const updatedResume = await prisma.resume.update({
       where: { id: resumeId },
       data: {
         coverLetter: {
@@ -69,8 +76,12 @@ export const PUT = createApiHandler<CoverLetterResponseData, UpdateCoverLetterBo
             create: {
               userId: session.user.id,
               content: body!.coverLetter,
-              jobDescription: existingResume.jobDescription,
-              metadata: {},
+              jobPostingId: existingResume.jobPosting?.id ?? null,
+              metadata: {
+                jobDescription: existingResume.jobPosting?.description,
+                jobTitle: existingResume.jobPosting?.title,
+                companyName: existingResume.jobPosting?.company?.name,
+              },
             },
             update: {
               content: body!.coverLetter,

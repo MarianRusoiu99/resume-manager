@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Cpu, RefreshCw, AlertCircle, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useComponentLogger } from '@/hooks';
@@ -258,22 +259,20 @@ export default function AIModelsSettingsPage() {
                     <span className="block text-xs font-medium text-muted-foreground mb-1">
                       Model
                     </span>
-                    <Select
+                    <SearchableSelect
                       value={currentModelId}
                       onValueChange={(value) => handleModelChange(feature.id, value)}
                       disabled={!currentProviderId}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select model..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableModels.map((model) => (
-                          <SelectItem key={model.id} value={model.id}>
-                            {model.name || model.id}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Select model..."
+                      searchPlaceholder="Search models..."
+                      dialogTitle="Select a model"
+                      maxListHeightClassName="h-72"
+                      options={availableModels.map((model) => ({
+                        value: model.id,
+                        label: model.name || model.id,
+                        description: model.name ? model.id : undefined,
+                      }))}
+                    />
                   </div>
 
                   <div className="flex gap-2 items-end">

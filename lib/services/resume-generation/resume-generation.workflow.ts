@@ -1,5 +1,6 @@
 import { generateResume } from '@/lib/ai';
-import { coverLetterRepository, type CreateCoverLetterInput } from '@/lib/repositories';
+import { coverLetterRepository } from '@/lib/repositories';
+import type { CreateCoverLetterInput } from '@/lib/repositories/interfaces';
 import { logger } from '@/lib/utils/logger';
 import { failure, success, type ServiceResult } from '@/lib/types/service-result';
 import type { Resume } from '@/lib/validations/jsonresume';
@@ -8,7 +9,8 @@ import { invalidateResumesCache } from './cache';
 import { saveGeneratedResume, buildGeneratedResumeResponse } from './persistence';
 import { fetchAndValidateUserResume } from './profile';
 import { scheduleProgressUpdates } from './progress';
-import { resolveProvider, type ResumeGenerationFeature } from './provider';
+import { resolveAIModel } from '@/lib/ai/runtime';
+import type { AIFeatureType } from '@/lib/services/user-ai-settings';
 import type {
   CoverLetterGenerationData,
   GeneratedResumeData,
@@ -35,14 +37,18 @@ export async function runResumeGenerationWorkflow(
       modelId: input.modelId || 'auto-selected',
     });
 
-    const providerResult = await resolveProvider(input.userId, input.modelId, 'resume');
+    const providerResult = await resolveAIModel({
+      userId: input.userId,
+      modelId: input.modelId,
+      feature: 'resume' satisfies AIFeatureType,
+    });
     if (!providerResult.success) {
       return failure(providerResult.error, 'INTERNAL_ERROR');
     }
 
     const workflowResult = await generateResume({
       provider: providerResult.data.provider,
-      modelId: providerResult.data.modelId,
+      modelKey: providerResult.data.modelKey,
       jobDescription: input.jobDescription,
       userResume,
       userId: input.userId,
@@ -125,18 +131,22 @@ export async function runResumeGenerationWorkflowWithProgress(
     const startTime = Date.now();
     scheduleProgressUpdates(onProgress, startTime);
 
-    const providerResult = await resolveProvider(baseInput.userId, baseInput.modelId, 'resume');
+    const providerResult = await resolveAIModel({
+      userId: baseInput.userId,
+      modelId: baseInput.modelId,
+      feature: 'resume' satisfies AIFeatureType,
+    });
     if (!providerResult.success) {
       return failure(providerResult.error, providerResult.code);
     }
 
     const provider = providerResult.data.provider;
-    const modelId = providerResult.data.modelId;
+    const { modelId, modelKey } = providerResult.data;
     logger.info('Using AI provider', { providerType: providerResult.data.providerType, modelId });
 
     const workflowResult = await generateResume({
       provider,
-      modelId,
+      modelKey,
       jobDescription: baseInput.jobDescription,
       userResume,
       userId: baseInput.userId,
@@ -199,25 +209,27 @@ export async function runStandaloneCoverLetterWorkflow(input: {
     }
     const userResume = resumeResult.data;
 
-    const providerResult = await resolveProvider(
-      input.userId,
-      input.modelId,
-      'coverLetter' satisfies ResumeGenerationFeature
-    );
+    const providerResult = await resolveAIModel({
+      userId: input.userId,
+      modelId: input.modelId,
+      feature: 'coverLetter' satisfies AIFeatureType,
+    });
 
     if (!providerResult.success) {
       return failure(providerResult.error, 'INTERNAL_ERROR');
     }
 
     const provider = providerResult.data.provider;
-    const modelId = providerResult.data.modelId;
+    const modelKey = providerResult.data.modelKey;
 
-    logger.debug('Using AI model for cover letter', { modelId });
+    logger.debug('Using AI model for cover letter', {
+      modelId: providerResult.data.modelId,
+      modelKey,
+    });
 
     const { generateCoverLetter } = await import('@/lib/ai/agents');
     const coverLetterResult = await generateCoverLetter({
-      provider,
-      modelId,
+      model: provider.createLanguageModel(modelKey),
       jobDescription: input.jobDescription,
       userResume,
     });
@@ -231,14 +243,14 @@ export async function runStandaloneCoverLetterWorkflow(input: {
     const coverLetterData: CreateCoverLetterInput = {
       userId: input.userId,
       content: coverLetterResult.content,
-      jobDescription: input.jobDescription,
-      jobTitle: coverLetterResult.jobTitle,
-      companyName: coverLetterResult.companyName,
       metadata: {
-        model: modelId,
+        model: modelKey,
         tokens: 0,
         generationTime: 0,
         personalInstructions: input.personalInstructions,
+        jobDescription: input.jobDescription,
+        jobTitle: coverLetterResult.jobTitle,
+        companyName: coverLetterResult.companyName,
       },
     };
 

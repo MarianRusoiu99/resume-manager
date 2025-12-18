@@ -17,12 +17,11 @@ import { apiV1 } from '@/lib/client';
 import { FileText } from 'lucide-react';
 
 interface CoverLetter extends CoverLetterListItem {
-  jobDescription: string;
   resumeId: string | null;
-  resume: {
-    id: string;
-    jobDescription: string;
-    createdAt: string;
+  jobPostingId: string | null;
+  jobPosting: {
+    title: string | null;
+    company: { name: string } | null;
   } | null;
   metadata: {
     model?: string;

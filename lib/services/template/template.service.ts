@@ -1,6 +1,6 @@
 import { TemplateRepository, templateRepository } from '@/lib/repositories/template.repository';
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult, isFailure } from '@/lib/types/service-result';
 import { withServiceError, NotFoundError, ConflictError } from '@/lib/services/utils';
 import type { ITemplateService } from '../interfaces';
 import type { CreateTemplateInput, UpdateTemplateInput } from '@/lib/validations/api-schemas';
@@ -8,16 +8,22 @@ import type { CreateTemplateInput, UpdateTemplateInput } from '@/lib/validations
 import { validateCreateTemplateInput, validateUpdateTemplateInput } from './validation';
 import { validateHandlebarsTemplateSyntax } from './syntax';
 import { sanitizeTemplate } from '@/lib/utils/template-sanitizer';
+import { GenericCrudService } from '../utils/generic-crud.service';
 
 /**
  * Service for managing resume templates
  *
  * Implements ITemplateService with constructor injection.
  */
-export class TemplateService implements ITemplateService {
+export class TemplateService 
+  extends GenericCrudService<ResumeTemplate, CreateTemplateInput, UpdateTemplateInput, TemplateRepository>
+  implements ITemplateService 
+{
   constructor(
-    private readonly repository: TemplateRepository = templateRepository
-  ) {}
+    repository: TemplateRepository = templateRepository
+  ) {
+    super(repository, 'Template');
+  }
 
   /**
    * Get all public templates
@@ -41,13 +47,7 @@ export class TemplateService implements ITemplateService {
    * Get a template by ID
    */
   async getTemplateById(id: string): Promise<ServiceResult<ResumeTemplate>> {
-    return withServiceError('fetch template', async () => {
-      const template = await this.repository.findById(id);
-      if (!template) {
-        throw new NotFoundError('Template');
-      }
-      return template;
-    });
+    return this.getById(id);
   }
 
   /**
@@ -77,10 +77,9 @@ export class TemplateService implements ITemplateService {
     input: UpdateTemplateInput
   ): Promise<ServiceResult<ResumeTemplate>> {
     return withServiceError('update template', async () => {
-      const existing = await this.repository.findById(id);
-      if (!existing) {
-        throw new NotFoundError('Template');
-      }
+      const existingResult = await this.getById(id);
+      if (isFailure(existingResult)) throw new Error(existingResult.error);
+      const existing = existingResult.data;
 
       const validatedData = validateUpdateTemplateInput(input);
 
@@ -103,10 +102,8 @@ export class TemplateService implements ITemplateService {
    */
   async deleteTemplate(id: string): Promise<ServiceResult<void>> {
     return withServiceError('delete template', async () => {
-      const existing = await this.repository.findById(id);
-      if (!existing) {
-        throw new NotFoundError('Template');
-      }
+      const existingResult = await this.getById(id);
+      if (isFailure(existingResult)) throw new Error(existingResult.error);
 
       const inUse = await this.repository.isInUse(id);
       if (inUse) {

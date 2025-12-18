@@ -6,8 +6,8 @@
  */
 
 import { parseTemplateFromImage } from "@/lib/ai/template-parser";
+import { resolveAIModelOrThrow, resolveVisionModelKey } from "@/lib/ai/runtime";
 import { createApiHandler } from "@/lib/api-handler";
-import { apiProviderService } from "@/lib/services/api-provider.service";
 import { failure, success } from "@/lib/types/service-result";
 
 // Supported image MIME types
@@ -42,17 +42,12 @@ export const POST = createApiHandler<{ template: unknown }>(async (request, cont
         return failure("File size must be less than 10MB", "VALIDATION_ERROR");
     }
 
-    // Get API key from user's configured providers
-    const providerResult = await apiProviderService.getFirstActiveProvider(session.user.id);
-    if (!providerResult.success) {
-        // Treat missing API key as a user-fixable 400 for this endpoint.
-        const mappedCode = providerResult.code === "NOT_FOUND" ? "VALIDATION_ERROR" : providerResult.code;
-        return failure(providerResult.error, mappedCode);
-    }
-
-    const { apiKey, providerType } = providerResult.data;
-
     try {
+        const resolvedModel = await resolveAIModelOrThrow({
+            userId: session.user.id,
+            feature: 'template',
+        });
+
         // Convert file to base64
         const arrayBuffer = await file.arrayBuffer();
         const base64 = Buffer.from(arrayBuffer).toString("base64");
@@ -61,8 +56,8 @@ export const POST = createApiHandler<{ template: unknown }>(async (request, cont
         const templateData = await parseTemplateFromImage({
             imageBase64: base64,
             mimeType: file.type,
-            apiKey,
-            providerType: providerType as 'openai' | 'anthropic' | 'google',
+            provider: resolvedModel.provider,
+            modelKey: resolveVisionModelKey(resolvedModel),
         });
 
         return success({ template: templateData });

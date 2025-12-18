@@ -13,12 +13,12 @@ import { profileService } from '@/lib/services/profile.service';
 import { createApiHandler } from '@/lib/api-handler';
 import { createProfileSchema } from '@/lib/validations/api-schemas';
 
-export const GET = createApiHandler(async (request, context, session) => {
+export const GET = createApiHandler(async (_request, _context, session) => {
   return profileService.getProfiles(session.user.id);
 });
 
 export const POST = createApiHandler(
-  async (request, context, session, body) => {
+  async (_request, _context, session, body) => {
     const result = await profileService.createProfile(
       session.user.id,
       body!.name,

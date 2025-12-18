@@ -11,10 +11,10 @@ import { createApiHandler } from '@/lib/api-handler';
 import { generateResumeSchema } from '@/lib/validations/api-schemas';
 import { logger } from '@/lib/utils/logger';
 import { profileService } from '@/lib/services/profile.service';
-import { apiProviderService } from '@/lib/services/api-provider.service';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 import { generateResume } from '@/lib/ai';
 import { getWorkflow, createCustomWorkflow } from '@/lib/ai/workflow';
+import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
 import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
 import { notificationService } from '@/lib/services/notification.service';
 
@@ -25,42 +25,6 @@ const generateResumeStreamSchema = generateResumeSchema.extend({
   customSteps: z.array(z.string()).optional(),
 });
 
-/**
- * Resolve AI provider from user settings or environment
- */
-async function resolveProvider(userId: string, modelId?: string) {
-  if (modelId) {
-    const modelsResult = await apiProviderService.getAvailableModels(userId);
-    if (!modelsResult.success) {
-      throw new Error('No API providers configured. Please add one in Settings → API Keys');
-    }
-
-    const modelInfo = modelsResult.data.allModels.find(m => m.id === modelId);
-    if (!modelInfo) {
-      throw new Error(`Model ${modelId} not found in your configured providers`);
-    }
-
-    const providerResult = await apiProviderService.getProviderInstance(modelInfo.providerId, userId);
-    if (!providerResult.success) {
-      throw new Error(providerResult.error || 'Failed to get AI provider configuration');
-    }
-
-    return { provider: providerResult.data.provider, modelId, providerType: providerResult.data.providerType };
-  }
-
-  // No model specified - get the first available model from user's providers
-  const modelsResult = await apiProviderService.getAvailableModels(userId);
-  if (!modelsResult.success || modelsResult.data.allModels.length === 0) {
-    throw new Error('No AI provider configured. Please add an API key in Settings → API Keys');
-  }
-  // Use the first available model
-  const firstModel = modelsResult.data.allModels[0];
-  const providerResult = await apiProviderService.getProviderInstance(firstModel.providerId, userId);
-  if (!providerResult.success) {
-    throw new Error(providerResult.error || 'Failed to get AI provider configuration');
-  }
-  return { provider: providerResult.data.provider, modelId: firstModel.id, providerType: providerResult.data.providerType };
-}
 
 /**
  * POST /api/resume/generate-stream - Generate resume with progress streaming
@@ -128,10 +92,14 @@ export const POST = createApiHandler(
           const userResume = resumeSchema.parse(profileData.resume);
           sendEvent('progress', { step: 'profile', message: 'Profile loaded', progress: 10 });
 
-          // Resolve provider
+          // Resolve provider/model (centralized)
           sendEvent('progress', { step: 'provider', message: 'Configuring AI provider...', progress: 12 });
-          const { provider, modelId: resolvedModelId, providerType } = await resolveProvider(userId, modelId);
-          logger.info('Using AI provider', { providerType, modelId: resolvedModelId });
+          const resolvedModel = await resolveAIModelOrThrow({ userId, feature: 'resume', modelId });
+          logger.info('Using AI provider', {
+            providerType: resolvedModel.providerType,
+            modelId: resolvedModel.modelId,
+            modelKey: resolvedModel.modelKey,
+          });
 
           // Determine workflow
           const workflow = customSteps?.length
@@ -156,8 +124,8 @@ export const POST = createApiHandler(
 
           // Execute workflow
           const result = await generateResume({
-            provider,
-            modelId: resolvedModelId,
+            provider: resolvedModel.provider,
+            modelKey: resolvedModel.modelKey,
             jobDescription,
             userResume,
             userId,
@@ -189,7 +157,7 @@ export const POST = createApiHandler(
               templateId: templateId ?? undefined,
               resume: result.resume,
               metadata: {
-                model: resolvedModelId,
+                model: resolvedModel.modelKey,
                 executedSteps: result.executedSteps,
                 executionTime: result.executionTime,
                 generatedAt: new Date().toISOString(),

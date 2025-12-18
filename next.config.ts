@@ -43,7 +43,7 @@ const securityHeadersBase = [
 
 const nextConfig: NextConfig = {
   output: 'standalone', // Enable for Docker builds
-  
+
   // Transpile packages that use CSS imports in node_modules
   // Required for BlockNote and Mantine dependencies in Docker builds
   transpilePackages: [
@@ -55,7 +55,16 @@ const nextConfig: NextConfig = {
     '@tiptap/extension-gapcursor',
     '@tiptap/extension-history',
   ],
-  
+
+  // Avoid bundling large server-only dependencies into route chunks.
+  // These are only needed at runtime in Node.js.
+  serverExternalPackages: ['puppeteer', 'swagger-jsdoc'],
+
+  experimental: {
+    // Reduce import cost for packages with large export surfaces.
+    optimizePackageImports: ['lucide-react'],
+  },
+
   // Apply security headers to routes.
   // CSP is applied in `middleware.ts`.
   async headers() {

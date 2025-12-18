@@ -19,6 +19,7 @@ export type {
   INotificationService,
   ITemplateService,
   ICoverLetterService,
+  IAIService,
 } from './interfaces';
 
 // Resume services (facade + split services)
@@ -45,6 +46,7 @@ export { coverLetterService, CoverLetterService } from './cover-letter.service';
 
 export { notificationService, NotificationService } from './notification.service';
 
+export { aiService, AIService } from './ai.service';
 export { apiProviderService, ApiProviderService } from './api-provider.service';
 export type {
   AddApiProviderInput,

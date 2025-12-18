@@ -8,6 +8,17 @@
 import type { AIModel } from '@/lib/ai/providers';
 import type { AuditContext } from '../api-key-audit';
 
+/**
+ * A model configured/stored for a provider.
+ *
+ * `id` is the database id (`ApiModel.id`).
+ * `modelKey` is the provider-native model identifier (e.g. `gpt-4o`).
+ */
+export type ConfiguredModelInfo = Omit<AIModel, 'id'> & {
+  id: string;
+  modelKey: string;
+};
+
 export interface AddApiProviderInput {
   userId: string;
   name: string;
@@ -28,7 +39,7 @@ export interface ProviderWithModels {
   name: string;
   provider: string;
   isActive: boolean;
-  models: AIModel[];
+  models: ConfiguredModelInfo[];
   keyPreview: string;
   createdAt: Date;
   lastUsedAt: Date | null;
@@ -39,7 +50,7 @@ export interface ProviderInfo {
   name: string;
   provider: string;
   keyPreview: string;
-  models: AIModel[];
+  models: ConfiguredModelInfo[];
   isActive: boolean;
   createdAt: Date;
 }
@@ -50,6 +61,7 @@ export interface ProviderListItem {
   provider: string;
   providerName: string;
   keyPreview: string;
+  // Stored model identifiers for this provider
   models: string[];
   isActive: boolean;
   createdAt: Date;
@@ -64,7 +76,7 @@ export interface ProviderInstanceData {
 export interface AvailableModelsData {
   providers: ProviderWithModels[];
   allModels: Array<
-    AIModel & {
+    ConfiguredModelInfo & {
       uniqueId: string;
       providerId: string;
       providerType: string;

@@ -122,14 +122,18 @@ export default function CoverLetterDetailPage() {
 
   const getPageTitle = (): string => {
     if (!coverLetter) return 'Cover Letter';
-    if (coverLetter.jobTitle && coverLetter.companyName) {
-      return `${coverLetter.jobTitle} at ${coverLetter.companyName}`;
+
+    const jobTitle = coverLetter.jobPosting?.title ?? null;
+    const companyName = coverLetter.jobPosting?.company?.name ?? null;
+
+    if (jobTitle && companyName) {
+      return `${jobTitle} at ${companyName}`;
     }
-    if (coverLetter.jobTitle) {
-      return coverLetter.jobTitle;
+    if (jobTitle) {
+      return jobTitle;
     }
-    if (coverLetter.companyName) {
-      return `Cover Letter for ${coverLetter.companyName}`;
+    if (companyName) {
+      return `Cover Letter for ${companyName}`;
     }
     return 'Cover Letter';
   };
@@ -201,22 +205,23 @@ export default function CoverLetterDetailPage() {
         {/* Metadata Card */}
         {(() => {
           const metadata = getMetadata();
-          return coverLetter.generatedResume || metadata.model ? (
-            <Callout className="mb-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  {coverLetter.generatedResume && (
-                    <div className="flex items-center gap-2">
-                      <ExternalLink className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-900">Linked to Resume</span>
-                      <Link
-                        href={`/resumes/${coverLetter.generatedResume.id}`}
-                        className="text-sm text-blue-600 hover:underline"
-                      >
-                        View Resume →
-                      </Link>
-                    </div>
-                  )}
+           return coverLetter.resumeId || metadata.model ? (
+             <Callout className="mb-6">
+               <div className="flex items-center justify-between">
+                 <div className="space-y-1">
+                   {coverLetter.resumeId && (
+                     <div className="flex items-center gap-2">
+                       <ExternalLink className="w-4 h-4 text-blue-600" />
+                       <span className="text-sm font-medium text-blue-900">Linked to Resume</span>
+                       <Link
+                         href={`/resumes/${coverLetter.resumeId}`}
+                         className="text-sm text-blue-600 hover:underline"
+                       >
+                         View Resume →
+                       </Link>
+                     </div>
+                   )}
+
 
                   {metadata.model && (
                     <div className="text-xs text-blue-700">
@@ -244,7 +249,7 @@ export default function CoverLetterDetailPage() {
           <h3 className="text-lg font-semibold mb-3">Original Job Description</h3>
           <div className="p-4 rounded-md border  max-h-96 overflow-y-auto">
             <pre className="whitespace-pre-wrap text-sm text-foreground  font-sans">
-              {coverLetter.jobDescription}
+               {coverLetter.jobPosting?.description ?? coverLetter.resume?.jobPosting?.description ?? 'No job description available.'}
             </pre>
           </div>
           {getMetadata().personalInstructions && (

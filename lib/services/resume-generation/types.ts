@@ -69,7 +69,10 @@ export interface CoverLetterGenerationData {
  */
 export type ResolvedProviderResult = {
   provider: import('@/lib/ai/providers').AIProvider;
+  /** Database model id (ApiModel.id) */
   modelId: string;
+  /** Provider-native model identifier (ApiModel.modelKey) */
+  modelKey: string;
   providerType: string;
 };
 

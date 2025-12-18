@@ -1,11 +1,11 @@
 import {
   notificationRepository,
-  type CreateNotificationInput,
+  NotificationRepository,
 } from '@/lib/repositories/notification.repository';
+import type { CreateNotificationInput, NotificationData } from '@/lib/repositories/interfaces';
 import { emitNotification } from '@/lib/notifications/emitter';
 import { type ServiceResult } from '@/lib/types/service-result';
-import { withServiceError, NotFoundError } from '@/lib/services/utils';
-import type { INotificationRepository } from '@/lib/repositories/interfaces';
+import { withServiceError, NotFoundError, GenericUserOwnedCrudService } from '@/lib/services/utils';
 import type {
   INotificationService,
   NotificationServiceData,
@@ -18,17 +18,28 @@ import { toNotificationData, toNotificationPayload, type DbNotification } from '
  * Split into a dedicated module so the root `notification.service.ts` can be a
  * stable facade and avoid mixing transform + emit + CRUD details.
  */
-export class NotificationService implements INotificationService {
-  constructor(private readonly repository: INotificationRepository = notificationRepository) {}
+export class NotificationService 
+  extends GenericUserOwnedCrudService<NotificationData, CreateNotificationInput, any, NotificationRepository>
+  implements INotificationService 
+{
+  constructor(repository: NotificationRepository = notificationRepository) {
+    super(repository, 'Notification');
+  }
+
 
   async createNotification(
     input: CreateNotificationInput
   ): Promise<ServiceResult<NotificationServiceData>> {
-    return withServiceError('create notification', async () => {
-      const notification = (await this.repository.create(input)) as DbNotification;
+    const result = await this.create(input as any);
+    if (result.success) {
+      const notification = result.data as unknown as DbNotification;
       await emitNotification(input.userId, toNotificationPayload(notification));
-      return toNotificationData(notification);
-    });
+      return {
+        success: true,
+        data: toNotificationData(notification)
+      };
+    }
+    return result as ServiceResult<NotificationServiceData>;
   }
 
   async notifyResumeGenerated(
@@ -98,7 +109,12 @@ export class NotificationService implements INotificationService {
     options?: { limit?: number; includeRead?: boolean }
   ): Promise<ServiceResult<NotificationServiceData[]>> {
     return withServiceError('fetch notifications', async () => {
-      const notifications = (await this.repository.findByUserId(userId, options)) as DbNotification[];
+      const notifications = (await this.repository.findAllForUser(userId, {
+        where: {
+          ...(options?.includeRead ? {} : { isRead: false }),
+        },
+        take: options?.limit || 50,
+      })) as DbNotification[];
       return notifications.map((n) => toNotificationData(n));
     });
   }
@@ -111,13 +127,21 @@ export class NotificationService implements INotificationService {
   }
 
   async markAsRead(id: string, userId: string): Promise<ServiceResult<NotificationServiceData>> {
-    return withServiceError('mark notification as read', async () => {
+    const result = await withServiceError('mark notification as read', async () => {
       const notification = (await this.repository.markAsRead(id, userId)) as DbNotification | null;
       if (!notification) {
         throw new NotFoundError('Notification');
       }
-      return toNotificationData(notification);
+      return notification;
     });
+
+    if (result.success) {
+      return {
+        success: true,
+        data: toNotificationData(result.data)
+      };
+    }
+    return result as ServiceResult<NotificationServiceData>;
   }
 
   async markAllAsRead(userId: string): Promise<ServiceResult<{ count: number }>> {

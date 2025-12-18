@@ -1,9 +1,19 @@
-import type { GeneratedResume } from '@prisma/client';
-
 import type { ResumeDetails, ResumeListItem } from './types';
+
+export interface LegacyGeneratedResume {
+  id: string;
+  userId: string;
+  jobDescription: string;
+  jobMetadata: unknown;
+  resume: unknown;
+  templateId: string | null;
+  metadata: unknown;
+  createdAt: Date;
+  updatedAt: Date;
+}
 import { extractJobInfo, normalizeResumeDetailsJobTitle, normalizeResumeMetadata } from './normalizers';
 
-export function mapGeneratedResumeToListItem(resume: GeneratedResume): ResumeListItem {
+export function mapGeneratedResumeToListItem(resume: LegacyGeneratedResume): ResumeListItem {
   const jobMetadata = resume.jobMetadata as Record<string, unknown> | null;
   const { jobTitle, companyName } = extractJobInfo(jobMetadata);
 
@@ -24,7 +34,7 @@ export function mapGeneratedResumeToListItem(resume: GeneratedResume): ResumeLis
   };
 }
 
-export function mapGeneratedResumeToDetails(resume: GeneratedResume): ResumeDetails {
+export function mapGeneratedResumeToDetails(resume: LegacyGeneratedResume): ResumeDetails {
   const jobMetadata = resume.jobMetadata as Record<string, unknown> | null;
   const { jobTitle, companyName } = extractJobInfo(jobMetadata);
 

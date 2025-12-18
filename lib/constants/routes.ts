@@ -110,6 +110,7 @@ export const API_V1 = {
   DOCS: `${API_V1_PREFIX}/docs`,
   AI: {
     ENHANCE: `${API_V1_PREFIX}/ai/enhance`,
+    ENHANCE_STREAM: `${API_V1_PREFIX}/ai/enhance/stream`,
   },
 } as const;
 

@@ -8,138 +8,99 @@
 import { prisma } from '@/lib/db';
 import { Prisma, PrismaClient } from '@prisma/client';
 
-import { PrismaUserOwnedCrudRepository } from './base.repository';
-import type { ICoverLetterRepository } from './interfaces';
-
-export interface CreateCoverLetterInput {
-  userId: string;
-  content: string;
-  jobDescription: string;
-  jobTitle?: string;
-  companyName?: string;
-  metadata: {
-    model?: string;
-    tokens?: number;
-    generationTime?: number;
-    personalInstructions?: string;
-  };
-}
-
-export interface UpdateCoverLetterInput {
-  content?: string;
-  jobDescription?: string;
-  jobTitle?: string;
-  companyName?: string;
-  metadata?: Prisma.InputJsonValue;
-}
-
-type CoverLetterEntity = Prisma.CoverLetterGetPayload<object>;
+import { GenericUserOwnedRepository } from './generic.repository';
+import type { CreateCoverLetterInput, ICoverLetterRepository, UpdateCoverLetterInput, CoverLetterData, FindCoverLettersOptions } from './interfaces/cover-letter.repository.interface';
 
 /**
  * Cover Letter Repository Implementation
  */
 export class CoverLetterRepository
-  extends PrismaUserOwnedCrudRepository<CoverLetterEntity, CreateCoverLetterInput, UpdateCoverLetterInput>
+  extends GenericUserOwnedRepository<CoverLetterData, CreateCoverLetterInput, UpdateCoverLetterInput, any>
   implements ICoverLetterRepository
 {
-  protected readonly model = 'coverLetter' as const;
-
   constructor(dbClient: PrismaClient = prisma) {
-    super(dbClient);
-  }
-
-  protected override buildCreateData(input: CreateCoverLetterInput): Record<string, unknown> {
-    return {
-      userId: input.userId,
-      content: input.content,
-      jobDescription: input.jobDescription,
-      jobTitle: input.jobTitle,
-      companyName: input.companyName,
-      metadata: input.metadata as Prisma.InputJsonValue,
-    };
-  }
-
-  protected override buildUpdateData(input: UpdateCoverLetterInput): Record<string, unknown> {
-    return {
-      ...(input.content !== undefined && { content: input.content }),
-      ...(input.jobDescription !== undefined && { jobDescription: input.jobDescription }),
-      ...(input.jobTitle !== undefined && { jobTitle: input.jobTitle }),
-      ...(input.companyName !== undefined && { companyName: input.companyName }),
-      ...(input.metadata !== undefined && { metadata: input.metadata }),
-      updatedAt: new Date(),
-    };
+    super('coverLetter', dbClient);
   }
 
   /**
    * Find cover letter by ID
    */
-  override async findById(
-    id: string,
-    userId: string
-  ): Promise<
-    Prisma.CoverLetterGetPayload<{
-      include: { generatedResume: { select: { id: true; jobDescription: true } } };
-    }> | null
-  > {
+  override async findById(id: string, userId?: string): Promise<CoverLetterData | null> {
     return this.db.coverLetter.findFirst({
       where: {
         id,
-        userId,
+        ...(userId ? { userId } : {}),
       },
       include: {
-        generatedResume: {
+        resume: {
           select: {
             id: true,
-            jobDescription: true,
+            jobPosting: { select: { description: true } },
+          },
+        },
+        jobPosting: {
+          select: {
+            description: true,
+            title: true,
+            company: { select: { name: true } },
           },
         },
       },
-    });
+    }) as Promise<CoverLetterData | null>;
+  }
+
+  /**
+   * Update a cover letter
+   */
+  override async update(id: string, data: UpdateCoverLetterInput, userId?: string): Promise<CoverLetterData> {
+    const updateData: Prisma.CoverLetterUpdateInput = {
+      ...(data.content !== undefined && { content: data.content }),
+      ...(data.resumeId !== undefined && { resumeId: data.resumeId }),
+      ...(data.jobPostingId !== undefined && { jobPostingId: data.jobPostingId }),
+      ...(data.metadata !== undefined && { metadata: data.metadata }),
+    };
+
+    return this.db.coverLetter.update({
+      where: { id, ...(userId ? { userId } : {}) },
+      data: updateData,
+    }) as Promise<CoverLetterData>;
+  }
+
+  override async delete(id: string, userId?: string): Promise<CoverLetterData> {
+    return this.db.coverLetter.delete({
+      where: { id, ...(userId ? { userId } : {}) },
+    }) as Promise<CoverLetterData>;
   }
 
   /**
    * Find all cover letters for a user
    */
-  async update(id: string, userId: string, data: UpdateCoverLetterInput): Promise<CoverLetterEntity> {
-    const updated = await super.update(id, userId, data);
-    if (!updated) {
-      throw new Error('Cover letter not found');
-    }
-
-    return updated;
-  }
-
-  async delete(id: string, userId: string): Promise<CoverLetterEntity> {
-    const deleted = await super.delete(id, userId);
-    if (!deleted) {
-      throw new Error('Cover letter not found');
-    }
-
-    return deleted;
-  }
-
-  /**
-   * Find all cover letters for a user
-   */
-  async findByUserId(
+  override async findAllForUser(
     userId: string,
-    options?: {
-      limit?: number;
-      offset?: number;
-      orderBy?: 'createdAt' | 'updatedAt';
-      orderDir?: 'asc' | 'desc';
-    }
-  ): Promise<{ coverLetters: CoverLetterEntity[]; total: number }> {
+    args?: any
+  ): Promise<CoverLetterData[]> {
+    return this.db.coverLetter.findMany({
+      ...args,
+      where: { ...args?.where, userId },
+    }) as Promise<CoverLetterData[]>;
+  }
+
+  /**
+   * Find all cover letters for a user with count
+   */
+  async findAllForUserWithCount(
+    userId: string,
+    options?: FindCoverLettersOptions
+  ): Promise<{ coverLetters: CoverLetterData[]; total: number }> {
     const { limit = 50, offset = 0, orderBy = 'createdAt', orderDir = 'desc' } = options || {};
 
     const [coverLetters, total] = await Promise.all([
-      this.db.coverLetter.findMany({
-        where: { userId },
+      this.findAllForUser(userId, {
         orderBy: { [orderBy]: orderDir },
         take: limit,
         skip: offset,
       }),
-      this.db.coverLetter.count({ where: { userId } }),
+      this.count({ userId }),
     ]);
 
     return { coverLetters, total };

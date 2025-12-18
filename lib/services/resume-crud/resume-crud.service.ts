@@ -8,14 +8,22 @@ import { invalidateUserResumesCache } from './cache';
 import { mapGeneratedResumeToDetails, mapGeneratedResumeToListItem } from './mappers';
 import type { ResumeDetails, ResumeListItem, UpdatedResumeData } from './types';
 
+import { GenericUserOwnedCrudService } from '../utils/generic-crud.service';
+import type { CreateResumeInput, GeneratedResumeData } from '@/lib/repositories/interfaces/generated-resume.repository.interface';
+
 /**
  * Service for resume CRUD operations
  * Single Responsibility: Handles database operations for resumes
  */
-export class ResumeCrudService implements IResumeCrudService {
+export class ResumeCrudService 
+  extends GenericUserOwnedCrudService<GeneratedResumeData, CreateResumeInput, any, GeneratedResumeRepository>
+  implements IResumeCrudService 
+{
   constructor(
-    private readonly repository: GeneratedResumeRepository = generatedResumeRepository
-  ) {}
+    repository: GeneratedResumeRepository = generatedResumeRepository
+  ) {
+    super(repository, 'Resume');
+  }
 
   /**
    * List all resumes for a user
@@ -39,7 +47,7 @@ export class ResumeCrudService implements IResumeCrudService {
    */
   async getResume(resumeId: string, userId: string): Promise<ServiceResult<ResumeDetails>> {
     return withServiceError('get resume', async () => {
-      const resume = await this.repository.findByIdAndUserId(resumeId, userId);
+      const resume = await this.repository.findById(resumeId, userId);
 
       if (!resume) {
         throw new NotFoundError('Resume');
@@ -54,13 +62,13 @@ export class ResumeCrudService implements IResumeCrudService {
    */
   async deleteResume(resumeId: string, userId: string): Promise<ServiceResult<void>> {
     return withServiceError('delete resume', async () => {
-      const resume = await this.repository.findByIdAndUserId(resumeId, userId);
+      const resume = await this.repository.findById(resumeId, userId);
 
       if (!resume) {
         throw new NotFoundError('Resume');
       }
 
-      await this.repository.delete(resumeId);
+      await this.repository.delete(resumeId, userId);
 
       // Invalidate cache after successful deletion
       invalidateUserResumesCache(userId);
@@ -76,7 +84,7 @@ export class ResumeCrudService implements IResumeCrudService {
     resumeData: Resume
   ): Promise<ServiceResult<UpdatedResumeData>> {
     return withServiceError('update resume content', async () => {
-      const existingResume = await this.repository.findByIdAndUserId(resumeId, userId);
+      const existingResume = await this.repository.findById(resumeId, userId);
 
       if (!existingResume) {
         throw new NotFoundError('Resume');
@@ -85,7 +93,7 @@ export class ResumeCrudService implements IResumeCrudService {
       // Validation is intentionally skipped here because resume data is already validated via Zod schemas in the API route layer
       const validatedResume = resumeData;
 
-      const updatedResume = await this.repository.update(resumeId, validatedResume);
+      const updatedResume = await this.repository.update(resumeId, validatedResume, userId);
 
       // Invalidate cache after successful update
       invalidateUserResumesCache(userId);
@@ -112,7 +120,7 @@ export class ResumeCrudService implements IResumeCrudService {
     templateId: string | null
   ): Promise<ServiceResult<UpdatedResumeData>> {
     return withServiceError('update resume template', async () => {
-      const existingResume = await this.repository.findByIdAndUserId(resumeId, userId);
+      const existingResume = await this.repository.findById(resumeId, userId);
 
       if (!existingResume) {
         throw new NotFoundError('Resume');
@@ -149,7 +157,7 @@ export class ResumeCrudService implements IResumeCrudService {
     }
   ): Promise<ServiceResult<UpdatedResumeData>> {
     return withServiceError('update resume job details', async () => {
-      const existingResume = await this.repository.findByIdAndUserId(resumeId, userId);
+      const existingResume = await this.repository.findById(resumeId, userId);
 
       if (!existingResume) {
         throw new NotFoundError('Resume');

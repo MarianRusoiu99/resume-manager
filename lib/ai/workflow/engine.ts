@@ -19,8 +19,8 @@ export interface ExecuteWorkflowInput {
   config: WorkflowConfig;
   /** AI provider instance */
   provider: AIProvider;
-  /** Model ID to use */
-  modelId: string;
+  /** Provider-native model key to use */
+  modelKey: string;
   /** Job description text */
   jobDescription: string;
   /** User's resume (source of truth) */
@@ -44,7 +44,7 @@ export async function executeWorkflow(
   // Initialize context
   const context: WorkflowContext = {
     provider: input.provider,
-    modelId: input.modelId,
+    modelKey: input.modelKey,
     jobDescription: input.jobDescription,
     userResume: input.userResume,
     userId: input.userId,

@@ -2,7 +2,7 @@
 
 import { profileService } from '@/lib/services/profile.service';
 import { withServerAction } from '@/lib/actions/with-server-action';
-import { resumeSchema, type Resume } from '@/lib/validations/jsonresume';
+import { type Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Get all profiles for the current user
@@ -28,16 +28,10 @@ export const getProfile = withServerAction(
 export const createProfile = withServerAction(
     'createProfile',
     async (session, name: string, resume: Resume, isDefault: boolean = false) => {
-        // Validate resume data
-        const validationResult = resumeSchema.safeParse(resume);
-        if (!validationResult.success) {
-            throw new Error('Invalid resume data: ' + validationResult.error.issues[0].message);
-        }
-
         return profileService.createProfile(
             session.user.id,
             name,
-            validationResult.data,
+            resume,
             isDefault
         );
     },
@@ -65,15 +59,6 @@ export const updateProfile = withServerAction(
             selectedTemplateId: string | null;
         }>
     ) => {
-        // Validate resume data if provided
-        if (data.resume) {
-            const validationResult = resumeSchema.safeParse(data.resume);
-            if (!validationResult.success) {
-                throw new Error('Invalid resume data: ' + validationResult.error.issues[0].message);
-            }
-            data.resume = validationResult.data;
-        }
-
         return profileService.updateProfile(profileId, session.user.id, data);
     },
     {

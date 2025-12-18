@@ -49,45 +49,51 @@ export interface IGeneratedResumeRepository {
   findByUserId(userId: string): Promise<GeneratedResumeData[]>;
 
   /**
-   * Find a resume by ID
+   * Find a resume by ID with optional user ownership check
    */
-  findById(id: string): Promise<GeneratedResumeData | null>;
+  findById(id: string, userId?: string): Promise<GeneratedResumeData | null>;
 
   /**
-   * Find a resume by ID with user ownership check
+   * Find all resumes for a user
    */
-  findByIdAndUserId(id: string, userId: string): Promise<GeneratedResumeData | null>;
+  findAllForUser(userId: string, args?: any): Promise<GeneratedResumeData[]>;
 
   /**
-   * Update resume content
+   * Update a resume
    */
-  update(id: string, resume: Resume): Promise<GeneratedResumeData>;
-
-  /**
-   * Update template association
-   */
-  updateTemplate(id: string, templateId?: string): Promise<GeneratedResumeData>;
-
-  /**
-   * Update job-related fields (jobDescription/jobMetadata)
-   */
-  updateJobDetails(
-    id: string,
-    data: { jobDescription?: string; jobMetadata: Record<string, unknown> }
-  ): Promise<GeneratedResumeData>;
-
-  /**
-   * Link a cover letter to a resume
-   */
-  linkCoverLetter(resumeId: string, coverLetterId: string): Promise<GeneratedResumeData>;
+  update(id: string, data: any, userId?: string): Promise<GeneratedResumeData>;
 
   /**
    * Delete a resume
    */
-  delete(id: string): Promise<void>;
+  delete(id: string, userId?: string): Promise<GeneratedResumeData>;
+
+  /**
+   * Check if resume exists and belongs to user
+   */
+  exists(id: string, userId?: string): Promise<boolean>;
+
 
   /**
    * Count resumes for a user
    */
   countByUserId(userId: string): Promise<number>;
+
+  /**
+   * Update resume template
+   */
+  updateTemplate(id: string, templateId?: string): Promise<GeneratedResumeData>;
+
+  /**
+   * Update job details
+   */
+  updateJobDetails(
+    id: string,
+    data: { jobDescription?: string; jobMetadata?: Record<string, unknown> }
+  ): Promise<GeneratedResumeData>;
+
+  /**
+   * Link a cover letter to a resume
+   */
+  linkCoverLetter(id: string, coverLetterId: string | null): Promise<GeneratedResumeData>;
 }

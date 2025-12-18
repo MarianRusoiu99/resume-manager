@@ -1,7 +1,7 @@
 import { getSession, getVerifiedSession } from "@/lib/auth/dal";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
-import { ZodError, ZodSchema } from "zod";
+import { ZodError, type ZodType } from "zod";
 import { errorCodeToStatus, ServiceErrorCode, type ServiceResult } from "@/lib/types/service-result";
 import { applyRateLimit, getClientIdentifier, addRateLimitHeaders, RateLimitConfigs, type RateLimitConfig } from "@/lib/middleware/rate-limit";
 import { isAppError, wrapError } from "@/lib/errors";
@@ -41,7 +41,7 @@ interface ApiHandlerOptions<TBody = unknown> {
     /** Whether to require admin (default: false) */
     requireAdmin?: boolean;
     /** Zod schema for request body validation */
-    bodySchema?: ZodSchema<TBody>;
+    bodySchema?: ZodType<TBody>;
     /** Rate limit configuration key or custom config */
     rateLimit?: keyof typeof RateLimitConfigs | RateLimitConfig;
     /** Verify user exists in database (use for write operations) */

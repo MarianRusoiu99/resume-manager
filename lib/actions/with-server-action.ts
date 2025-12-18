@@ -73,7 +73,23 @@ export interface ServerActionOptions {
  */
 type MaybeServiceResult<T> = T | import('@/lib/types/service-result').ServiceResult<T>;
 
+export function wononithServerAction<TArgs extends unknown[], TResult>(
+  actionName: string,
+  handler: (session: ActionSession, ...args: TArgs) => Promise<MaybeServiceResult<TResult>>,
+  options: ServerActionOptions = {}
+): (...args: TArgs) => Promise<ActionResult<TResult>> {
+  return createServerAction(actionName, handler, options);
+}
+
 export function withServerAction<TArgs extends unknown[], TResult>(
+  actionName: string,
+  handler: (session: ActionSession, ...args: TArgs) => Promise<MaybeServiceResult<TResult>>,
+  options: ServerActionOptions = {}
+): (...args: TArgs) => Promise<ActionResult<TResult>> {
+  return createServerAction(actionName, handler, options);
+}
+
+function createServerAction<TArgs extends unknown[], TResult>(
   actionName: string,
   handler: (session: ActionSession, ...args: TArgs) => Promise<MaybeServiceResult<TResult>>,
   options: ServerActionOptions = {}

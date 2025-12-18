@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { Callout, Spinner } from '@/components/shared';
 import { Button, Card, Textarea, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { ExternalLink } from 'lucide-react';
@@ -39,8 +40,15 @@ export default function GeneratePage() {
 
   // Common state
   const [profiles, setProfiles] = useState<ProfileListItem[]>([]);
+  const [providers, setProviders] = useState<ApiProvider[]>([]);
   const [hasAIProviders, setHasAIProviders] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Provider/model selection state
+  const [selectedResumeProviderId, setSelectedResumeProviderId] = useState<string>('');
+  const [selectedResumeModelId, setSelectedResumeModelId] = useState<string>('');
+  const [selectedCoverLetterProviderId, setSelectedCoverLetterProviderId] = useState<string>('');
+  const [selectedCoverLetterModelId, setSelectedCoverLetterModelId] = useState<string>('');
 
   // Resume generation state
   const [resumeJobDescription, setResumeJobDescription] = useState('');
@@ -116,7 +124,19 @@ export default function GeneratePage() {
         }
 
         if (!providersResult.error && providersResult.data) {
-          setHasAIProviders(providersResult.data.some((p) => p.isActive));
+          setProviders(providersResult.data);
+
+          const activeProviders = providersResult.data.filter((p) => p.isActive);
+          setHasAIProviders(activeProviders.length > 0);
+
+          // Initialize provider/model selections if empty
+          const firstActiveProvider = activeProviders[0];
+          const firstModelId = firstActiveProvider?.models?.[0]?.id ?? '';
+
+          setSelectedResumeProviderId((prev) => prev || firstActiveProvider?.id || '');
+          setSelectedResumeModelId((prev) => prev || firstModelId);
+          setSelectedCoverLetterProviderId((prev) => prev || firstActiveProvider?.id || '');
+          setSelectedCoverLetterModelId((prev) => prev || firstModelId);
         }
       } catch (err) {
         log.error('Failed to load data', err);
@@ -253,6 +273,56 @@ export default function GeneratePage() {
     }
   };
 
+  const activeProviders = providers.filter((p) => p.isActive);
+
+  // Keep selected model valid for current provider
+  useEffect(() => {
+    if (isLoadingData) return;
+
+    const provider = activeProviders.find((p) => p.id === selectedResumeProviderId) ?? activeProviders[0];
+    const providerId = provider?.id ?? '';
+    const models = provider?.models ?? [];
+
+    if (providerId && providerId !== selectedResumeProviderId) {
+      setSelectedResumeProviderId(providerId);
+    }
+
+    if (!models.some((m) => m.id === selectedResumeModelId)) {
+      setSelectedResumeModelId(models[0]?.id ?? '');
+    }
+  }, [activeProviders, isLoadingData, selectedResumeModelId, selectedResumeProviderId]);
+
+  useEffect(() => {
+    if (isLoadingData) return;
+
+    const provider = activeProviders.find((p) => p.id === selectedCoverLetterProviderId) ?? activeProviders[0];
+    const providerId = provider?.id ?? '';
+    const models = provider?.models ?? [];
+
+    if (providerId && providerId !== selectedCoverLetterProviderId) {
+      setSelectedCoverLetterProviderId(providerId);
+    }
+
+    if (!models.some((m) => m.id === selectedCoverLetterModelId)) {
+      setSelectedCoverLetterModelId(models[0]?.id ?? '');
+    }
+  }, [activeProviders, isLoadingData, selectedCoverLetterModelId, selectedCoverLetterProviderId]);
+
+  const handleResumeProviderChange = (providerId: string) => {
+    setSelectedResumeProviderId(providerId);
+    const provider = activeProviders.find((p) => p.id === providerId);
+    setSelectedResumeModelId(provider?.models?.[0]?.id ?? '');
+  };
+
+  const handleCoverLetterProviderChange = (providerId: string) => {
+    setSelectedCoverLetterProviderId(providerId);
+    const provider = activeProviders.find((p) => p.id === providerId);
+    setSelectedCoverLetterModelId(provider?.models?.[0]?.id ?? '');
+  };
+
+  const resumeSelectedProvider = activeProviders.find((p) => p.id === selectedResumeProviderId) ?? null;
+  const coverLetterSelectedProvider = activeProviders.find((p) => p.id === selectedCoverLetterProviderId) ?? null;
+
   const handleGenerateResume = async () => {
     if (!validateResumeInput()) {
       return;
@@ -268,6 +338,7 @@ export default function GeneratePage() {
         jobDescription: resumeJobDescription,
         profileId: selectedResumeProfileId,
         templateId: selectedTemplateId || undefined,
+        modelId: selectedResumeModelId || undefined,
       });
 
        if (!response.ok) {
@@ -326,6 +397,7 @@ export default function GeneratePage() {
         jobDescription: coverLetterJobDescription,
         personalInstructions: coverLetterPersonalInstructions,
         profileId,
+        modelId: selectedCoverLetterModelId || undefined,
       });
 
       if (result.error || !result.data) {
@@ -460,6 +532,50 @@ export default function GeneratePage() {
                       </div>
                     )}
 
+                    {/* AI Model Selection */}
+                    {!isLoadingData && hasAIProviders && (
+                      <div className="space-y-3">
+                        <div>
+                          <label htmlFor="resumeProvider" className="block text-sm font-medium mb-2">
+                            API Provider
+                          </label>
+                          <select
+                            id="resumeProvider"
+                            value={selectedResumeProviderId}
+                            onChange={(e) => handleResumeProviderChange(e.target.value)}
+                            className="w-full px-3 py-2 border rounded-md"
+                            disabled={isGeneratingResume}
+                          >
+                            {activeProviders.map((provider) => (
+                              <option className='bg-background text-foreground' key={provider.id} value={provider.id}>
+                                {provider.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label htmlFor="resumeModel" className="block text-sm font-medium mb-2">
+                            Model
+                          </label>
+                          <SearchableSelect
+                            value={selectedResumeModelId}
+                            onValueChange={(nextValue) => setSelectedResumeModelId(nextValue)}
+                            disabled={isGeneratingResume || !resumeSelectedProvider}
+                            placeholder="Select model..."
+                            searchPlaceholder="Search models..."
+                            dialogTitle="Select a model"
+                            maxListHeightClassName="h-72"
+                            options={(resumeSelectedProvider?.models ?? []).map((model) => ({
+                              value: model.id,
+                              label: model.name || model.id,
+                              description: model.name ? model.id : undefined,
+                            }))}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {/* AI Provider Check */}
                     {!isLoadingData && !hasAIProviders && (
                       <Callout variant="warning" tone="soft" className="p-3">
@@ -500,7 +616,8 @@ export default function GeneratePage() {
                     
                     <Button
                       onClick={handleGenerateResume}
-                      disabled={isLoadingData || isGeneratingResume || resumeJobDescription.length < 50 || !selectedResumeProfileId || !hasAIProviders}
+                        disabled={isLoadingData || isGeneratingResume || resumeJobDescription.length < 50 || !selectedResumeProfileId || !hasAIProviders || !selectedResumeModelId}
+
                       className="w-full"
                     >
                       {(() => {
@@ -651,6 +768,49 @@ export default function GeneratePage() {
                       </Callout>
                     )}
 
+                    {!isLoadingData && hasAIProviders && (
+                      <div className="space-y-3">
+                        <div>
+                          <label htmlFor="coverLetterProvider" className="block text-sm font-medium mb-2">
+                            API Provider
+                          </label>
+                          <select
+                            id="coverLetterProvider"
+                            value={selectedCoverLetterProviderId}
+                            onChange={(e) => handleCoverLetterProviderChange(e.target.value)}
+                            className="w-full px-3 py-2 border rounded-md"
+                            disabled={isGeneratingCoverLetter}
+                          >
+                            {activeProviders.map((provider) => (
+                              <option className='bg-background text-foreground' key={provider.id} value={provider.id}>
+                                {provider.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label htmlFor="coverLetterModel" className="block text-sm font-medium mb-2">
+                            Model
+                          </label>
+                          <SearchableSelect
+                            value={selectedCoverLetterModelId}
+                            onValueChange={(nextValue) => setSelectedCoverLetterModelId(nextValue)}
+                            disabled={isGeneratingCoverLetter || !coverLetterSelectedProvider}
+                            placeholder="Select model..."
+                            searchPlaceholder="Search models..."
+                            dialogTitle="Select a model"
+                            maxListHeightClassName="h-72"
+                            options={(coverLetterSelectedProvider?.models ?? []).map((model) => ({
+                              value: model.id,
+                              label: model.name || model.id,
+                              description: model.name ? model.id : undefined,
+                            }))}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <label htmlFor="coverLetterPersonalInstructions" className="block text-sm font-medium mb-2">
                         Personal Instructions (Optional)
@@ -691,7 +851,7 @@ export default function GeneratePage() {
                     <div className="flex gap-3">
                       <Button
                         onClick={handleGenerateCoverLetter}
-                        disabled={isLoadingData || isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || profiles.length === 0 || !hasAIProviders}
+                        disabled={isLoadingData || isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || profiles.length === 0 || !hasAIProviders || !selectedCoverLetterModelId}
                         className="flex-1"
                       >
                         {isLoadingData && (

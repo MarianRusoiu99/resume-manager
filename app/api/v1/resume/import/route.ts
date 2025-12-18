@@ -4,9 +4,9 @@
  */
 
 import { parseResumeFromText, parseResumeFromImage } from "@/lib/ai/resume-parser";
+import { resolveAIModelOrThrow, resolveVisionModelKey } from "@/lib/ai/runtime";
 import mammoth from "mammoth";
 import { createApiHandler } from "@/lib/api-handler";
-import { apiProviderService } from "@/lib/services/api-provider.service";
 import { failure, success } from "@/lib/types/service-result";
 
 export const POST = createApiHandler<{ resume: unknown }>(async (request, context, session) => {
@@ -30,31 +30,40 @@ export const POST = createApiHandler<{ resume: unknown }>(async (request, contex
         return failure("File size must be less than 10MB", "VALIDATION_ERROR");
     }
 
-    // Get API key from user's configured providers
-    const providerResult = await apiProviderService.getFirstActiveProvider(session.user.id);
-    if (!providerResult.success) {
-        // Treat missing API key as a user-fixable 400 for this endpoint.
-        const mappedCode = providerResult.code === "NOT_FOUND" ? "VALIDATION_ERROR" : providerResult.code;
-        return failure(providerResult.error, mappedCode);
-    }
-
-    const { apiKey } = providerResult.data;
+    const resolvedModel = await resolveAIModelOrThrow({
+        userId: session.user.id,
+        feature: 'resume',
+    });
 
     let resumeData: unknown;
 
     if (fileType === "pdf") {
-        // For PDFs, we treat them as images and use Vision API.
+        // For PDFs, we treat them as images and use vision-capable model.
         const arrayBuffer = await file.arrayBuffer();
         const base64 = Buffer.from(arrayBuffer).toString("base64");
-        resumeData = await parseResumeFromImage(base64, "application/pdf", apiKey);
+        resumeData = await parseResumeFromImage({
+            imageBase64: base64,
+            mimeType: "application/pdf",
+            provider: resolvedModel.provider,
+            modelKey: resolveVisionModelKey(resolvedModel),
+        });
     } else if (fileType === "image") {
         const arrayBuffer = await file.arrayBuffer();
         const base64 = Buffer.from(arrayBuffer).toString("base64");
-        resumeData = await parseResumeFromImage(base64, file.type, apiKey);
+        resumeData = await parseResumeFromImage({
+            imageBase64: base64,
+            mimeType: file.type,
+            provider: resolvedModel.provider,
+            modelKey: resolveVisionModelKey(resolvedModel),
+        });
     } else if (fileType === "word") {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) });
-        resumeData = await parseResumeFromText(result.value, apiKey);
+        resumeData = await parseResumeFromText({
+            text: result.value,
+            provider: resolvedModel.provider,
+            modelKey: resolvedModel.modelKey,
+        });
     } else {
         return failure("Unsupported file type", "VALIDATION_ERROR");
     }

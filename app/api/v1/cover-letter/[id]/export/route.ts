@@ -73,9 +73,21 @@ export const POST = createApiHandler(async (_request, { params }, session) => {
 
   const coverLetter = coverLetterResult.data;
 
+  const metadata = coverLetter.metadata as unknown;
+  const metadataRecord =
+    metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : undefined;
+
+  const metadataJobTitle = typeof metadataRecord?.jobTitle === 'string' ? metadataRecord.jobTitle : undefined;
+  const metadataCompanyName =
+    typeof metadataRecord?.companyName === 'string' ? metadataRecord.companyName : undefined;
+
+  const jobTitle = coverLetter.jobPosting?.title ?? metadataJobTitle;
+  const companyName = coverLetter.jobPosting?.company?.name ?? metadataCompanyName;
+  const displayTitle = [jobTitle, companyName].filter(Boolean).join(' - ') || 'Cover Letter';
+
   const resume = {
     basics: {
-      name: coverLetter.jobTitle || 'Cover Letter',
+      name: displayTitle,
     },
     coverLetterHtml: markdownishToHtml(coverLetter.content),
   } as Resume & { coverLetterHtml: string };
@@ -107,9 +119,8 @@ export const POST = createApiHandler(async (_request, { params }, session) => {
 
     const pdfBuffer = await page.pdf(PDF_CONFIG);
 
-    const safeName = (coverLetter.jobTitle || coverLetter.companyName || 'cover-letter')
-      .replaceAll(/\s+/g, '_')
-      .replaceAll(/[^a-zA-Z0-9_\-]/g, '');
+    const safeNameBase = displayTitle || 'cover-letter';
+    const safeName = safeNameBase.replaceAll(/\s+/g, '_').replaceAll(/[^a-zA-Z0-9_\-]/g, '');
 
     return new NextResponse(Buffer.from(pdfBuffer), {
       headers: {

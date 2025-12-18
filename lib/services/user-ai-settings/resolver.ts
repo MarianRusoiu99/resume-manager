@@ -1,4 +1,4 @@
-import type { AIFeatureType } from '@/lib/repositories/user-ai-settings.repository';
+import type { AIFeatureType } from '@/lib/repositories/interfaces';
 import { userAISettingsRepository } from '@/lib/repositories/user-ai-settings.repository';
 import { apiProviderService } from '../api-provider';
 import { withServiceError } from '../utils';
@@ -32,16 +32,27 @@ export async function resolveProviderForFeature(
     const preference = await userAISettingsRepository.getFeaturePreference(userId, feature);
 
     if (preference.providerId && preference.modelId) {
-      const providerResult = await apiProviderService.getProviderInstance(
-        preference.providerId,
-        userId
-      );
+      const providerResult = await apiProviderService.getProviderInstance(preference.providerId, userId);
 
       if (providerResult.success) {
-        return {
-          providerId: preference.providerId,
-          modelId: preference.modelId,
-        };
+        const modelsResult = await apiProviderService.getAvailableModels(userId);
+        if (modelsResult.success) {
+          const preferredModel = modelsResult.data.allModels.find((m) => {
+            if (m.providerId !== preference.providerId) return false;
+            if (m.id === preference.modelId) return true;
+            if (m.modelKey === preference.modelId) return true;
+            return m.modelKey.toLowerCase() === preference.modelId!.toLowerCase();
+          });
+
+          if (preferredModel) {
+            return {
+              providerId: preference.providerId,
+              modelId: preferredModel.id,
+            };
+          }
+        }
+
+        logger.warn(`User's preferred model ${preference.modelId} is no longer valid`);
       }
 
       logger.warn(`User's preferred provider ${preference.providerId} is no longer valid`);

@@ -110,12 +110,13 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
     try {
       setIsLoading(true);
       setError(null);
+      setEnhancedContent(''); // Start with empty string for streaming
 
       const fullContext = [options.context, attachmentsContext]
         .filter(Boolean)
         .join('\n\n');
 
-      const result = await apiV1.AI.ENHANCE.post<{ enhancedContent?: string }>({
+      const response = await apiV1.AI.ENHANCE_STREAM.postFetch({
         content: options.content,
         instructions,
         context: fullContext || undefined,
@@ -123,11 +124,39 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
         modelId: options.modelId,
       });
 
-      if (result.error) {
-        throw new Error(result.error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Enhancement failed');
       }
 
-      setEnhancedContent(result.data?.enhancedContent ?? '');
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        
+        // Vercel AI SDK Data Stream format: 0:"text chunk"
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('0:')) {
+            try {
+              const text = JSON.parse(line.slice(2));
+              accumulated += text;
+              setEnhancedContent(accumulated);
+            } catch (e) {
+              // Ignore parse errors for partial chunks
+            }
+          }
+        }
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Enhancement failed';
       setError(message);
@@ -191,7 +220,7 @@ export function useResumeEnhancement<T>(): UseAIEnhancementReturn<T> & {
         attachmentsContext,
       ].filter(Boolean);
 
-      const result = await apiV1.AI.ENHANCE.post<{ enhancedContent?: string }>({
+      const response = await apiV1.AI.ENHANCE_STREAM.postFetch({
         content: `RESUME DATA (JSON format - you MUST return valid JSON in this exact structure):
 ${resumeJson}`,
         instructions: `${instructions}
@@ -207,12 +236,37 @@ CRITICAL INSTRUCTIONS:
         contentType: 'text',
       });
 
-      if (result.error) {
-        throw new Error(result.error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Enhancement failed');
       }
 
-      const enhancedJson = result.data?.enhancedContent ?? '';
-      const parsedResume = parseResumeJson<T>(enhancedJson);
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('0:')) {
+            try {
+              const text = JSON.parse(line.slice(2));
+              accumulated += text;
+              // We can't parse partial JSON, so we just accumulate
+            } catch (e) {}
+          }
+        }
+      }
+
+      const parsedResume = parseResumeJson<T>(accumulated);
       setEnhancedContent(parsedResume);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Enhancement failed';
@@ -286,7 +340,7 @@ ${templateData.css}`;
         attachmentsContext,
       ].filter(Boolean);
 
-      const result = await apiV1.AI.ENHANCE.post<{ enhancedContent?: string }>({
+      const response = await apiV1.AI.ENHANCE_STREAM.postFetch({
         content: combinedContent,
         instructions: `${instructions}
 
@@ -302,11 +356,36 @@ Make sure to preserve both sections and the exact separator format.`,
         contentType: 'html',
       });
 
-      if (result.error) {
-        throw new Error(result.error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Enhancement failed');
       }
 
-      const parsed = parseTemplateResponse(result.data?.enhancedContent ?? '', templateData.css);
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('0:')) {
+            try {
+              const text = JSON.parse(line.slice(2));
+              accumulated += text;
+            } catch (e) {}
+          }
+        }
+      }
+
+      const parsed = parseTemplateResponse(accumulated, templateData.css);
       setEnhancedContent(parsed);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Enhancement failed';

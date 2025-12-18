@@ -4,33 +4,27 @@
  */
 
 import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
+import { extractJSON } from '@/lib/ai/agents/shared';
 import type { Resume } from "@/lib/validations/jsonresume";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
 
 /**
- * Default model configuration
+ * Inputs for parsing resume content.
+ *
+ * Provider/model should be resolved via `lib/ai/runtime`.
  */
-const DEFAULT_CONFIG = {
-    defaultModel: 'gpt-4o-mini',
-    defaultVisionModel: 'gpt-4o',
+export type ParseResumeFromTextInput = {
+    text: string;
+    provider: import('@/lib/ai/providers').AIProvider;
+    modelKey: string;
 };
 
-/**
- * Create OpenAI client with the provided API key
- * API keys are managed through the in-app Settings → API Keys
- */
-const getOpenAIClient = (apiKey: string) => {
-    if (!apiKey) {
-        throw new Error(
-            'No API key provided. Please configure an API provider in Settings → API Keys'
-        );
-    }
-
-    return createOpenAI({
-        apiKey,
-    });
+export type ParseResumeFromImageInput = {
+    imageBase64: string;
+    mimeType: string;
+    provider: import('@/lib/ai/providers').AIProvider;
+    modelKey: string;
 };
 
 const EXTRACTION_PROMPT = `You are a resume parser. Extract ALL information from the provided resume and convert it to JSON Resume format.
@@ -137,30 +131,17 @@ function normalizeDates(data: unknown): unknown {
     return normalized;
 }
 
-export async function parseResumeFromText(
-    text: string,
-    apiKey: string
-): Promise<Resume> {
+export async function parseResumeFromText(input: ParseResumeFromTextInput): Promise<Resume> {
+    const { text, provider, modelKey } = input;
     try {
-        const openaiClient = getOpenAIClient(apiKey);
         const { text: responseText } = await generateText({
-            model: openaiClient(DEFAULT_CONFIG.defaultModel),
+            model: provider.createLanguageModel(modelKey),
             system: EXTRACTION_PROMPT,
             prompt: `Extract resume data from this text:\n\n${text}`,
             temperature: 0.1,
         });
 
-        // Try to extract JSON from the response
-        let jsonText = responseText.trim();
-
-        // Remove markdown code blocks if present
-        if (jsonText.startsWith("```json")) {
-            jsonText = jsonText.replace(/^```json\n/, "").replace(/\n```$/, "");
-        } else if (jsonText.startsWith("```")) {
-            jsonText = jsonText.replace(/^```\n/, "").replace(/\n```$/, "");
-        }
-
-        const extractedData = JSON.parse(jsonText);
+        const extractedData = JSON.parse(extractJSON(responseText));
 
         // Normalize dates before validation
         const normalizedData = normalizeDates(extractedData);
@@ -185,15 +166,11 @@ export async function parseResumeFromText(
     }
 }
 
-export async function parseResumeFromImage(
-    imageBase64: string,
-    mimeType: string,
-    apiKey: string
-): Promise<Resume> {
+export async function parseResumeFromImage(input: ParseResumeFromImageInput): Promise<Resume> {
+    const { imageBase64, mimeType, provider, modelKey } = input;
     try {
-        const openaiClient = getOpenAIClient(apiKey);
         const { text: responseText } = await generateText({
-            model: openaiClient(DEFAULT_CONFIG.defaultVisionModel),
+            model: provider.createLanguageModel(modelKey),
             messages: [
                 {
                     role: "system",
@@ -216,18 +193,8 @@ export async function parseResumeFromImage(
             temperature: 0.1,
         });
 
-        // Try to extract JSON from the response
-        let jsonText = responseText.trim();
-
-        // Remove markdown code blocks if present
-        if (jsonText.startsWith("```json")) {
-            jsonText = jsonText.replace(/^```json\n/, "").replace(/\n```$/, "");
-        } else if (jsonText.startsWith("```")) {
-            jsonText = jsonText.replace(/^```\n/, "").replace(/\n```$/, "");
-        }
-
-        const extractedData = JSON.parse(jsonText);
- 
+        const extractedData = JSON.parse(extractJSON(responseText));
+  
         // Normalize dates before validation
         const normalizedData = normalizeDates(extractedData);
  

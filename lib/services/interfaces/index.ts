@@ -8,8 +8,9 @@
  * - Clear API boundaries between layers
  */
 
-export type { IProfileService } from './profile.service.interface';
+export type { IProfileService, ProfileServiceData, UpdateProfileServiceInput } from './profile.service.interface';
 export type { IResumeGenerationService, IResumeCrudService, IResumeService } from './resume.service.interface';
 export type { INotificationService } from './notification.service.interface';
 export type { ITemplateService } from './template.service.interface';
 export type { ICoverLetterService } from './cover-letter.service.interface';
+export type { IAIService } from './ai.service.interface';

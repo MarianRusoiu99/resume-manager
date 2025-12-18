@@ -13,11 +13,14 @@ import { requireFound } from '@/lib/auth/guards';
 export const GET = createApiHandler(async (_req, { params }, session) => {
   const { id } = await params;
 
-  // Fetch resume (ownership-safe) with template
+  // Fetch resume (ownership-safe) with template + document
   const resume = requireFound(
-    await prisma.generatedResume.findFirst({
+    await prisma.resume.findFirst({
       where: { id, userId: session.user.id },
-      include: { template: true },
+      include: {
+        template: true,
+        document: { select: { document: true } },
+      },
     }),
     'Resume'
   );
@@ -35,7 +38,7 @@ export const GET = createApiHandler(async (_req, { params }, session) => {
   const html = renderCompleteDocument(
     template.htmlTemplate,
     template.cssStyles,
-    resume.resume as Resume
+    resume.document?.document as Resume
   );
 
   return new Response(html, {

@@ -5,15 +5,11 @@
  * The profile/resume is the SINGLE SOURCE OF TRUTH - nothing is fabricated.
  */
 
-import { generateText } from 'ai';
 import { z } from 'zod';
+import type { LanguageModel } from 'ai';
 import type { Resume } from '@/lib/validations/jsonresume';
-import type { AIProvider } from '@/lib/ai/providers';
-import { extractJSON } from '../shared/utils';
-import { 
-  RESUME_OPTIMIZATION_SYSTEM_PROMPT, 
-  buildResumeOptimizationPrompt 
-} from './prompt';
+import { ValidatedAIRunner } from '../../core/validated-runner';
+import { PromptRegistry } from '../../prompts';
 import { logger } from '@/lib/utils/logger';
 
 // ============================================================================
@@ -126,8 +122,7 @@ export const optimizedResumeSchema = z.object({
 export type OptimizedResume = z.infer<typeof optimizedResumeSchema>;
 
 export interface OptimizeResumeInput {
-  provider: AIProvider;
-  modelId: string;
+  model: LanguageModel;
   jobDescription: string;
   userResume: Resume;
 }
@@ -151,60 +146,29 @@ export interface OptimizeResumeResult {
 export async function optimizeResume(
   input: OptimizeResumeInput
 ): Promise<OptimizeResumeResult> {
-  const model = input.provider.createLanguageModel(input.modelId);
+  const { model } = input;
 
   logger.debug('Resume optimization started');
-  logger.debug('Job description received', {
-    jobDescriptionLength: input.jobDescription?.length || 0,
-    jobDescriptionPreview: input.jobDescription?.slice(0, 200) || 'EMPTY',
+  
+  const { system, prompt } = PromptRegistry.render('resume-optimization', {
+    jobDescription: input.jobDescription,
+    resume: JSON.stringify(input.userResume, null, 2),
   });
- 
-  const prompt = buildResumeOptimizationPrompt(input.jobDescription, input.userResume);
-  logger.debug('Resume optimization prompt built', { promptLength: prompt.length });
 
+  const resultSchema = z.object({
+    jobTitle: z.string(),
+    companyName: z.string(),
+    resume: optimizedResumeSchema,
+  });
 
-  const result = await generateText({
+  const validatedResult = await ValidatedAIRunner.run({
     model,
-    system: RESUME_OPTIMIZATION_SYSTEM_PROMPT,
+    system,
     prompt,
+    schema: resultSchema,
+    userId: (input as any).userId,
+    feature: 'resume-optimization',
   });
 
-  logger.debug('AI response received');
-  logger.debug('AI response stats', {
-    responseLength: result.text.length,
-    responsePreview: result.text.slice(0, 500),
-  });
-
-  try {
-    const jsonStr = extractJSON(result.text);
-    logger.debug('Extracted JSON', { jsonLength: jsonStr.length });
-
-    const parsed = JSON.parse(jsonStr);
-    logger.debug('Parsed optimized resume JSON', { parsedKeys: Object.keys(parsed) });
-
-    // Extract metadata
-    const jobTitle = parsed.jobTitle || 'Position';
-    const companyName = parsed.companyName || 'Company';
-    logger.debug('Extracted metadata', { jobTitle, companyName });
-
-    // Parse and validate the resume
-    const resume = optimizedResumeSchema.parse(parsed.resume || parsed);
-    logger.debug('Validated optimized resume', { resumeSections: Object.keys(resume) });
-
-    return { resume, jobTitle, companyName };
-  } catch (error) {
-    // Fallback: return original resume structure if parsing fails
-    logger.error('Failed to parse optimized resume', error);
-    return {
-      resume: {
-        basics: input.userResume.basics,
-        work: input.userResume.work,
-        education: input.userResume.education,
-        skills: input.userResume.skills,
-        projects: input.userResume.projects,
-      } as OptimizedResume,
-      jobTitle: 'Position',
-      companyName: 'Company',
-    };
-  }
+  return validatedResult;
 }

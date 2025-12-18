@@ -1,8 +1,13 @@
 import {
   userAISettingsRepository,
-  type AIFeatureType,
-  type ModelPreference,
+  UserAISettingsRepository,
 } from '@/lib/repositories/user-ai-settings.repository';
+import type {
+  AIFeatureType,
+  ModelPreference,
+  UserAISettingsData,
+  UpsertAISettingsInput,
+} from '@/lib/repositories/interfaces';
 import { apiProviderService } from '../api-provider';
 import type { ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, NotFoundError, ValidationError } from '../utils';
@@ -10,11 +15,26 @@ import { AI_FEATURES } from './features';
 import type { FeatureModelSelection, ResolvedAISettings, UpdateFeaturePreferenceInput } from './types';
 import { extractPreference, resolveNames } from './mappers';
 import { resolveProviderForFeature } from './resolver';
+import { GenericUserOwnedCrudService } from '../utils/generic-crud.service';
 
-export class UserAISettingsService {
+/**
+ * User AI Settings Service
+ * 
+ * Refactored to use GenericUserOwnedCrudService.
+ */
+export class UserAISettingsService extends GenericUserOwnedCrudService<
+  UserAISettingsData,
+  UpsertAISettingsInput,
+  UpsertAISettingsInput,
+  UserAISettingsRepository
+> {
+  constructor(repository: UserAISettingsRepository = userAISettingsRepository) {
+    super(repository, 'User AI Settings');
+  }
+
   async getSettings(userId: string): Promise<ServiceResult<ResolvedAISettings>> {
     return withServiceError('get AI settings', async () => {
-      const settings = await userAISettingsRepository.findByUserId(userId);
+      const settings = await this.repository.findByUserId(userId);
 
       const providersResult = await apiProviderService.getUserProvidersWithModels(userId);
       const providers = providersResult.success ? providersResult.data : [];
@@ -51,7 +71,7 @@ export class UserAISettingsService {
       }
 
       if (!providerId && !modelId) {
-        await userAISettingsRepository.updateFeaturePreference(userId, feature, null, null);
+        await this.repository.updateFeaturePreference(userId, feature, null, null);
         return {
           feature: featureConfig,
           providerId: null,
@@ -75,37 +95,46 @@ export class UserAISettingsService {
         throw new NotFoundError('Provider');
       }
 
+      let normalizedModelId = modelId;
+
       if (modelId) {
-        const modelExists = provider.models.some((m) => m.id === modelId);
-        if (!modelExists) {
+        const model = provider.models.find((m) => {
+          if (m.id === modelId) return true;
+          if (m.modelKey === modelId) return true;
+          return m.modelKey.toLowerCase() === modelId.toLowerCase();
+        });
+
+        if (!model) {
           throw new ValidationError(`Model ${modelId} not found in provider ${provider.name}`);
         }
+
+        normalizedModelId = model.id;
       }
 
-      await userAISettingsRepository.updateFeaturePreference(userId, feature, providerId, modelId);
+      await this.repository.updateFeaturePreference(userId, feature, providerId, normalizedModelId);
 
-      const model = provider.models.find((m) => m.id === modelId);
+      const savedModel = provider.models.find((m) => m.id === normalizedModelId);
 
       return {
         feature: featureConfig,
         providerId,
         providerName: provider.name,
-        modelId,
-        modelName: model?.name || modelId,
+        modelId: normalizedModelId,
+        modelName: savedModel?.name || normalizedModelId,
       };
     });
   }
 
   async getFeaturePreference(userId: string, feature: AIFeatureType): Promise<ServiceResult<ModelPreference>> {
     return withServiceError('get feature preference', async () => {
-      const preference = await userAISettingsRepository.getFeaturePreference(userId, feature);
+      const preference = await this.repository.getFeaturePreference(userId, feature);
       return preference;
     });
   }
 
   async clearSettings(userId: string): Promise<ServiceResult<void>> {
     return withServiceError('clear AI settings', async () => {
-      await userAISettingsRepository.delete(userId);
+      await this.repository.delete(userId);
     });
   }
 
@@ -116,7 +145,6 @@ export class UserAISettingsService {
   ): Promise<ServiceResult<{ providerId: string; modelId: string } | null>> {
     return resolveProviderForFeature(userId, feature, overrideModelId);
   }
-
 }
 
 export const userAISettingsService = new UserAISettingsService();

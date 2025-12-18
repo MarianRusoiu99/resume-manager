@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 export interface CoverLetterListItem {
     id: string;
     content: string;
-    jobTitle: string | null;
-    companyName: string | null;
+    jobPosting?: { title: string | null; company?: { name: string } | null } | null;
     createdAt: string;
 }
 
@@ -47,8 +46,8 @@ export function CoverLetterList({
                 <CoverLetterCard
                     key={coverLetter.id}
                     id={coverLetter.id}
-                    jobTitle={coverLetter.jobTitle}
-                    companyName={coverLetter.companyName}
+                    jobTitle={coverLetter.jobPosting?.title ?? null}
+                    companyName={coverLetter.jobPosting?.company?.name ?? null}
                     content={coverLetter.content}
                     createdAt={coverLetter.createdAt}
                     onView={(id) => router.push(`/cover-letters/${id}`)}

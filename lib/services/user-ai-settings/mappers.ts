@@ -1,4 +1,4 @@
-import type { UserAISettingsData } from '@/lib/repositories/user-ai-settings.repository';
+import type { UserAISettingsData } from '@/lib/repositories/interfaces';
 import type { ProviderWithModels } from '../api-provider';
 import type { AIFeatureType, ModelPreference } from './types';
 
@@ -49,7 +49,12 @@ export function resolveNames(
     return { providerName: null, modelName: null };
   }
 
-  const model = provider.models.find((m) => m.id === preference.modelId);
+  const model = provider.models.find((m) => {
+    if (m.id === preference.modelId) return true;
+    if (m.modelKey === preference.modelId) return true;
+    if (!preference.modelId) return false;
+    return m.modelKey.toLowerCase() === preference.modelId.toLowerCase();
+  });
 
   return {
     providerName: provider.name,

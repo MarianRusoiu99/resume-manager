@@ -5,8 +5,9 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createApiHandler } from '@/lib/api-handler';
 import puppeteer from 'puppeteer';
+
+import { createApiHandler } from '@/lib/api-handler';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
 import { PDF_CONFIG } from '@/lib/utils/pdf-renderer';
 import { resumeSchema, type Resume } from '@/lib/validations/jsonresume';

@@ -8,34 +8,36 @@
 import { prisma } from '@/lib/db';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { PrismaClient, Prisma, TemplateCategory } from '@prisma/client';
-import type { ITemplateRepository } from './interfaces';
+import { GenericRepository } from './generic.repository';
+import type { ITemplateRepository, CreateTemplateInput, UpdateTemplateInput } from './interfaces/template.repository.interface';
 
 /**
  * Template Repository Implementation
  */
-export class TemplateRepository implements ITemplateRepository {
-  private readonly db: PrismaClient;
-
+export class TemplateRepository 
+  extends GenericRepository<ResumeTemplate, CreateTemplateInput, UpdateTemplateInput, any>
+  implements ITemplateRepository 
+{
   constructor(dbClient: PrismaClient = prisma) {
-    this.db = dbClient;
+    super('resumeTemplate', dbClient);
   }
   /**
    * Get all public templates
    */
   async findAllPublic(): Promise<ResumeTemplate[]> {
-    const templates = await this.db.resumeTemplate.findMany({
+    const templates = await this.delegate.findMany({
       where: { isPublic: true },
       orderBy: [{ name: 'asc' }],
     });
 
-    return templates.map((t) => this.mapToTemplate(t));
+    return templates.map((t: any) => this.mapToTemplate(t));
   }
 
   /**
    * Get templates by category
    */
   async findByCategory(category: string): Promise<ResumeTemplate[]> {
-    const templates = await this.db.resumeTemplate.findMany({
+    const templates = await this.delegate.findMany({
       where: {
         isPublic: true,
         category: category as TemplateCategory,
@@ -43,14 +45,14 @@ export class TemplateRepository implements ITemplateRepository {
       orderBy: [{ name: 'asc' }],
     });
 
-    return templates.map((t) => this.mapToTemplate(t));
+    return templates.map((t: any) => this.mapToTemplate(t));
   }
 
   /**
    * Get template by ID
    */
-  async findById(id: string): Promise<ResumeTemplate | null> {
-    const template = await this.db.resumeTemplate.findUnique({
+  override async findById(id: string): Promise<ResumeTemplate | null> {
+    const template = await this.delegate.findUnique({
       where: { id },
     });
 
@@ -60,16 +62,8 @@ export class TemplateRepository implements ITemplateRepository {
   /**
    * Create a new template
    */
-  async create(data: {
-    name: string;
-    category: TemplateCategory;
-    description: string;
-    htmlTemplate: string;
-    cssStyles: string;
-    previewUrl?: string;
-    isPublic?: boolean;
-  }): Promise<ResumeTemplate> {
-    const template = await this.db.resumeTemplate.create({
+  override async create(data: CreateTemplateInput): Promise<ResumeTemplate> {
+    const template = await this.delegate.create({
       data: {
         name: data.name,
         category: data.category,
@@ -87,17 +81,9 @@ export class TemplateRepository implements ITemplateRepository {
   /**
    * Update template
    */
-  async update(
+  override async update(
     id: string,
-    data: Partial<{
-      name: string;
-      category: TemplateCategory;
-      description: string;
-      htmlTemplate: string;
-      cssStyles: string;
-      previewUrl: string;
-      isPublic: boolean;
-    }>
+    data: UpdateTemplateInput
   ): Promise<ResumeTemplate> {
     const updateData: Prisma.ResumeTemplateUpdateInput = {};
 
@@ -124,7 +110,7 @@ export class TemplateRepository implements ITemplateRepository {
     if (data.previewUrl !== undefined) updateData.previewUrl = data.previewUrl;
     if (data.isPublic !== undefined) updateData.isPublic = data.isPublic;
 
-    const template = await this.db.resumeTemplate.update({
+    const template = await this.delegate.update({
       where: { id },
       data: updateData,
     });
@@ -135,10 +121,15 @@ export class TemplateRepository implements ITemplateRepository {
   /**
    * Delete template
    */
-  async delete(id: string): Promise<void> {
-    await this.db.resumeTemplate.delete({
+  override async delete(id: string): Promise<ResumeTemplate> {
+    const template = await this.findById(id);
+    if (!template) throw new Error('Template not found');
+
+    await this.delegate.delete({
       where: { id },
     });
+
+    return template;
   }
 
   /**
@@ -152,7 +143,7 @@ export class TemplateRepository implements ITemplateRepository {
     });
 
     return templates.reduce(
-      (acc: Record<string, number>, item: { category: string; _count: number }) => {
+      (acc: Record<string, number>, item: any) => {
         acc[item.category] = item._count;
         return acc;
       },
@@ -164,7 +155,7 @@ export class TemplateRepository implements ITemplateRepository {
    * Check if a template is in use by any resumes
    */
   async isInUse(templateId: string): Promise<boolean> {
-    const count = await this.db.generatedResume.count({
+    const count = await this.db.resume.count({
       where: { templateId },
     });
     return count > 0;
@@ -179,7 +170,7 @@ export class TemplateRepository implements ITemplateRepository {
       distinct: ['category'],
       orderBy: { category: 'asc' },
     });
-    return categories.map((c) => c.category);
+    return categories.map((c: any) => c.category);
   }
 
   /**

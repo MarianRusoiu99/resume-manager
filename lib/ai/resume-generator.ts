@@ -25,7 +25,7 @@ export type { OptimizedResume, OptimizeResumeResult };
 
 export interface GenerateResumeInput {
   provider: AIProvider;
-  modelId: string;
+  modelKey: string;
   jobDescription: string;
   userResume: Resume;
   userId?: string;
@@ -79,7 +79,7 @@ export async function generateResume(
   const result = await executeWorkflow({
     config: workflow,
     provider: input.provider,
-    modelId: input.modelId,
+    modelKey: input.modelKey,
     jobDescription: input.jobDescription,
     userResume: input.userResume,
     userId: input.userId,

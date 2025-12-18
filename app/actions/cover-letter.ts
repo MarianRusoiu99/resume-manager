@@ -41,15 +41,20 @@ export const createCoverLetter = withServerAction(
             tokens?: number;
             generationTime?: number;
             personalInstructions?: string;
+            jobDescription?: string;
+            jobTitle?: string;
+            companyName?: string;
         }
     ) => {
         return coverLetterService.createCoverLetter({
             userId: session.user.id,
             content,
-            jobDescription,
-            jobTitle,
-            companyName,
-            metadata: metadata || {},
+            metadata: {
+                ...(metadata || {}),
+                jobDescription,
+                jobTitle,
+                companyName,
+            },
         });
     },
     {
@@ -69,9 +74,14 @@ export const updateCoverLetter = withServerAction(
         coverLetterId: string,
         data: Partial<{
             content: string;
-            jobDescription: string;
-            jobTitle: string;
-            companyName: string;
+            resumeId: string | null;
+            jobPostingId: string | null;
+            metadata: {
+                contentJson?: string;
+                jobDescription?: string;
+                jobTitle?: string;
+                companyName?: string;
+            };
         }>
     ) => {
         return coverLetterService.updateCoverLetter(coverLetterId, session.user.id, data);

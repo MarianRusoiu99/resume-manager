@@ -59,9 +59,29 @@ export interface INotificationRepository {
   create(data: CreateNotificationInput): Promise<NotificationData>;
 
   /**
+   * Find a notification by ID with optional user ownership check
+   */
+  findById(id: string, userId?: string): Promise<NotificationData | null>;
+
+  /**
    * Find all notifications for a user
    */
-  findByUserId(userId: string, options?: FindNotificationsOptions): Promise<NotificationData[]>;
+  findAllForUser(userId: string, args?: any): Promise<NotificationData[]>;
+
+  /**
+   * Update a notification
+   */
+  update(id: string, data: any, userId?: string): Promise<NotificationData>;
+
+  /**
+   * Delete a notification
+   */
+  delete(id: string, userId?: string): Promise<NotificationData>;
+
+  /**
+   * Check if notification exists and belongs to user
+   */
+  exists(id: string, userId?: string): Promise<boolean>;
 
   /**
    * Get unread count for a user
@@ -77,11 +97,6 @@ export interface INotificationRepository {
    * Mark all notifications as read for a user
    */
   markAllAsRead(userId: string): Promise<{ count: number }>;
-
-  /**
-   * Delete a notification
-   */
-  delete(id: string, userId: string): Promise<boolean>;
 
   /**
    * Delete old read notifications

@@ -5,7 +5,7 @@
  * stable facade and reduce coupling for consumers.
  */
 
-import { apiProviderRepository } from '@/lib/repositories/api-provider.repository';
+import { apiProviderRepository, ApiProviderRepository } from '@/lib/repositories/api-provider.repository';
 import { encryptApiKey, decryptApiKey, createKeyPreview } from '@/lib/encryption/api-key';
 import { apiKeyAuditService, type AuditContext } from '../api-key-audit';
 import {
@@ -15,7 +15,7 @@ import {
   getProviderName,
   type AIModel,
 } from '@/lib/ai/providers';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult, isFailure } from '@/lib/types/service-result';
 import {
   withServiceError,
   NotFoundError,
@@ -24,7 +24,8 @@ import {
   ExternalServiceError,
 } from '@/lib/services/utils';
 import { logger } from '@/lib/utils/logger';
-import { filterTextModels } from './model-filter';
+import { GenericUserOwnedCrudService } from '../utils/generic-crud.service';
+
 import type {
   AddApiProviderInput,
   UpdateApiProviderInput,
@@ -35,8 +36,14 @@ import type {
   AvailableModelsData,
   ValidationData,
 } from './types';
+import { ApiProviderWithModels, CreateApiProviderInput, UpdateApiProviderInput as RepoUpdateInput } from '@/lib/repositories/interfaces/api-provider.repository.interface';
 
-export class ApiProviderService {
+export class ApiProviderService 
+  extends GenericUserOwnedCrudService<ApiProviderWithModels, CreateApiProviderInput, RepoUpdateInput, ApiProviderRepository>
+{
+  constructor(repository: ApiProviderRepository = apiProviderRepository) {
+    super(repository, 'ApiProvider');
+  }
   async addProvider(input: AddApiProviderInput): Promise<ServiceResult<ProviderInfo>> {
     return withServiceError('add provider', async () => {
       if (!isProviderSupported(input.provider)) {
@@ -54,8 +61,7 @@ export class ApiProviderService {
 
       let models: AIModel[];
       try {
-        const allModels = await providerInstance.fetchModels();
-        models = filterTextModels(allModels);
+        models = await providerInstance.fetchModels();
 
         if (!models || models.length === 0) {
           throw new ValidationError(
@@ -70,41 +76,54 @@ export class ApiProviderService {
         );
       }
 
-      const encryptedKey = encryptApiKey(input.apiKey);
-      const keyPreview = createKeyPreview(input.provider);
-      const modelIds = models.map((m) => m.id);
+       const encryptedKey = encryptApiKey(input.apiKey);
+       const keyPreview = createKeyPreview(input.provider);
+       const modelKeys = models.map((m) => m.id);
 
-      let provider;
-      try {
-        provider = await apiProviderRepository.create({
-          userId: input.userId,
-          name: input.name,
-          provider: input.provider,
-          encryptedKey,
-          models: modelIds,
-        });
-      } catch (dbError) {
-        if (dbError instanceof Error && dbError.message.includes('Foreign key constraint')) {
-          throw new UnauthorizedError('Session expired. Please log out and log back in.');
-        }
-        throw dbError;
-      }
+       let provider;
+       try {
+         provider = await apiProviderRepository.create({
+           userId: input.userId,
+           name: input.name,
+           provider: input.provider,
+           encryptedKey,
+           models: modelKeys,
+         });
+       } catch (dbError) {
+         if (dbError instanceof Error && dbError.message.includes('Foreign key constraint')) {
+           throw new UnauthorizedError('Session expired. Please log out and log back in.');
+         }
+         throw dbError;
+       }
 
-      const auditContext = input.auditContext || { userId: input.userId };
-      await apiKeyAuditService.logKeyCreated(provider.id, auditContext, {
-        provider: input.provider,
-        name: input.name,
-      });
+       const auditContext = input.auditContext || { userId: input.userId };
+       await apiKeyAuditService.logKeyCreated(provider.id, auditContext, {
+         provider: input.provider,
+         name: input.name,
+       });
 
-      return {
-        id: provider.id,
-        name: provider.name,
-        provider: provider.provider.toLowerCase(),
-        keyPreview,
-        models,
-        isActive: provider.isActive,
-        createdAt: provider.createdAt,
-      };
+       const configuredModels = provider.models.map((dbModel) => {
+         const runtimeModel = models.find((m) => m.id === dbModel.modelKey);
+
+         return {
+           id: dbModel.id,
+           modelKey: dbModel.modelKey,
+           name: runtimeModel?.name || dbModel.displayName || dbModel.modelKey,
+           description: runtimeModel?.description || dbModel.description || undefined,
+           contextWindow: runtimeModel?.contextWindow,
+           maxOutputTokens: runtimeModel?.maxOutputTokens,
+         };
+       });
+
+       return {
+         id: provider.id,
+         name: provider.name,
+         provider: provider.provider.toLowerCase(),
+         keyPreview,
+         models: configuredModels,
+         isActive: provider.isActive,
+         createdAt: provider.createdAt,
+       };
     });
   }
 
@@ -131,11 +150,20 @@ export class ApiProviderService {
             });
           }
 
-          const allModels = await providerInstance.fetchModels();
-          const textModels = filterTextModels(allModels);
+          const runtimeModels = await providerInstance.fetchModels();
 
-          const storedModelIds = provider.models;
-          const filteredModels = textModels.filter((m) => storedModelIds.includes(m.id));
+          const configuredModels = provider.models.map((dbModel) => {
+            const runtimeModel = runtimeModels.find((m) => m.id === dbModel.modelKey);
+
+            return {
+              id: dbModel.id,
+              modelKey: dbModel.modelKey,
+              name: runtimeModel?.name || dbModel.displayName || dbModel.modelKey,
+              description: runtimeModel?.description || dbModel.description || undefined,
+              contextWindow: runtimeModel?.contextWindow,
+              maxOutputTokens: runtimeModel?.maxOutputTokens,
+            };
+          });
 
           const keyPreview = createKeyPreview(providerType);
 
@@ -144,23 +172,28 @@ export class ApiProviderService {
             name: provider.name,
             provider: providerType,
             isActive: provider.isActive,
-            models: filteredModels,
+            models: configuredModels,
             keyPreview,
             createdAt: provider.createdAt,
             lastUsedAt: provider.lastUsedAt,
           });
         } catch (error) {
           logger.error(`Failed to fetch models for provider ${provider.id}`, error);
-          providersWithModels.push({
-            id: provider.id,
-            name: provider.name,
-            provider: provider.provider.toLowerCase(),
-            isActive: false,
-            models: [],
-            keyPreview: createKeyPreview(provider.provider.toLowerCase()),
-            createdAt: provider.createdAt,
-            lastUsedAt: provider.lastUsedAt,
-          });
+           providersWithModels.push({
+             id: provider.id,
+             name: provider.name,
+             provider: provider.provider.toLowerCase(),
+             isActive: false,
+             models: provider.models.map((dbModel) => ({
+               id: dbModel.id,
+               modelKey: dbModel.modelKey,
+               name: dbModel.displayName || dbModel.modelKey,
+               description: dbModel.description || undefined,
+             })),
+             keyPreview: createKeyPreview(provider.provider.toLowerCase()),
+             createdAt: provider.createdAt,
+             lastUsedAt: provider.lastUsedAt,
+           });
         }
       }
 
@@ -182,7 +215,7 @@ export class ApiProviderService {
           provider: providerType,
           providerName: getProviderName(providerType),
           keyPreview,
-          models: p.models,
+          models: p.models.map((model) => model.modelKey),
           isActive: p.isActive,
           createdAt: p.createdAt,
           lastUsedAt: p.lastUsedAt,
@@ -197,11 +230,9 @@ export class ApiProviderService {
     auditContext?: AuditContext
   ): Promise<ServiceResult<ProviderInstanceData>> {
     return withServiceError('get provider instance', async () => {
-      const provider = await apiProviderRepository.findById(providerId, userId);
-
-      if (!provider) {
-        throw new NotFoundError('Provider');
-      }
+      const providerResult = await this.getById(providerId, userId);
+      if (isFailure(providerResult)) throw new Error(providerResult.error);
+      const provider = providerResult.data;
 
       if (provider.revokedAt) {
         throw new ValidationError('Provider key has been revoked');
@@ -264,10 +295,9 @@ export class ApiProviderService {
     input: UpdateApiProviderInput
   ): Promise<ServiceResult<{ message: string }>> {
     return withServiceError('update provider', async () => {
-      const provider = await apiProviderRepository.findById(providerId, userId);
-      if (!provider) {
-        throw new NotFoundError('Provider');
-      }
+      const providerResult = await this.getById(providerId, userId);
+      if (isFailure(providerResult)) throw new Error(providerResult.error);
+      const provider = providerResult.data;
 
       const updateData: Record<string, unknown> = {};
 
@@ -297,7 +327,7 @@ export class ApiProviderService {
         updateData.isActive = input.isActive;
       }
 
-      await apiProviderRepository.update(providerId, userId, updateData);
+      await this.repository.update(providerId, updateData, userId);
 
       return { message: 'Provider updated successfully' };
     });
@@ -314,7 +344,7 @@ export class ApiProviderService {
         reason: 'user_initiated',
       });
 
-      await apiProviderRepository.delete(providerId, userId);
+      await this.delete(providerId, userId);
       return { message: 'Provider deleted successfully' };
     });
   }
@@ -326,19 +356,18 @@ export class ApiProviderService {
     reason?: string
   ): Promise<ServiceResult<{ message: string }>> {
     return withServiceError('revoke provider', async () => {
-      const provider = await apiProviderRepository.findById(providerId, userId);
-      if (!provider) {
-        throw new NotFoundError('Provider');
-      }
+      const providerResult = await this.getById(providerId, userId);
+      if (isFailure(providerResult)) throw new Error(providerResult.error);
+      const provider = providerResult.data;
 
       if (provider.revokedAt) {
         throw new ValidationError('Provider is already revoked');
       }
 
-      await apiProviderRepository.update(providerId, userId, {
+      await this.repository.update(providerId, {
         revokedAt: new Date(),
         isActive: false,
-      });
+      }, userId);
 
       const context = auditContext || { userId };
       await apiKeyAuditService.logKeyRevoked(providerId, context, { reason });
@@ -353,12 +382,14 @@ export class ApiProviderService {
     isActive: boolean
   ): Promise<ServiceResult<{ message: string }>> {
     return withServiceError('toggle provider', async () => {
-      const provider = await apiProviderRepository.findById(providerId, userId);
+      const providerResult = await this.getById(providerId, userId);
+      const provider = isFailure(providerResult) ? null : providerResult.data;
+      
       if (provider?.revokedAt && isActive) {
         throw new ValidationError('Cannot enable a revoked key. Please add a new key.');
       }
 
-      await apiProviderRepository.toggleActive(providerId, userId, isActive);
+      await this.repository.toggleActive(providerId, userId, isActive);
       return { message: `Provider ${isActive ? 'enabled' : 'disabled'} successfully` };
     });
   }
