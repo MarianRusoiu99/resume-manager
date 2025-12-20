@@ -74,23 +74,34 @@ export class AIService implements IAIService {
   }
 
   async enhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<EnhanceTextResult>> {
+    const hasImages = input.attachments?.some(a => a.type.startsWith('image/'));
+    
     return this.withFallback(userId, 'enhance', input.modelId, async (resolvedModel) => {
+      let modelKey = resolvedModel.modelKey;
+      
+      // If we have images, ensure we use a vision-capable model if the current one isn't
+      if (hasImages) {
+        const { resolveVisionModelKey } = await import('@/lib/ai/runtime/vision');
+        modelKey = resolveVisionModelKey(resolvedModel);
+      }
+
       return enhanceText(
-        resolvedModel.provider.createLanguageModel(resolvedModel.modelKey),
+        resolvedModel.provider.createLanguageModel(modelKey),
         resolvedModel.providerType,
-        resolvedModel.modelKey,
+        modelKey,
         {
           content: input.content,
           instructions: input.instructions,
           context: input.context,
           contentType: input.contentType,
+          attachments: input.attachments,
         },
         userId
       );
     });
   }
 
-  async streamEnhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<any>> {
+  async streamEnhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<Response>> {
     try {
       const resolvedModel = await resolveAIModelOrThrow({
         userId,
@@ -98,18 +109,27 @@ export class AIService implements IAIService {
         modelId: input.modelId,
       });
 
+      const hasImages = input.attachments?.some(a => a.type.startsWith('image/'));
+      let modelKey = resolvedModel.modelKey;
+
+      if (hasImages) {
+        const { resolveVisionModelKey } = await import('@/lib/ai/runtime/vision');
+        modelKey = resolveVisionModelKey(resolvedModel);
+      }
+
       const result = await streamEnhanceText(
-        resolvedModel.provider.createLanguageModel(resolvedModel.modelKey),
+        resolvedModel.provider.createLanguageModel(modelKey),
         {
           content: input.content,
           instructions: input.instructions,
           context: input.context,
           contentType: input.contentType,
+          attachments: input.attachments,
         },
         userId
       );
 
-      return success(result);
+      return success(result.toTextStreamResponse());
     } catch (error) {
       logger.error('AI streaming enhancement failed', error);
       return failure(error instanceof Error ? error.message : 'AI streaming enhancement failed');
@@ -140,4 +160,3 @@ export class AIService implements IAIService {
 }
 
 export const aiService = new AIService();
-

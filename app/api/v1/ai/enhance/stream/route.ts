@@ -15,11 +15,17 @@ import { logger } from '@/lib/utils/logger';
  */
 export const POST = createApiHandler(
     async (request, context, session, body, meta) => {
-        const { content, instructions, context: extraContext, contentType, modelId } = body!;
+        const { content, instructions, context: extraContext, contentType, modelId, attachments } = body!;
         const userId = session.user.id;
         const requestId = meta.requestId;
 
-        logger.info('AI Streaming enhancement started', { userId, requestId });
+        logger.info('AI Streaming enhancement started', { 
+            userId, 
+            requestId,
+            hasContent: !!content,
+            hasAttachments: !!attachments?.length,
+            attachmentTypes: attachments?.map(a => a.type)
+        });
 
         const result = await aiService.streamEnhanceText(userId, {
             content,
@@ -27,14 +33,15 @@ export const POST = createApiHandler(
             context: extraContext,
             contentType,
             modelId,
+            attachments,
         });
 
         if (!result.success) {
             return result;
         }
 
-        // The result.data is a StreamTextResult from Vercel AI SDK
-        return result.data.toDataStreamResponse();
+        // The result.data is a Response object from Vercel AI SDK
+        return result.success ? result.data : result;
     },
     {
         verifyUser: true,

@@ -9,6 +9,11 @@ export interface EnhanceTextInput {
   context?: string;
   contentType: ContentType;
   modelId?: string;
+  attachments?: Array<{
+    type: string;
+    content: string;
+    name: string;
+  }>;
 }
 
 export interface EnhanceTextResult {
@@ -48,7 +53,7 @@ export interface GenerateCoverLetterResult {
 
 export interface IAIService {
   enhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<EnhanceTextResult>>;
-  streamEnhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<any>>;
+  streamEnhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<Response>>;
   optimizeResume(userId: string, input: OptimizeResumeInput): Promise<ServiceResult<OptimizeResumeResult>>;
   generateCoverLetter(userId: string, input: GenerateCoverLetterInput): Promise<ServiceResult<GenerateCoverLetterResult>>;
 }

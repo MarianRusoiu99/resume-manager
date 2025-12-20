@@ -54,11 +54,12 @@ async function readFileContent(file: File): Promise<string> {
     });
   }
 
-  // PDFs/DOCX are binary; use server-side parsing
+  // PDFs/DOCX/HTML are binary or need parsing; use server-side parsing
   if (
     file.type === 'application/pdf' ||
     file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    file.type === 'application/msword'
+    file.type === 'application/msword' ||
+    file.type === 'text/html'
   ) {
     const formData = new FormData();
     formData.append('file', file);

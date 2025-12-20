@@ -26,6 +26,7 @@ import { ComparisonTabs } from '../preview/ComparisonTabs';
 import { TEXT_PRESETS } from '../types';
 import type { AIEnhanceTextModalProps } from '../types';
 import { useTextEnhancement } from '../hooks/useAIEnhancement';
+import { useFileAttachments } from '../hooks/useFileAttachments';
 
 export function AIEnhanceTextModal({
   open,
@@ -48,6 +49,17 @@ export function AIEnhanceTextModal({
     setInstructions,
     instructions,
   } = useTextEnhancement();
+
+  const {
+    attachments,
+    addFiles,
+    removeFile,
+    isProcessing: attachmentsLoading,
+  } = useFileAttachments();
+
+  const handleEnhance = useCallback(() => {
+    enhance(attachments);
+  }, [enhance, attachments]);
 
   // Model selection (optional)
   const {
@@ -162,9 +174,9 @@ export function AIEnhanceTextModal({
         <PromptInput
           value={instructions}
           onChange={setInstructions}
-          onSubmit={enhance}
+          onSubmit={handleEnhance}
           presets={TEXT_PRESETS}
-          isLoading={isLoading}
+          isLoading={isLoading || attachmentsLoading}
           hasExistingContent={hasEnhancement}
           placeholder="Describe what you want the AI to do... (e.g., 'Make this more professional', 'Fix grammar')"
         />

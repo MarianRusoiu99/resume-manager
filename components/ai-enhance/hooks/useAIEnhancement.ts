@@ -21,6 +21,11 @@ export interface TextEnhancementOptions {
   context?: string;
   contentType?: ContentType;
   modelId?: string;
+  attachments?: Array<{
+    type: string;
+    content: string;
+    name: string;
+  }>;
 }
 
 /**
@@ -49,7 +54,7 @@ export interface UseAIEnhancementReturn<T> {
   enhancedContent: T | null;
   isLoading: boolean;
   error: string | null;
-  enhance: (attachmentsContext?: string) => Promise<void>;
+  enhance: (attachments?: any[]) => Promise<void>;
   reset: () => void;
   hasEnhancement: boolean;
 }
@@ -101,7 +106,7 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
     contentType: 'text',
   });
 
-  const enhance = useCallback(async (attachmentsContext?: string) => {
+  const enhance = useCallback(async (attachments?: any[]) => {
     if (!instructions.trim()) {
       toast.error('Please provide instructions for the AI');
       return;
@@ -112,9 +117,7 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
       setError(null);
       setEnhancedContent(''); // Start with empty string for streaming
 
-      const fullContext = [options.context, attachmentsContext]
-        .filter(Boolean)
-        .join('\n\n');
+      const fullContext = options.context;
 
       const response = await apiV1.AI.ENHANCE_STREAM.postFetch({
         content: options.content,
@@ -122,6 +125,11 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
         context: fullContext || undefined,
         contentType: options.contentType,
         modelId: options.modelId,
+        attachments: attachments?.map(a => ({
+          type: a.type,
+          content: a.content,
+          name: a.name,
+        })),
       });
 
       if (!response.ok) {
@@ -152,7 +160,12 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
               accumulated += text;
               setEnhancedContent(accumulated);
             } catch (e) {
-              // Ignore parse errors for partial chunks
+              // Ignore parse errors for partial chunks - just accumulate raw text
+              const rawText = line.slice(2);
+              if (rawText && rawText !== '"') {
+                accumulated += rawText.replace(/"/g, '');
+                setEnhancedContent(accumulated);
+              }
             }
           }
         }
@@ -199,7 +212,7 @@ export function useResumeEnhancement<T>(): UseAIEnhancementReturn<T> & {
   const [instructions, setInstructions] = useState('');
   const [resume, setResume] = useState<T | null>(null);
 
-  const enhance = useCallback(async (attachmentsContext?: string) => {
+  const enhance = useCallback(async (attachments?: any[]) => {
     if (!instructions.trim()) {
       toast.error('Please provide instructions for the AI');
       return;
@@ -217,23 +230,18 @@ export function useResumeEnhancement<T>(): UseAIEnhancementReturn<T> & {
       const resumeJson = JSON.stringify(resume, null, 2);
       const contextParts = [
         'This is a JSON Resume format document',
-        attachmentsContext,
       ].filter(Boolean);
 
       const response = await apiV1.AI.ENHANCE_STREAM.postFetch({
-        content: `RESUME DATA (JSON format - you MUST return valid JSON in this exact structure):
-${resumeJson}`,
-        instructions: `${instructions}
-
-CRITICAL INSTRUCTIONS:
-1. You MUST return ONLY valid JSON in the exact same structure as the input
-2. Modify the content based on the instructions above
-3. Preserve ALL required fields (name, email, etc.)
-4. Improve text quality: better wording, stronger impact, professional tone
-5. Keep dates, company names, and factual information unchanged unless asked
-6. Return ONLY the JSON object, no explanations or markdown`,
+        content: resumeJson,
+        instructions: instructions,
         context: contextParts.join('\n\n'),
         contentType: 'text',
+        attachments: attachments?.map(a => ({
+          type: a.type,
+          content: a.content,
+          name: a.name,
+        })),
       });
 
       if (!response.ok) {
@@ -266,17 +274,19 @@ CRITICAL INSTRUCTIONS:
         }
       }
 
-      const parsedResume = parseResumeJson<T>(accumulated);
-      setEnhancedContent(parsedResume);
+      // Just set the accumulated content directly for resume enhancement
+      try {
+        const parsed = parseResumeJson<T>(accumulated);
+        setEnhancedContent(parsed);
+      } catch (e) {
+        console.error('Failed to parse enhanced resume JSON:', e);
+        setError('Failed to parse the AI response as valid resume data. Please try again.');
+        toast.error('Failed to parse the AI response');
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Enhancement failed';
-      if (message.includes('JSON')) {
-        setError('AI returned invalid JSON. Please try again.');
-        toast.error('AI returned invalid JSON. Please try again.');
-      } else {
-        setError(message);
-        toast.error(message);
-      }
+      setError(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -319,7 +329,7 @@ export function useTemplateEnhancement(): UseAIEnhancementReturn<{ html: string;
     setTemplateData({ html, css });
   }, []);
 
-  const enhance = useCallback(async (attachmentsContext?: string) => {
+  const enhance = useCallback(async (attachments?: any[]) => {
     if (!instructions.trim()) {
       toast.error('Please provide instructions for the AI');
       return;
@@ -337,7 +347,6 @@ ${templateData.css}`;
 
       const contextParts = [
         'This is a resume template with Handlebars syntax ({{variable}}, {{#each}}, etc.)',
-        attachmentsContext,
       ].filter(Boolean);
 
       const response = await apiV1.AI.ENHANCE_STREAM.postFetch({
@@ -354,6 +363,11 @@ IMPORTANT: You must return both the HTML and CSS in this exact format:
 Make sure to preserve both sections and the exact separator format.`,
         context: contextParts.join('\n\n'),
         contentType: 'html',
+        attachments: attachments?.map(a => ({
+          type: a.type,
+          content: a.content,
+          name: a.name,
+        })),
       });
 
       if (!response.ok) {

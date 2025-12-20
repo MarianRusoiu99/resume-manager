@@ -19,7 +19,7 @@ export const POST = createApiHandler(async (request) => {
     return result;
   }
 
-  return NextResponse.json({ text: result.data });
+  return NextResponse.json({ data: { text: result.data } });
 }, {
   rateLimit: "resumeGeneration", // Parsing is expensive
 });

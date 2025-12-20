@@ -10,6 +10,22 @@
  * ```
  */
 
+// Service container for dependency injection
+export { 
+  ServiceContainer, 
+  serviceContainer,
+  profileService,
+  resumeService,
+  resumeGenerationService,
+  resumeCrudService,
+  notificationService,
+  templateService,
+  coverLetterService,
+  apiProviderService,
+  aiService,
+  userAISettingsService,
+} from './container';
+
 // Service interfaces for dependency injection and testing
 export type {
   IProfileService,
@@ -23,9 +39,7 @@ export type {
 } from './interfaces';
 
 // Resume services (facade + split services)
-export { resumeService, ResumeService } from './resume.service';
-export { resumeGenerationService, ResumeGenerationService } from './resume-generation.service';
-export { resumeCrudService, ResumeCrudService } from './resume-crud.service';
+export { ResumeService } from './resume.service';
 export type {
   GenerateResumeServiceInput,
   GenerateResumeWithProgressInput,
@@ -38,16 +52,17 @@ export type {
   UpdatedResumeData,
 } from './resume.service';
 
-export { profileService, ProfileService } from './profile.service';
+export { ProfileService } from './profile.service';
+export type { Profile, ProfileList } from './profile';
 
-export { templateService, TemplateService } from './template.service';
+export { TemplateService } from './template.service';
 
-export { coverLetterService, CoverLetterService } from './cover-letter.service';
+export { CoverLetterService } from './cover-letter.service';
 
-export { notificationService, NotificationService } from './notification.service';
+export { NotificationService } from './notification.service';
 
-export { aiService, AIService } from './ai.service';
-export { apiProviderService, ApiProviderService } from './api-provider.service';
+export { AIService } from './ai.service';
+export { ApiProviderService } from './api-provider.service';
 export type {
   AddApiProviderInput,
   UpdateApiProviderInput as ApiProviderUpdateInput,
@@ -63,14 +78,7 @@ export { apiKeyAuditService } from './api-key-audit.service';
 
 export { auditLogService } from './audit-log.service';
 
-export { userAISettingsService } from './user-ai-settings.service';
-export type {
-  AIFeatureConfig,
-  FeatureModelSelection,
-  ResolvedAISettings,
-  UpdateFeaturePreferenceInput,
-} from './user-ai-settings.service';
-export { AI_FEATURES } from './user-ai-settings.service';
+
 
 // Service utilities for reducing boilerplate
 export {

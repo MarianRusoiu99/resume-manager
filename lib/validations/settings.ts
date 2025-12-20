@@ -163,6 +163,11 @@ export const enhanceRequestSchema = z.object({
     .optional(),
   contentType: contentTypeSchema.default('text'),
   modelId: z.string().optional(),
+  attachments: z.array(z.object({
+    type: z.string(),
+    content: z.string(),
+    name: z.string(),
+  })).optional(),
 });
 
 export type EnhanceRequestInput = z.infer<typeof enhanceRequestSchema>;

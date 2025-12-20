@@ -28,7 +28,7 @@ import type { InstructionPreset } from '../types';
 interface PromptInputProps {
   value: string;
   onChange: (value: string) => void;
-  onSubmit: (attachmentsContext?: string) => void;
+  onSubmit: (attachments?: any[]) => void;
   placeholder?: string;
   presets?: InstructionPreset[];
   isLoading?: boolean;
@@ -80,9 +80,8 @@ export function PromptInput({
   );
 
   const handleSubmit = useCallback(() => {
-    const attachmentsContext = getAttachmentsAsContext();
-    onSubmit(attachmentsContext);
-  }, [onSubmit, getAttachmentsAsContext]);
+    onSubmit(attachments);
+  }, [onSubmit, attachments]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
