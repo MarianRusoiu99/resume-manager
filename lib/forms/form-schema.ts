@@ -126,6 +126,7 @@ export const experienceFormSchema = createFormSchema<Work>({
   fields: [
     { key: 'name', label: 'Company', type: 'text', required: true },
     { key: 'position', label: 'Job Title', type: 'text', required: true },
+    { key: 'url', label: 'Company URL', type: 'url' },
     { key: 'startDate', label: 'Start Date', type: 'month', required: true },
     { key: 'endDate', label: 'End Date', type: 'month', placeholder: 'Leave empty if current' },
     { key: 'summary', label: 'Summary', type: 'textarea', rows: 3, colSpan: 2, description: 'Describe your key responsibilities' },
@@ -134,6 +135,7 @@ export const experienceFormSchema = createFormSchema<Work>({
   newItemTemplate: {
     name: '',
     position: '',
+    url: '',
     startDate: '',
     endDate: '',
     summary: '',
@@ -151,14 +153,17 @@ export const educationFormSchema = createFormSchema<Education>({
     { key: 'institution', label: 'Institution', type: 'text', required: true },
     { key: 'studyType', label: 'Degree', type: 'text', required: true },
     { key: 'area', label: 'Field of Study', type: 'text' },
+    { key: 'url', label: 'Institution URL', type: 'url' },
     { key: 'score', label: 'GPA/Score', type: 'text' },
     { key: 'startDate', label: 'Start Date', type: 'month' },
     { key: 'endDate', label: 'End Date', type: 'month' },
+    { key: 'courses', label: 'Courses', type: 'list', separator: 'comma', colSpan: 2, description: 'Comma-separated list of relevant courses' },
   ],
   newItemTemplate: {
     institution: '',
     studyType: '',
     area: '',
+    url: '',
     score: '',
     startDate: '',
     endDate: '',
@@ -202,6 +207,7 @@ export const projectsFormSchema = createFormSchema<Project>({
     { key: 'endDate', label: 'End Date', type: 'month' },
     { key: 'description', label: 'Description', type: 'textarea', rows: 3, colSpan: 2 },
     { key: 'highlights', label: 'Highlights', type: 'list', separator: 'newline', rows: 4, colSpan: 2 },
+    { key: 'keywords', label: 'Keywords', type: 'list', separator: 'comma', colSpan: 2, description: 'Comma-separated list of technologies used' },
   ],
   newItemTemplate: {
     name: '',
@@ -210,6 +216,7 @@ export const projectsFormSchema = createFormSchema<Project>({
     endDate: '',
     description: '',
     highlights: [],
+    keywords: [],
   },
   labels: {
     addButton: 'Add Project',
@@ -241,13 +248,7 @@ export const certificatesFormSchema = createFormSchema<Certificate>({
 export const languagesFormSchema = createFormSchema<Language>({
   fields: [
     { key: 'language', label: 'Language', type: 'text', required: true },
-    { key: 'fluency', label: 'Fluency', type: 'select', options: [
-      { value: 'Native', label: 'Native' },
-      { value: 'Fluent', label: 'Fluent' },
-      { value: 'Professional', label: 'Professional' },
-      { value: 'Intermediate', label: 'Intermediate' },
-      { value: 'Beginner', label: 'Beginner' },
-    ]},
+    { key: 'fluency', label: 'Fluency', type: 'text', placeholder: 'e.g. Native, Fluent, Professional' },
   ],
   newItemTemplate: {
     language: '',
@@ -284,6 +285,7 @@ export const volunteerFormSchema = createFormSchema<Volunteer>({
   fields: [
     { key: 'organization', label: 'Organization', type: 'text', required: true },
     { key: 'position', label: 'Position', type: 'text', required: true },
+    { key: 'url', label: 'Organization URL', type: 'url' },
     { key: 'startDate', label: 'Start Date', type: 'month' },
     { key: 'endDate', label: 'End Date', type: 'month' },
     { key: 'summary', label: 'Summary', type: 'textarea', rows: 3, colSpan: 2 },
@@ -292,6 +294,7 @@ export const volunteerFormSchema = createFormSchema<Volunteer>({
   newItemTemplate: {
     organization: '',
     position: '',
+    url: '',
     startDate: '',
     endDate: '',
     summary: '',

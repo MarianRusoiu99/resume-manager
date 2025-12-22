@@ -16,6 +16,7 @@ import {
   Monitor,
   ChevronUp,
   LayoutDashboard,
+  BarChart3,
 } from "lucide-react"
 import { useTheme } from "@/lib/contexts"
 import { signOut } from "next-auth/react"
@@ -54,6 +55,11 @@ const navigationItems = [
     title: "Dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Analytics",
+    url: "/analytics",
+    icon: BarChart3,
   },
   {
     title: "Profile",

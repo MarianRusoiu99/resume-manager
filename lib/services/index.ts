@@ -19,6 +19,7 @@ export {
   resumeGenerationService,
   resumeCrudService,
   notificationService,
+  analyticsService,
   templateService,
   coverLetterService,
   apiProviderService,

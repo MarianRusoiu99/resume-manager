@@ -1,30 +1,13 @@
 import { z } from 'zod';
 
-// Lenient ISO8601 date schema - allows empty strings and valid dates
-const iso8601Schema = z.string().refine(
-  (val) => val === '' || /^([1-2]\d{3}(-((0[1-9]|1[0-2])(-([0-2]\d|3[0-1]))?))?)$/.test(val),
-  { message: 'Invalid date format. Use YYYY, YYYY-MM, or YYYY-MM-DD' }
-).optional().or(z.literal(''));
+// Lenient date schema - allows any string, empty strings, and valid dates
+const iso8601Schema = z.string().optional().or(z.literal(''));
 
-// Lenient URL schema - allows empty strings and valid URLs
-const urlSchema = z.string().refine(
-  (val) => {
-    if (val === '') return true;
-    try {
-      new URL(val);
-      return true;
-    } catch {
-      return false;
-    }
-  },
-  { message: 'Invalid URL format' }
-).optional().or(z.literal(''));
+// Lenient URL schema - allows any string
+const urlSchema = z.string().optional().or(z.literal(''));
 
-// Lenient email schema - allows empty strings and valid emails
-const emailSchema = z.string().refine(
-  (val) => val === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
-  { message: 'Invalid email format' }
-).optional().or(z.literal(''));
+// Lenient email schema - allows any string
+const emailSchema = z.string().optional().or(z.literal(''));
 
 const locationSchema = z.object({
   address: z.string().optional(),

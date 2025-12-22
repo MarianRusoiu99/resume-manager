@@ -121,6 +121,22 @@ export function SimpleFormField({
       );
     }
 
+    if (type === "month" || type === "date") {
+      return (
+        <Input
+          id={id}
+          type="text"
+          value={value}
+          onChange={handleChange}
+          placeholder={placeholder || (type === "month" ? "YYYY-MM" : "YYYY-MM-DD")}
+          required={required}
+          disabled={disabled}
+          aria-invalid={!!error}
+          aria-describedby={description ? `${id}-description` : undefined}
+        />
+      );
+    }
+
     return (
       <Input
         id={id}

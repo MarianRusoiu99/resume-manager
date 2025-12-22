@@ -14,6 +14,7 @@ import { UserAISettingsRepository, userAISettingsRepository } from '@/lib/reposi
 import { CoverLetterRepository, coverLetterRepository } from '@/lib/repositories/cover-letter.repository';
 import { TemplateRepository, templateRepository } from '@/lib/repositories/template.repository';
 
+import { AnalyticsService, analyticsService as analyticsServiceInstance } from './analytics/analytics.service';
 import { ProfileService } from './profile/profile.service';
 import { ResumeGenerationService } from './resume-generation/resume-generation.service';
 import { ResumeCrudService } from './resume-crud/resume-crud.service';
@@ -38,6 +39,7 @@ export class ServiceContainer {
   
   // Service instances - initialized in constructor
   private _profileService!: ProfileService;
+  private _analyticsService!: AnalyticsService;
   private _resumeGenerationService!: ResumeGenerationService;
   private _resumeCrudService!: ResumeCrudService;
   private _notificationService!: NotificationService;
@@ -76,6 +78,7 @@ export class ServiceContainer {
 
     // Initialize services with dependency injection
     this._profileService = new ProfileService(profileRepo, cache);
+    this._analyticsService = analyticsServiceInstance;
     this._resumeGenerationService = new ResumeGenerationService(generatedResumeRepo);
     this._resumeCrudService = new ResumeCrudService(generatedResumeRepo);
     this._notificationService = new NotificationService(notificationRepo);
@@ -89,6 +92,10 @@ export class ServiceContainer {
   // Service getters
   get profileService(): ProfileService {
     return this._profileService;
+  }
+
+  get analyticsService(): AnalyticsService {
+    return this._analyticsService;
   }
 
   get resumeGenerationService(): ResumeGenerationService {
@@ -185,6 +192,7 @@ export const serviceContainer = ServiceContainer.getInstance();
  * These delegate to the container instances
  */
 export const profileService = serviceContainer.profileService;
+export const analyticsService = serviceContainer.analyticsService;
 export const resumeGenerationService = serviceContainer.resumeGenerationService;
 export const resumeCrudService = serviceContainer.resumeCrudService;
 export const notificationService = serviceContainer.notificationService;

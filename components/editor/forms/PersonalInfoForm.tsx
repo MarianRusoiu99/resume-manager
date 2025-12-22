@@ -22,33 +22,21 @@ const personalInfoFormSchema = z.object({
     .string()
     .min(1, "Name is required")
     .transform((val) => val.trim()),
+  label: z.string().optional(),
+  image: z.string().optional(),
   email: z
     .string()
     .email("Invalid email address")
     .transform((val) => val.trim()),
   phone: z.string().optional(),
+  locationAddress: z.string().optional(),
+  locationPostalCode: z.string().optional(),
   locationCity: z.string().optional(),
-  url: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || /^https?:\/\/.+/.test(val),
-      "Must be a valid URL"
-    ),
-  linkedin: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || /^https?:\/\/.+/.test(val),
-      "Must be a valid URL"
-    ),
-  github: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || /^https?:\/\/.+/.test(val),
-      "Must be a valid URL"
-    ),
+  locationCountryCode: z.string().optional(),
+  locationRegion: z.string().optional(),
+  url: z.string().optional(),
+  linkedin: z.string().optional(),
+  github: z.string().optional(),
 });
 
 type PersonalInfoFormData = z.infer<typeof personalInfoFormSchema>;
@@ -65,9 +53,15 @@ function basicsToFormData(basics?: Basics): PersonalInfoFormData {
 
   return {
     name: basics?.name || "",
+    label: basics?.label || "",
+    image: basics?.image || "",
     email: basics?.email || "",
     phone: basics?.phone || "",
+    locationAddress: basics?.location?.address || "",
+    locationPostalCode: basics?.location?.postalCode || "",
     locationCity: basics?.location?.city || "",
+    locationCountryCode: basics?.location?.countryCode || "",
+    locationRegion: basics?.location?.region || "",
     url: basics?.url || "",
     linkedin: linkedinProfile?.url || "",
     github: githubProfile?.url || "",
@@ -94,12 +88,18 @@ function formDataToBasics(formData: PersonalInfoFormData): Basics {
 
   return {
     name: formData.name,
+    label: formData.label,
+    image: formData.image,
     email: formData.email,
     phone: formData.phone,
     url: formData.url,
-    location: formData.locationCity ? {
+    location: {
+      address: formData.locationAddress,
+      postalCode: formData.locationPostalCode,
       city: formData.locationCity,
-    } : undefined,
+      countryCode: formData.locationCountryCode,
+      region: formData.locationRegion,
+    },
     profiles: profiles.length > 0 ? profiles : undefined,
   };
 }
@@ -134,11 +134,6 @@ export function PersonalInfoForm({
         // the parent context usually handles debouncing or we can add a small delay.
         // For now, let's use a small timeout to avoid too many updates
         const timeoutId = setTimeout(() => {
-          // Validate before sending? Or send partial data?
-          // Usually we want to send data even if invalid so user doesn't lose it,
-          // but for strict types we might want to validate.
-          // schema transform trim() might need to be handled carefully.
-
           // We cast value to PersonalInfoFormData because watch returns Partial<T>
           const data = value as PersonalInfoFormData;
           const basicsData = formDataToBasics(data);
@@ -170,6 +165,20 @@ export function PersonalInfoForm({
 
           <FormField
             control={form.control}
+            name="label"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Professional Label</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. Full Stack Developer" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="email"
             render={({ field }) => (
               <FormItem>
@@ -191,7 +200,6 @@ export function PersonalInfoForm({
                 <FormControl>
                   <Input type="tel" {...field} />
                 </FormControl>
-                <FormDescription>Optional</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -199,14 +207,13 @@ export function PersonalInfoForm({
 
           <FormField
             control={form.control}
-            name="locationCity"
+            name="image"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Location</FormLabel>
+                <FormLabel>Profile Image URL</FormLabel>
                 <FormControl>
-                  <Input placeholder="City, State/Country" {...field} />
+                  <Input type="url" placeholder="https://..." {...field} />
                 </FormControl>
-                <FormDescription>Optional</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -214,57 +221,128 @@ export function PersonalInfoForm({
 
           <FormField
             control={form.control}
-            name="linkedin"
+            name="url"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>LinkedIn URL</FormLabel>
+                <FormLabel>Personal Website</FormLabel>
                 <FormControl>
                   <Input
                     type="url"
-                    placeholder="https://linkedin.com/in/username"
+                    placeholder="https://yourwebsite.com"
                     {...field}
                   />
                 </FormControl>
-                <FormDescription>Optional</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="github"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>GitHub URL</FormLabel>
-                <FormControl>
-                  <Input
-                    type="url"
-                    placeholder="https://github.com/username"
-                    {...field}
-                  />
-                </FormControl>
-                <FormDescription>Optional</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="sm:col-span-2">
+          <div className="sm:col-span-2 grid grid-cols-1 gap-6 sm:grid-cols-3 border-t pt-6">
+            <h4 className="sm:col-span-3 font-medium">Location</h4>
             <FormField
               control={form.control}
-              name="url"
+              name="locationAddress"
+              render={({ field }) => (
+                <FormItem className="sm:col-span-2">
+                  <FormLabel>Address</FormLabel>
+                  <FormControl>
+                    <Input placeholder="123 Street Name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="locationPostalCode"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Personal Website</FormLabel>
+                  <FormLabel>Postal Code</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="locationCity"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="locationRegion"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Region / State</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="locationCountryCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Country Code</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. US, GB" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="sm:col-span-2 grid grid-cols-1 gap-6 sm:grid-cols-2 border-t pt-6">
+            <h4 className="sm:col-span-2 font-medium">Social Profiles</h4>
+            <FormField
+              control={form.control}
+              name="linkedin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>LinkedIn URL</FormLabel>
                   <FormControl>
                     <Input
                       type="url"
-                      placeholder="https://yourwebsite.com"
+                      placeholder="https://linkedin.com/in/username"
                       {...field}
                     />
                   </FormControl>
-                  <FormDescription>Optional</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="github"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>GitHub URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="url"
+                      placeholder="https://github.com/username"
+                      {...field}
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
