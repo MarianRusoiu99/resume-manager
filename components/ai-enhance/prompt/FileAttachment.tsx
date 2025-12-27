@@ -6,7 +6,9 @@
  * Displays attached files with preview and removal functionality.
  */
 
-import { X, FileText, Image, FileJson, FileCode } from 'lucide-react';
+import { X, FileText, Image as ImageIcon, FileJson, FileCode } from 'lucide-react';
+import type { ReactNode } from 'react';
+import NextImage from 'next/image';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { FileAttachment as FileAttachmentType } from '../types';
@@ -17,14 +19,11 @@ interface FileAttachmentProps {
   disabled?: boolean;
 }
 
-/**
- * Get icon for file type
- */
-function getFileIcon(type: string) {
-  if (type.startsWith('image/')) return Image;
-  if (type.includes('json')) return FileJson;
-  if (type.includes('html') || type.includes('css') || type.includes('javascript')) return FileCode;
-  return FileText;
+function getFileIconNode(type: string, className: string): ReactNode {
+  if (type.startsWith('image/')) return <ImageIcon className={className} />;
+  if (type.includes('json')) return <FileJson className={className} />;
+  if (type.includes('html') || type.includes('css') || type.includes('javascript')) return <FileCode className={className} />;
+  return <FileText className={className} />;
 }
 
 /**
@@ -41,7 +40,6 @@ export function FileAttachment({
   onRemove,
   disabled = false,
 }: Readonly<FileAttachmentProps>) {
-  const Icon = getFileIcon(attachment.type);
   const isImage = attachment.type.startsWith('image/');
 
   return (
@@ -55,14 +53,17 @@ export function FileAttachment({
       {/* Preview or Icon */}
       <div className="flex-shrink-0">
         {isImage && attachment.previewUrl ? (
-          <img
+          <NextImage
             src={attachment.previewUrl}
-            alt={attachment.name}
+            alt={attachment.name ?? ''}
+            width={40}
+            height={40}
             className="h-10 w-10 rounded object-cover"
+            unoptimized
           />
         ) : (
           <div className="flex h-10 w-10 items-center justify-center rounded bg-primary/10">
-            <Icon className="h-5 w-5 text-primary" />
+            {getFileIconNode(attachment.type, 'h-5 w-5 text-primary')}
           </div>
         )}
       </div>

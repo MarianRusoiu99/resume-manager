@@ -2,12 +2,12 @@
 
 /**
  * AI Enhance Text Modal
- * 
+ *
  * Modal for AI-powered text enhancement with ChatGPT-style input
  * and side-by-side comparison.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -25,6 +25,8 @@ import { PromptInput } from '../prompt/PromptInput';
 import { ComparisonTabs } from '../preview/ComparisonTabs';
 import { TEXT_PRESETS } from '../types';
 import type { AIEnhanceTextModalProps } from '../types';
+import { useTextEnhancement } from '../hooks/useAIEnhancement';
+import { useFileAttachments } from '../hooks/useFileAttachments';
 
 export function AIEnhanceTextModal({
   open,
@@ -37,9 +39,27 @@ export function AIEnhanceTextModal({
   description = 'Use AI to improve, rephrase, or modify your content.',
   showModelSelector = false,
 }: Readonly<AIEnhanceTextModalProps>) {
-  const [instructions, setInstructions] = useState('');
-  const [enhancedContent, setEnhancedContent] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    enhancedContent,
+    isLoading,
+    enhance,
+    reset,
+    hasEnhancement,
+    setOptions,
+    setInstructions,
+    instructions,
+  } = useTextEnhancement();
+
+  const {
+    attachments,
+    addFiles,
+    removeFile,
+    isProcessing: attachmentsLoading,
+  } = useFileAttachments();
+
+  const handleEnhance = useCallback(() => {
+    enhance(attachments);
+  }, [enhance, attachments]);
 
   // Model selection (optional)
   const {
@@ -57,67 +77,42 @@ export function AIEnhanceTextModal({
     }
   }, [open, showModelSelector, fetchModels]);
 
-  // Reset state when modal opens
+  // Initialize enhancement options when modal opens
   useEffect(() => {
-    if (open) {
-      setEnhancedContent('');
-      setInstructions('');
-    }
-  }, [open]);
+    if (!open) return;
 
-  const handleEnhance = useCallback(async (attachmentsContext?: string) => {
-    if (!instructions.trim()) {
-      toast.error('Please provide instructions for the AI');
-      return;
-    }
+    reset();
+    setOptions({
+      content: originalContent,
+      context,
+      contentType,
+      ...(showModelSelector && selectedModel ? { modelId: selectedModel } : {}),
+    });
+  }, [open, originalContent, context, contentType, showModelSelector, selectedModel, setOptions, reset]);
 
-    try {
-      setIsLoading(true);
+  // Keep options in sync if inputs change while open
+  useEffect(() => {
+    if (!open) return;
 
-      // Combine context with attachments
-      const fullContext = [context, attachmentsContext]
-        .filter(Boolean)
-        .join('\n\n');
-
-      const response = await fetch('/api/ai/enhance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: originalContent,
-          instructions,
-          context: fullContext || undefined,
-          contentType,
-          ...(showModelSelector && selectedModel ? { modelId: selectedModel } : {}),
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Enhancement failed');
-      }
-
-      const data = await response.json();
-      setEnhancedContent(data.enhancedContent);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Enhancement failed');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [instructions, originalContent, context, contentType, showModelSelector, selectedModel]);
+    setOptions({
+      content: originalContent,
+      context,
+      contentType,
+      ...(showModelSelector && selectedModel ? { modelId: selectedModel } : {}),
+    });
+  }, [open, originalContent, context, contentType, showModelSelector, selectedModel, setOptions]);
 
   const handleAccept = useCallback(() => {
-    if (enhancedContent) {
-      onAccept(enhancedContent);
-      onOpenChange(false);
-      toast.success('Content enhanced successfully!');
-    }
+    if (!enhancedContent) return;
+
+    onAccept(enhancedContent);
+    onOpenChange(false);
+    toast.success('Content enhanced successfully!');
   }, [enhancedContent, onAccept, onOpenChange]);
 
   const handleCancel = useCallback(() => {
     onOpenChange(false);
   }, [onOpenChange]);
-
-  const hasEnhancement = enhancedContent.length > 0;
 
   const footer = (
     <>
@@ -181,7 +176,7 @@ export function AIEnhanceTextModal({
           onChange={setInstructions}
           onSubmit={handleEnhance}
           presets={TEXT_PRESETS}
-          isLoading={isLoading}
+          isLoading={isLoading || attachmentsLoading}
           hasExistingContent={hasEnhancement}
           placeholder="Describe what you want the AI to do... (e.g., 'Make this more professional', 'Fix grammar')"
         />
@@ -189,7 +184,7 @@ export function AIEnhanceTextModal({
         {/* Side-by-side comparison */}
         <ComparisonTabs
           originalContent={originalContent}
-          enhancedContent={enhancedContent}
+          enhancedContent={enhancedContent ?? ''}
           contentType={contentType}
           isLoading={isLoading}
           mode="side-by-side"

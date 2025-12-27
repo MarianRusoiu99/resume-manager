@@ -4,7 +4,9 @@
  */
 
 import type { LanguageModel } from 'ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { BaseAIProvider, type AIModel, type ProviderConfig } from './base';
+import { logger } from '@/lib/utils/logger';
 
 interface GoogleModelResponse {
   models: Array<{
@@ -27,17 +29,16 @@ interface GoogleModelResponse {
 
 /**
  * Google AI Provider (Gemini)
- * PLACEHOLDER: Install @ai-sdk/google to enable Google AI support
  */
 export class GoogleProvider extends BaseAIProvider {
   readonly type = 'google';
   readonly name = 'Google AI';
 
+  private readonly google: ReturnType<typeof createGoogleGenerativeAI>;
+
   constructor(config: ProviderConfig) {
     super(config);
-    throw new Error(
-      'Google provider not yet configured. Install @ai-sdk/google package to enable Google AI support.'
-    );
+    this.google = createGoogleGenerativeAI({ apiKey: config.apiKey });
   }
 
   /**
@@ -85,7 +86,7 @@ export class GoogleProvider extends BaseAIProvider {
 
       return models;
     } catch (error) {
-      console.error('Error fetching Google models:', error);
+      logger.error('Error fetching Google models', error);
       throw new Error(
         `Failed to fetch models from Google AI: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -111,8 +112,8 @@ export class GoogleProvider extends BaseAIProvider {
   /**
    * Create language model instance
    */
-  createLanguageModel(): LanguageModel {
-    throw new Error('Google provider not yet configured');
+  createLanguageModel(modelId: string): LanguageModel {
+    return this.google(modelId);
   }
 
   getKeyPreview(apiKey: string): string {

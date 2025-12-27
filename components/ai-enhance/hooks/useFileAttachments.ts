@@ -53,8 +53,32 @@ async function readFileContent(file: File): Promise<string> {
       reader.readAsDataURL(file);
     });
   }
-  
-  // For text files, use Blob.text()
+
+  // PDFs/DOCX/HTML are binary or need parsing; use server-side parsing
+  if (
+    file.type === 'application/pdf' ||
+    file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    file.type === 'application/msword' ||
+    file.type === 'text/html'
+  ) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch('/api/v1/parse-document', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to parse ${file.name}`);
+    }
+
+    const { data } = await response.json();
+    return data.text;
+  }
+
+  // For text-like formats, use Blob.text()
   try {
     return await file.text();
   } catch {
@@ -145,8 +169,14 @@ export function useFileAttachments(): UseFileAttachmentsReturn {
     if (attachments.length === 0) return '';
 
     const contextParts = attachments
-      .filter(a => !a.type.startsWith('image/')) // Text files only
-      .map(a => `--- File: ${a.name} ---\n${a.content}`);
+      .filter(a => !a.type.startsWith('image/'))
+      .map(a => {
+        const MAX_CHARS_PER_FILE = 8000;
+        const content = a.content.length > MAX_CHARS_PER_FILE
+          ? `${a.content.slice(0, MAX_CHARS_PER_FILE)}\n...[truncated]`
+          : a.content;
+        return `--- File: ${a.name} ---\n${content}`;
+      });
 
     return contextParts.length > 0
       ? `\n\nATTACHED FILES:\n${contextParts.join('\n\n')}`

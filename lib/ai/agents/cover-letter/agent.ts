@@ -5,28 +5,30 @@
  * The user's profile is the SINGLE SOURCE OF TRUTH - nothing is fabricated.
  */
 
-import { generateText } from 'ai';
+import { z } from 'zod';
+import type { LanguageModel } from 'ai';
 import type { Resume } from '@/lib/validations/jsonresume';
-import type { AIProvider } from '@/lib/ai/providers';
-import { extractJSON } from '../shared/utils';
-import { COVER_LETTER_SYSTEM_PROMPT, buildCoverLetterPrompt } from './prompt';
+import { ValidatedAIRunner } from '../../core/validated-runner';
+import { PromptRegistry } from '../../prompts';
+import { logger } from '@/lib/utils/logger';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export interface GenerateCoverLetterInput {
-  provider: AIProvider;
-  modelId: string;
+  model: LanguageModel;
   jobDescription: string;
   userResume: Resume;
+  context?: string;
 }
 
 export interface GenerateCoverLetterResult {
   content: string;
-  tone: string;
+  subject: string;
   jobTitle: string;
   companyName: string;
+  recipientName: string;
 }
 
 // ============================================================================
@@ -42,32 +44,34 @@ export interface GenerateCoverLetterResult {
 export async function generateCoverLetter(
   input: GenerateCoverLetterInput
 ): Promise<GenerateCoverLetterResult> {
-  const model = input.provider.createLanguageModel(input.modelId);
+  const { model } = input;
 
-  const result = await generateText({
-    model,
-    system: COVER_LETTER_SYSTEM_PROMPT,
-    prompt: buildCoverLetterPrompt(input.jobDescription, input.userResume),
+  logger.debug('Cover letter generation started');
+
+  const { system, prompt } = PromptRegistry.render('cover-letter-generation', {
+    jobDescription: input.jobDescription,
+    resume: JSON.stringify(input.userResume, null, 2),
+    context: input.context || 'None provided',
   });
 
-  try {
-    const jsonStr = extractJSON(result.text);
-    const parsed = JSON.parse(jsonStr);
-    
-    return {
-      content: parsed.coverLetter || parsed.content || result.text.trim(),
-      tone: 'professional',
-      jobTitle: parsed.jobTitle || 'Position',
-      companyName: parsed.companyName || 'Company',
-    };
-  } catch (error) {
-    // Fallback: return raw text if JSON parsing fails
-    console.error('Failed to parse cover letter response:', error);
-    return {
-      content: result.text.trim(),
-      tone: 'professional',
-      jobTitle: 'Position',
-      companyName: 'Company',
-    };
-  }
+  const resultSchema = z.object({
+    subject: z.string(),
+    content: z.string(),
+    recipientName: z.string(),
+    companyName: z.string(),
+  });
+
+  const validatedResult = await ValidatedAIRunner.run({
+    model,
+    system,
+    prompt,
+    schema: resultSchema,
+    userId: (input as any).userId,
+    feature: 'cover-letter-generation',
+  });
+
+  return {
+    ...validatedResult,
+    jobTitle: 'Position', // We could add this to the prompt if needed
+  };
 }

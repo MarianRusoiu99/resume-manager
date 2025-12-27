@@ -22,8 +22,8 @@ export type ProgressCallback = (
 export interface WorkflowContext {
   /** AI provider instance */
   provider: AIProvider;
-  /** Model ID to use */
-  modelId: string;
+  /** Provider-native model key to use */
+  modelKey: string;
   /** Raw job description text */
   jobDescription: string;
   /** User's profile resume - the source of truth */

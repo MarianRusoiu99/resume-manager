@@ -1,15 +1,26 @@
 'use client';
 
 /**
- * Centralized AI Enhancement Hook
- * 
+ * Centralized AI Enhancement Hooks
+ *
  * Provides shared enhancement logic for all AI enhancement modals.
- * Handles API calls, state management, and error handling.
+ * Uses the unified /api/v1/ai/chat endpoint for all AI interactions.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import type { ContentType } from '@/lib/validations/settings';
+
+/**
+ * Conversation mode type (matches API)
+ */
+type ConversationMode =
+  | 'resume-generation'
+  | 'resume-enhancement'
+  | 'cover-letter-generation'
+  | 'template-generation'
+  | 'template-enhancement'
+  | 'text-enhancement';
 
 /**
  * Options for text enhancement
@@ -20,6 +31,11 @@ export interface TextEnhancementOptions {
   context?: string;
   contentType?: ContentType;
   modelId?: string;
+  attachments?: Array<{
+    type: string;
+    content: string;
+    name: string;
+  }>;
 }
 
 /**
@@ -48,7 +64,7 @@ export interface UseAIEnhancementReturn<T> {
   enhancedContent: T | null;
   isLoading: boolean;
   error: string | null;
-  enhance: (attachmentsContext?: string) => Promise<void>;
+  enhance: (attachments?: any[]) => Promise<void>;
   reset: () => void;
   hasEnhancement: boolean;
 }
@@ -58,12 +74,12 @@ export interface UseAIEnhancementReturn<T> {
  */
 function parseResumeJson<T>(content: string): T {
   let cleaned = content.trim();
-  
+
   // Remove markdown code blocks if present
   if (cleaned.startsWith('```')) {
     cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
   }
-  
+
   return JSON.parse(cleaned) as T;
 }
 
@@ -73,14 +89,97 @@ function parseResumeJson<T>(content: string): T {
 function parseTemplateResponse(content: string, originalCss: string): { html: string; css: string } {
   const htmlRegex = /=== HTML TEMPLATE ===\s*([\s\S]*?)(?:=== CSS STYLES ===|$)/;
   const cssRegex = /=== CSS STYLES ===\s*([\s\S]*?)$/;
-  
+
   const htmlMatch = htmlRegex.exec(content);
   const cssMatch = cssRegex.exec(content);
-  
+
   return {
     html: htmlMatch ? htmlMatch[1].trim() : content,
     css: cssMatch ? cssMatch[1].trim() : originalCss,
   };
+}
+
+/**
+ * Base streaming function for chat API
+ */
+async function streamChatRequest(
+  mode: ConversationMode,
+  message: string,
+  options: {
+    context?: Record<string, unknown>;
+    modelId?: string;
+    attachments?: Array<{ type: string; content: string; name: string; mimeType?: string }>;
+    signal?: AbortSignal;
+    onChunk?: (content: string) => void;
+  }
+): Promise<string> {
+  const response = await fetch('/api/v1/ai/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      mode,
+      message,
+      context: options.context,
+      modelId: options.modelId,
+      attachments: options.attachments?.map((a) => ({
+        type: a.type as 'document' | 'image' | 'resume' | 'job-description' | 'template',
+        name: a.name,
+        content: a.content,
+        mimeType: a.mimeType || 'text/plain',
+      })),
+      stream: true,
+    }),
+    signal: options.signal,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Enhancement failed');
+  }
+
+  if (!response.body) {
+    throw new Error('No response body');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let accumulated = '';
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+
+        const data = line.slice(6);
+        if (data === '[DONE]') continue;
+
+        try {
+          const parsed = JSON.parse(data);
+
+          if (parsed.type === 'text-delta' && parsed.content) {
+            accumulated += parsed.content;
+            options.onChunk?.(accumulated);
+          } else if (parsed.type === 'error') {
+            throw new Error(parsed.error);
+          }
+        } catch (parseError) {
+          // Ignore parse errors for malformed chunks
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  return accumulated;
 }
 
 /**
@@ -99,50 +198,61 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
     content: '',
     contentType: 'text',
   });
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const enhance = useCallback(async (attachmentsContext?: string) => {
-    if (!instructions.trim()) {
-      toast.error('Please provide instructions for the AI');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const fullContext = [options.context, attachmentsContext]
-        .filter(Boolean)
-        .join('\n\n');
-
-      const response = await fetch('/api/ai/enhance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: options.content,
-          instructions,
-          context: fullContext || undefined,
-          contentType: options.contentType,
-          ...(options.modelId ? { modelId: options.modelId } : {}),
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Enhancement failed');
+  const enhance = useCallback(
+    async (attachments?: any[]) => {
+      if (!instructions.trim()) {
+        toast.error('Please provide instructions for the AI');
+        return;
       }
 
-      const data = await response.json();
-      setEnhancedContent(data.enhancedContent);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Enhancement failed';
-      setError(message);
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [instructions, options]);
+      // Abort any previous request
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = new AbortController();
+
+      try {
+        setIsLoading(true);
+        setError(null);
+        setEnhancedContent(''); // Start with empty string for streaming
+
+        // Build the message including the content to enhance
+        const message = `${instructions}
+
+--- CONTENT TO ENHANCE ---
+${options.content}`;
+
+        await streamChatRequest('text-enhancement', message, {
+          context: options.context
+            ? { personalInstructions: options.context }
+            : undefined,
+          modelId: options.modelId,
+          attachments: attachments?.map((a) => ({
+            type: a.type,
+            content: a.content,
+            name: a.name,
+          })),
+          signal: abortControllerRef.current.signal,
+          onChunk: (content) => {
+            setEnhancedContent(content);
+          },
+        });
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') {
+          return;
+        }
+        const message = err instanceof Error ? err.message : 'Enhancement failed';
+        setError(message);
+        toast.error(message);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [instructions, options]
+  );
 
   const reset = useCallback(() => {
+    abortControllerRef.current?.abort();
     setEnhancedContent(null);
     setError(null);
     setInstructions('');
@@ -174,71 +284,70 @@ export function useResumeEnhancement<T>(): UseAIEnhancementReturn<T> & {
   const [error, setError] = useState<string | null>(null);
   const [instructions, setInstructions] = useState('');
   const [resume, setResume] = useState<T | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const enhance = useCallback(async (attachmentsContext?: string) => {
-    if (!instructions.trim()) {
-      toast.error('Please provide instructions for the AI');
-      return;
-    }
-
-    if (!resume) {
-      toast.error('No resume data provided');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const resumeJson = JSON.stringify(resume, null, 2);
-      const contextParts = [
-        'This is a JSON Resume format document',
-        attachmentsContext,
-      ].filter(Boolean);
-
-      const response = await fetch('/api/ai/enhance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: `RESUME DATA (JSON format - you MUST return valid JSON in this exact structure):
-${resumeJson}`,
-          instructions: `${instructions}
-
-CRITICAL INSTRUCTIONS:
-1. You MUST return ONLY valid JSON in the exact same structure as the input
-2. Modify the content based on the instructions above
-3. Preserve ALL required fields (name, email, etc.)
-4. Improve text quality: better wording, stronger impact, professional tone
-5. Keep dates, company names, and factual information unchanged unless asked
-6. Return ONLY the JSON object, no explanations or markdown`,
-          context: contextParts.join('\n\n'),
-          contentType: 'text',
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Enhancement failed');
+  const enhance = useCallback(
+    async (attachments?: any[]) => {
+      if (!instructions.trim()) {
+        toast.error('Please provide instructions for the AI');
+        return;
       }
 
-      const data = await response.json();
-      const parsedResume = parseResumeJson<T>(data.enhancedContent);
-      setEnhancedContent(parsedResume);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Enhancement failed';
-      if (message.includes('JSON')) {
-        setError('AI returned invalid JSON. Please try again.');
-        toast.error('AI returned invalid JSON. Please try again.');
-      } else {
+      if (!resume) {
+        toast.error('No resume data provided');
+        return;
+      }
+
+      // Abort any previous request
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = new AbortController();
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Build the message
+        const message = `${instructions}
+
+Please enhance the resume according to the instructions above and return the updated JSON Resume format.`;
+
+        const result = await streamChatRequest('resume-enhancement', message, {
+          context: {
+            currentResume: resume as Record<string, unknown>,
+          },
+          attachments: attachments?.map((a) => ({
+            type: a.type,
+            content: a.content,
+            name: a.name,
+          })),
+          signal: abortControllerRef.current.signal,
+        });
+
+        // Parse the final result
+        try {
+          const parsed = parseResumeJson<T>(result);
+          setEnhancedContent(parsed);
+        } catch (e) {
+          console.error('Failed to parse enhanced resume JSON:', e);
+          setError('Failed to parse the AI response as valid resume data. Please try again.');
+          toast.error('Failed to parse the AI response');
+        }
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') {
+          return;
+        }
+        const message = err instanceof Error ? err.message : 'Enhancement failed';
         setError(message);
         toast.error(message);
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [instructions, resume]);
+    },
+    [instructions, resume]
+  );
 
   const reset = useCallback(() => {
+    abortControllerRef.current?.abort();
     setEnhancedContent(null);
     setError(null);
     setInstructions('');
@@ -270,38 +379,29 @@ export function useTemplateEnhancement(): UseAIEnhancementReturn<{ html: string;
   const [error, setError] = useState<string | null>(null);
   const [instructions, setInstructions] = useState('');
   const [templateData, setTemplateData] = useState<{ html: string; css: string }>({ html: '', css: '' });
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const setTemplate = useCallback((html: string, css: string) => {
     setTemplateData({ html, css });
   }, []);
 
-  const enhance = useCallback(async (attachmentsContext?: string) => {
-    if (!instructions.trim()) {
-      toast.error('Please provide instructions for the AI');
-      return;
-    }
+  const enhance = useCallback(
+    async (attachments?: any[]) => {
+      if (!instructions.trim()) {
+        toast.error('Please provide instructions for the AI');
+        return;
+      }
 
-    try {
-      setIsLoading(true);
-      setError(null);
+      // Abort any previous request
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = new AbortController();
 
-      const combinedContent = `=== HTML TEMPLATE ===
-${templateData.html}
+      try {
+        setIsLoading(true);
+        setError(null);
 
-=== CSS STYLES ===
-${templateData.css}`;
-
-      const contextParts = [
-        'This is a resume template with Handlebars syntax ({{variable}}, {{#each}}, etc.)',
-        attachmentsContext,
-      ].filter(Boolean);
-
-      const response = await fetch('/api/ai/enhance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: combinedContent,
-          instructions: `${instructions}
+        // Build the message
+        const message = `${instructions}
 
 IMPORTANT: You must return both the HTML and CSS in this exact format:
 === HTML TEMPLATE ===
@@ -310,30 +410,41 @@ IMPORTANT: You must return both the HTML and CSS in this exact format:
 === CSS STYLES ===
 [enhanced CSS here]
 
-Make sure to preserve both sections and the exact separator format.`,
-          context: contextParts.join('\n\n'),
-          contentType: 'html',
-        }),
-      });
+Make sure to preserve both sections and the exact separator format.`;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Enhancement failed');
+        const result = await streamChatRequest('template-enhancement', message, {
+          context: {
+            template: {
+              htmlTemplate: templateData.html,
+              cssStyles: templateData.css,
+            },
+          },
+          attachments: attachments?.map((a) => ({
+            type: a.type,
+            content: a.content,
+            name: a.name,
+          })),
+          signal: abortControllerRef.current.signal,
+        });
+
+        const parsed = parseTemplateResponse(result, templateData.css);
+        setEnhancedContent(parsed);
+      } catch (err) {
+        if ((err as Error).name === 'AbortError') {
+          return;
+        }
+        const message = err instanceof Error ? err.message : 'Enhancement failed';
+        setError(message);
+        toast.error(message);
+      } finally {
+        setIsLoading(false);
       }
-
-      const data = await response.json();
-      const parsed = parseTemplateResponse(data.enhancedContent, templateData.css);
-      setEnhancedContent(parsed);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Enhancement failed';
-      setError(message);
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [instructions, templateData]);
+    },
+    [instructions, templateData]
+  );
 
   const reset = useCallback(() => {
+    abortControllerRef.current?.abort();
     setEnhancedContent(null);
     setError(null);
     setInstructions('');

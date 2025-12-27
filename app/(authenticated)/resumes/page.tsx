@@ -8,7 +8,8 @@ import { ResumeList, type ResumeListItem } from '@/components/resume/ResumeList'
 import { Input } from '@/components/ui/input';
 import { ErrorState } from '@/components/shared/states';
 import { useFetch } from '@/hooks/useDataFetching';
-import { API, ROUTES } from '@/lib/constants';
+import { ROUTES } from '@/lib/constants';
+import { apiV1 } from '@/lib/client';
 import type { GeneratedResume } from '@/lib/types';
 
 export default function ResumesPage() {
@@ -22,7 +23,7 @@ export default function ResumesPage() {
     error, 
     refetch,
     mutate 
-  } = useFetch<GeneratedResume[]>(API.RESUME.LIST, {
+  } = useFetch<GeneratedResume[]>(apiV1.RESUME.LIST.url, {
     initialData: [],
     refetchOnFocus: true,
   });
@@ -57,12 +58,12 @@ export default function ResumesPage() {
       title="My Resumes"
       description="Manage your AI-generated resumes"
       breadcrumbs={[{ label: "Resumes" }]}
-    >
-      <div className="flex justify-end mb-6">
+      actions={
         <Button onClick={() => router.push(ROUTES.GENERATE)}>
           Generate New Resume
         </Button>
-      </div>
+      }
+    >
 
       {/* Search Bar */}
       {(resumes?.length ?? 0) > 0 && (

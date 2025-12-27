@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { apiV1 } from '@/lib/client';
 
 const logger = createComponentLogger('useExportPDF');
 
@@ -35,24 +36,20 @@ export function useExportPDF() {
 
       // If custom template is provided, use it directly
       if (templateHtml) {
-        const response = await fetch('/api/export/pdf', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        const response = await apiV1.EXPORT.PDF.postFetch(
+          {
             resume,
             template: {
               htmlTemplate: templateHtml,
               cssStyles: templateCss || '',
             },
             fileName,
-          }),
-        });
+          },
+          { skipSessionCheck: true },
+        );
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to export PDF');
+          throw new Error('Failed to export PDF');
         }
 
         await downloadPDF(response);
@@ -65,32 +62,31 @@ export function useExportPDF() {
         throw new Error('No template selected');
       }
 
-      const templateResponse = await fetch(`/api/template/${templateId}`);
-      if (!templateResponse.ok) {
-        throw new Error('Failed to fetch template');
+      const templateResult = await apiV1.TEMPLATE.GET(templateId).get<{
+        id: string;
+        htmlTemplate: string;
+        cssStyles: string;
+      }>();
+      if (templateResult.error || !templateResult.data) {
+        throw new Error(templateResult.error ?? 'Failed to fetch template');
       }
 
-      const template = await templateResponse.json();
+      const template = templateResult.data;
 
-      // Call universal PDF export API
-      const response = await fetch('/api/export/pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const response = await apiV1.EXPORT.PDF.postFetch(
+        {
           resume,
           template: {
             htmlTemplate: template.htmlTemplate,
             cssStyles: template.cssStyles,
           },
           fileName,
-        }),
-      });
+        },
+        { skipSessionCheck: true },
+      );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to export PDF');
+        throw new Error('Failed to export PDF');
       }
 
       await downloadPDF(response);

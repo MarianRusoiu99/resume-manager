@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Settings, Key } from 'lucide-react';
 import { RouteErrorCard } from '@/components/shared/RouteErrorCard';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -14,9 +15,11 @@ interface ErrorProps {
  * 
  * Handles errors specific to the settings section.
  */
+const log = createComponentLogger('SettingsError');
+
 export default function SettingsError({ error, reset }: ErrorProps) {
   useEffect(() => {
-    console.error('Settings error:', error);
+    log.error('Settings error', error);
   }, [error]);
 
   // Detect specific error types

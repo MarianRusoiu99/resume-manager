@@ -1,6 +1,7 @@
 export * from "./ConfirmDialog";
 export * from "./ErrorBoundary";
 export * from "./GalleryCard";
+export * from "./GalleryCardActionsMenu";
 export * from "./GalleryCardPreview";
 export * from "./RouteErrorCard";
 export * from "./ScaledIframePreview";
@@ -8,3 +9,5 @@ export * from "./ThemeToggle";
 export * from "./EntityCard";
 export * from "./Gallery";
 export * from "./states";
+export * from "./Callout";
+export * from "./Spinner";

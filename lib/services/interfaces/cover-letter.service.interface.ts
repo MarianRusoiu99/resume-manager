@@ -8,35 +8,22 @@
 
 import type { ServiceResult } from '@/lib/types/service-result';
 import type { CoverLetter } from '@prisma/client';
-import type { 
+import type {
   CreateCoverLetterInput,
-  UpdateCoverLetterInput 
-} from '@/lib/repositories/cover-letter.repository';
+  UpdateCoverLetterInput,
+  CoverLetterData,
+  FindCoverLettersOptions as GetCoverLettersOptions
+} from '@/lib/repositories/interfaces/cover-letter.repository.interface';
 
 /**
- * Cover letter list item for display - uses Prisma's CoverLetter type
+ * Cover letter list item for display
  */
-export type CoverLetterListItem = CoverLetter;
+export type CoverLetterListItem = CoverLetterData;
 
 /**
- * Cover letter with optional related resume
+ * Cover letter with optional related resume/job.
  */
-export interface CoverLetterWithResume extends CoverLetter {
-  generatedResume?: {
-    id: string;
-    jobDescription: string;
-  } | null;
-}
-
-/**
- * Options for fetching cover letters
- */
-export interface GetCoverLettersOptions {
-  limit?: number;
-  offset?: number;
-  orderBy?: 'createdAt' | 'updatedAt';
-  orderDir?: 'asc' | 'desc';
-}
+export type CoverLetterWithResume = CoverLetterData;
 
 /**
  * Cover Letter Service Interface

@@ -2,54 +2,26 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { apiFetch } from '@/lib/utils/api-client';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
+import { ROUTES } from '@/lib/constants';
+import { apiV1, type AISettings, type ModelInfo } from '@/lib/client';
+import { Page } from '@/components/layout/Page';
 import { Button, Card } from '@/components/ui';
-import { 
+import { Callout } from '@/components/shared';
+import { EmptyState, LoadingState } from '@/components/shared/states';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Cpu, RefreshCw, AlertCircle, Check } from 'lucide-react';
 import Link from 'next/link';
-
-interface ModelInfo {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-interface ProviderWithModels {
-  id: string;
-  name: string;
-  provider: string;
-  models: ModelInfo[];
-  isActive: boolean;
-}
-
-interface FeatureConfig {
-  id: string;
-  name: string;
-  description: string;
-}
-
-interface FeatureModelSelection {
-  feature: FeatureConfig;
-  providerId: string | null;
-  providerName: string | null;
-  modelId: string | null;
-  modelName: string | null;
-}
-
-interface AISettings {
-  features: FeatureModelSelection[];
-  availableProviders: ProviderWithModels[];
-}
+import { useComponentLogger } from '@/hooks';
 
 export default function AIModelsSettingsPage() {
+  const log = useComponentLogger('AIModelsSettingsPage');
   const [settings, setSettings] = useState<AISettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [savingFeature, setSavingFeature] = useState<string | null>(null);
@@ -60,32 +32,38 @@ export default function AIModelsSettingsPage() {
   const loadSettings = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiFetch('/api/settings/ai-models');
-      if (response.ok) {
-        const data: AISettings = await response.json();
-        setSettings(data);
-        
-        // Initialize selections from loaded data
-        const initialSelections: Record<string, { providerId: string; modelId: string }> = {};
-        for (const f of data.features) {
-          if (f.providerId && f.modelId) {
-            initialSelections[f.feature.id] = {
-              providerId: f.providerId,
-              modelId: f.modelId,
-            };
-          }
-        }
-        setSelections(initialSelections);
-      } else {
-        toast.error('Failed to load AI settings');
+      const result = await apiV1.SETTINGS.AI_MODELS.get<AISettings>();
+
+      if (result.error) {
+        toast.error(result.error);
+        return;
       }
+
+      if (!result.data) {
+        toast.error('Failed to load AI settings');
+        return;
+      }
+
+      setSettings(result.data);
+
+      // Initialize selections from loaded data
+      const initialSelections: Record<string, { providerId: string; modelId: string }> = {};
+      for (const f of result.data.features) {
+        if (f.providerId && f.modelId) {
+          initialSelections[f.feature.id] = {
+            providerId: f.providerId,
+            modelId: f.modelId,
+          };
+        }
+      }
+      setSelections(initialSelections);
     } catch (error) {
-      console.error('Error loading settings:', error);
+      log.error('Error loading settings', error);
       toast.error('Failed to load AI settings');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [log]);
 
   useEffect(() => {
     loadSettings();
@@ -95,7 +73,7 @@ export default function AIModelsSettingsPage() {
     // When provider changes, reset model to first available
     const provider = settings?.availableProviders.find((p) => p.id === providerId);
     const firstModel = provider?.models[0];
-    
+
     setSelections((prev) => ({
       ...prev,
       [featureId]: {
@@ -117,29 +95,25 @@ export default function AIModelsSettingsPage() {
 
   const handleSavePreference = async (featureId: string) => {
     const selection = selections[featureId];
-    
+
     try {
       setSavingFeature(featureId);
-      
-      const response = await apiFetch('/api/settings/ai-models', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          feature: featureId,
-          providerId: selection?.providerId || null,
-          modelId: selection?.modelId || null,
-        }),
+
+      const result = await apiV1.SETTINGS.AI_MODELS.patch<unknown>({
+        feature: featureId,
+        providerId: selection?.providerId || null,
+        modelId: selection?.modelId || null,
       });
 
-      if (response.ok) {
-        toast.success('Preference saved');
-        await loadSettings(); // Refresh to get updated names
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to save preference');
+      if (result.error) {
+        toast.error(result.error);
+        return;
       }
+
+      toast.success('Preference saved');
+      await loadSettings(); // Refresh to get updated names
     } catch (error) {
-      console.error('Error saving preference:', error);
+      log.error('Error saving preference', error, { featureId });
       toast.error('Failed to save preference');
     } finally {
       setSavingFeature(null);
@@ -149,31 +123,27 @@ export default function AIModelsSettingsPage() {
   const handleClearPreference = async (featureId: string) => {
     try {
       setSavingFeature(featureId);
-      
-      const response = await apiFetch('/api/settings/ai-models', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          feature: featureId,
-          providerId: null,
-          modelId: null,
-        }),
+
+      const result = await apiV1.SETTINGS.AI_MODELS.patch<unknown>({
+        feature: featureId,
+        providerId: null,
+        modelId: null,
       });
 
-      if (response.ok) {
-        toast.success('Preference cleared - will use default');
-        setSelections((prev) => {
-          const updated = { ...prev };
-          delete updated[featureId];
-          return updated;
-        });
-        await loadSettings();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to clear preference');
+      if (result.error) {
+        toast.error(result.error);
+        return;
       }
+
+      toast.success('Preference cleared - will use default');
+      setSelections((prev) => {
+        const updated = { ...prev };
+        delete updated[featureId];
+        return updated;
+      });
+      await loadSettings();
     } catch (error) {
-      console.error('Error clearing preference:', error);
+      log.error('Error clearing preference', error, { featureId });
       toast.error('Failed to clear preference');
     } finally {
       setSavingFeature(null);
@@ -188,11 +158,11 @@ export default function AIModelsSettingsPage() {
   const hasChanges = (featureId: string): boolean => {
     const feature = settings?.features.find((f) => f.feature.id === featureId);
     const selection = selections[featureId];
-    
+
     if (!feature) return false;
     if (!selection && !feature.providerId) return false;
     if (!selection && feature.providerId) return false;
-    
+
     return (
       selection?.providerId !== feature.providerId ||
       selection?.modelId !== feature.modelId
@@ -201,26 +171,22 @@ export default function AIModelsSettingsPage() {
 
   const renderContent = () => {
     if (isLoading) {
-      return (
-        <div className="text-center py-12">
-          <RefreshCw className="h-8 w-8 mx-auto text-muted-foreground animate-spin mb-4" />
-          <p className="text-muted-foreground">Loading AI settings...</p>
-        </div>
-      );
+      return <LoadingState message="Loading AI settings..." minHeight="240px" size="sm" />;
     }
 
     if (!settings || settings.availableProviders.length === 0) {
       return (
-        <Card className="p-12 text-center">
-          <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No API Providers Configured</h3>
-          <p className="text-muted-foreground mb-4">
-            You need to add at least one API provider before configuring AI model preferences.
-          </p>
-          <Button asChild>
-            <Link href="/settings/api-keys">Add API Provider</Link>
-          </Button>
-        </Card>
+        <EmptyState
+          icon={AlertCircle}
+          title="No API Providers Configured"
+          description="You need to add at least one API provider before configuring AI model preferences."
+          secondaryAction={
+            <Button asChild>
+              <Link href={ROUTES.SETTINGS_API_KEYS}>Add API Provider</Link>
+            </Button>
+          }
+          withCard={true}
+        />
       );
     }
 
@@ -245,7 +211,7 @@ export default function AIModelsSettingsPage() {
                     <h3 className="text-lg font-semibold">{feature.name}</h3>
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">{feature.description}</p>
-                  
+
                   {/* Current Selection Display */}
                   {featureSetting.providerName && featureSetting.modelName && (
                     <div className="flex items-center gap-2 text-sm">
@@ -293,22 +259,20 @@ export default function AIModelsSettingsPage() {
                     <span className="block text-xs font-medium text-muted-foreground mb-1">
                       Model
                     </span>
-                    <Select
+                    <SearchableSelect
                       value={currentModelId}
                       onValueChange={(value) => handleModelChange(feature.id, value)}
                       disabled={!currentProviderId}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select model..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableModels.map((model) => (
-                          <SelectItem key={model.id} value={model.id}>
-                            {model.name || model.id}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder="Select model..."
+                      searchPlaceholder="Search models..."
+                      dialogTitle="Select a model"
+                      maxListHeightClassName="h-72"
+                      options={availableModels.map((model) => ({
+                        value: model.id,
+                        label: model.name || model.id,
+                        description: model.name ? model.id : undefined,
+                      }))}
+                    />
                   </div>
 
                   <div className="flex gap-2 items-end">
@@ -340,38 +304,32 @@ export default function AIModelsSettingsPage() {
   };
 
   return (
-    <>
-      <PageHeader
-        title="AI Model Settings"
-        description="Configure which AI models to use for each feature"
-        breadcrumbs={[
-          { label: 'Settings', href: '/settings' },
-          { label: 'AI Models' },
-        ]}
-      />
+    <Page
+      title="AI Model Settings"
+      description="Configure which AI models to use for each feature"
+      breadcrumbs={[
+        { label: 'Settings', href: '/settings' },
+        { label: 'AI Models' },
+      ]}
+      toolbar={
+        <Callout>
+          <p>
+            <strong>Tip:</strong> Configure your preferred AI model for each feature. If not set, the system will use the first available model from your configured providers.
+          </p>
+        </Callout>
+      }
+    >
+      {renderContent()}
 
-      <PageContainer>
-        <div className="mb-6">
-          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4">
-            <p className="text-sm text-blue-900 dark:text-blue-100">
-              <strong>Tip:</strong> Configure your preferred AI model for each feature. 
-              If not set, the system will use the first available model from your configured providers.
-            </p>
-          </div>
-        </div>
-
-        {renderContent()}
-
-        <div className="mt-8 flex justify-between items-center">
-          <Button variant="outline" asChild>
-            <Link href="/settings/api-keys">Manage API Keys</Link>
-          </Button>
-          <Button variant="ghost" onClick={loadSettings} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-        </div>
-      </PageContainer>
-    </>
+      <div className="mt-8 flex justify-between items-center">
+        <Button variant="outline" asChild>
+          <Link href={ROUTES.SETTINGS_API_KEYS}>Manage API Keys</Link>
+        </Button>
+        <Button variant="ghost" onClick={loadSettings} disabled={isLoading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
+      </div>
+    </Page>
   );
 }

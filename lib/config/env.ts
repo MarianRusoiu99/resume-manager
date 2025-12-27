@@ -15,6 +15,7 @@
  */
 
 import { z } from 'zod';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * Environment variable schema
@@ -46,6 +47,9 @@ const envSchema = z.object({
   APP_VERSION: z.string().default('1.0.0'),
   APP_NAME: z.string().default('Resume Manager'),
 
+  // Admin access (comma-separated emails)
+  ADMIN_EMAILS: z.string().optional(),
+
   // Feature flags
   ANALYZE: z.string().transform(v => v === 'true').optional(),
 });
@@ -62,10 +66,12 @@ function parseEnv(): EnvConfig {
   if (!parsed.success) {
     // In development, just warn about issues
     if (process.env.NODE_ENV !== 'production') {
-      console.warn('⚠️ Environment variable validation warnings:');
-      for (const issue of parsed.error.issues) {
-        console.warn(`   ${issue.path.join('.')}: ${issue.message}`);
-      }
+      logger.warn('Environment variable validation warnings', {
+        issues: parsed.error.issues.map((issue) => ({
+          path: issue.path.join('.'),
+          message: issue.message,
+        })),
+      });
       // Return a default config for development
       return {
         NODE_ENV: 'development',
@@ -79,15 +85,18 @@ function parseEnv(): EnvConfig {
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
         APP_VERSION: process.env.APP_VERSION || '1.0.0',
         APP_NAME: process.env.APP_NAME || 'Resume Manager',
+        ADMIN_EMAILS: process.env.ADMIN_EMAILS,
         ANALYZE: process.env.ANALYZE === 'true',
       };
     }
 
     // In production, fail fast with clear errors
-    console.error('❌ Invalid environment variables:');
-    for (const issue of parsed.error.issues) {
-      console.error(`   ${issue.path.join('.')}: ${issue.message}`);
-    }
+    logger.error('Invalid environment variables', undefined, {
+      issues: parsed.error.issues.map((issue) => ({
+        path: issue.path.join('.'),
+        message: issue.message,
+      })),
+    });
     throw new Error('Invalid environment configuration');
   }
 
@@ -133,6 +142,17 @@ class EnvironmentConfig {
   // Application
   get APP_VERSION() { return this.config.APP_VERSION; }
   get APP_NAME() { return this.config.APP_NAME; }
+
+  // Admin access
+  get ADMIN_EMAILS() { return this.config.ADMIN_EMAILS; }
+  get adminEmails(): string[] {
+    const raw = this.config.ADMIN_EMAILS;
+    if (!raw) return [];
+    return raw
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean);
+  }
 
   // Feature flags
   get shouldAnalyze() { return this.config.ANALYZE ?? false; }

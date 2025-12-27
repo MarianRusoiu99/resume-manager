@@ -8,7 +8,7 @@
 import { Edit, Eye, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import type { GalleryCardAction } from "@/components/shared/GalleryCard";
-import { toast } from 'sonner';
+import { useToastAction } from '@/hooks';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { useCardPreview, useExportPdf } from '@/hooks/useCardPreview';
 import { deleteResume } from '@/app/actions/resume';
@@ -38,6 +38,8 @@ export function ResumeCard({
   onEdit,
   onDelete,
 }: Readonly<ResumeCardProps>) {
+  const { runWithToast } = useToastAction();
+
   const title = jobTitle || 'Untitled Resume';
   const subtitle = companyName || 'No company specified';
 
@@ -55,21 +57,29 @@ export function ResumeCard({
   });
 
   const handleExport = async () => {
-    try {
-      await exportPdf();
-      toast.success('PDF exported successfully');
-    } catch {
-      toast.error('Failed to export PDF');
-    }
+    await runWithToast(
+      async () => {
+        await exportPdf();
+        return true;
+      },
+      {
+        successMessage: 'PDF exported successfully',
+        errorMessage: 'Failed to export PDF',
+      },
+    );
   };
 
   const handleDelete = async () => {
-    const result = await deleteResume(id);
-    if (result.success) {
-      toast.success('Resume deleted successfully');
+    const result = await runWithToast(
+      () => deleteResume(id),
+      {
+        successMessage: 'Resume deleted successfully',
+        errorMessage: 'Failed to delete resume',
+      },
+    );
+
+    if (result?.success) {
       onDelete(id);
-    } else {
-      toast.error(result.error || 'Failed to delete resume');
     }
   };
 

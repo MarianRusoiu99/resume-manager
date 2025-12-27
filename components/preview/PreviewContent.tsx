@@ -29,23 +29,21 @@ interface PreviewContentProps {
   containerRef: RefObject<HTMLDivElement | null>;
 }
 
-export function PreviewContent({
-  showTemplateSelector,
-  selectedTemplateId,
-  onTemplateChange,
-  resumeId,
-  templateHtml,
-  isExportingPDF,
-  onExportPDF,
-  onToggleFullscreen,
-  onRefresh,
-  isLoading,
-  error,
-  htmlContent,
-  scale,
-  iframeRef,
-  containerRef,
-}: Readonly<PreviewContentProps>) {
+export function PreviewContent(props: Readonly<PreviewContentProps>) {
+  const {
+    showTemplateSelector,
+    selectedTemplateId,
+    onTemplateChange,
+    templateHtml,
+    isExportingPDF,
+    onExportPDF,
+    isLoading,
+    error,
+    htmlContent,
+    scale,
+    iframeRef,
+    containerRef,
+  } = props;
   return (
     <>
       <PreviewHeader

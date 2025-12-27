@@ -3,19 +3,17 @@
 import { useEffect, useRef, useCallback } from "react";
 import { SessionProvider, useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
+import { SESSION_EXPIRED_EVENT, triggerSessionExpiry as triggerSessionExpiryInternal } from "@/lib/auth/session-expiry";
 
 // Public routes that don't require authentication
 const publicRoutes = ["/login", "/register", "/public"];
-
-// Global event for session expiry (can be triggered from anywhere)
-const SESSION_EXPIRED_EVENT = "session:expired";
 
 /**
  * Trigger session expiry from anywhere in the app
  * Call this when an API request returns 401/403
  */
 export function triggerSessionExpiry() {
-  globalThis.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+  triggerSessionExpiryInternal();
 }
 
 function SessionMonitor({ children }: { readonly children: React.ReactNode }) {
@@ -77,7 +75,8 @@ function SessionMonitor({ children }: { readonly children: React.ReactNode }) {
 
 export function AuthProvider({ children }: { readonly children: React.ReactNode }) {
   return (
-    <SessionProvider 
+    <SessionProvider
+      basePath="/api/v1/auth"
       // Only refetch on window focus, no constant polling
       refetchOnWindowFocus={true}
     >

@@ -6,6 +6,7 @@
  */
 
 import Redis, { RedisOptions as IoRedisOptions } from 'ioredis';
+import { logger } from '@/lib/utils/logger';
 import { CacheProvider, PubSubProvider, MessageHandler } from './types';
 
 /**
@@ -84,16 +85,16 @@ export class RedisCacheProvider implements CacheProvider {
     
     this.client.on('connect', () => {
       this.connected = true;
-      console.log('[Redis] Cache client connected');
+      logger.info('Redis cache client connected');
     });
     
     this.client.on('error', (error) => {
-      console.error('[Redis] Cache client error:', error.message);
+      logger.error('Redis cache client error', error);
     });
     
     this.client.on('close', () => {
       this.connected = false;
-      console.log('[Redis] Cache client disconnected');
+      logger.info('Redis cache client disconnected');
     });
   }
 
@@ -228,20 +229,20 @@ export class RedisPubSubProvider implements PubSubProvider {
     // Publisher connection
     this.publisher = new Redis(config);
     this.publisher.on('connect', () => {
-      console.log('[Redis] Publisher connected');
+      logger.info('Redis publisher connected');
     });
     this.publisher.on('error', (error) => {
-      console.error('[Redis] Publisher error:', error.message);
+      logger.error('Redis publisher error', error);
     });
     
     // Subscriber connection (separate as required by Redis)
     this.subscriber = new Redis(config);
     this.subscriber.on('connect', () => {
       this.connected = true;
-      console.log('[Redis] Subscriber connected');
+      logger.info('Redis subscriber connected');
     });
     this.subscriber.on('error', (error) => {
-      console.error('[Redis] Subscriber error:', error.message);
+      logger.error('Redis subscriber error', error);
     });
     this.subscriber.on('close', () => {
       this.connected = false;
@@ -256,7 +257,7 @@ export class RedisPubSubProvider implements PubSubProvider {
           try {
             handler(channel, parsed);
           } catch (error) {
-            console.error('[Redis] Message handler error:', error);
+            logger.error('Redis message handler error', error, { channel });
           }
         }
       }
@@ -271,7 +272,7 @@ export class RedisPubSubProvider implements PubSubProvider {
           try {
             handler(channel, parsed);
           } catch (error) {
-            console.error('[Redis] Pattern handler error:', error);
+            logger.error('Redis pattern handler error', error, { pattern });
           }
         }
       }

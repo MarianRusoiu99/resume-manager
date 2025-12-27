@@ -6,6 +6,7 @@ import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
 import '@blocknote/mantine/style.css';
 import '@blocknote/core/fonts/inter.css';
+import { useComponentLogger } from '@/hooks';
 
 export interface BlockNoteEditorMethods {
   getMarkdown: () => Promise<string>;
@@ -29,6 +30,7 @@ interface BlockNoteEditorWrapperProps {
 
 export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNoteEditorWrapperProps>(
   ({ markdown: initialMarkdown, jsonContent, onChange, onJSONChange, className = '', placeholder = 'Type / for commands...', readOnly = false }, ref) => {
+    const log = useComponentLogger('BlockNoteEditorWrapper');
     
     // Track if initial content has been loaded to prevent re-initialization
     const hasInitialized = useRef(false);
@@ -43,12 +45,12 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
         if (jsonContent) {
           try {
             const parsed = JSON.parse(jsonContent);
-            console.log('[BlockNote] Loaded from JSON:', parsed.length, 'blocks');
+            log.debug('Loaded from JSON', { blocks: Array.isArray(parsed) ? parsed.length : undefined });
             setInitialBlocks(parsed);
             hasInitialized.current = true;
             return;
           } catch (error) {
-            console.error('[BlockNote] Failed to parse JSON content:', error);
+            log.error('Failed to parse JSON content', error);
           }
         }
         
@@ -57,7 +59,7 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
       };
       
       parseInitialContent();
-    }, [jsonContent]);
+    }, [jsonContent, log]);
 
     // Create BlockNote editor instance with initial blocks
     const editor = useCreateBlockNote({
@@ -81,12 +83,12 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
         try {
           const blocks = await editor.tryParseMarkdownToBlocks(initialMarkdown);
           editor.replaceBlocks(editor.document, blocks);
-          console.log('[BlockNote] Loaded from markdown:', blocks.length, 'blocks');
+          log.debug('Loaded from markdown', { blocks: blocks.length });
         } catch (error) {
-          console.error('[BlockNote] Failed to parse markdown:', error);
+          log.error('Failed to parse markdown', error);
         }
       })();
-    }, [editor, initialMarkdown, jsonContent]);
+    }, [editor, initialMarkdown, jsonContent, log]);
 
     // Handle content changes - debounce to avoid excessive updates
     useEffect(() => {
@@ -108,13 +110,13 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
             onChange(markdownString);
           }
         } catch (error) {
-          console.error('[BlockNote] Failed to handle content change:', error);
+          log.error('Failed to handle content change', error);
         }
       };
 
       // Subscribe to editor changes
       return editor.onChange(handleChange);
-    }, [editor, onChange, onJSONChange]);
+    }, [editor, onChange, onJSONChange, log]);
 
     // Expose imperative methods via ref
     useImperativeHandle(ref, () => ({
@@ -123,7 +125,7 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
           const blocks = editor.document;
           return await editor.blocksToMarkdownLossy(blocks);
         } catch (error) {
-          console.error('[BlockNote] Failed to serialize markdown:', error);
+          log.error('Failed to serialize markdown', error);
           return '';
         }
       },
@@ -132,7 +134,7 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
           const blocks = await editor.tryParseMarkdownToBlocks(markdownString);
           editor.replaceBlocks(editor.document, blocks);
         } catch (error) {
-          console.error('[BlockNote] Failed to parse markdown:', error);
+          log.error('Failed to parse markdown', error);
         }
       },
       getValue: () => {
@@ -146,7 +148,7 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
           const blocks = editor.document;
           return JSON.stringify(blocks, null, 2);
         } catch (error) {
-          console.error('[BlockNote] Failed to serialize JSON:', error);
+          log.error('Failed to serialize JSON', error);
           return '[]';
         }
       },
@@ -155,7 +157,7 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
           const blocks = JSON.parse(jsonString) as Block[];
           editor.replaceBlocks(editor.document, blocks);
         } catch (error) {
-          console.error('[BlockNote] Failed to parse JSON:', error);
+          log.error('Failed to parse JSON', error);
         }
       },
       getHTML: async () => {
@@ -163,11 +165,11 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
           const blocks = editor.document;
           return await editor.blocksToHTMLLossy(blocks);
         } catch (error) {
-          console.error('[BlockNote] Failed to serialize HTML:', error);
+          log.error('Failed to serialize HTML', error);
           return '';
         }
       },
-    }), [editor]);
+    }), [editor, log]);
 
     if (!editor) {
       return <div>Loading editor...</div>;

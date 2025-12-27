@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { apiFetch } from "@/lib/utils/api-client";
+import { apiV1, type ResumeDetailsDto } from "@/lib/client";
+import { useComponentLogger } from "@/hooks";
 
 /**
  * Resume Edit Page - Full-screen editor like profile editor
@@ -18,42 +19,41 @@ import { apiFetch } from "@/lib/utils/api-client";
  * ResumeEditor includes the preview panel built-in.
  */
 export default function ResumeEditPage() {
+  const log = useComponentLogger("ResumeEditPage");
   const params = useParams();
   const router = useRouter();
   const resumeId = params.id as string;
   const [jobTitle, setJobTitle] = useState("");
 
-  // Load job title from metadata
+  // Load job title from resume details
   useEffect(() => {
     const loadJobTitle = async () => {
       try {
-        const response = await apiFetch(`/api/resume/${resumeId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setJobTitle(data.jobMetadata?.jobTitle || "");
+      const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetailsDto>();
+        if (!result.error && result.data) {
+          setJobTitle(result.data.jobTitle);
         }
       } catch (error) {
-        console.error("Error loading job title:", error);
+        log.error("Error loading job title", error);
       }
     };
     loadJobTitle();
-  }, [resumeId]);
+  }, [resumeId, log]);
 
   /**
    * Load specific resume data from API
    */
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const response = await apiFetch(`/api/resume/${resumeId}`);
-      
-      if (!response.ok) {
-        throw new Error("Failed to load resume");
+      const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetailsDto>();
+
+      if (result.error || !result.data) {
+        throw new Error(result.error || "Failed to load resume");
       }
 
-      const data = await response.json();
-      return data.content as Resume;
+      return result.data.content as Resume;
     } catch (error) {
-      console.error("Error loading resume:", error);
+      log.error("Error loading resume", error);
       return null;
     }
   };
@@ -63,21 +63,15 @@ export default function ResumeEditPage() {
    */
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const response = await apiFetch(`/api/resume/${resumeId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume }),
-      });
+      const result = await apiV1.RESUME.CONTENT(resumeId).patch<unknown>({ content: resume });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Resume save error:", errorData);
-        throw new Error(errorData.error || "Failed to save resume");
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       return true;
     } catch (error) {
-      console.error("Error saving resume:", error);
+      log.error("Error saving resume", error);
       return false;
     }
   };
@@ -87,22 +81,16 @@ export default function ResumeEditPage() {
    */
   const handleSaveJobTitle = async (newTitle: string) => {
     try {
-      const response = await apiFetch(`/api/resume/${resumeId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          jobMetadata: { jobTitle: newTitle } 
-        }),
-      });
+      const result = await apiV1.RESUME.GET(resumeId).patch<unknown>({ jobTitle: newTitle });
 
-      if (!response.ok) {
-        throw new Error("Failed to save job title");
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       setJobTitle(newTitle);
       toast.success("Job title updated successfully");
     } catch (error) {
-      console.error("Error saving job title:", error);
+      log.error("Error saving job title", error);
       toast.error("Failed to save job title");
     }
   };

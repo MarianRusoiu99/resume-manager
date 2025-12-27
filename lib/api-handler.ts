@@ -1,9 +1,11 @@
 import { getSession, getVerifiedSession } from "@/lib/auth/dal";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
-import { ZodError, ZodSchema } from "zod";
+import { ZodError, type ZodType } from "zod";
 import { errorCodeToStatus, ServiceErrorCode, type ServiceResult } from "@/lib/types/service-result";
 import { applyRateLimit, getClientIdentifier, addRateLimitHeaders, RateLimitConfigs, type RateLimitConfig } from "@/lib/middleware/rate-limit";
+import { isAppError, wrapError } from "@/lib/errors";
+import { startRequestTelemetry } from "@/lib/telemetry";
 
 type ApiHandlerContext = {
     params: Promise<Record<string, string>>;
@@ -23,20 +25,23 @@ type Session = {
  * Handler return type - can be NextResponse or ServiceResult
  * ServiceResult will be automatically converted to NextResponse
  */
-type ApiHandlerReturn<T> = NextResponse<T> | NextResponse<unknown> | ServiceResult<T>;
+type ApiHandlerReturn<T> = Response | NextResponse<T> | ServiceResult<T>;
 
 type ApiHandler<T = unknown, TBody = unknown> = (
     request: Request,
     context: ApiHandlerContext,
     session: Session,
-    body?: TBody
+    body: TBody | undefined,
+    meta: { requestId: string }
 ) => Promise<ApiHandlerReturn<T>>;
 
 interface ApiHandlerOptions<TBody = unknown> {
     /** Skip authentication (default: false) */
     isPublic?: boolean;
+    /** Whether to require admin (default: false) */
+    requireAdmin?: boolean;
     /** Zod schema for request body validation */
-    bodySchema?: ZodSchema<TBody>;
+    bodySchema?: ZodType<TBody>;
     /** Rate limit configuration key or custom config */
     rateLimit?: keyof typeof RateLimitConfigs | RateLimitConfig;
     /** Verify user exists in database (use for write operations) */
@@ -56,6 +61,19 @@ export function createApiHandler<T = unknown, TBody = unknown>(
         const url = request.url;
         const requestId = generateRequestId();
 
+        // Request telemetry (metrics)
+        const stopTelemetry = startRequestTelemetry(request);
+        let telemetryRecorded = false;
+        const recordTelemetry = (statusCode: number) => {
+            if (telemetryRecorded) return;
+            telemetryRecorded = true;
+            try {
+                stopTelemetry(statusCode);
+            } catch {
+                // ignore telemetry recording failures
+            }
+        };
+
         // Create request-scoped logger
         const reqLogger = logger.forRequest(requestId);
 
@@ -70,6 +88,7 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                     
                 if (!session?.userId) {
                     reqLogger.warn(`Unauthorized access attempt to ${method} ${url}`);
+                    recordTelemetry(401);
                     return NextResponse.json(
                         { 
                             error: options.verifyUser 
@@ -80,6 +99,12 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                         { status: 401 }
                     );
                 }
+
+                if (options.requireAdmin && !session.isAdmin) {
+                    reqLogger.warn(`Forbidden (admin required) ${method} ${url}`, { userId: session.userId });
+                    recordTelemetry(403);
+                    return NextResponse.json({ error: 'Forbidden', requestId }, { status: 403 });
+                }
             }
 
             // Apply rate limiting if configured
@@ -89,10 +114,11 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                     : options.rateLimit;
                 
                 const identifier = getClientIdentifier(request, session?.userId);
-                const rateLimitResponse = applyRateLimit(identifier, rateLimitConfig);
+                const rateLimitResponse = applyRateLimit(identifier, rateLimitConfig, requestId);
                 
                 if (rateLimitResponse) {
                     reqLogger.warn(`Rate limited: ${method} ${url}`, { userId: session?.userId });
+                    recordTelemetry(rateLimitResponse.status);
                     return rateLimitResponse;
                 }
             }
@@ -105,36 +131,52 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                     body = options.bodySchema.parse(rawBody);
                 } catch (error) {
                     if (error instanceof ZodError) {
+                        recordTelemetry(400);
                         return handleValidationError(error, requestId);
                     }
+
+                    // Invalid JSON payload
+                    if (error instanceof SyntaxError) {
+                        recordTelemetry(400);
+                        return NextResponse.json({ error: 'Invalid JSON', requestId }, { status: 400 });
+                    }
+
                     throw error;
                 }
             }
 
             // Map DAL session to expected Session format
-            const apiSession = session ? {
-                user: {
-                    id: session.userId,
-                    email: session.email,
-                    name: session.name,
-                }
-            } : null;
+             const apiSession = session ? {
+                 user: {
+                     id: session.userId,
+                     email: session.email,
+                     name: session.name,
+                     isAdmin: session.isAdmin,
+                 }
+             } : null;
 
-            // Execute handler
-            const handlerResult = await handler(
-                request, 
-                context, 
-                apiSession as unknown as Session,
-                body
-            );
+              // Execute handler
+               const handlerResult = await handler(
+                   request, 
+                   context, 
+                   apiSession as unknown as Session,
+                   body,
+                   { requestId }
+               );
+  
+              // Convert ServiceResult to Response if needed
+              let response: Response;
+              if (isServiceResult(handlerResult)) {
+                  response = serviceResultToResponse(handlerResult, requestId);
+              } else {
+                  response = handlerResult as Response;
+              }
 
-            // Convert ServiceResult to NextResponse if needed
-            let response: NextResponse;
-            if (isServiceResult(handlerResult)) {
-                response = serviceResultToResponse(handlerResult, requestId);
-            } else {
-                response = handlerResult as NextResponse;
-            }
+              // Ensure JSON responses follow the universal API envelope
+              response = await maybeEnvelopeJsonResponse(response, requestId);
+
+              // Record telemetry once per request
+              recordTelemetry(response.status);
 
             // Add rate limit headers if configured
             if (options.rateLimit) {
@@ -142,48 +184,126 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                     ? RateLimitConfigs[options.rateLimit]
                     : options.rateLimit;
                 const identifier = getClientIdentifier(request, session?.userId);
-                response = addRateLimitHeaders(response, identifier, rateLimitConfig) as NextResponse;
+                response = addRateLimitHeaders(response, identifier, rateLimitConfig);
             }
 
-            // Log success
-            const duration = Date.now() - startTime;
-            reqLogger.info(`API Request ${method} ${url}`, {
-                duration,
-                status: response.status,
-                userId: session?.userId,
-            });
+              // Log success
+              const duration = Date.now() - startTime;
+              reqLogger.info(`API Request ${method} ${url}`, {
+                  duration,
+                  status: response.status,
+                  userId: session?.userId,
+              });
 
-            return response;
+              return response;
+
 
         } catch (error) {
             const duration = Date.now() - startTime;
             reqLogger.error(`API Error ${method} ${url}`, error, { duration });
 
-            // Handle specific errors
-            if (error instanceof ZodError) {
-                return handleValidationError(error, requestId);
-            }
+             // Handle specific errors
+             if (error instanceof ZodError) {
+                 recordTelemetry(400);
+                 return handleValidationError(error, requestId);
+             }
 
-            if (error instanceof ServiceError) {
+
+            // Prefer typed domain errors
+            if (isAppError(error)) {
+                recordTelemetry(error.statusCode);
                 return NextResponse.json(
-                    { error: error.message, code: error.code, requestId },
-                    { status: errorCodeToStatus(error.code) }
+                    { ...error.toJSON(), requestId },
+                    { status: error.statusCode }
                 );
             }
 
-            if (error instanceof Error && error.message.includes("not found")) {
-                return NextResponse.json(
-                    { error: "Resource not found", requestId },
-                    { status: 404 }
-                );
-            }
+             if (error instanceof ServiceError) {
+                 const status = errorCodeToStatus(error.code);
+                 recordTelemetry(status);
+                 return NextResponse.json(
+                     { error: error.message, code: error.code, requestId },
+                     { status }
+                 );
+             }
 
-            return NextResponse.json(
-                { error: "Internal Server Error", requestId },
-                { status: 500 }
-            );
+
+             // Fallback to wrapped internal error
+             const wrapped = wrapError(error, 'Internal Server Error');
+             recordTelemetry(wrapped.statusCode);
+             return NextResponse.json(
+                 { ...wrapped.toJSON(), requestId },
+                 { status: wrapped.statusCode }
+             );
+
         }
     };
+}
+
+/**
+ * Handle Zod validation errors with consistent format
+ */
+async function maybeEnvelopeJsonResponse(response: Response, requestId: string): Promise<Response> {
+    const contentType = response.headers.get('content-type') ?? '';
+
+    // Skip non-JSON responses (streams, files, etc.)
+    if (!contentType.includes('application/json')) {
+        return response;
+    }
+
+    // Avoid consuming the stream if there's no body
+    if (!response.body) {
+        return response;
+    }
+
+    let parsedBody: unknown;
+    try {
+        parsedBody = await response.clone().json();
+    } catch {
+        // If it claims to be JSON but isn't parseable, leave it alone
+        return response;
+    }
+
+    const alreadySuccessEnvelope =
+        parsedBody &&
+        typeof parsedBody === 'object' &&
+        'data' in parsedBody &&
+        'requestId' in parsedBody;
+
+    const alreadyErrorEnvelope =
+        parsedBody &&
+        typeof parsedBody === 'object' &&
+        'error' in parsedBody &&
+        'requestId' in parsedBody;
+
+    if (alreadySuccessEnvelope || alreadyErrorEnvelope) {
+        return response;
+    }
+
+    const headers = new Headers(response.headers);
+
+    // Ensure requestId is present for JSON errors
+    if (response.status >= 400) {
+        if (parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody)) {
+            return new Response(JSON.stringify({ ...(parsedBody as Record<string, unknown>), requestId }), {
+                status: response.status,
+                statusText: response.statusText,
+                headers,
+            });
+        }
+
+        return new Response(JSON.stringify({ error: String(parsedBody ?? 'Request failed'), requestId }), {
+            status: response.status,
+            statusText: response.statusText,
+            headers,
+        });
+    }
+
+    return new Response(JSON.stringify({ data: parsedBody, requestId }), {
+        status: response.status,
+        statusText: response.statusText,
+        headers,
+    });
 }
 
 /**
@@ -313,11 +433,11 @@ function serviceResultToResponse<T>(
     requestId?: string
 ): NextResponse {
     if (result.success) {
-        return NextResponse.json(result.data);
+        return NextResponse.json({ data: result.data, requestId });
     }
-    
+
     return NextResponse.json(
-        { error: result.error, code: result.code, requestId },
+        { error: result.error, code: result.code ?? 'INTERNAL_ERROR', requestId },
         { status: errorCodeToStatus(result.code) }
     );
 }

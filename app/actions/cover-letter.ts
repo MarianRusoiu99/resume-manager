@@ -10,12 +10,8 @@ export const getCoverLetters = withServerAction(
     'getCoverLetters',
     async (session) => {
         const result = await coverLetterService.getUserCoverLetters(session.user.id);
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return result.data?.coverLetters || [];
+        if (!result.success) return result;
+        return { success: true, data: result.data.coverLetters };
     },
     { resourceType: 'coverLetter' }
 );
@@ -25,15 +21,7 @@ export const getCoverLetters = withServerAction(
  */
 export const getCoverLetter = withServerAction(
     'getCoverLetter',
-    async (session, coverLetterId: string) => {
-        const result = await coverLetterService.getCoverLetter(coverLetterId, session.user.id);
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return result.data;
-    },
+    async (session, coverLetterId: string) => coverLetterService.getCoverLetter(coverLetterId, session.user.id),
     { resourceType: 'coverLetter' }
 );
 
@@ -53,22 +41,21 @@ export const createCoverLetter = withServerAction(
             tokens?: number;
             generationTime?: number;
             personalInstructions?: string;
+            jobDescription?: string;
+            jobTitle?: string;
+            companyName?: string;
         }
     ) => {
-        const result = await coverLetterService.createCoverLetter({
+        return coverLetterService.createCoverLetter({
             userId: session.user.id,
             content,
-            jobDescription,
-            jobTitle,
-            companyName,
-            metadata: metadata || {},
+            metadata: {
+                ...(metadata || {}),
+                jobDescription,
+                jobTitle,
+                companyName,
+            },
         });
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return result.data;
     },
     {
         auditAction: 'COVER_LETTER_CREATE',
@@ -87,22 +74,17 @@ export const updateCoverLetter = withServerAction(
         coverLetterId: string,
         data: Partial<{
             content: string;
-            jobDescription: string;
-            jobTitle: string;
-            companyName: string;
+            resumeId: string | null;
+            jobPostingId: string | null;
+            metadata: {
+                contentJson?: string;
+                jobDescription?: string;
+                jobTitle?: string;
+                companyName?: string;
+            };
         }>
     ) => {
-        const result = await coverLetterService.updateCoverLetter(
-            coverLetterId,
-            session.user.id,
-            data
-        );
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return result.data;
+        return coverLetterService.updateCoverLetter(coverLetterId, session.user.id, data);
     },
     {
         auditAction: 'COVER_LETTER_UPDATE',
@@ -116,15 +98,7 @@ export const updateCoverLetter = withServerAction(
  */
 export const deleteCoverLetter = withServerAction(
     'deleteCoverLetter',
-    async (session, coverLetterId: string) => {
-        const result = await coverLetterService.deleteCoverLetter(coverLetterId, session.user.id);
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return undefined;
-    },
+    async (session, coverLetterId: string) => coverLetterService.deleteCoverLetter(coverLetterId, session.user.id),
     {
         auditAction: 'COVER_LETTER_DELETE',
         resourceType: 'coverLetter',

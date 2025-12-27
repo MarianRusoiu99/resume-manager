@@ -28,6 +28,7 @@ export { useKeyboardShortcut } from './useKeyboardShortcut';
 
 export { useAutoSave } from './useAutoSave';
 export { useFetch, useAction } from './useDataFetching';
+export { useComponentLogger } from './useComponentLogger';
 
 // ============================================================================
 // Feature Hooks - Domain-specific business logic
@@ -37,6 +38,7 @@ export { useTemplatePreview } from './useTemplatePreview';
 export { useProfileSave } from './useProfileSave';
 export { useCardPreview } from './useCardPreview';
 export { useListForm } from './use-list-form';
+export { useToastAction } from './useToastAction';
 export { useAIEnhance } from './useAIEnhance';
 export { useAIModels } from './useAIModels';
 export type { AIModel } from './useAIModels';

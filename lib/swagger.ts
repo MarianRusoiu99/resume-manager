@@ -493,7 +493,7 @@ Common HTTP status codes:
       },
     ],
   },
-  apis: ['./app/api/**/*.ts', './lib/swagger-docs.ts'], // Path to the API routes
+  apis: ['./app/api/v1/**/*.ts', './lib/swagger-docs.ts'], // Path to the API routes
 };
 
 // Generate spec lazily at runtime to avoid build-time issues

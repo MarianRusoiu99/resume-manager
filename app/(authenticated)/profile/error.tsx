@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { User } from 'lucide-react';
 import { RouteErrorCard } from '@/components/shared/RouteErrorCard';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -14,9 +15,11 @@ interface ErrorProps {
  * 
  * Handles errors specific to the profile editing section.
  */
+const log = createComponentLogger('ProfileError');
+
 export default function ProfileError({ error, reset }: ErrorProps) {
   useEffect(() => {
-    console.error('Profile error:', error);
+    log.error('Profile error', error);
   }, [error]);
 
   // Detect save-related errors

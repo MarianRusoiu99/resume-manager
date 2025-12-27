@@ -29,16 +29,16 @@ export type { ICache } from './interfaces';
 
 // Base repository classes and utilities
 export {
-  BaseRepository,
-  UserOwnedRepository,
   createPaginatedResult,
-  buildOrderBy,
-  buildPagination,
-  type EntityWithId,
-  type BaseRepositoryOptions,
-  type FindOptions,
   type PaginatedResult,
 } from './base.repository';
+
+export {
+  GenericRepository,
+  GenericUserOwnedRepository,
+  type EntityWithId,
+  type UserOwnedEntity,
+} from './generic.repository';
 
 export { 
   profileRepository, 
@@ -62,22 +62,16 @@ export {
 export type {
   CreateCoverLetterInput,
   UpdateCoverLetterInput,
-} from './cover-letter.repository';
+} from './interfaces';
 
 export { 
   notificationRepository, 
   NotificationRepository 
 } from './notification.repository';
-export type {
-  CreateNotificationInput,
-} from './notification.repository';
 
 export { 
   apiProviderRepository,
-} from './api-provider.repository';
-export type {
-  CreateApiProviderInput as CreateApiProviderRepositoryInput,
-  UpdateApiProviderInput as UpdateApiProviderRepositoryInput,
+  ApiProviderRepository,
 } from './api-provider.repository';
 
 export {
@@ -91,10 +85,11 @@ export type {
 
 export {
   userAISettingsRepository,
+  UserAISettingsRepository,
 } from './user-ai-settings.repository';
 export type {
   AIFeatureType,
   ModelPreference,
   UserAISettingsData,
   UpsertAISettingsInput,
-} from './user-ai-settings.repository';
+} from './interfaces';

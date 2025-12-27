@@ -18,6 +18,7 @@ export interface ProfileData {
   isDefault: boolean;
   isPublic: boolean;
   publicSlug: string | null;
+  selectedTemplateId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -26,6 +27,9 @@ export interface ProfileData {
  * Profile with selected template included (for public profiles)
  */
 export interface ProfileWithTemplate extends ProfileData {
+  // Backward compatibility: some UI expects `templateId`
+  templateId?: string | null;
+
   selectedTemplate?: {
     id: string;
     name: string;
@@ -53,6 +57,7 @@ export interface UpdateProfileInput {
   isDefault?: boolean;
   isPublic?: boolean;
   publicSlug?: string | null;
+  selectedTemplateId?: string | null;
 }
 
 /**
@@ -67,9 +72,9 @@ export interface IProfileRepository {
   findAllByUserId(userId: string): Promise<ProfileData[]>;
 
   /**
-   * Find a specific profile by ID with user ownership check
+   * Find a specific profile by ID with optional user ownership check
    */
-  findById(profileId: string, userId: string): Promise<ProfileData | null>;
+  findById(profileId: string, userId?: string): Promise<ProfileData | null>;
 
   /**
    * Find the default profile for a user
@@ -89,12 +94,12 @@ export interface IProfileRepository {
   /**
    * Update a profile
    */
-  update(profileId: string, userId: string, data: UpdateProfileInput): Promise<ProfileData>;
+  update(profileId: string, data: UpdateProfileInput, userId?: string): Promise<ProfileData>;
 
   /**
    * Delete a profile
    */
-  delete(profileId: string, userId: string): Promise<ProfileData>;
+  delete(profileId: string, userId?: string): Promise<ProfileData>;
 
   /**
    * Unset all default flags for a user (used when setting a new default)

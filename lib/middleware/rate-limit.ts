@@ -158,7 +158,8 @@ export function createRateLimitResponse(
   message: string,
   resetTime: number | null,
   remaining: number,
-  limit: number
+  limit: number,
+  requestId?: string
 ): Response {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -174,7 +175,8 @@ export function createRateLimitResponse(
   return new Response(
     JSON.stringify({
       error: message,
-      retryAfter: resetTime ? Math.ceil((resetTime - Date.now()) / 1000) : null
+      retryAfter: resetTime ? Math.ceil((resetTime - Date.now()) / 1000) : null,
+      requestId,
     }),
     {
       status: 429,
@@ -192,7 +194,8 @@ export function createRateLimitResponse(
  */
 export function applyRateLimit(
   identifier: string,
-  config: RateLimitConfig
+  config: RateLimitConfig,
+  requestId?: string
 ): Response | null {
   const isLimited = rateLimiter.isRateLimited(identifier, config);
   
@@ -203,7 +206,8 @@ export function applyRateLimit(
       config.message || 'Too many requests',
       resetTime,
       remaining,
-      config.maxRequests
+      config.maxRequests,
+      requestId
     );
   }
 

@@ -24,10 +24,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, Code, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { apiV1 } from '@/lib/client';
 import { sampleResume } from '@/lib/utils/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
 import { TemplateImportModal } from './TemplateImportModal';
-import { AIEnhanceButton, AIEnhanceTemplateModal } from '@/components/ai-enhance';
+import { AIEnhanceButton, AIEnhanceTemplateModalUnified } from '@/components/ai-enhance';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -121,21 +122,17 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     try {
       setSaving(true);
 
-      const url = isNew
-        ? '/api/template'
-        : `/api/template/${template?.id}`;
+      const templateId = template?.id;
+      if (!isNew && !templateId) {
+        throw new Error('Missing template id');
+      }
 
-      const method = isNew ? 'POST' : 'PATCH';
+      const result = isNew
+        ? await apiV1.TEMPLATE.LIST.post<unknown>(formData)
+        : await apiV1.TEMPLATE.GET(templateId as string).patch<unknown>(formData);
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to save template');
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       // Clear draft
@@ -349,12 +346,14 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       />
 
       {/* AI Enhancement Modal */}
-      <AIEnhanceTemplateModal
+      <AIEnhanceTemplateModalUnified
         open={templateEnhanceModalOpen}
         onOpenChange={setTemplateEnhanceModalOpen}
         originalHtml={formData.htmlTemplate}
         originalCss={formData.cssStyles}
-        onAccept={(enhancedHtml, enhancedCss) => setFormData({ ...formData, htmlTemplate: enhancedHtml, cssStyles: enhancedCss })}
+        onAccept={(enhancedHtml: string, enhancedCss: string) =>
+          setFormData({ ...formData, htmlTemplate: enhancedHtml, cssStyles: enhancedCss })
+        }
       />
     </div>
   );

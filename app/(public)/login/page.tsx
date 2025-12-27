@@ -4,6 +4,7 @@ import { useActionState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/actions/auth';
+import { sanitizeCallbackUrl } from '@/lib/utils/redirects';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +15,7 @@ import { ThemeToggle } from '@/components/shared/ThemeToggle';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/profile';
+  const callbackUrl = sanitizeCallbackUrl(searchParams.get('callbackUrl'), '/profile');
   const registered = searchParams.get('registered');
 
   const [state, action, pending] = useActionState(loginAction, undefined);

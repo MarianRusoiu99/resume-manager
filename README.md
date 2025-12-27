@@ -123,30 +123,7 @@ Resume Manager is a modern platform for creating, editing, and managing professi
 | **PDF** | pdf-lib, Handlebars templates |
 | **Testing** | Vitest (unit), Playwright (E2E) |
 
-## 📁 Project Structure
 
-```
-├── app/                    # Next.js App Router
-│   ├── (authenticated)/    # Protected routes (dashboard, editor, settings)
-│   ├── (public)/           # Public routes (login, register)
-│   ├── api/                # API routes
-│   └── actions/            # Server actions
-├── components/             # React components (organized by UI area)
-│   ├── editor/             # Resume/profile editor components
-│   ├── preview/            # PDF preview components
-│   ├── ui/                 # shadcn/ui base components
-│   └── ...
-├── contexts/               # React contexts (Editor, Profile, Theme)
-├── hooks/                  # Custom React hooks
-├── lib/                    # Business logic
-│   ├── ai/                 # AI agents and LLM integration
-│   ├── auth/               # NextAuth configuration
-│   ├── repositories/       # Data access layer
-│   ├── services/           # Business logic services
-│   ├── templates/          # Resume template engine
-│   └── validations/        # Zod schemas (JSON Resume)
-└── prisma/                 # Database schema and migrations
-```
 
 ## ⚙️ Environment Variables
 

@@ -27,6 +27,7 @@ export interface SessionPayload {
   userId: string;
   email?: string | null;
   name?: string | null;
+  isAdmin: boolean;
 }
 
 /**
@@ -53,6 +54,7 @@ export const verifySession = cache(async (): Promise<SessionPayload> => {
     userId: session.user.id,
     email: session.user.email,
     name: session.user.name,
+    isAdmin: session.user.isAdmin,
   };
 });
 
@@ -80,6 +82,7 @@ export const getSession = cache(async (): Promise<SessionPayload | null> => {
     userId: session.user.id,
     email: session.user.email,
     name: session.user.name,
+    isAdmin: session.user.isAdmin,
   };
 });
 
@@ -111,6 +114,7 @@ export const getVerifiedSession = cache(async (): Promise<SessionPayload | null>
     userId: session.user.id,
     email: session.user.email,
     name: session.user.name,
+    isAdmin: session.user.isAdmin,
   };
 });
 
@@ -145,13 +149,9 @@ export const requireUserId = cache(async (): Promise<string> => {
  * @param requiredRole - The role to check for (currently unused)
  * @returns true if user is authenticated, false otherwise
  */
-export const checkRole = cache(async (_requiredRole: string): Promise<boolean> => {
+export const requireAdmin = cache(async (): Promise<boolean> => {
   const session = await getSession();
-  if (!session) return false;
-  
-  // Role checking not yet implemented - return true for authenticated users
-  // Future implementation: query user.roles and check if requiredRole is included
-  return true;
+  return Boolean(session?.isAdmin);
 });
 
 /**

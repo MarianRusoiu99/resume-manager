@@ -9,43 +9,30 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
+import { Page } from '@/components/layout/Page';
 import { Button, Card } from '@/components/ui';
+import { Callout } from '@/components/shared';
+import { ErrorState, LoadingState } from '@/components/shared/states';
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
-import { ArrowLeft, Trash2, ExternalLink, FileText } from 'lucide-react';
+import { ArrowLeft, Trash2, ExternalLink } from 'lucide-react';
+import { apiV1 } from '@/lib/client';
+import type { CoverLetterWithResume } from '@/lib/types/cover-letter';
 
-interface CoverLetter {
-  id: string;
-  content: string;
-  contentJson?: string | null; // Yoopta JSON state
-  jobDescription: string;
-  jobTitle: string | null;
-  companyName: string | null;
-  resumeId: string | null;
-  resume: {
-    id: string;
-    jobDescription: string;
-    resume: unknown;
-    createdAt: string;
-  } | null;
-  metadata: {
-    model?: string;
-    tokens?: number;
-    generationTime?: number;
-    personalInstructions?: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+type CoverLetterMetadata = {
+  model?: string;
+  tokens?: number;
+  generationTime?: number;
+  personalInstructions?: string;
+  contentJson?: string;
+};
 
 export default function CoverLetterDetailPage() {
   const router = useRouter();
   const params = useParams();
   const coverLetterId = params?.id as string;
 
-  const [coverLetter, setCoverLetter] = useState<CoverLetter | null>(null);
+  const [coverLetter, setCoverLetter] = useState<CoverLetterWithResume | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -56,17 +43,16 @@ export default function CoverLetterDetailPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/cover-letter/${coverLetterId}`);
+      const result = await apiV1.COVER_LETTER.GET(coverLetterId).get<CoverLetterWithResume>();
 
-      if (!response.ok) {
-        if (response.status === 404) {
+      if (result.error || !result.data) {
+        if (result.status === 404) {
           throw new Error('Cover letter not found');
         }
-        throw new Error('Failed to fetch cover letter');
+        throw new Error(result.error || 'Failed to fetch cover letter');
       }
 
-      const data = await response.json();
-      setCoverLetter(data);
+      setCoverLetter(result.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load cover letter');
       toast.error(err instanceof Error ? err.message : 'Failed to load cover letter');
@@ -84,20 +70,16 @@ export default function CoverLetterDetailPage() {
 
   const handleSaveCoverLetter = async (content: string, contentJson: string) => {
     try {
-      const response = await fetch(`/api/cover-letter/${coverLetterId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content, contentJson }),
+      const result = await apiV1.COVER_LETTER.GET(coverLetterId).put<CoverLetterWithResume>({
+        content,
+        contentJson,
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to save cover letter');
+      if (result.error || !result.data) {
+        throw new Error(result.error || 'Failed to save cover letter');
       }
 
-      const data = await response.json();
-      setCoverLetter(data);
+      setCoverLetter(result.data);
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : 'Failed to save cover letter');
     }
@@ -111,12 +93,10 @@ export default function CoverLetterDetailPage() {
     try {
       setIsDeleting(true);
 
-      const response = await fetch(`/api/cover-letter/${coverLetterId}`, {
-        method: 'DELETE',
-      });
+      const result = await apiV1.COVER_LETTER.GET(coverLetterId).delete<{ success: boolean }>();
 
-      if (!response.ok) {
-        throw new Error('Failed to delete cover letter');
+      if (result.error) {
+        throw new Error(result.error || 'Failed to delete cover letter');
       }
 
       toast.success('Cover letter deleted successfully');
@@ -132,83 +112,78 @@ export default function CoverLetterDetailPage() {
     setDeleteDialogOpen(false);
   };
 
+  const getMetadata = (): CoverLetterMetadata => {
+    if (!coverLetter) return {};
+    if (coverLetter.metadata && typeof coverLetter.metadata === 'object' && !Array.isArray(coverLetter.metadata)) {
+      return coverLetter.metadata as unknown as CoverLetterMetadata;
+    }
+    return {};
+  };
+
   const getPageTitle = (): string => {
     if (!coverLetter) return 'Cover Letter';
-    if (coverLetter.jobTitle && coverLetter.companyName) {
-      return `${coverLetter.jobTitle} at ${coverLetter.companyName}`;
+
+    const jobTitle = coverLetter.jobPosting?.title ?? null;
+    const companyName = coverLetter.jobPosting?.company?.name ?? null;
+
+    if (jobTitle && companyName) {
+      return `${jobTitle} at ${companyName}`;
     }
-    if (coverLetter.jobTitle) {
-      return coverLetter.jobTitle;
+    if (jobTitle) {
+      return jobTitle;
     }
-    if (coverLetter.companyName) {
-      return `Cover Letter for ${coverLetter.companyName}`;
+    if (companyName) {
+      return `Cover Letter for ${companyName}`;
     }
     return 'Cover Letter';
   };
 
   if (isLoading) {
     return (
-      <>
-        <PageHeader
-          title="Loading..."
-          description="Fetching cover letter details"
-          breadcrumbs={[
-            { label: "Cover Letters", href: "/cover-letters" },
-            { label: "..." },
-          ]}
-        />
-        <PageContainer>
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        </PageContainer>
-      </>
+      <Page
+        title="Loading..."
+        description="Fetching cover letter details"
+        breadcrumbs={[
+          { label: 'Cover Letters', href: '/cover-letters' },
+          { label: '...' },
+        ]}
+      >
+        <LoadingState message="Loading cover letter..." />
+      </Page>
     );
   }
 
   if (error || !coverLetter) {
     return (
-      <>
-        <PageHeader
-          title="Error"
-          description="Failed to load cover letter"
-          breadcrumbs={[
-            { label: "Cover Letters", href: "/cover-letters" },
-            { label: "Error" },
-          ]}
+      <Page
+        title="Error"
+        description="Failed to load cover letter"
+        breadcrumbs={[
+          { label: 'Cover Letters', href: '/cover-letters' },
+          { label: 'Error' },
+        ]}
+      >
+        <ErrorState
+          title="Cover Letter Not Found"
+          message={error || 'Cover letter not found'}
+          variant="full"
+          onRetry={() => router.push('/cover-letters')}
+          retryText="Back to Cover Letters"
         />
-        <PageContainer>
-          <Card className="p-6">
-            <div className="text-center">
-              <FileText className="w-16 h-16 mx-auto mb-4 text-red-300" />
-              <h3 className="text-xl font-semibold mb-2 text-red-600">Cover Letter Not Found</h3>
-              <p className="text-gray-600 mb-6">{error}</p>
-              <Link href="/cover-letters">
-                <Button>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Cover Letters
-                </Button>
-              </Link>
-            </div>
-          </Card>
-        </PageContainer>
-      </>
+      </Page>
     );
   }
 
   return (
-    <>
-      <PageHeader
-        title={getPageTitle()}
-        description="View and edit your cover letter"
-        breadcrumbs={[
-          { label: "Cover Letters", href: "/cover-letters" },
-          { label: getPageTitle() },
-        ]}
-      />
-      <PageContainer>
-        {/* Action Bar */}
-        <div className="flex justify-between items-center mb-6">
+    <Page
+      title={getPageTitle()}
+      description="View and edit your cover letter"
+      breadcrumbs={[
+        { label: 'Cover Letters', href: '/cover-letters' },
+        { label: getPageTitle() },
+      ]}
+      toolbar={
+        <div className="flex justify-between items-center">
           <Link href="/cover-letters">
             <Button variant="ghost">
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -225,39 +200,45 @@ export default function CoverLetterDetailPage() {
             Delete
           </Button>
         </div>
-
+      }
+    >
         {/* Metadata Card */}
-        {(coverLetter.resume || coverLetter.metadata?.model) && (
-          <Card className="p-4 mb-6 bg-blue-50 border-blue-200">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                {coverLetter.resume && (
-                  <div className="flex items-center gap-2">
-                    <ExternalLink className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-900">Linked to Resume</span>
-                    <Link
-                      href={`/resumes/${coverLetter.resume.id}`}
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      View Resume →
-                    </Link>
-                  </div>
-                )}
-                {coverLetter.metadata?.model && (
-                  <div className="text-xs text-blue-700">
-                    Generated with {coverLetter.metadata.model}
-                    {coverLetter.metadata.tokens && ` • ${coverLetter.metadata.tokens} tokens`}
-                  </div>
-                )}
+        {(() => {
+          const metadata = getMetadata();
+           return coverLetter.resumeId || metadata.model ? (
+             <Callout className="mb-6">
+               <div className="flex items-center justify-between">
+                 <div className="space-y-1">
+                   {coverLetter.resumeId && (
+                     <div className="flex items-center gap-2">
+                       <ExternalLink className="w-4 h-4 text-blue-600" />
+                       <span className="text-sm font-medium text-blue-900">Linked to Resume</span>
+                       <Link
+                         href={`/resumes/${coverLetter.resumeId}`}
+                         className="text-sm text-blue-600 hover:underline"
+                       >
+                         View Resume →
+                       </Link>
+                     </div>
+                   )}
+
+
+                  {metadata.model && (
+                    <div className="text-xs text-blue-700">
+                      Generated with {metadata.model}
+                      {metadata.tokens && ` • ${metadata.tokens} tokens`}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </Card>
-        )}
+            </Callout>
+          ) : null;
+        })()}
 
         {/* Cover Letter Editor */}
         <CoverLetterEditor
           content={coverLetter.content}
-          contentJson={coverLetter.contentJson || undefined}
+          contentJson={getMetadata().contentJson}
           editable={true}
           onSave={handleSaveCoverLetter}
           title="Cover Letter"
@@ -268,15 +249,15 @@ export default function CoverLetterDetailPage() {
           <h3 className="text-lg font-semibold mb-3">Original Job Description</h3>
           <div className="p-4 rounded-md border  max-h-96 overflow-y-auto">
             <pre className="whitespace-pre-wrap text-sm text-foreground  font-sans">
-              {coverLetter.jobDescription}
+               {coverLetter.jobPosting?.description ?? coverLetter.resume?.jobPosting?.description ?? 'No job description available.'}
             </pre>
           </div>
-          {coverLetter.metadata?.personalInstructions && (
+          {getMetadata().personalInstructions && (
             <div className="mt-4">
               <h4 className="text-sm font-semibold mb-2">Personal Instructions</h4>
-              <div className="bg-blue-50 p-3 rounded-md border">
-                <p className="text-sm ">{coverLetter.metadata.personalInstructions}</p>
-              </div>
+               <Callout tone="soft" className="p-3">
+                 <p className="text-sm">{getMetadata().personalInstructions}</p>
+               </Callout>
             </div>
           )}
         </Card>
@@ -292,7 +273,6 @@ export default function CoverLetterDetailPage() {
           cancelText="Cancel"
           variant="danger"
         />
-      </PageContainer>
-    </>
+    </Page>
   );
 }

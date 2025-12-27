@@ -9,8 +9,6 @@
  * - Performance timing utilities
  */
 
-import { env } from '@/lib/config';
-
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
 interface LogContext {
@@ -22,7 +20,7 @@ interface LogContext {
 }
 
 class Logger {
-  private isDevelopment = env.isDevelopment;
+  private isDevelopment = process.env.NODE_ENV === 'development';
   private baseContext: LogContext = {};
 
   /**

@@ -16,6 +16,12 @@
  * ```
  */
 import { z } from 'zod';
+import {
+  aiProviderSchema,
+  addApiProviderInputSchema,
+  type AIProviderType,
+  type AddApiProviderInput,
+} from './shared-inputs';
 
 // ============================================================================
 // PROFILE SCHEMAS
@@ -26,7 +32,8 @@ import { z } from 'zod';
  */
 export const createProfileSchema = z.object({
   name: z.string().min(1, 'Profile name is required').max(100, 'Name must be less than 100 characters'),
-  resume: z.object({}).passthrough(), // JSON Resume format
+  // JSON Resume format (arbitrary JSON object)
+  resume: z.record(z.string(), z.unknown()),
   isDefault: z.boolean().optional().default(false),
 });
 
@@ -35,7 +42,7 @@ export const createProfileSchema = z.object({
  */
 export const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  resume: z.object({}).passthrough().optional(),
+  resume: z.record(z.string(), z.unknown()).optional(),
   isDefault: z.boolean().optional(),
   isPublic: z.boolean().optional(),
   publicSlug: z.string().nullable().optional(),
@@ -71,7 +78,21 @@ export const createTemplateSchema = z.object({
   description: z.string().min(1, 'Description is required').max(500, 'Description too long'),
   htmlTemplate: z.string().min(1, 'HTML template is required'),
   cssStyles: z.string().min(1, 'CSS styles are required'),
-  previewUrl: z.string().url('Invalid preview URL').optional(),
+  previewUrl: z
+    .string()
+    .optional()
+    .refine(
+      (value) => {
+        if (!value) return true;
+        try {
+          new URL(value);
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      { message: 'Invalid preview URL' }
+    ),
   isPublic: z.boolean().default(true),
 });
 
@@ -91,11 +112,12 @@ export type UpdateTemplateInput = z.infer<typeof updateTemplateSchema>;
  * Schema for resume generation input
  */
 export const generateResumeSchema = z.object({
-  profileId: z.string().min(1, 'Profile ID is required'),
-  jobDescription: z.string().min(10, 'Job description must be at least 10 characters'),
+  jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
+  profileId: z.string().optional(),
+  templateId: z.string().optional(),
+  modelId: z.string().optional(),
   jobTitle: z.string().optional(),
   companyName: z.string().optional(),
-  templateId: z.string().optional(),
   personalInstructions: z.string().max(1000).optional(),
 });
 
@@ -103,7 +125,7 @@ export const generateResumeSchema = z.object({
  * Schema for updating resume content
  */
 export const updateResumeContentSchema = z.object({
-  resume: z.object({}).passthrough(),
+  resume: z.record(z.string(), z.unknown()),
   jobDescription: z.string().optional(),
   jobTitle: z.string().optional(),
   companyName: z.string().optional(),
@@ -140,16 +162,30 @@ export const generateCoverLetterSchema = z.object({
 );
 
 /**
+ * Schema for generating a standalone cover letter (no resumeId required)
+ * Used by POST /api/cover-letter/generate
+ */
+export const generateStandaloneCoverLetterSchema = z.object({
+  jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
+  personalInstructions: z.string().max(1000).optional(),
+  modelId: z.string().optional(),
+  profileId: z.string().optional(),
+});
+
+/**
  * Schema for updating a cover letter
  */
 export const updateCoverLetterSchema = z.object({
-  content: z.string().optional(),
+  content: z.string().min(1).optional(),
+  contentJson: z.string().optional(),
   jobDescription: z.string().optional(),
   jobTitle: z.string().optional(),
   companyName: z.string().optional(),
+  resumeId: z.string().nullable().optional(),
 });
 
 export type GenerateCoverLetterInput = z.infer<typeof generateCoverLetterSchema>;
+export type GenerateStandaloneCoverLetterInput = z.infer<typeof generateStandaloneCoverLetterSchema>;
 export type UpdateCoverLetterInput = z.infer<typeof updateCoverLetterSchema>;
 
 // ============================================================================
@@ -158,25 +194,20 @@ export type UpdateCoverLetterInput = z.infer<typeof updateCoverLetterSchema>;
 
 /**
  * Supported AI providers
- * 
+ *
  * IMPORTANT: This must match the providers in:
  * - lib/ai/providers/factory.ts (SUPPORTED_PROVIDERS)
- * - lib/validations/settings.ts (SUPPORTED_PROVIDERS)
- * 
+ * - lib/validations/shared-inputs.ts (aiProviderSchema)
+ *
  * Only include providers with working implementations.
  */
-export const aiProviderSchema = z.enum(['openai']);
-
-export type AIProviderType = z.infer<typeof aiProviderSchema>;
+export { aiProviderSchema };
+export type { AIProviderType };
 
 /**
  * Schema for adding an API provider
  */
-export const addApiProviderSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  provider: aiProviderSchema,
-  apiKey: z.string().min(10, 'API key is required').max(500, 'API key too long'),
-});
+export const addApiProviderSchema = addApiProviderInputSchema;
 
 /**
  * Schema for updating an API provider
@@ -187,7 +218,7 @@ export const updateApiProviderSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export type AddApiProviderInput = z.infer<typeof addApiProviderSchema>;
+export type { AddApiProviderInput };
 export type UpdateApiProviderInput = z.infer<typeof updateApiProviderSchema>;
 
 // ============================================================================
@@ -195,14 +226,35 @@ export type UpdateApiProviderInput = z.infer<typeof updateApiProviderSchema>;
 // ============================================================================
 
 /**
+ * Boolean query param parser that treats 'true'/'false' correctly.
+ */
+const queryBooleanSchema = z.preprocess(
+  (value) => {
+    if (typeof value === 'string') {
+      const normalized = value.toLowerCase();
+      if (normalized === 'true') return true;
+      if (normalized === 'false') return false;
+    }
+    return value;
+  },
+  z.boolean()
+);
+
+/**
  * Schema for notification query parameters
  */
 export const notificationQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(50),
-  includeRead: z.coerce.boolean().default(false),
+  includeRead: queryBooleanSchema.default(true),
+});
+
+export const notificationActionSchema = z.object({
+  action: z.enum(['markAllRead', 'cleanup']),
+  daysOld: z.number().min(1).max(365).optional(),
 });
 
 export type NotificationQuery = z.infer<typeof notificationQuerySchema>;
+export type NotificationAction = z.infer<typeof notificationActionSchema>;
 
 // ============================================================================
 // COMMON SCHEMAS

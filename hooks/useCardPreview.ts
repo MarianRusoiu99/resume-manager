@@ -5,6 +5,7 @@ import type { Resume } from "@/lib/validations/jsonresume";
 import type { Template } from "@/lib/types/template";
 import { useTemplatePreview } from "./useTemplatePreview";
 import { createComponentLogger } from "@/lib/utils/client-logger";
+import { apiV1, type TemplateListResponseDto } from '@/lib/client';
 
 const logger = createComponentLogger('useCardPreview');
 
@@ -105,51 +106,38 @@ export function useExportPdf({
       setIsExporting(true);
       setError(null);
 
-      // Fetch template
       let template: Template | null = null;
 
       if (templateId) {
-        try {
-          const templateResponse = await fetch(`/api/template/${templateId}`);
-          if (templateResponse.ok) {
-            template = await templateResponse.json();
-          }
-        } catch {
-          // Fall through to default template
+        const result = await apiV1.TEMPLATE.GET(templateId).get<Template>();
+        if (!result.error && result.data) {
+          template = result.data;
         }
       }
 
       if (!template) {
-        const templatesResponse = await fetch("/api/template?limit=1");
-        if (!templatesResponse.ok) {
-          throw new Error("Failed to load template");
+        const templatesResult = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<Template>>();
+        const fallback = templatesResult.data?.templates?.[0] ?? null;
+        if (templatesResult.error || !fallback) {
+          throw new Error(templatesResult.error ?? 'No templates available');
         }
-
-        const { templates } = await templatesResponse.json();
-        if (!templates || templates.length === 0) {
-          throw new Error("No templates available");
-        }
-        template = templates[0];
+        template = fallback;
       }
 
-      // Export PDF
-      const response = await fetch("/api/export/pdf", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const response = await apiV1.EXPORT.PDF.postFetch(
+        {
           resume: content,
           template: {
-            htmlTemplate: template!.htmlTemplate,
-            cssStyles: template!.cssStyles,
+            htmlTemplate: template.htmlTemplate,
+            cssStyles: template.cssStyles,
           },
-          fileName: `${fileName.replaceAll(/\s+/g, "_")}.pdf`,
-        }),
-      });
+          fileName: `${fileName.replaceAll(/\s+/g, '_')}.pdf`,
+        },
+        { skipSessionCheck: true },
+      );
 
       if (!response.ok) {
-        throw new Error("Failed to export PDF");
+        throw new Error('Failed to export PDF');
       }
 
       // Download the PDF

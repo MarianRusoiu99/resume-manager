@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { API } from '@/lib/constants/routes';
+import { apiV1 } from '@/lib/client';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 
 const logger = createComponentLogger('useAIModels');
@@ -60,27 +60,32 @@ export function useAIModels(options: UseAIModelsOptions = {}): UseAIModelsReturn
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(API.SETTINGS.MODELS);
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to fetch models');
+      const result = await apiV1.SETTINGS.MODELS.get<{ allModels?: unknown[] }>();
+
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const data = await response.json();
-      
+      const data = result.data;
+
       // API returns { allModels: [...], byProvider: {...} }
-      const allModels = (data.allModels || []).map((m: {
-        id: string;
-        name: string;
-        providerId: string;
-        providerType?: string;
-      }) => ({
-        id: m.id,
-        name: m.name,
-        provider: m.providerType || 'unknown',
-        providerId: m.providerId,
-      }));
+      const rawModels = data?.allModels ?? [];
+
+      const allModels = (Array.isArray(rawModels) ? rawModels : []).map((model) => {
+        const m = model as {
+          id: string;
+          name: string;
+          providerId: string;
+          providerType?: string;
+        };
+
+        return {
+          id: m.id,
+          name: m.name,
+          provider: m.providerType || 'unknown',
+          providerId: m.providerId,
+        };
+      });
 
       setModels(allModels);
       

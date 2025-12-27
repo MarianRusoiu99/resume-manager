@@ -14,3 +14,6 @@ export {
 
 // Workflow Engine
 export * from './workflow';
+
+// AI Features
+export * from './features/enhance';

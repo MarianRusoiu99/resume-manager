@@ -77,6 +77,10 @@ export class ForbiddenError extends AppError {
 export class ConflictError extends AppError {
   readonly code = 'CONFLICT' as const;
   readonly statusCode = 409;
+
+  constructor(message: string = 'Conflict') {
+    super(message);
+  }
 }
 
 /**
@@ -107,6 +111,18 @@ export class ExternalServiceError extends AppError {
     cause?: unknown
   ) {
     super(message || `${service} service unavailable`, cause);
+  }
+}
+
+/**
+ * Internal server error (500)
+ */
+export class ConfigurationError extends AppError {
+  readonly code = 'CONFIGURATION_ERROR' as const;
+  readonly statusCode = 500;
+
+  constructor(message: string = 'System configuration error', cause?: unknown) {
+    super(message, cause);
   }
 }
 
@@ -149,11 +165,16 @@ export function wrapError(error: unknown, defaultMessage = 'An error occurred'):
   if (isAppError(error)) {
     return error;
   }
-  
+
   if (error instanceof Error) {
+    // Common configuration failures should carry a stable code
+    if (error.message.toLowerCase().includes('environment configuration')) {
+      return new ConfigurationError(error.message, error);
+    }
+
     return new InternalError(error.message, error);
   }
-  
+
   return new InternalError(defaultMessage, error);
 }
 

@@ -23,8 +23,7 @@ export const optimizeResumeStep: WorkflowStep = {
     const { optimizeResume } = await import('@/lib/ai/agents');
     
     const result = await optimizeResume({
-      provider: context.provider,
-      modelId: context.modelId,
+      model: context.provider.createLanguageModel(context.modelKey),
       jobDescription: context.jobDescription,
       userResume: context.userResume,
     });
@@ -52,8 +51,7 @@ export const generateCoverLetterStep: WorkflowStep = {
     const { generateCoverLetter } = await import('@/lib/ai/agents');
     
     const result = await generateCoverLetter({
-      provider: context.provider,
-      modelId: context.modelId,
+      model: context.provider.createLanguageModel(context.modelKey),
       jobDescription: context.jobDescription,
       userResume: context.userResume,
     });
@@ -110,7 +108,7 @@ export const extractJobMetadataStep: WorkflowStep = {
   execute: async (context: WorkflowContext): Promise<Partial<WorkflowResults>> => {
     const { generateText } = await import('ai');
     
-    const model = context.provider.createLanguageModel(context.modelId);
+    const model = context.provider.createLanguageModel(context.modelKey);
     
     const result = await generateText({
       model,

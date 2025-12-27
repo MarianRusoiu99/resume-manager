@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import type { TemplateBase } from '@/lib/types/template';
-import { apiFetch } from '@/lib/utils/api-client';
+import { useComponentLogger } from '@/hooks';
+import { apiV1, type TemplateListResponseDto, type UpdateResumeTemplateResponseDto } from '@/lib/client';
 
 interface TemplateDropdownProps {
   currentTemplateId: string | null;
@@ -26,6 +27,7 @@ export function TemplateDropdown({
   resumeId, 
   onTemplateChange 
 }: Readonly<TemplateDropdownProps>) {
+  const log = useComponentLogger('TemplateDropdown');
   const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -35,14 +37,14 @@ export function TemplateDropdown({
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/template');
-        if (!response.ok) {
-          throw new Error('Failed to fetch templates');
+        const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<TemplateBase>>();
+        if (result.error) {
+          throw new Error(result.error);
         }
-        const data = await response.json();
-        setTemplates(data.templates || []);
+
+        setTemplates(result.data?.templates ?? []);
       } catch (error) {
-        console.error('Error fetching templates:', error);
+        log.error('Error fetching templates', error);
         toast.error('Failed to load templates');
       } finally {
         setIsLoading(false);
@@ -52,7 +54,7 @@ export function TemplateDropdown({
     if (isOpen && templates.length === 0) {
       fetchTemplates();
     }
-  }, [isOpen, templates.length]);
+  }, [isOpen, templates.length, log]);
 
   const handleTemplateSelect = async (templateId: string) => {
     if (templateId === currentTemplateId) {
@@ -62,26 +64,19 @@ export function TemplateDropdown({
 
     try {
       setIsUpdating(true);
-      const response = await apiFetch(`/api/resume/${resumeId}/template`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          templateId: templateId,
-        }),
+      const result = await apiV1.RESUME.TEMPLATE(resumeId).patch<UpdateResumeTemplateResponseDto>({
+        templateId,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update template');
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      toast.success('Template updated successfully');
+      toast.success(result.data?.message ?? 'Template updated successfully');
       setIsOpen(false);
       onTemplateChange();
     } catch (error) {
-      console.error('Error updating template:', error);
+      log.error('Error updating template', error, { templateId });
       toast.error(error instanceof Error ? error.message : 'Failed to update template');
     } finally {
       setIsUpdating(false);

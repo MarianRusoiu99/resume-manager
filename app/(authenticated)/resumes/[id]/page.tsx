@@ -4,16 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
+import { Page } from '@/components/layout/Page';
 import { Button, Card } from '@/components/ui';
+import { ErrorState, LoadingState } from '@/components/shared/states';
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Edit } from 'lucide-react';
-import { apiFetch } from '@/lib/utils/api-client';
+import { apiV1, type DeleteResumeResponseDto, type DuplicateResumeResponseDto, type ResumeCoverLetterResponseDto, type ResumeDetailsDto, type UpdateCoverLetterResponseDto } from '@/lib/client';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import type { GeneratedResume } from '@/lib/types';
 
 const logger = createComponentLogger('ResumeDetailPage');
 
@@ -22,7 +21,7 @@ export default function ResumeDetailPage() {
   const params = useParams();
   const resumeId = params?.id as string;
 
-  const [resume, setResume] = useState<GeneratedResume | null>(null);
+  const [resume, setResume] = useState<(ResumeDetailsDto & { coverLetter: string | null }) | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -35,18 +34,30 @@ export default function ResumeDetailPage() {
       setIsLoading(true);
       setError(null);
 
-      const response = await apiFetch(`/api/resume/${resumeId}`);
+      const [resumeResult, coverLetterResult] = await Promise.all([
+        apiV1.RESUME.GET(resumeId).get<ResumeDetailsDto>(),
+        apiV1.RESUME.COVER_LETTER(resumeId).get<ResumeCoverLetterResponseDto>(),
+      ]);
 
-      if (!response.ok) {
-        if (response.status === 404) {
+      if (resumeResult.error || !resumeResult.data) {
+        if (resumeResult.status === 404) {
           throw new Error('Resume not found');
         }
-        throw new Error('Failed to fetch resume');
+        throw new Error(resumeResult.error || 'Failed to fetch resume');
       }
 
-      const data = await response.json();
-      logger.debug('Fetched resume data', { templateId: data.templateId, pdfUrl: data.pdfUrl });
-      setResume(data);
+      if (coverLetterResult.error) {
+        logger.warn('Failed to fetch resume cover letter', { error: coverLetterResult.error });
+      }
+
+      logger.debug('Fetched resume data', {
+        templateId: resumeResult.data.templateId,
+      });
+
+      setResume({
+        ...resumeResult.data,
+        coverLetter: coverLetterResult.data?.coverLetter ?? null,
+      });
     } catch (err) {
       logger.error('Failed to fetch resume', err);
       setError(err instanceof Error ? err.message : 'Failed to load resume');
@@ -72,15 +83,13 @@ export default function ResumeDetailPage() {
     try {
       setIsDeleting(true);
 
-      const response = await apiFetch(`/api/resume/${resumeId}`, {
-        method: 'DELETE',
-      });
+      const result = await apiV1.RESUME.GET(resumeId).delete<DeleteResumeResponseDto>();
 
-      if (!response.ok) {
-        throw new Error('Failed to delete resume');
+      if (result.error) {
+        throw new Error(result.error || 'Failed to delete resume');
       }
 
-      toast.success('Resume deleted successfully');
+      toast.success(result.data?.message ?? 'Resume deleted successfully');
       // Redirect to resumes list
       router.push('/resumes');
     } catch (err) {
@@ -98,19 +107,14 @@ export default function ResumeDetailPage() {
     try {
       setIsDuplicating(true);
 
-      const response = await apiFetch(`/api/resume/${resumeId}/duplicate`, {
-        method: 'POST',
-      });
+      const result = await apiV1.RESUME.DUPLICATE(resumeId).post<DuplicateResumeResponseDto>();
 
-      if (!response.ok) {
-        throw new Error('Failed to duplicate resume');
+      if (result.error || !result.data) {
+        throw new Error(result.error || 'Failed to duplicate resume');
       }
 
-      const data = await response.json();
       toast.success('Resume duplicated successfully');
-
-      // Redirect to the duplicated resume
-      router.push(`/resumes/${data.resume.id}`);
+      router.push(`/resumes/${result.data.resume.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to duplicate resume');
     } finally {
@@ -124,29 +128,19 @@ export default function ResumeDetailPage() {
     try {
       setError(null);
 
-      const response = await apiFetch(`/api/resume/${resumeId}/cover-letter`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          coverLetter: markdown,
-        }),
+      const result = await apiV1.RESUME.COVER_LETTER(resumeId).put<UpdateCoverLetterResponseDto>({
+        coverLetter: markdown,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to save cover letter');
+      if (result.error || !result.data) {
+        throw new Error(result.error || 'Failed to save cover letter');
       }
 
-      const data = await response.json();
-
-      // Update local state
       if (resume) {
         setResume({
           ...resume,
-          coverLetter: data.resume.coverLetter,
-          updatedAt: data.resume.updatedAt,
+          coverLetter: result.data.resume.coverLetter,
+          updatedAt: result.data.resume.updatedAt,
         });
       }
 
@@ -159,86 +153,57 @@ export default function ResumeDetailPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading resume...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading resume..." />;
   }
 
   if (error || !resume) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="p-8 text-center">
-          <div className="max-w-md mx-auto">
-            <svg
-              className="w-16 h-16 mx-auto mb-4 text-red-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
-            <h2 className="text-xl font-semibold mb-2">Error Loading Resume</h2>
-            <p className="text-gray-600 mb-6">{error || 'Resume not found'}</p>
-            <Button onClick={() => router.push('/resumes')}>
-              Back to Resumes
-            </Button>
-          </div>
-        </Card>
-      </div>
+      <ErrorState
+        title="Error Loading Resume"
+        message={error || 'Resume not found'}
+        onRetry={() => router.push('/resumes')}
+        retryText="Back to Resumes"
+      />
     );
   }
 
   return (
-    <>
-      <PageHeader
-        title={resume.jobTitle || 'Untitled Resume'}
-        description={resume.companyName || undefined}
-        breadcrumbs={[
-          { label: "Resumes", href: "/resumes" },
-          { label: resume.jobTitle || 'Resume' },
-        ]}
-      />
-      <PageContainer className="resume-content max-w-5xl">
-        <div className="no-print">
-          <div className="flex justify-end gap-2 mb-6">
-            <Link href={`/resumes/${resumeId}/edit`}>
-              <Button variant="outline">
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Resume
-              </Button>
-            </Link>
-
-
-            <Button
-              onClick={handleDuplicate}
-              variant="secondary"
-              disabled={isDuplicating}
-            >
-              {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+    <Page
+      title={resume.jobTitle || 'Untitled Resume'}
+      description={resume.companyName || undefined}
+      breadcrumbs={[
+        { label: 'Resumes', href: '/resumes' },
+        { label: resume.jobTitle || 'Resume' },
+      ]}
+      maxWidth="2xl"
+      className="resume-content max-w-5xl"
+      toolbar={
+        <div className="no-print flex justify-end gap-2">
+          <Link href={`/resumes/${resumeId}/edit`}>
+            <Button variant="outline">
+              <Edit className="w-4 h-4 mr-2" />
+              Edit Resume
             </Button>
+          </Link>
 
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Deleting...' : 'Delete'}
-            </Button>
-          </div>
+          <Button
+            onClick={handleDuplicate}
+            variant="secondary"
+            disabled={isDuplicating}
+          >
+            {isDuplicating ? 'Duplicating...' : 'Duplicate'}
+          </Button>
+
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? 'Deleting...' : 'Delete'}
+          </Button>
         </div>
-
+      }
+    >
         {/* Resume HTML Preview */}
         <ResumePreview
           resumeData={resume.content}
@@ -279,7 +244,6 @@ export default function ResumeDetailPage() {
           onConfirm={confirmDelete}
           onCancel={cancelDelete}
         />
-      </PageContainer>
-    </>
+    </Page>
   );
 }

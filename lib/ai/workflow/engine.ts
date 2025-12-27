@@ -8,19 +8,19 @@ import type {
   WorkflowConfig,
   WorkflowContext,
   WorkflowResult,
-  WorkflowResults,
   ProgressCallback,
 } from './types';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { AIProvider } from '@/lib/ai/providers';
+import { logger } from '@/lib/utils/logger';
 
 export interface ExecuteWorkflowInput {
   /** Workflow configuration */
   config: WorkflowConfig;
   /** AI provider instance */
   provider: AIProvider;
-  /** Model ID to use */
-  modelId: string;
+  /** Provider-native model key to use */
+  modelKey: string;
   /** Job description text */
   jobDescription: string;
   /** User's resume (source of truth) */
@@ -44,7 +44,7 @@ export async function executeWorkflow(
   // Initialize context
   const context: WorkflowContext = {
     provider: input.provider,
-    modelId: input.modelId,
+    modelKey: input.modelKey,
     jobDescription: input.jobDescription,
     userResume: input.userResume,
     userId: input.userId,
@@ -55,19 +55,19 @@ export async function executeWorkflow(
   const { config, onProgress } = input;
 
   try {
-    console.log(`🚀 Starting workflow: ${config.name}`);
+    logger.info('Starting workflow', { workflow: config.name });
     onProgress?.('init', `Starting ${config.name}...`, 0);
 
     // Execute each step in order
     for (const step of config.steps) {
       // Check if step should be skipped
       if (step.shouldSkip?.(context)) {
-        console.log(`⏭️  Skipping step: ${step.name}`);
+        logger.debug('Skipping workflow step', { workflow: config.name, stepId: step.id, stepName: step.name });
         skippedSteps.push(step.id);
         continue;
       }
 
-      console.log(`▶️  Executing step: ${step.name}`);
+      logger.info('Executing workflow step', { workflow: config.name, stepId: step.id, stepName: step.name });
       onProgress?.(step.id, step.description, step.progressStart);
 
       try {
@@ -82,9 +82,9 @@ export async function executeWorkflow(
 
         executedSteps.push(step.id);
         onProgress?.(step.id, `${step.name} complete`, step.progressEnd);
-        console.log(`✓  Step complete: ${step.name}`);
+        logger.info('Workflow step complete', { workflow: config.name, stepId: step.id, stepName: step.name });
       } catch (stepError) {
-        console.error(`❌ Step failed: ${step.name}`, stepError);
+        logger.error('Workflow step failed', stepError, { workflow: config.name, stepId: step.id, stepName: step.name });
         throw new Error(
           `Step "${step.name}" failed: ${stepError instanceof Error ? stepError.message : 'Unknown error'}`
         );
@@ -92,7 +92,7 @@ export async function executeWorkflow(
     }
 
     const executionTime = Date.now() - startTime;
-    console.log(`✅ Workflow complete in ${executionTime}ms`);
+    logger.info('Workflow complete', { workflow: config.name, executionTime });
     onProgress?.('complete', 'Workflow complete!', 100);
 
     return {
@@ -104,7 +104,7 @@ export async function executeWorkflow(
     };
   } catch (error) {
     const executionTime = Date.now() - startTime;
-    console.error(`❌ Workflow failed:`, error);
+    logger.error('Workflow failed', error, { workflow: input.config.name, executionTime });
 
     return {
       success: false,
@@ -122,6 +122,6 @@ export async function executeWorkflow(
  */
 export function createConsoleProgress(): ProgressCallback {
   return (stepId, message, progress) => {
-    console.log(`[${progress}%] ${stepId}: ${message}`);
+    logger.debug('Workflow progress', { stepId, message, progress });
   };
 }

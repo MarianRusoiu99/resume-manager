@@ -3,23 +3,21 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiFetch } from "@/lib/utils/api-client";
-
-interface Profile {
-  userId: string;
-  resume: Resume;
-}
+import { apiV1, type ProfileDto } from "@/lib/client";
+import { createComponentLogger } from "@/lib/utils/client-logger";
 
 type ResumeSection = keyof Omit<Resume, "$schema" | "meta">;
+
+const log = createComponentLogger("useProfileSave");
 
 export function useProfileSave() {
   const [isSaving, setIsSaving] = useState(false);
 
   const saveSection = async <T extends ResumeSection>(
-    profile: Profile | null,
+    profile: Pick<ProfileDto, 'id' | 'resume'> | null,
     section: T,
     data: Resume[T],
-    onSuccess: (updatedProfile: Profile) => void
+    onSuccess: (updatedProfile: Pick<ProfileDto, 'id' | 'resume'>) => void
   ): Promise<boolean> => {
     if (!profile) return false;
 
@@ -41,24 +39,19 @@ export function useProfileSave() {
     setIsSaving(true);
 
     try {
-      const response = await apiFetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resume: { ...profile.resume, [section]: data },
-        }),
-      });
+      const updatedResume = { ...profile.resume, [section]: data };
+      const result = await apiV1.PROFILE.GET(profile.id).patch<Pick<ProfileDto, 'id' | 'resume'>>({ resume: updatedResume });
 
-      if (!response.ok) {
-        throw new Error(`Failed to save ${sectionLabels[section]}`);
+      if (result.error || !result.data) {
+        throw new Error(result.error ?? `Failed to save ${sectionLabels[section]}`);
       }
 
-      const updatedProfile = await response.json();
+      const updatedProfile = result.data;
       onSuccess(updatedProfile);
       toast.success(`${sectionLabels[section]} saved successfully!`);
       return true;
     } catch (error) {
-      console.error(`Error saving ${section}:`, error);
+      log.error(`Error saving ${section}`, error, { section });
       toast.error(`Failed to save ${sectionLabels[section]}`);
       return false;
     } finally {

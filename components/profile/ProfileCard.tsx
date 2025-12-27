@@ -9,7 +9,7 @@ import { useTransition } from 'react';
 import { Star, Edit, Copy, Check, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import type { GalleryCardAction } from "@/components/shared/GalleryCard";
-import { toast } from 'sonner';
+import { useToastAction } from '@/hooks';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { useCardPreview, useExportPdf } from '@/hooks/useCardPreview';
 import { deleteProfile, duplicateProfile, setDefaultProfile } from '@/app/actions/profile';
@@ -37,6 +37,7 @@ export function ProfileCard({
   onSetDefault,
 }: Readonly<ProfileCardProps>) {
   const [isPending, startTransition] = useTransition();
+  const { runWithToast } = useToastAction();
 
   // Use shared hooks for preview and export
   const { previewHtml, isLoading: isLoadingPreview } = useCardPreview({
@@ -57,45 +58,61 @@ export function ProfileCard({
   const skillsCount = resumeData?.skills?.length || 0;
 
   const handleExportPDF = async () => {
-    try {
-      await exportPdf();
-      toast.success('PDF exported successfully');
-    } catch {
-      toast.error('Failed to export PDF');
-    }
+    await runWithToast(
+      async () => {
+        await exportPdf();
+        return true;
+      },
+      {
+        successMessage: 'PDF exported successfully',
+        errorMessage: 'Failed to export PDF',
+      },
+    );
   };
 
   const handleDuplicate = () => {
     startTransition(async () => {
-      const result = await duplicateProfile(id);
-      if (result.success) {
-        toast.success('Profile duplicated successfully');
+      const result = await runWithToast(
+        () => duplicateProfile(id),
+        {
+          successMessage: 'Profile duplicated successfully',
+          errorMessage: 'Failed to duplicate profile',
+        },
+      );
+
+      if (result?.success) {
         onDuplicate(result.data.id);
-      } else {
-        toast.error(result.error || 'Failed to duplicate profile');
       }
     });
   };
 
   const handleSetDefault = () => {
     startTransition(async () => {
-      const result = await setDefaultProfile(id);
-      if (result.success) {
-        toast.success('Default profile updated');
+      const result = await runWithToast(
+        () => setDefaultProfile(id),
+        {
+          successMessage: 'Default profile updated',
+          errorMessage: 'Failed to set default profile',
+        },
+      );
+
+      if (result?.success) {
         onSetDefault(id);
-      } else {
-        toast.error(result.error || 'Failed to set default profile');
       }
     });
   };
 
   const handleDelete = async () => {
-    const result = await deleteProfile(id);
-    if (result.success) {
-      toast.success('Profile deleted successfully');
+    const result = await runWithToast(
+      () => deleteProfile(id),
+      {
+        successMessage: 'Profile deleted successfully',
+        errorMessage: 'Failed to delete profile',
+      },
+    );
+
+    if (result?.success) {
       onDelete(id);
-    } else {
-      toast.error(result.error || 'Failed to delete profile');
     }
   };
 

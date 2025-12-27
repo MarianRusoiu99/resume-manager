@@ -61,14 +61,20 @@ export function AIEnhanceResumeModalUnified({
     instructions,
   } = useResumeEnhancement<Resume>();
 
-  // Set resume data when modal opens
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    onOpenChange(nextOpen);
+    if (nextOpen) {
       setResume(resume);
       reset();
       setViewMode('visual');
     }
-  }, [open, resume, setResume, reset]);
+  }, [onOpenChange, resume, setResume, reset]);
+
+  // Keep the resume in sync if the prop changes while open.
+  useEffect(() => {
+    if (!open) return;
+    setResume(resume);
+  }, [open, resume, setResume]);
 
   const handleAccept = useCallback(() => {
     if (enhancedResume) {
@@ -108,7 +114,7 @@ export function AIEnhanceResumeModalUnified({
   return (
     <AIEnhanceBaseModal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       title={title}
       description={description}
       footer={footer}

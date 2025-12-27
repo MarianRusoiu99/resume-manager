@@ -12,8 +12,8 @@
  * 
  * @see https://nextjs.org/docs/app/guides/authentication#optimistic-checks-with-proxy-optional
  */
-import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   DEFAULT_LOGIN_REDIRECT,
   DEFAULT_AUTH_REDIRECT,
@@ -21,6 +21,69 @@ import {
   isPublicRoute,
   isAuthRoute,
 } from '@/lib/auth/routes';
+
+function buildStrictCsp(isDev: boolean): string {
+  return [
+    "default-src 'self'",
+    // Next.js dev builds rely on eval (source maps/fast refresh).
+    // Keep production stricter.
+    isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:"
+      : "script-src 'self' 'unsafe-inline'",
+    // Tailwind/shadcn/Next commonly rely on inline styles.
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self' https://fonts.gstatic.com",
+    // Client-side API calls (and HMR websocket in dev).
+    isDev
+      ? "connect-src 'self' ws: wss: https://fonts.googleapis.com"
+      : "connect-src 'self' https://fonts.googleapis.com",
+    // Previews render HTML in iframes via srcDoc/blob URLs.
+    "frame-src 'self' blob: data: about:",
+    // Deprecated but still used by some browsers as a fallback.
+    "child-src 'self' blob: data: about:",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+  ].join('; ');
+}
+
+function buildTemplateEditorCsp(isDev: boolean): string {
+  return [
+    "default-src 'self'",
+    // Monaco uses eval for workers in some builds and loads assets from CDN.
+    // Allow blob: because some Monaco bundles create blob-based loaders.
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net",
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+    "img-src 'self' data: https:",
+    "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net",
+    // Allow Monaco CDN; add ws/wss in dev for HMR.
+    isDev
+      ? "connect-src 'self' ws: wss: https://fonts.googleapis.com https://cdn.jsdelivr.net"
+      : "connect-src 'self' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+    "worker-src 'self' blob:",
+    // Previews render HTML in iframes via srcDoc/blob URLs.
+    "frame-src 'self' blob: data: about:",
+    // Deprecated but still used by some browsers as a fallback.
+    "child-src 'self' blob: data: about:",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+  ].join('; ');
+}
+
+function applyCspHeader(request: NextRequest, response: NextResponse): NextResponse {
+  const isDev = process.env.NODE_ENV !== 'production';
+  const pathname = request.nextUrl.pathname;
+
+  const isTemplateEditorRoute = pathname === '/templates/new' || /^\/templates\/[^/]+$/.test(pathname);
+  const csp = isTemplateEditorRoute ? buildTemplateEditorCsp(isDev) : buildStrictCsp(isDev);
+
+  response.headers.set('Content-Security-Policy', csp);
+  return response;
+}
 
 /**
  * Check if session cookie exists (optimistic check).
@@ -48,7 +111,12 @@ async function hasSessionCookie(): Promise<boolean> {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip proxy for static assets and API routes
+  // API routes handle auth themselves; never redirect.
+  if (pathname.startsWith('/api/')) {
+    return applyCspHeader(request, NextResponse.next());
+  }
+
+  // Skip proxy for static assets
   if (shouldSkipProxy(pathname)) {
     return NextResponse.next();
   }
@@ -62,15 +130,15 @@ export async function proxy(request: NextRequest) {
   if (!isPublic && !hasSession) {
     const loginUrl = new URL(DEFAULT_AUTH_REDIRECT, request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(loginUrl);
+    return applyCspHeader(request, NextResponse.redirect(loginUrl));
   }
 
   // Redirect to profile if accessing auth pages with session cookie
   if (isAuth && hasSession) {
-    return NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, request.url));
+    return applyCspHeader(request, NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, request.url)));
   }
 
-  return NextResponse.next();
+  return applyCspHeader(request, NextResponse.next());
 }
 
 // Export as default for Next.js 16 compatibility

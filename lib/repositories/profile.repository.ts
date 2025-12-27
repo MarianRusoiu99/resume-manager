@@ -1,171 +1,175 @@
-import { prisma } from "@/lib/db";
-import { PrismaClient, Prisma } from "@prisma/client";
-import type { Resume } from "@/lib/validations/jsonresume";
-import type { IProfileRepository } from "./interfaces";
+import { prisma } from '@/lib/db';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { GenericUserOwnedRepository, UserOwnedEntity } from './generic.repository';
+import type { IProfileRepository, ProfileData, CreateProfileInput, UpdateProfileInput, ProfileWithTemplate } from './interfaces/profile.repository.interface';
+
+export interface ProfileEntity extends UserOwnedEntity {
+  name: string;
+  isDefault: boolean;
+  isPublic: boolean;
+  publicSlug: string | null;
+  selectedTemplateId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  document?: { document: any } | null;
+}
 
 /**
  * Profile Repository
- * 
- * Implements IProfileRepository for data access abstraction.
- * Allows dependency injection of database client for testing.
+ *
+ * Refactored to use GenericUserOwnedRepository.
  */
-export class ProfileRepository implements IProfileRepository {
-  private readonly db: PrismaClient;
-
+export class ProfileRepository extends GenericUserOwnedRepository<
+  ProfileData,
+  CreateProfileInput,
+  UpdateProfileInput,
+  any
+> implements IProfileRepository {
+  
   constructor(dbClient: PrismaClient = prisma) {
-    this.db = dbClient;
-  }
-  /**
-   * Find all profiles for a user
-   */
-  async findAllByUserId(userId: string) {
-    return this.db.userProfile.findMany({
-      where: { userId },
-      orderBy: [
-        { isDefault: 'desc' }, // Default profile first
-        { createdAt: 'desc' },
-      ],
-    });
+    super('profile', dbClient);
   }
 
-  /**
-   * Find a specific profile by ID (with user ownership check)
-   */
-  async findById(profileId: string, userId: string) {
-    return this.db.userProfile.findFirst({
-      where: {
-        id: profileId,
-        userId,
-      },
-    });
+  private mapProfile(profile: any): ProfileData {
+    return {
+      id: profile.id,
+      userId: profile.userId,
+      name: profile.name,
+      resume: profile.document?.document ?? null,
+      isDefault: profile.isDefault,
+      isPublic: profile.isPublic,
+      publicSlug: profile.publicSlug,
+      selectedTemplateId: profile.selectedTemplateId,
+      createdAt: profile.createdAt,
+      updatedAt: profile.updatedAt,
+    };
   }
 
-  /**
-   * Find default profile for a user
-   */
-  async findDefaultByUserId(userId: string) {
-    return this.db.userProfile.findFirst({
-      where: {
-        userId,
-        isDefault: true,
-      },
+  async findAllByUserId(userId: string): Promise<ProfileData[]> {
+    const profiles = await this.findAllForUser(userId, {
+      include: { document: { select: { document: true } } },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
+    return profiles.map(p => this.mapProfile(p));
   }
 
-  /**
-   * Find by userId (for backward compatibility - returns first/default profile)
-   */
-  async findByUserId(userId: string) {
+  async findById(profileId: string, userId?: string): Promise<any | null> {
+    const profile = await this.db.profile.findFirst({
+      where: { id: profileId, ...(userId ? { userId } : {}) },
+      include: { document: { select: { document: true } } }
+    });
+    
+    return profile ? this.mapProfile(profile) : null;
+  }
+
+  async findDefaultByUserId(userId: string): Promise<ProfileData | null> {
+    const profile = await this.db.profile.findFirst({
+      where: { userId, isDefault: true },
+      include: { document: { select: { document: true } } }
+    });
+    return profile ? this.mapProfile(profile) : null;
+  }
+
+  async findByUserId(userId: string): Promise<ProfileData | null> {
     return this.findDefaultByUserId(userId);
   }
 
-  /**
-   * Create a new profile
-   */
-  async create(data: {
-    userId: string;
-    name: string;
-    resume: Resume;
-    isDefault?: boolean;
-  }) {
-    return this.db.userProfile.create({
+  // Custom create to handle document relation
+  override async create(data: CreateProfileInput): Promise<any> {
+    const created = await this.db.profile.create({
       data: {
         userId: data.userId,
         name: data.name,
-        resume: data.resume as Prisma.InputJsonValue,
         isDefault: data.isDefault ?? false,
+        document: {
+          create: {
+            document: data.resume as Prisma.InputJsonValue,
+          },
+        },
       },
+      include: { document: { select: { document: true } } },
     });
+    return this.mapProfile(created);
   }
 
-  /**
-   * Update a profile
-   */
-  async update(
-    profileId: string,
-    userId: string,
-    data: Partial<{
-      name: string;
-      resume: Resume;
-      isDefault: boolean;
-      isPublic: boolean;
-      publicSlug: string | null;
-    }>
-  ) {
-    return this.db.userProfile.update({
-      where: {
-        id: profileId,
-        userId,
-      },
-      data: {
-        ...(data.name && { name: data.name }),
-        ...(data.resume && { resume: data.resume as Prisma.InputJsonValue }),
-        ...(data.isDefault !== undefined && { isDefault: data.isDefault }),
-        ...(data.isPublic !== undefined && { isPublic: data.isPublic }),
-        ...(data.publicSlug !== undefined && { publicSlug: data.publicSlug }),
-      },
+  // Custom update to handle document relation
+  override async update(profileId: string, data: UpdateProfileInput, userId?: string): Promise<any> {
+    const updateData: Prisma.ProfileUpdateInput = {
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.isDefault !== undefined ? { isDefault: data.isDefault } : {}),
+      ...(data.isPublic !== undefined ? { isPublic: data.isPublic } : {}),
+      ...(data.publicSlug !== undefined ? { publicSlug: data.publicSlug } : {}),
+      ...(data.selectedTemplateId !== undefined ? { selectedTemplateId: data.selectedTemplateId } : {}),
+      ...(data.resume !== undefined
+
+        ? {
+            document: {
+              upsert: {
+                create: { document: data.resume as Prisma.InputJsonValue },
+                update: { document: data.resume as Prisma.InputJsonValue, updatedAt: new Date() },
+              },
+            },
+          }
+        : {}),
+    };
+
+    const updated = await this.db.profile.update({
+      where: { id: profileId, ...(userId ? { userId } : {}) },
+      data: updateData,
+      include: { document: { select: { document: true } } },
     });
+
+    return this.mapProfile(updated);
   }
 
-  /**
-   * Delete a profile
-   */
-  async delete(profileId: string, userId: string) {
-    return this.db.userProfile.delete({
-      where: {
-        id: profileId,
-        userId,
-      },
+  // Custom delete to include document
+  override async delete(profileId: string, userId?: string): Promise<any> {
+    const deleted = await this.db.profile.delete({
+      where: { id: profileId, ...(userId ? { userId } : {}) },
+      include: { document: { select: { document: true } } },
     });
+    return this.mapProfile(deleted);
   }
 
-  /**
-   * Unset all default flags for a user
-   */
   async unsetAllDefaults(userId: string) {
-    return this.db.userProfile.updateMany({
-      where: {
-        userId,
-        isDefault: true,
-      },
-      data: {
-        isDefault: false,
-      },
+    return this.db.profile.updateMany({
+      where: { userId, isDefault: true },
+      data: { isDefault: false },
     });
   }
 
-  /**
-   * Check if user has any profiles
-   */
   async exists(userId: string): Promise<boolean> {
-    const count = await this.db.userProfile.count({
-      where: { userId },
-    });
+    const count = await this.db.profile.count({ where: { userId } });
     return count > 0;
   }
 
-  /**
-   * Get profile count for a user
-   */
   async count(userId: string): Promise<number> {
-    return this.db.userProfile.count({
-      where: { userId },
-    });
+    return this.db.profile.count({ where: { userId } });
   }
 
-  /**
-   * Find profile by public slug (for public sharing)
-   * Includes the selected template for rendering
-   */
-  async findByPublicSlug(slug: string) {
-    return this.db.userProfile.findUnique({
-      where: {
-        publicSlug: slug,
-      },
+  async findByPublicSlug(slug: string): Promise<ProfileWithTemplate | null> {
+    const profile = await this.db.profile.findUnique({
+      where: { publicSlug: slug },
       include: {
-        selectedTemplate: true,
+        document: { select: { document: true } },
+        selectedTemplate: { select: { id: true, name: true, htmlTemplate: true, cssStyles: true } },
       },
     });
+
+    if (!profile) return null;
+
+    const mapped = this.mapProfile(profile);
+    return {
+      ...mapped,
+      selectedTemplate: profile.selectedTemplate
+        ? {
+            id: profile.selectedTemplate.id,
+            name: profile.selectedTemplate.name,
+            htmlTemplate: profile.selectedTemplate.htmlTemplate,
+            cssStyles: profile.selectedTemplate.cssStyles,
+          }
+        : null,
+    };
   }
 }
 

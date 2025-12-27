@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { TemplateBase } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { apiV1, type TemplateListResponseDto } from '@/lib/client';
 
 const logger = createComponentLogger('TemplateSelector');
 
@@ -24,12 +25,12 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/template');
-        if (!response.ok) {
-          throw new Error('Failed to fetch templates');
+        const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<TemplateBase>>();
+        if (result.error) {
+          throw new Error(result.error);
         }
-        const data = await response.json();
-        setTemplates(data.templates || []);
+
+        setTemplates(result.data?.templates ?? []);
       } catch (error) {
         logger.error('Error fetching templates', error);
         toast.error('Failed to load templates');
@@ -51,19 +52,10 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
 
     try {
       setIsUpdating(true);
-      const response = await fetch(`/api/resume/${resumeId}/template`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          templateId: selectedTemplateId,
-        }),
-      });
+      const result = await apiV1.RESUME.TEMPLATE(resumeId).patch<{ success?: boolean }>({ templateId: selectedTemplateId });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update template');
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       toast.success('Template updated successfully');

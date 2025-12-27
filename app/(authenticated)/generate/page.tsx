@@ -9,24 +9,18 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { Callout, Spinner } from '@/components/shared';
 import { Button, Card, Textarea, Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { ExternalLink } from 'lucide-react';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { PageHeader } from '@/components/layout';
-interface Template {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-}
-
-interface Profile {
-  id: string;
-  name: string;
-  isDefault: boolean;
-}
+import { ROUTES } from '@/lib/constants';
+import { apiV1, type ApiProvider, type ProfileListItem, type TemplateListResponseDto } from '@/lib/client';
+import { useComponentLogger } from '@/hooks';
+import type { TemplateBase } from '@/lib/types/template';
 
 interface GeneratedResume {
   id: string;
@@ -40,19 +34,27 @@ interface GeneratedResume {
 }
 
 export default function GeneratePage() {
+  const log = useComponentLogger('GeneratePage');
   const searchParams = useSearchParams();
   const tabParam = searchParams.get('tab');
 
   // Common state
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [profiles, setProfiles] = useState<ProfileListItem[]>([]);
+  const [providers, setProviders] = useState<ApiProvider[]>([]);
   const [hasAIProviders, setHasAIProviders] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Provider/model selection state
+  const [selectedResumeProviderId, setSelectedResumeProviderId] = useState<string>('');
+  const [selectedResumeModelId, setSelectedResumeModelId] = useState<string>('');
+  const [selectedCoverLetterProviderId, setSelectedCoverLetterProviderId] = useState<string>('');
+  const [selectedCoverLetterModelId, setSelectedCoverLetterModelId] = useState<string>('');
 
   // Resume generation state
   const [resumeJobDescription, setResumeJobDescription] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [selectedResumeProfileId, setSelectedResumeProfileId] = useState<string>('');
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [isGeneratingResume, setIsGeneratingResume] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
   const [generatedResume, setGeneratedResume] = useState<GeneratedResume | null>(null);
@@ -75,60 +77,76 @@ export default function GeneratePage() {
   // Load templates on mount
   useEffect(() => {
     const loadTemplates = async () => {
-      try {
-        const response = await fetch('/api/template');
-        if (response.ok) {
-          const data = await response.json();
-          setTemplates(data.templates || []);
-          if (data.templates && data.templates.length > 0) {
-            setSelectedTemplateId(data.templates[0].id);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load templates:', err);
+      const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<TemplateBase>>();
+      if (result.error || !result.data) {
+        log.error('Failed to load templates', undefined, { error: result.error });
+        return;
+      }
+
+      setTemplates(result.data.templates);
+      if (result.data.templates.length > 0) {
+        setSelectedTemplateId(result.data.templates[0].id);
       }
     };
+
     loadTemplates();
-  }, []);
+  }, [log]);
 
   // Load profiles and check for AI providers on mount
   useEffect(() => {
+    type ProfileListApiItem = { id: string; name: string; isDefault: boolean };
+
     const loadData = async () => {
       setIsLoadingData(true);
       try {
-        // Load profiles and check for AI providers in parallel
-        const [profilesRes, providersRes] = await Promise.all([
-          fetch('/api/profile'),
-          fetch('/api/settings/api-providers'),
+        const [profilesResult, providersResult] = await Promise.all([
+          apiV1.PROFILE.LIST.get<ProfileListApiItem[]>(),
+          apiV1.SETTINGS.API_PROVIDERS.get<ApiProvider[]>(),
         ]);
 
-        if (profilesRes.ok) {
-          const data = await profilesRes.json();
-          setProfiles(data);
-          const defaultProfile = data.find((p: Profile) => p.isDefault);
+        if (!profilesResult.error && profilesResult.data) {
+          const profileItems: ProfileListItem[] = profilesResult.data.map((p) => ({
+            id: p.id,
+            name: p.name,
+            isDefault: p.isDefault,
+          }));
+
+          setProfiles(profileItems);
+
+          const defaultProfile = profileItems.find((p) => p.isDefault);
           if (defaultProfile) {
             setSelectedResumeProfileId(defaultProfile.id);
             setSelectedCoverLetterProfileId(defaultProfile.id);
-          } else if (data.length > 0) {
-            setSelectedResumeProfileId(data[0].id);
-            setSelectedCoverLetterProfileId(data[0].id);
+          } else if (profileItems.length > 0) {
+            setSelectedResumeProfileId(profileItems[0].id);
+            setSelectedCoverLetterProfileId(profileItems[0].id);
           }
         }
 
-        if (providersRes.ok) {
-          const data = await providersRes.json();
-          // Check if user has at least one active provider
-          const hasProviders = Array.isArray(data) && data.some((p: { isActive: boolean }) => p.isActive);
-          setHasAIProviders(hasProviders);
+        if (!providersResult.error && providersResult.data) {
+          setProviders(providersResult.data);
+
+          const activeProviders = providersResult.data.filter((p) => p.isActive);
+          setHasAIProviders(activeProviders.length > 0);
+
+          // Initialize provider/model selections if empty
+          const firstActiveProvider = activeProviders[0];
+          const firstModelId = firstActiveProvider?.models?.[0]?.id ?? '';
+
+          setSelectedResumeProviderId((prev) => prev || firstActiveProvider?.id || '');
+          setSelectedResumeModelId((prev) => prev || firstModelId);
+          setSelectedCoverLetterProviderId((prev) => prev || firstActiveProvider?.id || '');
+          setSelectedCoverLetterModelId((prev) => prev || firstModelId);
         }
       } catch (err) {
-        console.error('Failed to load data:', err);
+        log.error('Failed to load data', err);
       } finally {
         setIsLoadingData(false);
       }
     };
+
     loadData();
-  }, []);
+  }, [log]);
 
 
 
@@ -170,7 +188,7 @@ export default function GeneratePage() {
 
     switch (eventType) {
       case 'connected':
-        console.log('Connected to stream');
+        log.debug('Connected to stream');
         break;
 
       case 'start':
@@ -214,7 +232,7 @@ export default function GeneratePage() {
           action: {
             label: 'View Resume',
             onClick: () => {
-              globalThis.location.href = `/resumes/${data.resumeId}/edit`;
+              globalThis.location.href = ROUTES.RESUME_EDIT(data.resumeId!);
             },
           },
           duration: 8000,
@@ -255,6 +273,56 @@ export default function GeneratePage() {
     }
   };
 
+  const activeProviders = providers.filter((p) => p.isActive);
+
+  // Keep selected model valid for current provider
+  useEffect(() => {
+    if (isLoadingData) return;
+
+    const provider = activeProviders.find((p) => p.id === selectedResumeProviderId) ?? activeProviders[0];
+    const providerId = provider?.id ?? '';
+    const models = provider?.models ?? [];
+
+    if (providerId && providerId !== selectedResumeProviderId) {
+      setSelectedResumeProviderId(providerId);
+    }
+
+    if (!models.some((m) => m.id === selectedResumeModelId)) {
+      setSelectedResumeModelId(models[0]?.id ?? '');
+    }
+  }, [activeProviders, isLoadingData, selectedResumeModelId, selectedResumeProviderId]);
+
+  useEffect(() => {
+    if (isLoadingData) return;
+
+    const provider = activeProviders.find((p) => p.id === selectedCoverLetterProviderId) ?? activeProviders[0];
+    const providerId = provider?.id ?? '';
+    const models = provider?.models ?? [];
+
+    if (providerId && providerId !== selectedCoverLetterProviderId) {
+      setSelectedCoverLetterProviderId(providerId);
+    }
+
+    if (!models.some((m) => m.id === selectedCoverLetterModelId)) {
+      setSelectedCoverLetterModelId(models[0]?.id ?? '');
+    }
+  }, [activeProviders, isLoadingData, selectedCoverLetterModelId, selectedCoverLetterProviderId]);
+
+  const handleResumeProviderChange = (providerId: string) => {
+    setSelectedResumeProviderId(providerId);
+    const provider = activeProviders.find((p) => p.id === providerId);
+    setSelectedResumeModelId(provider?.models?.[0]?.id ?? '');
+  };
+
+  const handleCoverLetterProviderChange = (providerId: string) => {
+    setSelectedCoverLetterProviderId(providerId);
+    const provider = activeProviders.find((p) => p.id === providerId);
+    setSelectedCoverLetterModelId(provider?.models?.[0]?.id ?? '');
+  };
+
+  const resumeSelectedProvider = activeProviders.find((p) => p.id === selectedResumeProviderId) ?? null;
+  const coverLetterSelectedProvider = activeProviders.find((p) => p.id === selectedCoverLetterProviderId) ?? null;
+
   const handleGenerateResume = async () => {
     if (!validateResumeInput()) {
       return;
@@ -266,22 +334,16 @@ export default function GeneratePage() {
     resetResumeProgress();
 
     try {
-      const response = await fetch('/api/resume/generate-stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jobDescription: resumeJobDescription,
-          profileId: selectedResumeProfileId,
-          templateId: selectedTemplateId || undefined,
-        }),
+      const response = await apiV1.RESUME.GENERATE_STREAM.postFetch({
+        jobDescription: resumeJobDescription,
+        profileId: selectedResumeProfileId,
+        templateId: selectedTemplateId || undefined,
+        modelId: selectedResumeModelId || undefined,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to generate resume');
-      }
+       if (!response.ok) {
+          throw new Error((await response.text()) || 'Failed to generate resume');
+       }
 
       const reader = response.body?.getReader();
 
@@ -327,35 +389,34 @@ export default function GeneratePage() {
     setGeneratedCoverLetter(null);
 
     try {
-      const response = await fetch('/api/cover-letter/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jobDescription: coverLetterJobDescription,
-          personalInstructions: coverLetterPersonalInstructions.trim() || undefined,
-          profileId: profileId,
-        }),
+      const result = await apiV1.COVER_LETTER.GENERATE.post<{
+        coverLetter: string;
+        coverLetterId: string;
+        metadata: unknown;
+      }>({
+        jobDescription: coverLetterJobDescription,
+        personalInstructions: coverLetterPersonalInstructions,
+        profileId,
+        modelId: selectedCoverLetterModelId || undefined,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to generate cover letter');
+      if (result.error || !result.data) {
+        throw new Error(result.error ?? 'Failed to generate cover letter');
       }
 
-      const data = await response.json();
-      setGeneratedCoverLetter(data.coverLetter);
+      setGeneratedCoverLetter(result.data.coverLetter);
       
       // Show toast with action to view cover letter
       toast.success('Cover letter generated successfully!', {
         description: 'Your cover letter is ready to view and edit.',
-        action: data.coverLetterId ? {
-          label: 'View Cover Letter',
-          onClick: () => {
-            globalThis.location.href = `/cover-letters/${data.coverLetterId}`;
-          },
-        } : undefined,
+        action: result.data?.coverLetterId
+          ? {
+              label: 'View Cover Letter',
+              onClick: () => {
+                globalThis.location.href = `/cover-letters/${result.data?.coverLetterId}`;
+              },
+            }
+          : undefined,
         duration: 8000,
       });
     } catch (err) {
@@ -471,93 +532,108 @@ export default function GeneratePage() {
                       </div>
                     )}
 
+                    {/* AI Model Selection */}
+                    {!isLoadingData && hasAIProviders && (
+                      <div className="space-y-3">
+                        <div>
+                          <label htmlFor="resumeProvider" className="block text-sm font-medium mb-2">
+                            API Provider
+                          </label>
+                          <select
+                            id="resumeProvider"
+                            value={selectedResumeProviderId}
+                            onChange={(e) => handleResumeProviderChange(e.target.value)}
+                            className="w-full px-3 py-2 border rounded-md"
+                            disabled={isGeneratingResume}
+                          >
+                            {activeProviders.map((provider) => (
+                              <option className='bg-background text-foreground' key={provider.id} value={provider.id}>
+                                {provider.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label htmlFor="resumeModel" className="block text-sm font-medium mb-2">
+                            Model
+                          </label>
+                          <SearchableSelect
+                            value={selectedResumeModelId}
+                            onValueChange={(nextValue) => setSelectedResumeModelId(nextValue)}
+                            disabled={isGeneratingResume || !resumeSelectedProvider}
+                            placeholder="Select model..."
+                            searchPlaceholder="Search models..."
+                            dialogTitle="Select a model"
+                            maxListHeightClassName="h-72"
+                            options={(resumeSelectedProvider?.models ?? []).map((model) => ({
+                              value: model.id,
+                              label: model.name || model.id,
+                              description: model.name ? model.id : undefined,
+                            }))}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {/* AI Provider Check */}
                     {!isLoadingData && !hasAIProviders && (
-                      <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <Callout variant="warning" tone="soft" className="p-3">
+                        <p>
                           ⚠️ No AI providers configured. Please add an API key in{' '}
-                          <Link href="/settings/api-keys" className="underline font-medium">
+                          <Link href={ROUTES.SETTINGS_API_KEYS} className="underline font-medium">
                             Settings → API Keys
                           </Link>{' '}
                           to generate resumes.
                         </p>
-                      </div>
+                      </Callout>
                     )}
 
                     {resumeError && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-600">{resumeError}</p>
-                      </div>
+                      <Callout variant="danger" tone="soft" className="p-3">
+                        <p>{resumeError}</p>
+                      </Callout>
                     )}
 
                     {/* Progress Bar */}
                     {isGeneratingResume && useStreaming && progressPercent > 0 && (
-                      <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium text-blue-900">{progressStep}</span>
-                          <span className="text-blue-700">{progressPercent}%</span>
-                        </div>
-                        <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
-                          <div
-                            className="bg-blue-600 h-full transition-all duration-300 ease-out"
-                            style={{ width: `${progressPercent}%` }}
-                          />
-                        </div>
-                        <p className="text-xs text-blue-700">{progressMessage}</p>
-                      </div>
+                        <Callout className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="font-medium">{progressStep}</span>
+                            <span>{progressPercent}%</span>
+                          </div>
+                          <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className="bg-blue-600 h-full transition-all duration-300 ease-out"
+                              style={{ width: `${progressPercent}%` }}
+                            />
+                          </div>
+                          <p className="text-xs">{progressMessage}</p>
+                        </Callout>
                     )}
 
-                    {(() => {
-                      if (isLoadingData) {
-                        return (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Loading...
-                          </>
-                        );
-                      }
-                      if (isGeneratingResume) {
-                        return (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Generating Resume...
-                          </>
-                        );
-                      }
-                      return '✨ Generate Resume';
-                    })()}
+              
                     
                     <Button
                       onClick={handleGenerateResume}
-                      disabled={isLoadingData || isGeneratingResume || resumeJobDescription.length < 50 || !selectedResumeProfileId || !hasAIProviders}
+                        disabled={isLoadingData || isGeneratingResume || resumeJobDescription.length < 50 || !selectedResumeProfileId || !hasAIProviders || !selectedResumeModelId}
+
                       className="w-full"
                     >
                       {(() => {
                         if (isLoadingData) {
                           return (
                             <>
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Loading...
+                               <Spinner size="sm" className="-ml-1 mr-3" />
+                               Loading...
                             </>
                           );
                         }
                         if (isGeneratingResume) {
                           return (
                             <>
-                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Generating Resume...
+                               <Spinner size="sm" className="-ml-1 mr-3" />
+                               Generating Resume...
                             </>
                           );
                         }
@@ -574,7 +650,7 @@ export default function GeneratePage() {
                   <div className="space-y-6">
                     {/* Action Button */}
                     <div className="flex justify-end">
-                      <Link href={`/resumes/${generatedResumeId}/edit`}>
+                      <Link href={ROUTES.RESUME_EDIT(generatedResumeId)}>
                         <Button variant="default">
                           <ExternalLink className="w-4 h-4 mr-2" />
                           Open in Resume Editor
@@ -674,24 +750,64 @@ export default function GeneratePage() {
                     {isLoadingData && (
                       <div className="p-3 bg-muted rounded-md">
                         <div className="flex items-center gap-2">
-                          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
+                           <Spinner size="sm" className="h-4 w-4" />
                           <span className="text-sm text-muted-foreground">Loading...</span>
                         </div>
                       </div>
                     )}
 
                     {!isLoadingData && !hasAIProviders && (
-                      <div className="p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <Callout variant="warning" tone="soft" className="p-3">
+                        <p>
                           ⚠️ No AI providers configured. Please add an API key in{' '}
-                          <Link href="/settings/api-keys" className="underline font-medium">
+                          <Link href={ROUTES.SETTINGS_API_KEYS} className="underline font-medium">
                             Settings → API Keys
                           </Link>{' '}
                           to generate cover letters.
                         </p>
+                      </Callout>
+                    )}
+
+                    {!isLoadingData && hasAIProviders && (
+                      <div className="space-y-3">
+                        <div>
+                          <label htmlFor="coverLetterProvider" className="block text-sm font-medium mb-2">
+                            API Provider
+                          </label>
+                          <select
+                            id="coverLetterProvider"
+                            value={selectedCoverLetterProviderId}
+                            onChange={(e) => handleCoverLetterProviderChange(e.target.value)}
+                            className="w-full px-3 py-2 border rounded-md"
+                            disabled={isGeneratingCoverLetter}
+                          >
+                            {activeProviders.map((provider) => (
+                              <option className='bg-background text-foreground' key={provider.id} value={provider.id}>
+                                {provider.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label htmlFor="coverLetterModel" className="block text-sm font-medium mb-2">
+                            Model
+                          </label>
+                          <SearchableSelect
+                            value={selectedCoverLetterModelId}
+                            onValueChange={(nextValue) => setSelectedCoverLetterModelId(nextValue)}
+                            disabled={isGeneratingCoverLetter || !coverLetterSelectedProvider}
+                            placeholder="Select model..."
+                            searchPlaceholder="Search models..."
+                            dialogTitle="Select a model"
+                            maxListHeightClassName="h-72"
+                            options={(coverLetterSelectedProvider?.models ?? []).map((model) => ({
+                              value: model.id,
+                              label: model.name || model.id,
+                              description: model.name ? model.id : undefined,
+                            }))}
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -715,45 +831,39 @@ export default function GeneratePage() {
 
                     {/* Warning if no profiles */}
                     {profiles.length === 0 && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                        <p className="text-sm text-yellow-800">
+                      <Callout variant="warning" tone="soft" className="p-3">
+                        <p>
                           ⚠️ No profiles found. Please{' '}
                           <Link href="/profile" className="underline font-medium">
                             create a profile
                           </Link>{' '}
                           before generating a cover letter.
                         </p>
-                      </div>
+                      </Callout>
                     )}
 
                     {coverLetterError && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-sm text-red-600">{coverLetterError}</p>
-                      </div>
+                      <Callout variant="danger" tone="soft" className="p-3">
+                        <p>{coverLetterError}</p>
+                      </Callout>
                     )}
 
                     <div className="flex gap-3">
                       <Button
                         onClick={handleGenerateCoverLetter}
-                        disabled={isLoadingData || isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || profiles.length === 0 || !hasAIProviders}
+                        disabled={isLoadingData || isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || profiles.length === 0 || !hasAIProviders || !selectedCoverLetterModelId}
                         className="flex-1"
                       >
                         {isLoadingData && (
                           <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Loading...
+                             <Spinner size="sm" className="-ml-1 mr-3" />
+                             Loading...
                           </>
                         )}
                         {isGeneratingCoverLetter && !isLoadingData && (
                           <>
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Generating...
+                             <Spinner size="sm" className="-ml-1 mr-3" />
+                             Generating...
                           </>
                         )}
                         {!isLoadingData && !isGeneratingCoverLetter && 'Generate Cover Letter'}
@@ -799,15 +909,15 @@ export default function GeneratePage() {
                   </Card>
                 )}
 
-                {isGeneratingCoverLetter && (
-                  <Card className="p-6">
-                    <div className="text-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                      <p className="text-gray-600">Analyzing job and crafting your cover letter...</p>
-                      <p className="text-sm text-gray-500 mt-2">This typically takes 10-20 seconds</p>
-                    </div>
-                  </Card>
-                )}
+                 {isGeneratingCoverLetter && (
+                   <Card className="p-6">
+                     <div className="text-center py-12">
+                       <Spinner className="mx-auto mb-4" />
+                       <p className="text-gray-600">Analyzing job and crafting your cover letter...</p>
+                       <p className="text-sm text-gray-500 mt-2">This typically takes 10-20 seconds</p>
+                     </div>
+                   </Card>
+                 )}
 
                 {generatedCoverLetter && (
                   <CoverLetterEditor

@@ -1,5 +1,4 @@
-// This is your Prisma schema file for AI Resume Manager Platform
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma schema (hybrid-normalized, reset-safe)
 
 generator client {
   provider = "prisma-client-js"
@@ -10,7 +9,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums for type safety
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
 enum TemplateCategory {
   PROFESSIONAL
   MODERN
@@ -27,157 +29,105 @@ enum ProviderType {
   MISTRAL
 }
 
-// User authentication and account management
+enum AiFeatureKey {
+  resume
+  coverLetter
+  enhance
+  template
+}
+
+enum ApiKeyAuditAction {
+  KEY_CREATED
+  KEY_ROTATED
+  KEY_REVOKED
+  KEY_DELETED
+  KEY_DECRYPTED // When key is decrypted for use
+  KEY_VALIDATED // External API validation
+  KEY_USED // When key is used for AI generation
+  KEY_SCOPE_CHANGED
+}
+
+enum NotificationType {
+  RESUME_GENERATED
+  COVER_LETTER_GENERATED
+  PROFILE_UPDATED
+  EXPORT_COMPLETE
+  SYSTEM
+}
+
+enum AuditAction {
+  // Authentication
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  PASSWORD_CHANGE
+
+  // Profile operations
+  PROFILE_CREATE
+  PROFILE_UPDATE
+  PROFILE_DELETE
+  PROFILE_SET_DEFAULT
+  PROFILE_PUBLISH
+
+  // Resume operations
+  RESUME_CREATE
+  RESUME_UPDATE
+  RESUME_DELETE
+  RESUME_GENERATE
+  RESUME_EXPORT_PDF
+
+  // Cover letter operations
+  COVER_LETTER_CREATE
+  COVER_LETTER_UPDATE
+  COVER_LETTER_DELETE
+  COVER_LETTER_GENERATE
+
+  // Template operations
+  TEMPLATE_CREATE
+  TEMPLATE_UPDATE
+  TEMPLATE_DELETE
+
+  // API key operations
+  API_KEY_ADD
+  API_KEY_UPDATE
+  API_KEY_DELETE
+
+  // Settings
+  SETTINGS_UPDATE
+
+  // AI operations
+  AI_GENERATE
+  AI_VALIDATION_FAILED
+  AI_TOKEN_USAGE
+}
+
+// -----------------------------------------------------------------------------
+// Core: users + auth
+// -----------------------------------------------------------------------------
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
   name         String?
+  isAdmin      Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  profiles      UserProfile[]
-  resumes       GeneratedResume[]
+  profiles      Profile[]
+  resumes       Resume[]
   coverLetters  CoverLetter[]
   sessions      Session[]
   apiProviders  ApiProvider[]
   notifications Notification[]
-  aiSettings    UserAISettings?
+  auditLogs     AuditLog[]
+  aiPreferences UserAiPreference[]
+  jobPostings   JobPosting[]
 
   @@index([email])
   @@index([createdAt])
 }
 
-// AI Model Preferences per feature
-// Stores user's preferred API provider and model for each AI feature
-model UserAISettings {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Resume Generation preferences
-  resumeProviderId String? // Reference to ApiProvider.id
-  resumeModelId    String? // Model ID within that provider
-
-  // Cover Letter Generation preferences
-  coverLetterProviderId String?
-  coverLetterModelId    String?
-
-  // Resume Enhancement/AI Enhance preferences
-  enhanceProviderId String?
-  enhanceModelId    String?
-
-  // Template Parsing preferences
-  templateProviderId String?
-  templateModelId    String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId])
-}
-
-// User professional profile and experience
-// UPDATED: Support multiple profiles per user with public sharing
-model UserProfile {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  name       String // Profile name (e.g., "Software Engineer", "Product Manager")
-  isDefault  Boolean @default(false) // One default profile per user
-  isPublic   Boolean @default(false) // Public sharing enabled
-  publicSlug String? @unique // Unique slug for public URL
-  resume     Json // JSON Resume v1.0.0 format
-
-  templateId       String? // Remember user's preferred template for this profile
-  selectedTemplate ResumeTemplate? @relation("ProfileTemplates", fields: [templateId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([userId, isDefault])
-  @@index([publicSlug])
-  @@index([updatedAt])
-  @@index([templateId])
-}
-
-// Generated resumes with AI and user edits
-// REFACTORED: Removed templateCustomization and pdfUrl (generate PDF on-demand)
-model GeneratedResume {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  jobDescription String @db.Text
-  jobMetadata    Json? // {company, title, url, postedDate}
-  resume         Json // JSON Resume v1.0.0 format
-
-  templateId String?
-  template   ResumeTemplate? @relation("ResumeTemplates", fields: [templateId], references: [id], onDelete: SetNull)
-
-  coverLetterId String?      @unique
-  coverLetter   CoverLetter? @relation(fields: [coverLetterId], references: [id], onDelete: SetNull)
-
-  // Relation to standalone cover letters
-
-  metadata  Json // {model, tokens, score, generationTime}
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([userId, updatedAt])
-}
-
-// Standalone Cover Letters (can be linked to a resume or independent)
-model CoverLetter {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  content        String  @db.Text // Markdown formatted cover letter (for preview)
-  jobDescription String  @db.Text
-  jobTitle       String?
-  companyName    String?
-
-  // Optional back-reference to a generated resume that references this cover letter
-  generatedResume GeneratedResume?
-
-  metadata  Json // {model, tokens, generationTime, personalInstructions}
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([userId, updatedAt])
-}
-
-// Resume templates (professional layouts)
-model ResumeTemplate {
-  id          String           @id @default(cuid())
-  name        String
-  category    TemplateCategory
-  description String
-
-  // HTML template with Handlebars placeholders: {{basics.name}}, {{basics.email}}, etc.
-  htmlTemplate String @db.Text
-
-  // CSS styles for the template
-  cssStyles String @db.Text
-
-  previewUrl String?
-  isPublic   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  userProfiles     UserProfile[]     @relation("ProfileTemplates")
-  generatedResumes GeneratedResume[] @relation("ResumeTemplates")
-
-  @@index([category])
-  @@index([isPublic])
-}
-
-// Authentication sessions
 model Session {
   id           String   @id @default(cuid())
   userId       String
@@ -189,173 +139,327 @@ model Session {
   @@index([userId])
 }
 
-// API Provider and Key Management
+// -----------------------------------------------------------------------------
+// Profiles (entity) + ProfileDocument (JSON Resume)
+// -----------------------------------------------------------------------------
+
+model Profile {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name       String
+  isDefault  Boolean @default(false)
+  isPublic   Boolean @default(false)
+  publicSlug String? @unique
+
+  selectedTemplateId String?
+  selectedTemplate   ResumeTemplate? @relation("ProfileSelectedTemplate", fields: [selectedTemplateId], references: [id], onDelete: SetNull)
+
+  document ProfileDocument?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  resumes   Resume[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, isDefault])
+  @@index([publicSlug])
+  @@index([updatedAt])
+  @@index([selectedTemplateId])
+}
+
+model ProfileDocument {
+  id        String  @id @default(cuid())
+  profileId String  @unique
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  document Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId])
+}
+
+// -----------------------------------------------------------------------------
+// Templates
+// -----------------------------------------------------------------------------
+
+model ResumeTemplate {
+  id          String           @id @default(cuid())
+  name        String
+  category    TemplateCategory
+  description String
+
+  htmlTemplate String @db.Text
+  cssStyles    String @db.Text
+
+  previewUrl String?
+  isPublic   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  profiles Profile[] @relation("ProfileSelectedTemplate")
+  resumes  Resume[]
+
+  @@index([category])
+  @@index([isPublic])
+}
+
+// -----------------------------------------------------------------------------
+// Job targeting normalization
+// -----------------------------------------------------------------------------
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobPostings JobPosting[]
+
+  @@index([name])
+}
+
+model JobPosting {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  title       String?
+  sourceUrl   String?
+  postedAt    DateTime?
+  description String    @db.Text
+
+  resumes      Resume[]
+  coverLetters CoverLetter[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([companyId])
+  @@index([title])
+}
+
+// -----------------------------------------------------------------------------
+// Resumes (entity) + ResumeDocument (JSON Resume)
+// -----------------------------------------------------------------------------
+
+model Resume {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  profileId String?
+  profile   Profile? @relation(fields: [profileId], references: [id], onDelete: SetNull)
+
+  jobPostingId String?
+  jobPosting   JobPosting? @relation(fields: [jobPostingId], references: [id], onDelete: SetNull)
+
+  templateId String?
+  template   ResumeTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  metadata Json
+
+  document ResumeDocument?
+
+  coverLetter CoverLetter?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, updatedAt])
+  @@index([profileId])
+  @@index([jobPostingId])
+  @@index([templateId])
+}
+
+model ResumeDocument {
+  id       String @id @default(cuid())
+  resumeId String @unique
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  document Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([resumeId])
+}
+
+// -----------------------------------------------------------------------------
+// Cover letters (entity) + document content
+// -----------------------------------------------------------------------------
+
+model CoverLetter {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  resumeId String? @unique
+  resume   Resume? @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  jobPostingId String?
+  jobPosting   JobPosting? @relation(fields: [jobPostingId], references: [id], onDelete: SetNull)
+
+  content String @db.Text
+
+  metadata Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, updatedAt])
+  @@index([resumeId])
+  @@index([jobPostingId])
+}
+
+// -----------------------------------------------------------------------------
+// API key management + model catalog + user preferences
+// -----------------------------------------------------------------------------
+
 model ApiProvider {
   id     String @id @default(cuid())
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  name         String // User-friendly name (e.g., "My OpenAI Key")
-  provider     ProviderType // Provider type enum
-  encryptedKey String       @db.Text // AES-256-GCM encrypted API key
-  models       String[] // Array of available model IDs from the provider
+  name         String
+  provider     ProviderType
+  encryptedKey String       @db.Text
   isActive     Boolean      @default(true)
 
-  // Security enhancements
-  keyVersion   Int       @default(1) // For key rotation tracking
-  revokedAt    DateTime? // Soft revocation without deletion
-  usageCount   Int       @default(0) // Track usage frequency
-  lastUsedIp   String?   // Last IP that used this key
-  scopes       String[]  @default(["generate", "validate"]) // Permission scopes
+  keyVersion Int       @default(1)
+  revokedAt  DateTime?
+  usageCount Int       @default(0)
+  lastUsedIp String?
+  scopes     String[]  @default(["generate", "validate"])
 
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   lastUsedAt DateTime?
 
-  auditLogs  ApiKeyAuditLog[]
+  models      ApiModel[]
+  auditLogs   ApiKeyAuditLog[]
+  preferences UserAiPreference[]
 
   @@index([userId, provider])
   @@index([userId, isActive])
   @@index([revokedAt])
 }
 
-// API Key Audit Log - tracks all sensitive key operations
-model ApiKeyAuditLog {
-  id         String   @id @default(cuid())
+model ApiModel {
+  id         String      @id @default(cuid())
   providerId String
   provider   ApiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  
-  action     ApiKeyAuditAction
-  userId     String
-  ipAddress  String?
-  userAgent  String?
-  
-  // Additional context
-  metadata   Json?    // {modelUsed, tokensConsumed, endpoint, etc.}
-  success    Boolean  @default(true)
+
+  modelKey    String
+  displayName String?
+  description String?
+  isActive    Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  preferences UserAiPreference[]
+
+  @@unique([providerId, modelKey])
+  @@index([providerId])
+}
+
+model UserAiPreference {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  feature AiFeatureKey
+
+  providerId String
+  provider   ApiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  modelId String?
+  model   ApiModel? @relation(fields: [modelId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, feature])
+  @@index([userId])
+  @@index([providerId])
+  @@index([modelId])
+}
+
+model ApiKeyAuditLog {
+  id         String      @id @default(cuid())
+  providerId String
+  provider   ApiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  action       ApiKeyAuditAction
+  userId       String
+  ipAddress    String?
+  userAgent    String?
+  metadata     Json?
+  success      Boolean           @default(true)
   errorMessage String?
-  
-  timestamp  DateTime @default(now())
+  timestamp    DateTime          @default(now())
 
   @@index([providerId, timestamp(sort: Desc)])
   @@index([userId, timestamp(sort: Desc)])
   @@index([action, timestamp(sort: Desc)])
 }
 
-// Enum for API key audit actions
-enum ApiKeyAuditAction {
-  KEY_CREATED
-  KEY_ROTATED
-  KEY_REVOKED
-  KEY_DELETED
-  KEY_DECRYPTED  // When key is decrypted for use
-  KEY_VALIDATED  // External API validation
-  KEY_USED       // When key is used for AI generation
-  KEY_SCOPE_CHANGED
-}
+// -----------------------------------------------------------------------------
+// Notifications + audit (keep flexible)
+// -----------------------------------------------------------------------------
 
-// Notification types
-enum NotificationType {
-  RESUME_GENERATED
-  COVER_LETTER_GENERATED
-  PROFILE_UPDATED
-  EXPORT_COMPLETE
-  SYSTEM
-}
-
-// User notifications
 model Notification {
-  id        String           @id @default(cuid())
-  userId    String
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  type      NotificationType
-  title     String
-  message   String
-  isRead    Boolean          @default(false)
+  type    NotificationType
+  title   String
+  message String
+  isRead  Boolean          @default(false)
 
-  // Action data - allows clicking to navigate
-  actionUrl String?          // URL to navigate to when clicked
-  actionLabel String?        // Button text (e.g., "View Resume", "Open Cover Letter")
+  actionUrl   String?
+  actionLabel String?
 
-  // Resource reference for linking
-  resourceType String?       // e.g., "resume", "cover-letter", "profile"
-  resourceId   String?       // ID of the linked resource
+  resourceType String?
+  resourceId   String?
 
-  // Metadata for additional context
-  metadata  Json?            // {jobTitle, companyName, etc.}
-
-  createdAt DateTime         @default(now())
-  expiresAt DateTime?        // Optional expiration
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
 
   @@index([userId, isRead, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
 }
 
-// Enum for audit log actions
-enum AuditAction {
-  // Authentication
-  LOGIN
-  LOGOUT
-  LOGIN_FAILED
-  PASSWORD_CHANGE
-  
-  // Profile operations
-  PROFILE_CREATE
-  PROFILE_UPDATE
-  PROFILE_DELETE
-  PROFILE_SET_DEFAULT
-  PROFILE_PUBLISH
-  
-  // Resume operations
-  RESUME_CREATE
-  RESUME_UPDATE
-  RESUME_DELETE
-  RESUME_GENERATE
-  RESUME_EXPORT_PDF
-  
-  // Cover letter operations
-  COVER_LETTER_CREATE
-  COVER_LETTER_UPDATE
-  COVER_LETTER_DELETE
-  COVER_LETTER_GENERATE
-  
-  // Template operations
-  TEMPLATE_CREATE
-  TEMPLATE_UPDATE
-  TEMPLATE_DELETE
-  
-  // API key operations
-  API_KEY_ADD
-  API_KEY_UPDATE
-  API_KEY_DELETE
-  
-  // Settings
-  SETTINGS_UPDATE
-}
-
-// Audit Log for security and compliance tracking
 model AuditLog {
-  id        String      @id @default(cuid())
-  userId    String?     // Nullable for anonymous/failed auth attempts
-  action    AuditAction
-  
-  // Resource being acted upon
-  resourceType String?  // e.g., "profile", "resume", "cover-letter"
-  resourceId   String?  // ID of the resource
-  
-  // Request metadata
-  ipAddress    String?
-  userAgent    String?
-  
-  // Additional context (JSON for flexibility)
-  metadata     Json?    // {details, previousValue, newValue, etc.}
-  
-  // Success/failure tracking
-  success      Boolean  @default(true)
+  id     String  @id @default(cuid())
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  action AuditAction
+
+  resourceType String?
+  resourceId   String?
+
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+
+  success      Boolean @default(true)
   errorMessage String?
-  
-  timestamp    DateTime @default(now())
+
+  timestamp DateTime @default(now())
 
   @@index([userId, timestamp(sort: Desc)])
   @@index([action, timestamp(sort: Desc)])

@@ -65,7 +65,7 @@ export interface ITemplateRepository {
   /**
    * Delete template
    */
-  delete(id: string): Promise<void>;
+  delete(id: string): Promise<ResumeTemplate>;
 
   /**
    * Count templates by category

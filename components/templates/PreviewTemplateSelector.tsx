@@ -14,6 +14,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { TemplateBase } from '@/lib/types/template';
+import { useComponentLogger } from '@/hooks';
+import { apiV1, type TemplateListResponseDto } from '@/lib/client';
 
 interface PreviewTemplateSelectorProps {
   selectedTemplateId: string | null;
@@ -28,6 +30,7 @@ export function PreviewTemplateSelector({
   variant = 'outline',
   size = 'sm'
 }: Readonly<PreviewTemplateSelectorProps>) {
+  const log = useComponentLogger('PreviewTemplateSelector');
   const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -36,14 +39,14 @@ export function PreviewTemplateSelector({
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/template');
-        if (!response.ok) {
-          throw new Error('Failed to fetch templates');
+        const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<TemplateBase>>();
+        if (result.error) {
+          throw new Error(result.error);
         }
-        const data = await response.json();
-        setTemplates(data.templates || []);
+
+        setTemplates(result.data?.templates ?? []);
       } catch (error) {
-        console.error('Error fetching templates:', error);
+        log.error('Error fetching templates', error);
         toast.error('Failed to load templates');
       } finally {
         setIsLoading(false);
@@ -53,7 +56,7 @@ export function PreviewTemplateSelector({
     if (isOpen && templates.length === 0) {
       fetchTemplates();
     }
-  }, [isOpen, templates.length]);
+  }, [isOpen, templates.length, log]);
 
   const handleTemplateSelect = (templateId: string | null) => {
     onTemplateChange(templateId);

@@ -67,10 +67,12 @@ export function TemplateGallery({ templates, showAdminActions = false }: Templat
           }
           : undefined,
       }}
-      filters={categoryFilters}
-      selectedFilter={selectedCategory}
-      onFilterChange={setSelectedCategory}
-      headerActions={headerActions}
+      header={{
+        filters: categoryFilters,
+        selectedFilter: selectedCategory,
+        onFilterChange: setSelectedCategory,
+        actions: headerActions,
+      }}
       renderItem={(template) => (
         <TemplateCard
           key={template.id}

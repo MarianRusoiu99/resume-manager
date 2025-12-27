@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
-import { apiFetch } from '@/lib/utils/api-client';
-import { PageHeader } from '@/components/layout/PageHeader';
-import { PageContainer } from '@/components/layout/PageContainer';
+import { apiV1, type ApiProvider, type ApiProviderModelInfo } from '@/lib/client';
+import { Page } from '@/components/layout/Page';
 import { Button, Card } from '@/components/ui';
+import { Callout } from '@/components/shared';
+import { EmptyState, LoadingState } from '@/components/shared/states';
 import { Plus, Trash2, Eye, EyeOff, Key, CheckCircle, XCircle } from 'lucide-react';
 import {
   Dialog,
@@ -14,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useComponentLogger } from '@/hooks';
 
 // Provider configs fetched from backend
 const PROVIDER_NAMES: Record<string, string> = {
@@ -22,24 +24,9 @@ const PROVIDER_NAMES: Record<string, string> = {
   google: 'Google AI',
 };
 
-interface ModelInfo {
-  id: string;
-  name: string;
-  description?: string;
-}
-
-interface ApiProvider {
-  id: string;
-  name: string;
-  provider: string;
-  keyPreview: string;
-  models: ModelInfo[]; // Changed from string[] to ModelInfo[]
-  isActive: boolean;
-  createdAt: string;
-  lastUsedAt: string | null;
-}
 
 export default function ApiKeysPage() {
+  const log = useComponentLogger('ApiKeysPage');
   const [providers, setProviders] = useState<ApiProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -54,27 +41,26 @@ export default function ApiKeysPage() {
 
   const [showApiKey, setShowApiKey] = useState(false);
 
-  useEffect(() => {
-    loadProviders();
-  }, []);
-
-  const loadProviders = async () => {
+  const loadProviders = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await apiFetch('/api/settings/api-providers');
-      if (response.ok) {
-        const data = await response.json();
-        setProviders(data);
-      } else {
-        toast.error('Failed to load API providers');
+      const result = await apiV1.SETTINGS.API_PROVIDERS.get<ApiProvider[]>();
+      if (result.error || !result.data) {
+        toast.error(result.error ?? 'Failed to load API providers');
+        return;
       }
+      setProviders(result.data);
     } catch (error) {
-      console.error('Error loading providers:', error);
+      log.error('Error loading providers', error);
       toast.error('Failed to load API providers');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [log]);
+
+  useEffect(() => {
+    loadProviders();
+  }, [loadProviders]);
 
   const handleAddProvider = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,19 +72,13 @@ export default function ApiKeysPage() {
 
     try {
       setIsSubmitting(true);
-      const response = await apiFetch('/api/settings/api-providers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newProvider.name,
-          provider: newProvider.provider,
-          apiKey: newProvider.apiKey,
-        }),
+      const result = await apiV1.SETTINGS.API_PROVIDERS.post<unknown>({
+        name: newProvider.name,
+        provider: newProvider.provider,
+        apiKey: newProvider.apiKey,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
+       if (!result.error) {
         toast.success('API provider added successfully');
         setShowAddDialog(false);
         setNewProvider({
@@ -106,12 +86,12 @@ export default function ApiKeysPage() {
           provider: 'openai',
           apiKey: '',
         });
-        loadProviders();
+        await loadProviders();
       } else {
-        toast.error(data.error || 'Failed to add provider');
+        toast.error(result.error ?? 'Failed to add provider');
       }
     } catch (error) {
-      console.error('Error adding provider:', error);
+      log.error('Error adding provider', error, { provider: newProvider.provider });
       toast.error('Failed to add provider');
     } finally {
       setIsSubmitting(false);
@@ -124,73 +104,60 @@ export default function ApiKeysPage() {
     }
 
     try {
-      const response = await apiFetch(`/api/settings/api-providers/${id}`, {
-        method: 'DELETE',
-      });
+      const result = await apiV1.SETTINGS.API_PROVIDER(id).delete<unknown>();
 
-      if (response.ok) {
+      if (!result.error) {
         toast.success('Provider deleted successfully');
         loadProviders();
       } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to delete provider');
+        toast.error(result.error ?? 'Failed to delete provider');
       }
     } catch (error) {
-      console.error('Error deleting provider:', error);
+      log.error('Error deleting provider', error, { id });
       toast.error('Failed to delete provider');
     }
   };
 
   const handleToggleProvider = async (id: string, isActive: boolean) => {
     try {
-      const response = await apiFetch(`/api/settings/api-providers/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !isActive }),
-      });
+      const result = await apiV1.SETTINGS.API_PROVIDER(id).patch<unknown>({ isActive: !isActive });
 
-      if (response.ok) {
+      if (!result.error) {
         toast.success(`Provider ${isActive ? 'disabled' : 'enabled'}`);
         loadProviders();
       } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to toggle provider');
+        toast.error(result.error ?? 'Failed to toggle provider');
       }
     } catch (error) {
-      console.error('Error toggling provider:', error);
+      log.error('Error toggling provider', error, { id });
       toast.error('Failed to toggle provider');
     }
   };
 
-  const getProviderConfig = (providerType: string): { name: string; models: ModelInfo[] } => {
+  const getProviderConfig = (providerType: string): { name: string; models: ApiProviderModelInfo[] } => {
     return {
       name: PROVIDER_NAMES[providerType] || providerType,
-      models: [] as ModelInfo[] // Models are now fetched dynamically from API
+      models: [] as ApiProviderModelInfo[],
     };
   };
 
   const renderContent = () => {
     if (isLoading) {
-      return (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Loading providers...</p>
-        </div>
-      );
+      return <LoadingState message="Loading providers..." minHeight="240px" size="sm" />;
     }
 
     if (providers.length === 0) {
       return (
-        <Card className="p-12 text-center">
-          <Key className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No API Providers Yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Add your first API provider to start generating resumes
-          </p>
-          <Button onClick={() => setShowAddDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Provider
-          </Button>
-        </Card>
+        <EmptyState
+          icon={Key}
+          title="No API Providers Yet"
+          description="Add your first API provider to start generating resumes"
+          action={{
+            label: 'Add Provider',
+            onClick: () => setShowAddDialog(true),
+            icon: <Plus className="h-4 w-4" />,
+          }}
+        />
       );
     }
 
@@ -267,26 +234,22 @@ export default function ApiKeysPage() {
 
   return (
     <>
-      <PageHeader
+      <Page
         title="API Keys"
         description="Manage your AI provider API keys securely"
         breadcrumbs={[
           { label: 'Settings', href: '/settings' },
           { label: 'API Keys' },
         ]}
-      />
-
-      <PageContainer>
-        <div className="mb-6 flex justify-end">
+        actions={
           <Button onClick={() => setShowAddDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Provider
           </Button>
-        </div>
-
+        }
+      >
         {renderContent()}
-      </PageContainer>
-
+      </Page>
 
       {/* Add Provider Dialog */}
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -363,11 +326,11 @@ export default function ApiKeysPage() {
               </p>
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-4">
-              <p className="text-sm text-blue-900 dark:text-blue-100">
+            <Callout>
+              <p>
                 <strong>Note:</strong> Available models will be automatically detected from your API key when you add the provider.
               </p>
-            </div>
+            </Callout>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button

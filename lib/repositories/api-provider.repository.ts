@@ -4,25 +4,14 @@
  */
 
 import { prisma } from '@/lib/db';
-import { ProviderType } from '@prisma/client';
-
-export interface CreateApiProviderInput {
-  userId: string;
-  name: string;
-  provider: string;
-  encryptedKey: string;
-  models: string[];
-}
-
-export interface UpdateApiProviderInput {
-  name?: string;
-  encryptedKey?: string;
-  isActive?: boolean;
-  lastUsedAt?: Date;
-  keyVersion?: number;
-  revokedAt?: Date;
-  scopes?: string[];
-}
+import { PrismaClient, ProviderType, ApiProvider, ApiModel } from '@prisma/client';
+import { GenericUserOwnedRepository } from './generic.repository';
+import type { 
+  IApiProviderRepository, 
+  CreateApiProviderInput, 
+  UpdateApiProviderInput,
+  ApiProviderWithModels 
+} from './interfaces/api-provider.repository.interface';
 
 /**
  * Convert lowercase provider string to Prisma ProviderType enum
@@ -31,15 +20,30 @@ function toProviderType(provider: string): ProviderType {
   return provider.toUpperCase() as ProviderType;
 }
 
-class ApiProviderRepository {
+export class ApiProviderRepository 
+  extends GenericUserOwnedRepository<ApiProviderWithModels, CreateApiProviderInput, UpdateApiProviderInput, any>
+  implements IApiProviderRepository 
+{
+  constructor(dbClient: PrismaClient = prisma) {
+    super('apiProvider', dbClient);
+  }
+
   /**
    * Create a new API provider
    */
-  async create(data: CreateApiProviderInput) {
-    return prisma.apiProvider.create({
+  override async create(data: CreateApiProviderInput): Promise<ApiProviderWithModels> {
+    return this.db.apiProvider.create({
       data: {
-        ...data,
+        userId: data.userId,
+        name: data.name,
+        encryptedKey: data.encryptedKey,
         provider: toProviderType(data.provider),
+        models: {
+          create: data.models.map((modelKey) => ({ modelKey })),
+        },
+      },
+      include: {
+        models: true,
       },
     });
   }
@@ -47,11 +51,13 @@ class ApiProviderRepository {
   /**
    * Find all API providers for a user
    */
-  async findByUserId(userId: string, includeInactive = false) {
-    return prisma.apiProvider.findMany({
+  async findByUserId(userId: string, includeInactive = false): Promise<ApiProviderWithModels[]> {
+    return this.findAllForUser(userId, {
       where: {
-        userId,
         ...(includeInactive ? {} : { isActive: true, revokedAt: null }),
+      },
+      include: {
+        models: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -62,11 +68,14 @@ class ApiProviderRepository {
   /**
    * Find a specific API provider by ID
    */
-  async findById(id: string, userId: string) {
-    return prisma.apiProvider.findFirst({
+  override async findById(id: string, userId?: string): Promise<ApiProviderWithModels | null> {
+    return this.db.apiProvider.findFirst({
       where: {
         id,
-        userId,
+        ...(userId ? { userId } : {}),
+      },
+      include: {
+        models: true,
       },
     });
   }
@@ -74,13 +83,16 @@ class ApiProviderRepository {
   /**
    * Find active providers by provider type
    */
-  async findByProviderType(userId: string, provider: string) {
-    return prisma.apiProvider.findMany({
+  async findByProviderType(userId: string, provider: string): Promise<ApiProviderWithModels[]> {
+    return this.db.apiProvider.findMany({
       where: {
         userId,
         provider: toProviderType(provider),
         isActive: true,
         revokedAt: null,
+      },
+      include: {
+        models: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -91,21 +103,24 @@ class ApiProviderRepository {
   /**
    * Update an API provider
    */
-  async update(id: string, userId: string, data: UpdateApiProviderInput) {
-    return prisma.apiProvider.updateMany({
+  override async update(id: string, data: UpdateApiProviderInput, userId?: string): Promise<ApiProviderWithModels> {
+    return this.db.apiProvider.update({
       where: {
         id,
-        userId,
+        ...(userId ? { userId } : {}),
       },
       data,
+      include: {
+        models: true,
+      },
     });
   }
 
   /**
    * Update last used timestamp and IP
    */
-  async updateLastUsed(id: string, ipAddress?: string) {
-    return prisma.apiProvider.update({
+  async updateLastUsed(id: string, ipAddress?: string): Promise<ApiProvider> {
+    return this.db.apiProvider.update({
       where: { id },
       data: {
         lastUsedAt: new Date(),
@@ -117,8 +132,8 @@ class ApiProviderRepository {
   /**
    * Increment usage count
    */
-  async incrementUsage(id: string, ipAddress?: string) {
-    return prisma.apiProvider.update({
+  async incrementUsage(id: string, ipAddress?: string): Promise<ApiProvider> {
+    return this.db.apiProvider.update({
       where: { id },
       data: {
         usageCount: { increment: 1 },
@@ -131,20 +146,25 @@ class ApiProviderRepository {
   /**
    * Delete an API provider
    */
-  async delete(id: string, userId: string) {
-    return prisma.apiProvider.deleteMany({
+  override async delete(id: string, userId?: string): Promise<ApiProviderWithModels> {
+    const provider = await this.findById(id, userId);
+    if (!provider) throw new Error('API Provider not found');
+
+    await this.db.apiProvider.delete({
       where: {
         id,
-        userId,
+        ...(userId ? { userId } : {}),
       },
     });
+
+    return provider;
   }
 
   /**
    * Toggle active status
    */
-  async toggleActive(id: string, userId: string, isActive: boolean) {
-    return prisma.apiProvider.updateMany({
+  async toggleActive(id: string, userId: string, isActive: boolean): Promise<ApiProvider> {
+    return this.db.apiProvider.update({
       where: {
         id,
         userId,
@@ -158,8 +178,8 @@ class ApiProviderRepository {
   /**
    * Count active providers for a user
    */
-  async countActive(userId: string) {
-    return prisma.apiProvider.count({
+  async countActive(userId: string): Promise<number> {
+    return this.db.apiProvider.count({
       where: {
         userId,
         isActive: true,

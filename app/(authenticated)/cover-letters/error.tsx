@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { FileText } from 'lucide-react';
 import { RouteErrorCard } from '@/components/shared/RouteErrorCard';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -14,9 +15,11 @@ interface ErrorProps {
  * 
  * Handles errors specific to the cover letters section.
  */
+const log = createComponentLogger('CoverLettersError');
+
 export default function CoverLettersError({ error, reset }: ErrorProps) {
   useEffect(() => {
-    console.error('Cover letters error:', error);
+    log.error('Cover letters error', error);
   }, [error]);
 
   // Detect generation errors

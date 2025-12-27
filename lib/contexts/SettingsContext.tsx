@@ -28,7 +28,7 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import { API } from '@/lib/constants/routes';
+import { apiV1, type AISettings as SettingsAISettings, type ApiProvider as SettingsApiProvider } from '@/lib/client';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 
 const logger = createComponentLogger('SettingsContext');
@@ -37,27 +37,9 @@ const logger = createComponentLogger('SettingsContext');
 // Types
 // ============================================================================
 
-interface ApiProvider {
-  id: string;
-  name: string;
-  provider: string;
-  isActive: boolean;
-  keyPreview: string;
-  models: string[];
-  createdAt: string;
-  lastUsedAt: string | null;
-}
+type ApiProvider = SettingsApiProvider;
 
-interface AISettings {
-  resumeProviderId: string | null;
-  resumeModelId: string | null;
-  coverLetterProviderId: string | null;
-  coverLetterModelId: string | null;
-  enhanceProviderId: string | null;
-  enhanceModelId: string | null;
-  templateProviderId: string | null;
-  templateModelId: string | null;
-}
+type AISettings = SettingsAISettings;
 
 interface SettingsContextValue {
   // API Providers
@@ -115,15 +97,13 @@ export function SettingsProvider({
       setIsLoadingProviders(true);
       setProvidersError(null);
 
-      const response = await fetch(API.SETTINGS.API_PROVIDERS);
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to fetch providers');
+      const result = await apiV1.SETTINGS.API_PROVIDERS.get<SettingsApiProvider[]>();
+
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const data = await response.json();
-      setProviders(data);
+      setProviders(result.data ?? []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch providers';
       setProvidersError(message);
@@ -141,15 +121,13 @@ export function SettingsProvider({
       setIsLoadingAISettings(true);
       setAISettingsError(null);
 
-      const response = await fetch(API.SETTINGS.AI_MODELS);
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to fetch AI settings');
+      const result = await apiV1.SETTINGS.AI_MODELS.get<SettingsAISettings>();
+
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const data = await response.json();
-      setAISettings(data);
+      setAISettings(result.data);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch AI settings';
       setAISettingsError(message);

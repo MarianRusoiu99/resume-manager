@@ -5,9 +5,7 @@
  */
 
 import { generateText } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
-import { createAnthropic } from "@ai-sdk/anthropic";
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { extractJSON } from '@/lib/ai/agents/shared';
 import {
   templateExtractionSchema,
   TEMPLATE_EXTRACTION_PROMPT,
@@ -29,19 +27,9 @@ export interface ExtractedTemplate extends ExtractedTemplateData {
 export interface ParseTemplateInput {
   imageBase64: string;
   mimeType: string;
-  apiKey: string;
-  providerType: 'openai' | 'anthropic' | 'google';
-  modelId?: string;
+  provider: import('@/lib/ai/providers').AIProvider;
+  modelKey: string;
 }
-
-/**
- * Default vision models for each provider
- */
-const DEFAULT_VISION_MODELS: Record<string, string> = {
-  openai: 'gpt-4o',
-  anthropic: 'claude-sonnet-4-20250514',
-  google: 'gemini-2.0-flash',
-};
 
 /**
  * Retry configuration
@@ -51,30 +39,6 @@ const RETRY_CONFIG = {
   baseDelayMs: 1000,
   maxDelayMs: 10000,
 };
-
-/**
- * Create AI SDK model based on provider type
- */
-function createVisionModel(providerType: string, apiKey: string, modelId?: string) {
-  const model = modelId || DEFAULT_VISION_MODELS[providerType];
-
-  switch (providerType) {
-    case 'openai': {
-      const openai = createOpenAI({ apiKey });
-      return openai(model);
-    }
-    case 'anthropic': {
-      const anthropic = createAnthropic({ apiKey });
-      return anthropic(model);
-    }
-    case 'google': {
-      const google = createGoogleGenerativeAI({ apiKey });
-      return google(model);
-    }
-    default:
-      throw new Error(`Unsupported provider for vision: ${providerType}`);
-  }
-}
 
 /**
  * Sleep for specified milliseconds
@@ -92,29 +56,13 @@ function getRetryDelay(attempt: number): number {
 }
 
 /**
- * Clean JSON response from LLM (remove markdown code blocks if present)
- */
-function cleanJsonResponse(text: string): string {
-  let jsonText = text.trim();
-
-  // Remove markdown code blocks if present
-  if (jsonText.startsWith("```json")) {
-    jsonText = jsonText.replace(/^```json\n?/, "").replace(/\n?```$/, "");
-  } else if (jsonText.startsWith("```")) {
-    jsonText = jsonText.replace(/^```\n?/, "").replace(/\n?```$/, "");
-  }
-
-  return jsonText.trim();
-}
-
-/**
  * Extract template from image using vision API with retry logic
  * 
  * @param input - Parse template input with image data and provider info
  * @returns Extracted template with HTML and CSS
  */
 export async function parseTemplateFromImage(input: ParseTemplateInput): Promise<ExtractedTemplate> {
-  const { imageBase64, mimeType, apiKey, providerType, modelId } = input;
+  const { imageBase64, mimeType, provider, modelKey } = input;
 
   let lastError: Error | null = null;
 
@@ -126,7 +74,7 @@ export async function parseTemplateFromImage(input: ParseTemplateInput): Promise
         await sleep(delay);
       }
 
-      const model = createVisionModel(providerType, apiKey, modelId);
+      const model = provider.createLanguageModel(modelKey);
 
       const { text: responseText } = await generateText({
         model,
@@ -152,9 +100,8 @@ export async function parseTemplateFromImage(input: ParseTemplateInput): Promise
         temperature: 0.3,
       });
 
-      // Clean and parse the response
-      const jsonText = cleanJsonResponse(responseText);
-      const rawData = JSON.parse(jsonText);
+       // Extract + parse the response
+       const rawData = JSON.parse(extractJSON(responseText));
 
       // Validate with Zod schema
       const validationResult = templateExtractionSchema.safeParse(rawData);
@@ -176,7 +123,9 @@ export async function parseTemplateFromImage(input: ParseTemplateInput): Promise
 
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      logger.error(`Template parsing attempt ${attempt + 1} failed:`, lastError.message);
+      logger.error(`Template parsing attempt ${attempt + 1} failed`, lastError, {
+        attempt: attempt + 1,
+      });
 
       // Don't retry on validation errors (they won't get better)
       if (lastError.message.includes('Invalid AI response')) {
@@ -198,10 +147,7 @@ export async function parseTemplateFromImageLegacy(
   mimeType: string,
   apiKey: string
 ): Promise<ExtractedTemplate> {
-  return parseTemplateFromImage({
-    imageBase64,
-    mimeType,
-    apiKey,
-    providerType: 'openai', // Default to OpenAI for legacy calls
-  });
+  throw new Error(
+    'parseTemplateFromImageLegacy is no longer supported. Call parseTemplateFromImage with a resolved provider/modelKey.'
+  );
 }

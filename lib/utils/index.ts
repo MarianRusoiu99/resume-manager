@@ -4,6 +4,11 @@
  */
 
 export { logger, withTiming, createTimedLogger } from './logger';
+export {
+  isServiceResult,
+  serviceResultToActionResult,
+  failureActionResult,
+} from './result';
 export { clientLogger, createComponentLogger, ClientLogger } from './client-logger';
 export { cn } from './cn';
 export {
@@ -23,8 +28,16 @@ export {
     A4_DIMENSIONS
 } from './pdf-renderer';
 export {
+    sanitizeTemplate,
+    sanitizeTemplateHtml,
+    sanitizeTemplateCss,
+    type SanitizedTemplate,
+} from './template-sanitizer';
+export {
     formatDate,
     formatDateRange,
     formatMonthYear,
     getRelativeTime,
 } from './formatters';
+
+export { sanitizeCallbackUrl } from './redirects';

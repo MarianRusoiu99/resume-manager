@@ -3,6 +3,10 @@
  * Provides reusable functions for multi-page document preview with iframe scrolling
  */
 
+import { clientLogger } from '@/lib/utils/client-logger';
+
+const log = clientLogger.forComponent('pagination');
+
 /** A4 page height in pixels at 96 DPI (297mm) */
 export const A4_HEIGHT = 1123;
 
@@ -48,7 +52,7 @@ export function calculateTotalPages(
  */
 export function configureIframeScrolling(iframeDocument: Document): void {
   if (!iframeDocument?.documentElement) {
-    console.error('configureIframeScrolling: Invalid iframe document');
+    log.error('configureIframeScrolling: Invalid iframe document');
     throw new Error('Invalid iframe document');
   }
 
@@ -194,11 +198,10 @@ export function configureIframeScrolling(iframeDocument: Document): void {
  */
 export function scrollToPage(
   iframeDocument: Document,
-  pageNumber: number,
-  pageHeight: number = A4_HEIGHT
+  pageNumber: number
 ): void {
   if (!iframeDocument?.documentElement) {
-    console.error('scrollToPage: Invalid iframe document');
+    log.error('scrollToPage: Invalid iframe document');
     throw new Error('Invalid iframe document');
   }
 
@@ -209,7 +212,7 @@ export function scrollToPage(
 
   // Calculate the translation needed to show the desired page
   // No padding offset needed - content handles its own margins via @page CSS
-  const translateY = -(pageNumber - 1) * pageHeight;
+
 
   // Debug: Translation details
   // console.log(`📄 Translating page container by ${translateY}px (page ${pageNumber}, page height: ${pageHeight}px)`);
@@ -301,17 +304,11 @@ export function setupIframePagination(
   try {
     // Configure page-based rendering
     configureIframeScrolling(iframeDoc);
-
-    // Wait for the DOM to settle and measure accurately
-    // Force a reflow to ensure accurate measurements
-    const _forceReflow = iframeDoc.body.offsetHeight;
-    // Debug: Forced reflow
-    // console.log('📄 Forced reflow, body height:', _forceReflow);
-
+    
     // Calculate total pages based on page container content
     const pageContainer = iframeDoc.getElementById('page-container');
     if (!pageContainer) {
-      console.error('Page container not found after configuration');
+      log.error('Page container not found after configuration');
       return null;
     }
 
@@ -333,7 +330,7 @@ export function setupIframePagination(
 
     return totalPages;
   } catch (error) {
-    console.error('Error setting up iframe pagination:', error);
+    log.error('Error setting up iframe pagination', error);
     return null;
   }
 }

@@ -12,16 +12,16 @@ import { Button } from '@/components/ui';
 import { CoverLetterList, type CoverLetterListItem } from '@/components/cover-letter/CoverLetterList';
 import { ErrorState } from '@/components/shared/states';
 import { useFetch } from '@/hooks/useDataFetching';
-import { API, ROUTES } from '@/lib/constants';
+import { ROUTES } from '@/lib/constants';
+import { apiV1 } from '@/lib/client';
 import { FileText } from 'lucide-react';
 
 interface CoverLetter extends CoverLetterListItem {
-  jobDescription: string;
   resumeId: string | null;
-  resume: {
-    id: string;
-    jobDescription: string;
-    createdAt: string;
+  jobPostingId: string | null;
+  jobPosting: {
+    title: string | null;
+    company: { name: string } | null;
   } | null;
   metadata: {
     model?: string;
@@ -46,7 +46,7 @@ export default function CoverLettersPage() {
     error,
     refetch,
     mutate,
-  } = useFetch<CoverLettersResponse>(API.COVER_LETTER.LIST);
+  } = useFetch<CoverLettersResponse>(apiV1.COVER_LETTER.LIST.url);
 
   const coverLetters = data?.coverLetters ?? [];
 
@@ -62,15 +62,15 @@ export default function CoverLettersPage() {
       title="My Cover Letters"
       description="Manage all your generated cover letters"
       breadcrumbs={[{ label: "Cover Letters" }]}
-    >
-      <div className="flex justify-end mb-6">
+      actions={
         <Link href={ROUTES.GENERATE_COVER_LETTER}>
           <Button>
             <FileText className="w-4 h-4 mr-2" />
             Generate New
           </Button>
         </Link>
-      </div>
+      }
+    >
 
       {error && (
         <ErrorState

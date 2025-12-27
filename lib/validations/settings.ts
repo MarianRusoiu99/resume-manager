@@ -21,18 +21,18 @@ import { ProviderType } from '@prisma/client';
  * 
  * - OPENAI: Full support via @ai-sdk/openai
  * - GOOGLE: Full support via @ai-sdk/google
- * - ANTHROPIC: Placeholder - requires @ai-sdk/anthropic package
+ * - ANTHROPIC: Full support via @ai-sdk/anthropic
  * 
  * COHERE and MISTRAL are defined in Prisma but not yet implemented.
  */
-export const SUPPORTED_PROVIDERS = ['OPENAI', 'GOOGLE'] as const;
+export const SUPPORTED_PROVIDERS = ['OPENAI', 'GOOGLE', 'ANTHROPIC'] as const;
 export type SupportedProviderType = typeof SUPPORTED_PROVIDERS[number];
 
 /**
  * Provider type schema (lowercase for API input)
  * Maps to the supported providers
  */
-export const providerTypeSchema = z.enum(['openai', 'google']);
+export const providerTypeSchema = z.enum(['openai', 'google', 'anthropic']);
 
 /**
  * All provider types from Prisma (for reference only)
@@ -48,7 +48,8 @@ export const allProviderTypesSchema = z.nativeEnum(ProviderType);
  */
 const API_KEY_PATTERNS: Record<SupportedProviderType, RegExp> = {
   OPENAI: /^sk-[a-zA-Z0-9-_]{20,}$/,
-  GOOGLE: /^AI[a-zA-Z0-9-_]{30,}$/,
+  GOOGLE: /^AIza[a-zA-Z0-9_-]{35}$/,
+  ANTHROPIC: /^sk-ant-[a-zA-Z0-9-_]{95,}$/,
 };
 
 /**
@@ -57,6 +58,7 @@ const API_KEY_PATTERNS: Record<SupportedProviderType, RegExp> = {
 const API_KEY_MIN_LENGTHS: Record<SupportedProviderType, number> = {
   OPENAI: 30,
   GOOGLE: 35,
+  ANTHROPIC: 100,
 };
 
 /**
@@ -161,6 +163,11 @@ export const enhanceRequestSchema = z.object({
     .optional(),
   contentType: contentTypeSchema.default('text'),
   modelId: z.string().optional(),
+  attachments: z.array(z.object({
+    type: z.string(),
+    content: z.string(),
+    name: z.string(),
+  })).optional(),
 });
 
 export type EnhanceRequestInput = z.infer<typeof enhanceRequestSchema>;

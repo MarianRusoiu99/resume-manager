@@ -2,22 +2,14 @@
 
 import { profileService } from '@/lib/services/profile.service';
 import { withServerAction } from '@/lib/actions/with-server-action';
-import { resumeSchema, type Resume } from '@/lib/validations/jsonresume';
+import { type Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Get all profiles for the current user
  */
 export const getProfiles = withServerAction(
     'getProfiles',
-    async (session) => {
-        const result = await profileService.getProfiles(session.user.id);
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return result.data || [];
-    },
+    async (session) => profileService.getProfiles(session.user.id),
     { resourceType: 'profile' }
 );
 
@@ -26,15 +18,7 @@ export const getProfiles = withServerAction(
  */
 export const getProfile = withServerAction(
     'getProfile',
-    async (session, profileId: string) => {
-        const result = await profileService.getProfileById(profileId, session.user.id);
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return result.data;
-    },
+    async (session, profileId: string) => profileService.getProfileById(profileId, session.user.id),
     { resourceType: 'profile' }
 );
 
@@ -44,24 +28,12 @@ export const getProfile = withServerAction(
 export const createProfile = withServerAction(
     'createProfile',
     async (session, name: string, resume: Resume, isDefault: boolean = false) => {
-        // Validate resume data
-        const validationResult = resumeSchema.safeParse(resume);
-        if (!validationResult.success) {
-            throw new Error('Invalid resume data: ' + validationResult.error.issues[0].message);
-        }
-
-        const result = await profileService.createProfile(
+        return profileService.createProfile(
             session.user.id,
             name,
-            validationResult.data,
+            resume,
             isDefault
         );
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return result.data;
     },
     {
         auditAction: 'PROFILE_CREATE',
@@ -78,28 +50,16 @@ export const updateProfile = withServerAction(
     async (
         session,
         profileId: string,
-        data: Partial<{ name: string; resume: Resume; isDefault: boolean }>
+        data: Partial<{
+            name: string;
+            resume: Resume;
+            isDefault: boolean;
+            isPublic: boolean;
+            publicSlug: string | null;
+            selectedTemplateId: string | null;
+        }>
     ) => {
-        // Validate resume data if provided
-        if (data.resume) {
-            const validationResult = resumeSchema.safeParse(data.resume);
-            if (!validationResult.success) {
-                throw new Error('Invalid resume data: ' + validationResult.error.issues[0].message);
-            }
-            data.resume = validationResult.data;
-        }
-
-        const result = await profileService.updateProfile(
-            profileId,
-            session.user.id,
-            data
-        );
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return result.data;
+        return profileService.updateProfile(profileId, session.user.id, data);
     },
     {
         auditAction: 'PROFILE_UPDATE',
@@ -113,15 +73,7 @@ export const updateProfile = withServerAction(
  */
 export const deleteProfile = withServerAction(
     'deleteProfile',
-    async (session, profileId: string) => {
-        const result = await profileService.deleteProfile(profileId, session.user.id);
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return undefined;
-    },
+    async (session, profileId: string) => profileService.deleteProfile(profileId, session.user.id),
     {
         auditAction: 'PROFILE_DELETE',
         resourceType: 'profile',
@@ -134,15 +86,7 @@ export const deleteProfile = withServerAction(
  */
 export const setDefaultProfile = withServerAction(
     'setDefaultProfile',
-    async (session, profileId: string) => {
-        const result = await profileService.setDefaultProfile(profileId, session.user.id);
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return undefined;
-    },
+    async (session, profileId: string) => profileService.setDefaultProfile(profileId, session.user.id),
     {
         auditAction: 'PROFILE_SET_DEFAULT',
         resourceType: 'profile',
@@ -155,19 +99,8 @@ export const setDefaultProfile = withServerAction(
  */
 export const duplicateProfile = withServerAction(
     'duplicateProfile',
-    async (session, profileId: string, newName?: string) => {
-        const result = await profileService.duplicateProfile(
-            profileId,
-            session.user.id,
-            newName
-        );
-
-        if (!result.success) {
-            throw new Error(result.error);
-        }
-
-        return result.data;
-    },
+    async (session, profileId: string, newName?: string) =>
+        profileService.duplicateProfile(profileId, session.user.id, newName),
     {
         auditAction: 'PROFILE_CREATE',
         resourceType: 'profile',

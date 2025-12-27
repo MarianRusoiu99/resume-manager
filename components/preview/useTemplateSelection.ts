@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { apiV1, type ResumeDetailsDto, type TemplateListResponseDto } from '@/lib/client';
 
 const logger = createComponentLogger('useTemplateSelection');
 
@@ -25,29 +26,27 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
   // Helper: Load template from entity (profile/resume)
   const loadFromEntity = useCallback(async (): Promise<string | null> => {
     if (!entityId) return null;
-    
-    const endpoint = isProfile ? `/api/profile/${entityId}` : `/api/resume/${entityId}`;
-    const response = await fetch(endpoint);
-    
-    if (response.ok) {
-      const data = await response.json();
-      return isProfile ? data.selectedTemplateId : data.templateId;
+
+    if (isProfile) {
+      // API client unwraps the `{ data: ... }` envelope automatically
+      const profileResult = await apiV1.PROFILE.GET(entityId).get<{ selectedTemplateId: string | null }>();
+      if (profileResult.error) return null;
+      return profileResult.data?.selectedTemplateId ?? null;
     }
-    
-    return null;
+
+    const resumeResult = await apiV1.RESUME.GET(entityId).get<Pick<ResumeDetailsDto, 'templateId'>>();
+    if (resumeResult.error) return null;
+    return resumeResult.data?.templateId ?? null;
   }, [entityId, isProfile]);
 
   // Helper: Load default template
   const loadDefaultTemplate = useCallback(async (): Promise<string | null> => {
-    const response = await fetch('/api/template?limit=1');
-    if (response.ok) {
-      const { templates } = await response.json();
-      if (templates && templates.length > 0) {
-        return templates[0].id;
-      }
-    }
-    return null;
+    const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto>();
+    if (result.error || !result.data?.templates?.length) return null;
+
+    return result.data.templates[0].id;
   }, []);
+
 
   // Load template preference on mount
   useEffect(() => {
@@ -105,20 +104,12 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
     // Save template selection to the appropriate entity
     if (entityId && templateId) {
       try {
-        const endpoint = isProfile ? `/api/profile/${entityId}` : `/api/resume/${entityId}`;
-        const body = isProfile 
-          ? { selectedTemplateId: templateId }
-          : { templateId };
-        
-        const response = await fetch(endpoint, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        
-        if (!response.ok) {
-          const error = await response.json();
-          logger.error('Failed to save template selection', new Error(error.error || 'Unknown error'));
+        const result = isProfile
+          ? await apiV1.PROFILE.GET(entityId).patch<unknown>({ selectedTemplateId: templateId })
+          : await apiV1.RESUME.TEMPLATE(entityId).patch<unknown>({ templateId });
+
+        if (result.error) {
+          logger.error('Failed to save template selection', new Error(result.error));
         }
       } catch (error) {
         logger.error('Error saving template', error);

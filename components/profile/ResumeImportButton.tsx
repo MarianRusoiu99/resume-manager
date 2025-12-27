@@ -16,17 +16,19 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Image, FileType, ClipboardPaste, Upload, ChevronDown, Loader2 } from "lucide-react";
+import { FileText, Image as ImageIcon, FileType, ClipboardPaste, Upload, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiFetch } from "@/lib/utils/api-client";
+import { apiV1 } from "@/lib/client";
+import { createComponentLogger } from "@/lib/utils/client-logger";
 
 interface ResumeImportButtonProps {
     onImportSuccess: (resume: Resume) => void;
 }
 
 export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportButtonProps>) {
+    const log = createComponentLogger("ResumeImportButton");
     const [isUploading, setIsUploading] = useState(false);
     const [showJsonDialog, setShowJsonDialog] = useState(false);
     const [jsonText, setJsonText] = useState("");
@@ -52,28 +54,23 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
         }
 
         setIsUploading(true);
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("fileType", currentFileType);
 
         try {
-            const response = await apiFetch("/api/resume/import", {
-                method: "POST",
-                body: formData,
-            });
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("fileType", currentFileType);
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Failed to import resume");
+            const result = await apiV1.RESUME.IMPORT.postForm<{ resume?: unknown }>(formData);
+
+            if (result.error || !result.data?.resume) {
+                throw new Error(result.error ?? "Failed to import resume");
             }
 
-            const data = await response.json();
-
             // Validate the extracted resume data
-            const validation = resumeSchema.safeParse(data.resume);
-            console.log("Validation result:", validation);
+            const validation = resumeSchema.safeParse(result.data.resume);
+            log.debug("Validation result", { success: validation.success });
             if (!validation.success) {
-                console.error("Validation errors:", validation.error.issues);
+                log.error("Validation errors", undefined, { issues: validation.error.issues });
                 toast.error("Extracted data doesn't match resume schema. Please try again or use JSON paste.");
                 return;
             }
@@ -81,7 +78,7 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
             onImportSuccess(validation.data);
             toast.success(`Resume imported successfully from ${currentFileType.toUpperCase()}!`);
         } catch (error) {
-            console.error("Import error:", error);
+            log.error("Import error", error);
             toast.error(error instanceof Error ? error.message : "Failed to import resume");
         } finally {
             setIsUploading(false);
@@ -103,7 +100,7 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
             const validation = resumeSchema.safeParse(parsedData);
 
             if (!validation.success) {
-                console.error("Validation errors:", validation.error.issues);
+                log.error("Validation errors", undefined, { issues: validation.error.issues });
                 const firstError = validation.error.issues[0];
                 const errorMessage = firstError
                     ? `Invalid field: ${firstError.path.join(".")} - ${firstError.message}`
@@ -117,7 +114,7 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
             setShowJsonDialog(false);
             setJsonText("");
         } catch (error) {
-            console.error("JSON parse error:", error);
+            log.error("JSON parse error", error);
             toast.error("Invalid JSON format. Please check your input.");
         }
     };
@@ -127,7 +124,7 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
             const clipboardText = await navigator.clipboard.readText();
             setJsonText(clipboardText);
         } catch (error) {
-            console.debug("Clipboard access failed:", error);
+            log.debug("Clipboard access failed", { error });
             toast.info("Please paste your JSON Resume manually");
         } finally {
             setShowJsonDialog(true);
@@ -159,7 +156,7 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
                         Import from PDF
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleFileSelect(".png,.jpg,.jpeg", "image")}>
-                        <Image className="h-4 w-4 mr-2" />
+                        <ImageIcon className="h-4 w-4 mr-2" />
                         Import from Image
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleFileSelect(".doc,.docx", "word")}>
@@ -178,6 +175,7 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
+                title="Import resume file"
                 onChange={handleFileChange}
             />
 

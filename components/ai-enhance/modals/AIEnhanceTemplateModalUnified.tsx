@@ -58,15 +58,21 @@ export function AIEnhanceTemplateModalUnified({
     instructions,
   } = useTemplateEnhancement();
 
-  // Set template data when modal opens
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    onOpenChange(nextOpen);
+    if (nextOpen) {
       setTemplate(originalHtml, originalCss);
       reset();
       setViewMode('visual');
       setCodeTab('html');
     }
-  }, [open, originalHtml, originalCss, setTemplate, reset]);
+  }, [onOpenChange, originalHtml, originalCss, setTemplate, reset]);
+
+  // Keep template inputs in sync if props change while open.
+  useEffect(() => {
+    if (!open) return;
+    setTemplate(originalHtml, originalCss);
+  }, [open, originalHtml, originalCss, setTemplate]);
 
   const handleAccept = useCallback(() => {
     if (enhancedContent) {
@@ -106,7 +112,7 @@ export function AIEnhanceTemplateModalUnified({
   return (
     <AIEnhanceBaseModal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       title={title}
       description={description}
       footer={footer}

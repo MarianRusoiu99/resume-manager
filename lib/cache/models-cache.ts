@@ -79,7 +79,7 @@ class ModelsCache extends SimpleCache<CachedProviderModels> {
    * Invalidate all models cache for a user
    * Call this when user adds/removes/updates providers
    */
-  invalidateUser(_userId: string): void {
+  invalidateUser(): void {
     // Since SimpleCache doesn't support prefix deletion,
     // we'll need to track user keys separately
     // For now, clear all (safe but less efficient)

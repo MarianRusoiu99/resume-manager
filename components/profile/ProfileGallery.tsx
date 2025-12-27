@@ -10,24 +10,16 @@ import { Plus, User } from "lucide-react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createProfile } from "@/app/actions/profile";
-import { apiFetch } from "@/lib/utils/api-client";
-
-interface Profile {
-  id: string;
-  userId: string;
-  name: string;
-  isDefault: boolean;
-  resume: Resume | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import { apiV1, type ProfileDto } from "@/lib/client";
+import { useComponentLogger } from "@/hooks";
 
 interface ProfileGalleryProps {
-  initialProfiles: Profile[];
+  initialProfiles: ProfileDto[];
 }
 
 export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps>) {
-  const [profiles, setProfiles] = useState<Profile[]>(initialProfiles);
+  const log = useComponentLogger("ProfileGallery");
+  const [profiles, setProfiles] = useState<ProfileDto[]>(initialProfiles);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -35,13 +27,17 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
   useEffect(() => {
     const refreshProfiles = async () => {
       try {
-        const response = await apiFetch("/api/profile");
-        if (response.ok) {
-          const data = await response.json();
-          setProfiles(data);
+        const result = await apiV1.PROFILE.LIST.get<ProfileDto[]>();
+        if (!result.error && result.data) {
+          setProfiles(
+            result.data.map((p) => ({
+              ...p,
+              resume: p.resume as Resume | null,
+            }))
+          );
         }
       } catch (error) {
-        console.error("Failed to refresh profiles:", error);
+        log.error("Failed to refresh profiles", error);
       }
     };
 
@@ -53,7 +49,7 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
+  }, [log]);
 
   const handleCreateProfile = () => {
     startTransition(async () => {
@@ -66,15 +62,22 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
       if (result.success) {
         toast.success("Profile created successfully");
         // Add the new profile to the local state
-        setProfiles((prev) => [...prev, {
-          id: result.data.id,
-          userId: result.data.userId,
-          name: result.data.name,
-          isDefault: result.data.isDefault,
-          resume: result.data.resume as Resume | null,
-          createdAt: result.data.createdAt.toISOString(),
-          updatedAt: result.data.updatedAt.toISOString(),
-        }]);
+        setProfiles((prev) => [
+          ...prev,
+          {
+            id: result.data.id,
+            userId: result.data.userId,
+            name: result.data.name,
+            resume: result.data.resume as Resume | null,
+            templateId: result.data.templateId ?? null,
+            selectedTemplateId: result.data.selectedTemplateId ?? null,
+            isDefault: result.data.isDefault,
+            isPublic: result.data.isPublic,
+            publicSlug: result.data.publicSlug,
+            createdAt: result.data.createdAt.toISOString(),
+            updatedAt: result.data.updatedAt.toISOString(),
+          },
+        ]);
         // Navigate to edit the new profile
         router.push(`/profile/${result.data.id}`);
       } else {
@@ -116,15 +119,22 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
       if (result.success) {
         toast.success("Profile created from imported resume!");
         // Add the new profile to the local state
-        setProfiles((prev) => [...prev, {
-          id: result.data.id,
-          userId: result.data.userId,
-          name: result.data.name,
-          isDefault: result.data.isDefault,
-          resume: result.data.resume as Resume | null,
-          createdAt: result.data.createdAt.toISOString(),
-          updatedAt: result.data.updatedAt.toISOString(),
-        }]);
+        setProfiles((prev) => [
+          ...prev,
+          {
+            id: result.data.id,
+            userId: result.data.userId,
+            name: result.data.name,
+            resume: result.data.resume as Resume | null,
+            templateId: result.data.templateId ?? null,
+            selectedTemplateId: result.data.selectedTemplateId ?? null,
+            isDefault: result.data.isDefault,
+            isPublic: result.data.isPublic,
+            publicSlug: result.data.publicSlug,
+            createdAt: result.data.createdAt.toISOString(),
+            updatedAt: result.data.updatedAt.toISOString(),
+          },
+        ]);
         // Navigate to edit the new profile
         router.push(`/profile/${result.data.id}`);
       } else {
@@ -162,9 +172,11 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
           <ResumeImportButton onImportSuccess={handleImportSuccess} />
         ),
       }}
-      headerActions={headerActions}
-      showCount
-      countLabel={{ singular: "profile", plural: "profiles" }}
+      header={{
+        showCount: true,
+        countLabel: { singular: "profile", plural: "profiles" },
+        actions: headerActions,
+      }}
       renderItem={(profile) => (
         <ProfileCard
           key={profile.id}

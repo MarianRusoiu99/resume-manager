@@ -11,13 +11,12 @@ import React, {
 } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { apiV1 } from '@/lib/client';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 
-/**
- * Notification type from the API
- */
-export interface Notification {
+export type Notification = {
   id: string;
-  type: 'RESUME_GENERATED' | 'COVER_LETTER_GENERATED' | 'PROFILE_UPDATED' | 'EXPORT_COMPLETE' | 'SYSTEM';
+  type: string;
   title: string;
   message: string;
   isRead: boolean;
@@ -25,9 +24,10 @@ export interface Notification {
   actionLabel: string | null;
   resourceType: string | null;
   resourceId: string | null;
-  metadata: Record<string, unknown> | null;
+  metadata: unknown;
   createdAt: string;
-}
+};
+
 
 /**
  * Context state
@@ -47,6 +47,7 @@ interface NotificationContextActions {
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   deleteNotification: (id: string) => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
   handleNotificationAction: (notification: Notification) => void;
   openNotifications: () => void;
   closeNotifications: () => void;
@@ -62,6 +63,8 @@ interface NotificationProviderProps {
   children: ReactNode;
 }
 
+const log = createComponentLogger('NotificationProvider');
+
 export function NotificationProvider({ children }: Readonly<NotificationProviderProps>) {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -75,17 +78,16 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/notifications');
+      const result = await apiV1.NOTIFICATIONS.ROOT.get<{ notifications?: Notification[]; unreadCount?: number }>();
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch notifications');
+      if (result.error) {
+        throw new Error(result.error);
       }
 
-      const data = await response.json();
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
+      setNotifications(result.data?.notifications ?? []);
+      setUnreadCount(result.data?.unreadCount ?? 0);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      log.error('Error fetching notifications', error);
     } finally {
       setIsLoading(false);
     }
@@ -96,14 +98,13 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const response = await fetch('/api/notifications/count');
+      const result = await apiV1.NOTIFICATIONS.COUNT.get<{ count?: number }>();
 
-      if (response.ok) {
-        const data = await response.json();
-        setUnreadCount(data.count || 0);
-      }
+      if (result.error) return;
+
+      setUnreadCount(result.data?.count ?? 0);
     } catch (error) {
-      console.error('Error fetching notification count:', error);
+      log.error('Error fetching notification count', error);
     }
   }, []);
 
@@ -112,12 +113,9 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const markAsRead = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/notifications/${id}`, {
-        method: 'PATCH',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to mark notification as read');
+      const result = await apiV1.NOTIFICATIONS.ITEM(id).patch<unknown>();
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       // Update local state
@@ -126,7 +124,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      log.error('Error marking notification as read', error, { id });
     }
   }, []);
 
@@ -135,21 +133,16 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const markAllAsRead = useCallback(async () => {
     try {
-      const response = await fetch('/api/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'markAllRead' }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to mark all notifications as read');
+      const result = await apiV1.NOTIFICATIONS.ROOT.post<unknown>({ action: 'markAllRead' });
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       // Update local state
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      log.error('Error marking all notifications as read', error);
     }
   }, []);
 
@@ -158,12 +151,9 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const deleteNotification = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/notifications/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete notification');
+      const result = await apiV1.NOTIFICATIONS.ITEM(id).delete<unknown>();
+      if (result.error) {
+        throw new Error(result.error);
       }
 
       // Update local state
@@ -175,9 +165,32 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
         return prev.filter((n) => n.id !== id);
       });
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      log.error('Error deleting notification', error, { id });
     }
   }, []);
+
+  /**
+   * Clear all notifications (mark all read, then delete all)
+   */
+  const clearAllNotifications = useCallback(async () => {
+    const idsToDelete = notifications.map((n) => n.id);
+    if (idsToDelete.length === 0) return;
+
+    try {
+      // Mark all read first (preserves current API behavior)
+      const markResult = await apiV1.NOTIFICATIONS.ROOT.post<unknown>({ action: 'markAllRead' });
+      if (markResult.error) {
+        throw new Error(markResult.error);
+      }
+
+      await Promise.all(idsToDelete.map((id) => apiV1.NOTIFICATIONS.ITEM(id).delete<unknown>()));
+
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (error) {
+      log.error('Error clearing all notifications', error);
+    }
+  }, [notifications]);
 
   /**
    * Handle notification action (navigate to URL)
@@ -252,13 +265,21 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
     // Initial fetch of notifications
     fetchUnreadCount();
 
+    let isClosing = false;
+
     // Set up SSE connection for real-time updates
-    const eventSource = new EventSource('/api/notifications/stream');
-    
+    const eventSource = new EventSource(apiV1.NOTIFICATIONS.STREAM.url);
+
+    const sseLog = log.withContext({ action: 'notifications-sse' });
+
     eventSource.addEventListener('connected', (event) => {
-      console.log('[SSE] Connected to notifications stream:', JSON.parse(event.data));
+      try {
+        sseLog.debug('Connected to notifications stream', { data: JSON.parse(event.data) });
+      } catch {
+        sseLog.debug('Connected to notifications stream');
+      }
     });
-    
+
     eventSource.addEventListener('notification', (event) => {
       try {
         const notification = JSON.parse(event.data);
@@ -278,20 +299,25 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
         };
         addNotification(fullNotification);
       } catch (error) {
-        console.error('[SSE] Error parsing notification:', error);
+        sseLog.error('Error parsing notification', error);
       }
     });
-    
+
     eventSource.addEventListener('heartbeat', () => {
       // Connection is alive, no action needed
     });
-    
+
     eventSource.onerror = (error) => {
-      console.error('[SSE] Connection error:', error);
+      // In dev, navigation/HMR unmounts can interrupt the request and surface as an error.
+      // Ignore disconnects caused by our own cleanup.
+      if (isClosing || eventSource.readyState === EventSource.CLOSED) return;
+
+      sseLog.error('Connection error', error);
       // EventSource will automatically try to reconnect
     };
 
     return () => {
+      isClosing = true;
       eventSource.close();
     };
   }, [fetchUnreadCount, addNotification]);
@@ -305,6 +331,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    clearAllNotifications,
     handleNotificationAction,
     openNotifications,
     closeNotifications,
@@ -319,6 +346,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    clearAllNotifications,
     handleNotificationAction,
     openNotifications,
     closeNotifications,

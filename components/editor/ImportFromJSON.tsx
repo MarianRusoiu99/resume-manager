@@ -6,6 +6,7 @@ import { useEditor } from "@/lib/contexts";
 import { toast } from "sonner";
 import { ClipboardPaste, Upload } from "lucide-react";
 import { resumeSchema } from "@/lib/validations/jsonresume";
+import { createComponentLogger } from "@/lib/utils/client-logger";
 
 /**
  * ImportFromJSON Component
@@ -14,6 +15,7 @@ import { resumeSchema } from "@/lib/validations/jsonresume";
  * or paste it directly. Validates the JSON structure before importing.
  */
 export function ImportFromJSON() {
+  const log = createComponentLogger("ImportFromJSON");
   const { updateResume } = useEditor();
   const [isImporting, setIsImporting] = useState(false);
 
@@ -45,7 +47,7 @@ export function ImportFromJSON() {
       const validation = resumeSchema.safeParse(parsedData);
       
       if (!validation.success) {
-        console.error("Validation errors:", validation.error.issues);
+        log.error("Validation errors", undefined, { issues: validation.error.issues });
         
         // Show more specific error message
         const firstError = validation.error.issues[0];
@@ -62,7 +64,7 @@ export function ImportFromJSON() {
       toast.success("Resume imported successfully from clipboard!");
       
     } catch (error) {
-      console.error("Error importing from clipboard:", error);
+      log.error("Error importing from clipboard", error);
       
       // Handle clipboard permission errors
       if (error instanceof DOMException && error.name === 'NotAllowedError') {

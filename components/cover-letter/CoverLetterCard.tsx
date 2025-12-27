@@ -6,12 +6,13 @@
 'use client';
 
 import { useTransition } from 'react';
-import { Edit, Download, Eye, FileText, Briefcase } from 'lucide-react';
+import { Download, FileText, Briefcase } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
-import { toast } from 'sonner';
+import { useToastAction } from '@/hooks';
 import { deleteCoverLetter } from '@/app/actions/cover-letter';
 import { formatDate } from '@/lib/utils';
-import { API, ROUTES } from '@/lib/constants';
+import { ROUTES } from '@/lib/constants';
+import { apiV1 } from '@/lib/client';
 
 interface CoverLetterCardProps {
   id: string;
@@ -34,7 +35,8 @@ export function CoverLetterCard({
   onEdit,
   onDelete,
 }: Readonly<CoverLetterCardProps>) {
-  const [isPending, startTransition] = useTransition();
+  const { runWithToast } = useToastAction();
+  const [, startTransition] = useTransition();
 
   const getDisplayTitle = (): string => {
     if (jobTitle && companyName) {
@@ -50,43 +52,51 @@ export function CoverLetterCard({
   };
 
   const handleExport = async () => {
-    try {
-      const response = await fetch(API.COVER_LETTER.EXPORT(id), {
-        method: 'POST',
-      });
+    await runWithToast(
+      async () => {
+        const response = await apiV1.COVER_LETTER.EXPORT(id).postFetch();
 
-      if (!response.ok) {
-        throw new Error('Failed to export cover letter');
-      }
+        if (!response.ok) {
+          throw new Error('Failed to export cover letter');
+        }
 
-      const blob = await response.blob();
-      const url = globalThis.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `cover-letter-${jobTitle || companyName || 'download'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      globalThis.URL.revokeObjectURL(url);
-      a.remove();
+        const blob = await response.blob();
+        const url = globalThis.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `cover-letter-${jobTitle || companyName || 'download'}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        globalThis.URL.revokeObjectURL(url);
+        anchor.remove();
 
-      toast.success('Cover letter exported successfully');
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to export cover letter');
-    }
+        return true;
+      },
+      {
+        successMessage: 'Cover letter exported successfully',
+        errorMessage: 'Failed to export cover letter',
+      },
+    );
   };
 
   const handleDelete = async () => {
     return new Promise<void>((resolve, reject) => {
       startTransition(async () => {
-        const result = await deleteCoverLetter(id);
-        if (result.success) {
-          toast.success('Cover letter deleted successfully');
+        const result = await runWithToast(
+          () => deleteCoverLetter(id),
+          {
+            successMessage: 'Cover letter deleted successfully',
+            errorMessage: 'Failed to delete cover letter',
+          },
+        );
+
+        if (result?.success) {
           onDelete(id);
           resolve();
-        } else {
-          toast.error(result.error || 'Failed to delete cover letter');
-          reject(new Error(result.error || 'Failed to delete'));
+          return;
         }
+
+        reject(new Error('Failed to delete'));
       });
     });
   };

@@ -1,144 +1,109 @@
 /**
  * Cover Letter Repository
- * 
+ *
  * Implements ICoverLetterRepository for data access abstraction.
  * Data access layer for cover letters with CRUD operations.
  */
 
 import { prisma } from '@/lib/db';
-import { PrismaClient, Prisma } from '@prisma/client';
-import type { ICoverLetterRepository } from './interfaces';
+import { Prisma, PrismaClient } from '@prisma/client';
 
-export interface CreateCoverLetterInput {
-  userId: string;
-  content: string;
-  jobDescription: string;
-  jobTitle?: string;
-  companyName?: string;
-  metadata: {
-    model?: string;
-    tokens?: number;
-    generationTime?: number;
-    personalInstructions?: string;
-  };
-}
-
-export interface UpdateCoverLetterInput {
-  content?: string;
-  jobDescription?: string;
-  jobTitle?: string;
-  companyName?: string;
-  metadata?: Prisma.InputJsonValue;
-}
+import { GenericUserOwnedRepository } from './generic.repository';
+import type { CreateCoverLetterInput, ICoverLetterRepository, UpdateCoverLetterInput, CoverLetterData, FindCoverLettersOptions } from './interfaces/cover-letter.repository.interface';
 
 /**
  * Cover Letter Repository Implementation
  */
-export class CoverLetterRepository implements ICoverLetterRepository {
-  private readonly db: PrismaClient;
-
+export class CoverLetterRepository
+  extends GenericUserOwnedRepository<CoverLetterData, CreateCoverLetterInput, UpdateCoverLetterInput, any>
+  implements ICoverLetterRepository
+{
   constructor(dbClient: PrismaClient = prisma) {
-    this.db = dbClient;
-  }
-
-  /**
-   * Create a new cover letter
-   */
-  async create(data: CreateCoverLetterInput) {
-    return this.db.coverLetter.create({
-      data: {
-        userId: data.userId,
-        content: data.content,
-        jobDescription: data.jobDescription,
-        jobTitle: data.jobTitle,
-        companyName: data.companyName,
-        metadata: data.metadata as Prisma.InputJsonValue,
-      },
-    });
+    super('coverLetter', dbClient);
   }
 
   /**
    * Find cover letter by ID
    */
-  async findById(id: string, userId: string) {
+  override async findById(id: string, userId?: string): Promise<CoverLetterData | null> {
     return this.db.coverLetter.findFirst({
       where: {
         id,
-        userId,
+        ...(userId ? { userId } : {}),
       },
-    });
-  }
-
-  /**
-   * Find all cover letters for a user
-   */
-  async findByUserId(
-    userId: string,
-    options?: {
-      limit?: number;
-      offset?: number;
-      orderBy?: 'createdAt' | 'updatedAt';
-      orderDir?: 'asc' | 'desc';
-    }
-  ) {
-    const { limit = 50, offset = 0, orderBy = 'createdAt', orderDir = 'desc' } = options || {};
-
-    const [coverLetters, total] = await Promise.all([
-      this.db.coverLetter.findMany({
-        where: { userId },
-        orderBy: { [orderBy]: orderDir },
-        take: limit,
-        skip: offset,
-      }),
-      this.db.coverLetter.count({ where: { userId } }),
-    ]);
-
-    return { coverLetters, total };
+      include: {
+        resume: {
+          select: {
+            id: true,
+            jobPosting: { select: { description: true } },
+          },
+        },
+        jobPosting: {
+          select: {
+            description: true,
+            title: true,
+            company: { select: { name: true } },
+          },
+        },
+      },
+    }) as Promise<CoverLetterData | null>;
   }
 
   /**
    * Update a cover letter
    */
-  async update(id: string, userId: string, data: UpdateCoverLetterInput) {
+  override async update(id: string, data: UpdateCoverLetterInput, userId?: string): Promise<CoverLetterData> {
+    const updateData: Prisma.CoverLetterUpdateInput = {
+      ...(data.content !== undefined && { content: data.content }),
+      ...(data.resumeId !== undefined && { resumeId: data.resumeId }),
+      ...(data.jobPostingId !== undefined && { jobPostingId: data.jobPostingId }),
+      ...(data.metadata !== undefined && { metadata: data.metadata }),
+    };
+
     return this.db.coverLetter.update({
-      where: {
-        id,
-        userId,
-      },
-      data: {
-        ...(data.content !== undefined && { content: data.content }),
-        ...(data.jobDescription !== undefined && { jobDescription: data.jobDescription }),
-        ...(data.jobTitle !== undefined && { jobTitle: data.jobTitle }),
-        ...(data.companyName !== undefined && { companyName: data.companyName }),
-        ...(data.metadata !== undefined && { metadata: data.metadata }),
-        updatedAt: new Date(),
-      },
-    });
+      where: { id, ...(userId ? { userId } : {}) },
+      data: updateData,
+    }) as Promise<CoverLetterData>;
   }
 
-  /**
-   * Delete a cover letter
-   */
-  async delete(id: string, userId: string) {
+  override async delete(id: string, userId?: string): Promise<CoverLetterData> {
     return this.db.coverLetter.delete({
-      where: {
-        id,
-        userId,
-      },
-    });
+      where: { id, ...(userId ? { userId } : {}) },
+    }) as Promise<CoverLetterData>;
   }
 
   /**
-   * Check if cover letter exists and belongs to user
+   * Find all cover letters for a user
    */
-  async exists(id: string, userId: string): Promise<boolean> {
-    const count = await this.db.coverLetter.count({
-      where: {
-        id,
-        userId,
-      },
-    });
-    return count > 0;
+  override async findAllForUser(
+    userId: string,
+    args?: any
+  ): Promise<CoverLetterData[]> {
+    return this.db.coverLetter.findMany({
+      ...args,
+      where: { ...args?.where, userId },
+    }) as Promise<CoverLetterData[]>;
+  }
+
+  /**
+   * Find all cover letters for a user with count
+   */
+  async findAllForUserWithCount(
+    userId: string,
+    options?: FindCoverLettersOptions
+  ): Promise<{ coverLetters: CoverLetterData[]; total: number }> {
+    const { limit = 50, offset = 0, orderBy = 'createdAt', orderDir = 'desc' } = options || {};
+
+    const [coverLetters, total] = await Promise.all([
+      this.findAllForUser(userId, {
+        orderBy: { [orderBy]: orderDir },
+        take: limit,
+        skip: offset,
+      }),
+      this.count({ userId }),
+    ]);
+
+    return { coverLetters, total };
   }
 }
 

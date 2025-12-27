@@ -1,42 +1,28 @@
-import { PrismaClient, Notification, NotificationType, Prisma } from '@prisma/client';
+import { PrismaClient, NotificationType, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
-import type { INotificationRepository } from './interfaces';
-
-/**
- * Input for creating a notification
- */
-export interface CreateNotificationInput {
-  userId: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  actionUrl?: string;
-  actionLabel?: string;
-  resourceType?: string;
-  resourceId?: string;
-  metadata?: Record<string, unknown>;
-  expiresAt?: Date;
-}
+import { GenericUserOwnedRepository } from './generic.repository';
+import type { INotificationRepository, NotificationData, CreateNotificationInput, FindNotificationsOptions } from './interfaces/notification.repository.interface';
 
 /**
  * Repository for managing notifications in the database
  * 
  * Implements INotificationRepository for data access abstraction.
  */
-export class NotificationRepository implements INotificationRepository {
-  private readonly db: PrismaClient;
-
+export class NotificationRepository 
+  extends GenericUserOwnedRepository<NotificationData, CreateNotificationInput, any, any>
+  implements INotificationRepository 
+{
   constructor(dbClient: PrismaClient = prisma) {
-    this.db = dbClient;
+    super('notification', dbClient);
   }
 
   /**
    * Create a new notification
    */
-  async create(data: CreateNotificationInput): Promise<Notification> {
+  override async create(data: CreateNotificationInput): Promise<NotificationData> {
     return this.db.notification.create({
       data: {
-        user: { connect: { id: data.userId } },
+        userId: data.userId,
         type: data.type,
         title: data.title,
         message: data.message,
@@ -47,31 +33,43 @@ export class NotificationRepository implements INotificationRepository {
         metadata: data.metadata as Prisma.InputJsonValue,
         expiresAt: data.expiresAt,
       },
-    });
+    }) as Promise<NotificationData>;
   }
 
   /**
    * Find all notifications for a user
    */
-  async findByUserId(
+  override async findAllForUser(
     userId: string,
-    options?: {
-      limit?: number;
-      includeRead?: boolean;
-    }
-  ): Promise<Notification[]> {
-    const { limit = 50, includeRead = true } = options || {};
-
+    args?: any
+  ): Promise<NotificationData[]> {
     return this.db.notification.findMany({
+      ...args,
       where: {
+        ...args?.where,
         userId,
-        ...(includeRead ? {} : { isRead: false }),
         OR: [
           { expiresAt: null },
           { expiresAt: { gt: new Date() } },
         ],
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: args?.orderBy || { createdAt: 'desc' },
+    }) as Promise<NotificationData[]>;
+  }
+
+  /**
+   * Find all notifications for a user with options
+   */
+  async findByUserId(
+    userId: string,
+    options?: FindNotificationsOptions
+  ): Promise<NotificationData[]> {
+    const { limit = 50, includeRead = true } = options || {};
+
+    return this.findAllForUser(userId, {
+      where: {
+        ...(includeRead ? {} : { isRead: false }),
+      },
       take: limit,
     });
   }
@@ -95,20 +93,14 @@ export class NotificationRepository implements INotificationRepository {
   /**
    * Mark a single notification as read
    */
-  async markAsRead(id: string, userId: string): Promise<Notification | null> {
-    // First verify the notification belongs to the user
-    const notification = await this.db.notification.findFirst({
-      where: { id, userId },
-    });
+  async markAsRead(id: string, userId: string): Promise<NotificationData | null> {
+    const notification = await this.findById(id, userId);
 
     if (!notification) {
       return null;
     }
 
-    return this.db.notification.update({
-      where: { id },
-      data: { isRead: true },
-    });
+    return this.update(id, { isRead: true }, userId);
   }
 
   /**
@@ -126,20 +118,10 @@ export class NotificationRepository implements INotificationRepository {
   /**
    * Delete a notification
    */
-  async delete(id: string, userId: string): Promise<boolean> {
-    const notification = await this.db.notification.findFirst({
-      where: { id, userId },
-    });
-
-    if (!notification) {
-      return false;
-    }
-
-    await this.db.notification.delete({
-      where: { id },
-    });
-
-    return true;
+  override async delete(id: string, userId?: string): Promise<NotificationData> {
+    return this.db.notification.delete({
+      where: { id, ...(userId ? { userId } : {}) },
+    }) as Promise<NotificationData>;
   }
 
   /**
@@ -163,10 +145,10 @@ export class NotificationRepository implements INotificationRepository {
   /**
    * Find notification by ID
    */
-  async findById(id: string): Promise<Notification | null> {
-    return this.db.notification.findUnique({
-      where: { id },
-    });
+  override async findById(id: string, userId?: string): Promise<NotificationData | null> {
+    return this.db.notification.findFirst({
+      where: { id, ...(userId ? { userId } : {}) },
+    }) as Promise<NotificationData | null>;
   }
 }
 

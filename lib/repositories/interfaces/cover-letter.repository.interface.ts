@@ -12,13 +12,23 @@ import { Prisma } from '@prisma/client';
 export interface CoverLetterData {
   id: string;
   userId: string;
+  resumeId: string | null;
+  jobPostingId: string | null;
   content: string;
-  jobDescription: string;
-  jobTitle: string | null;
-  companyName: string | null;
-  metadata: unknown;
+  metadata: Prisma.JsonValue;
   createdAt: Date;
   updatedAt: Date;
+
+  resume?: {
+    id: string;
+    jobPosting?: { description: string } | null;
+  } | null;
+
+  jobPosting?: {
+    title: string | null;
+    description: string;
+    company?: { name: string } | null;
+  } | null;
 }
 
 /**
@@ -27,14 +37,16 @@ export interface CoverLetterData {
 export interface CreateCoverLetterInput {
   userId: string;
   content: string;
-  jobDescription: string;
-  jobTitle?: string;
-  companyName?: string;
+  resumeId?: string | null;
+  jobPostingId?: string | null;
   metadata: {
     model?: string;
     tokens?: number;
     generationTime?: number;
     personalInstructions?: string;
+    jobDescription?: string;
+    jobTitle?: string;
+    companyName?: string;
   };
 }
 
@@ -43,9 +55,8 @@ export interface CreateCoverLetterInput {
  */
 export interface UpdateCoverLetterInput {
   content?: string;
-  jobDescription?: string;
-  jobTitle?: string;
-  companyName?: string;
+  resumeId?: string | null;
+  jobPostingId?: string | null;
   metadata?: Prisma.InputJsonValue;
 }
 
@@ -69,14 +80,19 @@ export interface ICoverLetterRepository {
   create(data: CreateCoverLetterInput): Promise<CoverLetterData>;
 
   /**
-   * Find cover letter by ID with user ownership check
+   * Find cover letter by ID with optional user ownership check
    */
-  findById(id: string, userId: string): Promise<CoverLetterData | null>;
+  findById(id: string, userId?: string): Promise<CoverLetterData | null>;
 
   /**
    * Find all cover letters for a user
    */
-  findByUserId(
+  findAllForUser(userId: string, args?: any): Promise<CoverLetterData[]>;
+
+  /**
+   * Find all cover letters for a user with count
+   */
+  findAllForUserWithCount(
     userId: string,
     options?: FindCoverLettersOptions
   ): Promise<{ coverLetters: CoverLetterData[]; total: number }>;
@@ -84,15 +100,15 @@ export interface ICoverLetterRepository {
   /**
    * Update a cover letter
    */
-  update(id: string, userId: string, data: UpdateCoverLetterInput): Promise<CoverLetterData>;
+  update(id: string, data: UpdateCoverLetterInput, userId?: string): Promise<CoverLetterData>;
 
   /**
    * Delete a cover letter
    */
-  delete(id: string, userId: string): Promise<CoverLetterData>;
+  delete(id: string, userId?: string): Promise<CoverLetterData>;
 
   /**
    * Check if cover letter exists and belongs to user
    */
-  exists(id: string, userId: string): Promise<boolean>;
+  exists(id: string, userId?: string): Promise<boolean>;
 }

@@ -5,15 +5,12 @@
  * The profile/resume is the SINGLE SOURCE OF TRUTH - nothing is fabricated.
  */
 
-import { generateText } from 'ai';
 import { z } from 'zod';
+import type { LanguageModel } from 'ai';
 import type { Resume } from '@/lib/validations/jsonresume';
-import type { AIProvider } from '@/lib/ai/providers';
-import { extractJSON } from '../shared/utils';
-import { 
-  RESUME_OPTIMIZATION_SYSTEM_PROMPT, 
-  buildResumeOptimizationPrompt 
-} from './prompt';
+import { ValidatedAIRunner } from '../../core/validated-runner';
+import { PromptRegistry } from '../../prompts';
+import { logger } from '@/lib/utils/logger';
 
 // ============================================================================
 // Schema
@@ -125,8 +122,7 @@ export const optimizedResumeSchema = z.object({
 export type OptimizedResume = z.infer<typeof optimizedResumeSchema>;
 
 export interface OptimizeResumeInput {
-  provider: AIProvider;
-  modelId: string;
+  model: LanguageModel;
   jobDescription: string;
   userResume: Resume;
 }
@@ -150,56 +146,29 @@ export interface OptimizeResumeResult {
 export async function optimizeResume(
   input: OptimizeResumeInput
 ): Promise<OptimizeResumeResult> {
-  const model = input.provider.createLanguageModel(input.modelId);
+  const { model } = input;
 
-  console.log('🔧 Resume optimization started');
-  console.log('   Job description length:', input.jobDescription?.length || 0);
-  console.log('   Job description preview:', input.jobDescription?.slice(0, 200) || 'EMPTY');
-
-  const prompt = buildResumeOptimizationPrompt(input.jobDescription, input.userResume);
-  console.log('   Prompt length:', prompt.length);
-
-  const result = await generateText({
-    model,
-    system: RESUME_OPTIMIZATION_SYSTEM_PROMPT,
-    prompt,
+  logger.debug('Resume optimization started');
+  
+  const { system, prompt } = PromptRegistry.render('resume-optimization', {
+    jobDescription: input.jobDescription,
+    resume: JSON.stringify(input.userResume, null, 2),
   });
 
-  console.log('🤖 AI response received');
-  console.log('   Response length:', result.text.length);
-  console.log('   Response preview:', result.text.slice(0, 500));
+  const resultSchema = z.object({
+    jobTitle: z.string(),
+    companyName: z.string(),
+    resume: optimizedResumeSchema,
+  });
 
-  try {
-    const jsonStr = extractJSON(result.text);
-    console.log('   Extracted JSON length:', jsonStr.length);
-    
-    const parsed = JSON.parse(jsonStr);
-    console.log('   Parsed object keys:', Object.keys(parsed));
-    
-    // Extract metadata
-    const jobTitle = parsed.jobTitle || 'Position';
-    const companyName = parsed.companyName || 'Company';
-    console.log('   Extracted job title:', jobTitle);
-    console.log('   Extracted company:', companyName);
-    
-    // Parse and validate the resume
-    const resume = optimizedResumeSchema.parse(parsed.resume || parsed);
-    console.log('   Resume sections:', Object.keys(resume));
-    
-    return { resume, jobTitle, companyName };
-  } catch (error) {
-    // Fallback: return original resume structure if parsing fails
-    console.error('Failed to parse optimized resume:', error);
-    return {
-      resume: {
-        basics: input.userResume.basics,
-        work: input.userResume.work,
-        education: input.userResume.education,
-        skills: input.userResume.skills,
-        projects: input.userResume.projects,
-      } as OptimizedResume,
-      jobTitle: 'Position',
-      companyName: 'Company',
-    };
-  }
+  const validatedResult = await ValidatedAIRunner.run({
+    model,
+    system,
+    prompt,
+    schema: resultSchema,
+    userId: (input as any).userId,
+    feature: 'resume-optimization',
+  });
+
+  return validatedResult;
 }

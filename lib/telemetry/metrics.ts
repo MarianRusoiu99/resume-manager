@@ -49,17 +49,6 @@ export interface Histogram {
 }
 
 /**
- * Metrics storage for the stub implementation
- */
-interface MetricValue {
-  name: string;
-  type: 'counter' | 'gauge' | 'histogram';
-  value: number;
-  labels: MetricLabels;
-  timestamp: number;
-}
-
-/**
  * In-memory metrics client
  * 
  * This is a stub implementation that:
@@ -72,10 +61,10 @@ interface MetricValue {
  * 2. Replace this with prom-client, datadog-metrics, etc.
  */
 export class MetricsClient {
-  private counters: Map<string, number> = new Map();
-  private gauges: Map<string, number> = new Map();
-  private histograms: Map<string, number[]> = new Map();
-  private enabled: boolean;
+  private readonly counters: Map<string, number> = new Map();
+  private readonly gauges: Map<string, number> = new Map();
+  private readonly histograms: Map<string, number[]> = new Map();
+  private readonly enabled: boolean;
 
   constructor(enabled = true) {
     this.enabled = enabled;

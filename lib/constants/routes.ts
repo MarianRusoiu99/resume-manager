@@ -45,73 +45,72 @@ export const ROUTES = {
 /**
  * API endpoints
  */
-export const API = {
-  // Auth
+import { API_V1_PREFIX } from "@/lib/api-versioning";
+
+export const API_V1 = {
   AUTH: {
-    REGISTER: '/api/auth/register',
-    SESSION: '/api/auth/session',
+    REGISTER: `${API_V1_PREFIX}/auth/register`,
+    SESSION: `${API_V1_PREFIX}/auth/session`,
   },
-  
-  // Profiles
   PROFILE: {
-    LIST: '/api/profile',
-    GET: (id: string) => `/api/profile/${id}` as const,
-    DUPLICATE: (id: string) => `/api/profile/${id}/duplicate` as const,
-    SET_DEFAULT: (id: string) => `/api/profile/${id}/set-default` as const,
-    EXPORT_PDF: (id: string) => `/api/profile/${id}/export-pdf` as const,
-    PUBLIC: (id: string) => `/api/profile/${id}/public` as const,
+    LIST: `${API_V1_PREFIX}/profile`,
+    GET: (id: string) => `${API_V1_PREFIX}/profile/${id}` as const,
+    DUPLICATE: (id: string) => `${API_V1_PREFIX}/profile/${id}/duplicate` as const,
+    SET_DEFAULT: (id: string) => `${API_V1_PREFIX}/profile/${id}/set-default` as const,
+    EXPORT_PDF: (id: string) => `${API_V1_PREFIX}/profile/${id}/export-pdf` as const,
+    PUBLIC: (id: string) => `${API_V1_PREFIX}/profile/${id}/public` as const,
   },
-  
-  // Resumes
   RESUME: {
-    LIST: '/api/resume/generate',
-    GET: (id: string) => `/api/resume/${id}` as const,
-    CONTENT: (id: string) => `/api/resume/${id}/content` as const,
-    PREVIEW: (id: string) => `/api/resume/${id}/preview` as const,
-    TEMPLATE: (id: string) => `/api/resume/${id}/template` as const,
-    DUPLICATE: (id: string) => `/api/resume/${id}/duplicate` as const,
-    COVER_LETTER: (id: string) => `/api/resume/${id}/cover-letter` as const,
-    GENERATE: '/api/resume/generate',
-    GENERATE_SIMPLE: '/api/resume/generate-simple',
-    GENERATE_STREAM: '/api/resume/generate-stream',
-    IMPORT: '/api/resume/import',
+    LIST: `${API_V1_PREFIX}/resume/generate`,
+    GET: (id: string) => `${API_V1_PREFIX}/resume/${id}` as const,
+    CONTENT: (id: string) => `${API_V1_PREFIX}/resume/${id}/content` as const,
+    PREVIEW: (id: string) => `${API_V1_PREFIX}/resume/${id}/preview` as const,
+    TEMPLATE: (id: string) => `${API_V1_PREFIX}/resume/${id}/template` as const,
+    DUPLICATE: (id: string) => `${API_V1_PREFIX}/resume/${id}/duplicate` as const,
+    COVER_LETTER: (id: string) => `${API_V1_PREFIX}/resume/${id}/cover-letter` as const,
+    GENERATE: `${API_V1_PREFIX}/resume/generate`,
+    GENERATE_SIMPLE: `${API_V1_PREFIX}/resume/generate-simple`,
+    GENERATE_STREAM: `${API_V1_PREFIX}/resume/generate-stream`,
+    IMPORT: `${API_V1_PREFIX}/resume/import`,
   },
-  
-  // Cover Letters
   COVER_LETTER: {
-    LIST: '/api/cover-letter',
-    GET: (id: string) => `/api/cover-letter/${id}` as const,
-    GENERATE: '/api/cover-letter/generate',
-    EXPORT: (id: string) => `/api/cover-letter/${id}/export` as const,
+    LIST: `${API_V1_PREFIX}/cover-letter`,
+    GET: (id: string) => `${API_V1_PREFIX}/cover-letter/${id}` as const,
+    GENERATE: `${API_V1_PREFIX}/cover-letter/generate`,
+    EXPORT: (id: string) => `${API_V1_PREFIX}/cover-letter/${id}/export` as const,
   },
-  
-  // Templates
   TEMPLATE: {
-    LIST: '/api/template',
-    GET: (id: string) => `/api/template/${id}` as const,
-    DUPLICATE: (id: string) => `/api/template/${id}/duplicate` as const,
-    RENDER: '/api/template/render',
+    LIST: `${API_V1_PREFIX}/template`,
+    GET: (id: string) => `${API_V1_PREFIX}/template/${id}` as const,
+    DUPLICATE: (id: string) => `${API_V1_PREFIX}/template/${id}/duplicate` as const,
+    IMPORT: `${API_V1_PREFIX}/template/import`,
   },
-  
-  // Export
   EXPORT: {
-    PDF: '/api/export/pdf',
+    PDF: `${API_V1_PREFIX}/export/pdf`,
   },
-  
-  // Settings
   SETTINGS: {
-    API_PROVIDERS: '/api/settings/api-providers',
-    API_PROVIDER: (id: string) => `/api/settings/api-providers/${id}` as const,
-    MODELS: '/api/settings/api-providers/models',
-    AI_MODELS: '/api/settings/ai-models',
-    REVOKE_PROVIDER: (id: string) => `/api/settings/api-providers/${id}/revoke` as const,
+    API_PROVIDERS: `${API_V1_PREFIX}/settings/api-providers`,
+    API_PROVIDER: (id: string) => `${API_V1_PREFIX}/settings/api-providers/${id}` as const,
+    MODELS: `${API_V1_PREFIX}/settings/api-providers/models`,
+    AI_MODELS: `${API_V1_PREFIX}/settings/ai-models`,
+    REVOKE_PROVIDER: (id: string) => `${API_V1_PREFIX}/settings/api-providers/${id}/revoke` as const,
   },
-  
-  // Health
   HEALTH: {
-    CHECK: '/api/health',
-    LIVE: '/api/health/live',
-    READY: '/api/health/ready',
+    CHECK: `${API_V1_PREFIX}/health`,
+    LIVE: `${API_V1_PREFIX}/health/live`,
+    READY: `${API_V1_PREFIX}/health/ready`,
+  },
+  METRICS: `${API_V1_PREFIX}/metrics`,
+  NOTIFICATIONS: {
+    ROOT: `${API_V1_PREFIX}/notifications`,
+    COUNT: `${API_V1_PREFIX}/notifications/count`,
+    STREAM: `${API_V1_PREFIX}/notifications/stream`,
+    ITEM: (id: string) => `${API_V1_PREFIX}/notifications/${id}` as const,
+  },
+  DOCS: `${API_V1_PREFIX}/docs`,
+  AI: {
+    ENHANCE: `${API_V1_PREFIX}/ai/enhance`,
+    ENHANCE_STREAM: `${API_V1_PREFIX}/ai/enhance/stream`,
   },
 } as const;
 
