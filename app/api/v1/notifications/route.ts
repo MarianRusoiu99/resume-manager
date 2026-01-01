@@ -1,5 +1,5 @@
-import { notificationService } from '@/lib/services/notification.service';
-import { createApiHandler } from '@/lib/api-handler';
+import { notificationService } from '@/lib/services';
+import { createApiHandler } from '@/lib/api/handler';
 import { notificationActionSchema, notificationQuerySchema } from '@/lib/validations/api-schemas';
 import { failure, success } from '@/lib/types/service-result';
 

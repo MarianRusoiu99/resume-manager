@@ -1,6 +1,6 @@
 import NextAuth, { NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/db/index";
 import { verifyPassword } from "@/lib/auth/password";
 import { env } from "@/lib/config";
 

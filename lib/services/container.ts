@@ -16,17 +16,19 @@ import { TemplateRepository, templateRepository } from '@/lib/repositories/templ
 
 import { AnalyticsService, analyticsService as analyticsServiceInstance } from './analytics/analytics.service';
 import { ProfileService } from './profile/profile.service';
-import { ResumeGenerationService } from './resume-generation/resume-generation.service';
-import { ResumeCrudService } from './resume-crud/resume-crud.service';
+import { ResumeGenerationService } from './resume/generation/resume-generation.service';
+import { ResumeCrudService } from './resume/crud/resume-crud.service';
 import { NotificationService } from './notification/notification.service';
 import { ApiProviderService } from './api-provider/api-provider.service';
 import { UserAISettingsService } from './user-ai-settings/user-ai-settings.service';
-import { AIService } from './ai.service';
+import { AIService, aiService as aiServiceInstance } from './ai';
 import { TemplateService } from './template/template.service';
-import { CoverLetterService } from './cover-letter.service';
+import { CoverLetterService } from './cover-letter';
 
 import { profileCache } from '@/lib/cache/simple-cache';
 import type { ICache } from '@/lib/repositories/interfaces';
+
+import { DocumentParserService } from './document-parser/document-parser.service';
 
 /**
  * Service Container
@@ -48,6 +50,7 @@ export class ServiceContainer {
   private _aiService!: AIService;
   private _templateService!: TemplateService;
   private _coverLetterService!: CoverLetterService;
+  private _documentParserService!: DocumentParserService;
 
   private constructor() {
     this.initializeServices();
@@ -84,9 +87,10 @@ export class ServiceContainer {
     this._notificationService = new NotificationService(notificationRepo);
     this._apiProviderService = new ApiProviderService(apiProviderRepo);
     this._userAISettingsService = new UserAISettingsService(userAISettingsRepo);
-    this._aiService = new AIService();
+    this._aiService = aiServiceInstance;
     this._templateService = new TemplateService(templateRepo);
     this._coverLetterService = new CoverLetterService(coverLetterRepo);
+    this._documentParserService = new DocumentParserService();
   }
 
   // Service getters
@@ -128,6 +132,10 @@ export class ServiceContainer {
 
   get coverLetterService(): CoverLetterService {
     return this._coverLetterService;
+  }
+
+  get documentParserService(): DocumentParserService {
+    return this._documentParserService;
   }
 
   /**
@@ -187,6 +195,8 @@ export class ServiceContainer {
  */
 export const serviceContainer = ServiceContainer.getInstance();
 
+import { auditLogService as auditLogServiceInstance, auditLog as auditLogInstance } from './audit-log';
+
 /**
  * Service exports for backward compatibility
  * These delegate to the container instances
@@ -201,9 +211,12 @@ export const userAISettingsService = serviceContainer.userAISettingsService;
 export const aiService = serviceContainer.aiService;
 export const templateService = serviceContainer.templateService;
 export const coverLetterService = serviceContainer.coverLetterService;
+export const documentParserService = serviceContainer.documentParserService;
+export const auditLogService = auditLogServiceInstance;
+export const auditLog = auditLogInstance;
 
 // Combined resume service for backward compatibility
-import { ResumeService } from './resume.service';
+import { ResumeService } from './resume';
 export const resumeService = new ResumeService(
   serviceContainer.resumeGenerationService,
   serviceContainer.resumeCrudService

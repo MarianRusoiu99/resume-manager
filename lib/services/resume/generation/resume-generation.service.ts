@@ -1,6 +1,6 @@
 import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
 
-import type { IResumeGenerationService } from '../interfaces';
+import type { IResumeGenerationService } from '../../interfaces';
 
 import type { GenerateResumeServiceInput, GenerateResumeWithProgressInput } from './types';
 import {

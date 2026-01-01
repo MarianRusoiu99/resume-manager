@@ -6,7 +6,7 @@
  */
 
 import { PrismaClient, User } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { GenericRepository } from './generic.repository';
 
 /**

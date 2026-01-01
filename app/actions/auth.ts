@@ -10,7 +10,7 @@
  */
 
 import { signIn, signOut } from '@/lib/auth/config';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { hashPassword } from '@/lib/auth/password';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import {

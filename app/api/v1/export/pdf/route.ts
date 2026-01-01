@@ -7,9 +7,9 @@
 import { NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 
-import { createApiHandler } from '@/lib/api-handler';
+import { createApiHandler } from '@/lib/api/handler';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
-import { PDF_CONFIG } from '@/lib/utils/pdf-renderer';
+import { PDF_CONFIG } from '@/lib/templates/renderers/pdf';
 import { resumeSchema, type Resume } from '@/lib/validations/jsonresume';
 import { z } from 'zod';
 

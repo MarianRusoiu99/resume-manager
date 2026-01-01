@@ -6,8 +6,8 @@
  */
 
 import { z } from 'zod';
-import { prisma } from '@/lib/db';
-import { createApiHandler } from '@/lib/api-handler';
+import { prisma } from '@/lib/db/index';
+import { createApiHandler } from '@/lib/api/handler';
 import { requireFound, requireOwnership } from '@/lib/auth/guards';
 import { success } from '@/lib/types/service-result';
 

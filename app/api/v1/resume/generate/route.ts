@@ -8,9 +8,9 @@
  *   - Used for initial data fetching in components
  */
 
-import { resumeService } from '@/lib/services/resume.service';
+import { resumeService } from '@/lib/services/resume';
 import { resumesCache } from '@/lib/cache/resumes-cache';
-import { createApiHandler } from '@/lib/api-handler';
+import { createApiHandler } from '@/lib/api/handler';
 import { logger } from '@/lib/utils/logger';
 import { generateResumeSchema } from '@/lib/validations/api-schemas';
 import { success } from '@/lib/types/service-result';

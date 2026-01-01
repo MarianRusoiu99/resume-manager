@@ -1,4 +1,4 @@
-import { createApiHandler } from "@/lib/api-handler";
+import { createApiHandler } from "@/lib/api/handler";
 import { profileRepository } from "@/lib/repositories/profile.repository";
 import { nanoid } from "nanoid";
 import { z } from "zod";

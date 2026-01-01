@@ -11,8 +11,8 @@ import type {
   GeneratedResumeData,
   GenerateResumeServiceInput,
   GenerateResumeWithProgressInput,
-} from '@/lib/services/resume-generation/types';
-import type { ResumeDetails, ResumeListItem, UpdatedResumeData } from '@/lib/services/resume-crud/types';
+} from '@/lib/services/resume/generation/types';
+import type { ResumeDetails, ResumeListItem, UpdatedResumeData } from '@/lib/services/resume/crud/types';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 /**

@@ -2,7 +2,7 @@ import { generateText, streamText, type LanguageModel, type CoreMessage } from '
 import { z } from 'zod';
 import { logger } from '@/lib/utils/logger';
 import { ServiceErrors } from '@/lib/services/utils/service-wrapper';
-import { auditLogService } from '@/lib/services/audit-log/audit-log.service';
+import { auditLogService } from '@/lib/services';
 import { calculateAICost } from '../pricing';
 
 interface ValidatedAIRunnerOptions<T> {

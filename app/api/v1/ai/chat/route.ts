@@ -7,7 +7,7 @@
  */
 
 import { z } from 'zod';
-import { createApiHandler } from '@/lib/api-handler';
+import { createApiHandler } from '@/lib/api/handler';
 import { logger } from '@/lib/utils/logger';
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime/resolve-model';
 import { ConversationManager, type ConversationMode } from '@/lib/ai/chat/conversation';

@@ -13,19 +13,15 @@ import type {
   OptimizeResumeResult,
   GenerateCoverLetterInput,
   GenerateCoverLetterResult
-} from './interfaces/ai.service.interface';
+} from '../interfaces/ai.service.interface';
 
 export class AIService implements IAIService {
-  /**
-   * Executes an AI operation with automatic fallback to other providers if the primary fails.
-   */
   private async withFallback<T>(
     userId: string,
     feature: any,
     modelId: string | undefined,
     operation: (resolvedModel: any) => Promise<T>
   ): Promise<ServiceResult<T>> {
-    // 1. Try primary model
     let primaryModel: any = null;
     try {
       primaryModel = await resolveAIModelOrThrow({ userId, feature, modelId });
@@ -40,7 +36,6 @@ export class AIService implements IAIService {
       });
     }
 
-    // 2. Try fallback models
     const modelsResult = await apiProviderService.getAvailableModels(userId);
     if (!modelsResult.success) return failure('No AI providers available');
 
@@ -79,7 +74,6 @@ export class AIService implements IAIService {
     return this.withFallback(userId, 'enhance', input.modelId, async (resolvedModel) => {
       let modelKey = resolvedModel.modelKey;
       
-      // If we have images, ensure we use a vision-capable model if the current one isn't
       if (hasImages) {
         const { resolveVisionModelKey } = await import('@/lib/ai/runtime/vision');
         modelKey = resolveVisionModelKey(resolvedModel);

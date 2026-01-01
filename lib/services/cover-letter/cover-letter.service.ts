@@ -1,10 +1,3 @@
-/**
- * Cover Letter Service
- *
- * Business logic for managing cover letters.
- * Implements ICoverLetterService with constructor injection.
- */
-
 import {
   CoverLetterRepository,
   coverLetterRepository,
@@ -12,12 +5,8 @@ import {
 import type { CreateCoverLetterInput, UpdateCoverLetterInput, CoverLetterData, FindCoverLettersOptions } from '@/lib/repositories/interfaces/cover-letter.repository.interface';
 import { type ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, GenericUserOwnedCrudService } from '@/lib/services/utils';
-import type { ICoverLetterService } from './interfaces';
+import type { ICoverLetterService } from '../interfaces';
 
-/**
- * Service for managing cover letters, including creation, retrieval, updating, and deletion.
- * All methods return a ServiceResult indicating success, data, or error.
- */
 export class CoverLetterService 
   extends GenericUserOwnedCrudService<CoverLetterData, CreateCoverLetterInput, UpdateCoverLetterInput, CoverLetterRepository>
   implements ICoverLetterService 
@@ -26,9 +15,6 @@ export class CoverLetterService
     super(repository, 'CoverLetter');
   }
 
-  /**
-   * Create a new cover letter
-   */
   async createCoverLetter(
     input: CreateCoverLetterInput
   ): Promise<ServiceResult<CoverLetterData>> {
@@ -64,5 +50,4 @@ export class CoverLetterService
   }
 }
 
-// Singleton instance
 export const coverLetterService = new CoverLetterService();

@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { withServiceError } from '@/lib/services/utils';
 import { type ServiceResult } from '@/lib/types/service-result';
 

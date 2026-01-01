@@ -4,10 +4,10 @@
  * Returns rendered HTML for iframe preview
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { createApiHandler } from '@/lib/api-handler';
+import { createApiHandler } from '@/lib/api/handler';
 import { requireFound } from '@/lib/auth/guards';
 
 export const GET = createApiHandler(async (_req, { params }, session) => {

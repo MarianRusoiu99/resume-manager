@@ -7,7 +7,7 @@ import type { CreateTemplateInput, UpdateTemplateInput } from '@/lib/validations
 
 import { validateCreateTemplateInput, validateUpdateTemplateInput } from './validation';
 import { validateHandlebarsTemplateSyntax } from './syntax';
-import { sanitizeTemplate } from '@/lib/utils/template-sanitizer';
+import { sanitizeTemplate } from '@/lib/templates/utils/sanitizer';
 import { GenericCrudService } from '../utils/generic-crud.service';
 
 /**

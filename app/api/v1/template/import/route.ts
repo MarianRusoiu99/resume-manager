@@ -7,7 +7,7 @@
 
 import { parseTemplateFromImage } from "@/lib/ai/template-parser";
 import { resolveAIModelOrThrow, resolveVisionModelKey } from "@/lib/ai/runtime";
-import { createApiHandler } from "@/lib/api-handler";
+import { createApiHandler } from "@/lib/api/handler";
 import { failure, success } from "@/lib/types/service-result";
 
 // Supported image MIME types

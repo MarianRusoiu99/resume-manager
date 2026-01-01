@@ -13,8 +13,8 @@
  *   - Kept for backward compatibility
  */
 
-import { createApiHandler } from '@/lib/api-handler';
-import { coverLetterService } from '@/lib/services/cover-letter.service';
+import { createApiHandler } from '@/lib/api/handler';
+import { coverLetterService } from '@/lib/services';
 import { updateCoverLetterSchema } from '@/lib/validations/api-schemas';
 import { success } from '@/lib/types/service-result';
 

@@ -9,7 +9,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { logger } from '@/lib/utils';
 
 /**

@@ -1,5 +1,5 @@
-import { notificationService } from '@/lib/services/notification.service';
-import { createApiHandler } from '@/lib/api-handler';
+import { notificationService } from '@/lib/services';
+import { createApiHandler } from '@/lib/api/handler';
 import { success } from '@/lib/types/service-result';
 
 /**

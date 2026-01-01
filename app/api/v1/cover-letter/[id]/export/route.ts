@@ -10,11 +10,11 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createApiHandler } from '@/lib/api-handler';
-import { coverLetterService } from '@/lib/services/cover-letter.service';
+import { createApiHandler } from '@/lib/api/handler';
+import { coverLetterService } from '@/lib/services';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
-import { PDF_CONFIG } from '@/lib/utils/pdf-renderer';
+import { PDF_CONFIG } from '@/lib/templates/renderers/pdf';
 import puppeteer, { type Browser } from 'puppeteer';
 
 const COVER_LETTER_HTML_TEMPLATE = `

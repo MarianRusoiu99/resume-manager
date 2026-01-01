@@ -13,8 +13,8 @@
  *   - Kept for backward compatibility
  */
 
-import { profileService } from '@/lib/services/profile.service';
-import { createApiHandler } from '@/lib/api-handler';
+import { profileService } from '@/lib/services';
+import { createApiHandler } from '@/lib/api/handler';
 import { updateProfileSchema } from '@/lib/validations/api-schemas';
 import { success } from '@/lib/types/service-result';
 

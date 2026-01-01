@@ -45,7 +45,7 @@ export const ROUTES = {
 /**
  * API endpoints
  */
-import { API_V1_PREFIX } from "@/lib/api-versioning";
+import { API_V1_PREFIX } from "@/lib/api/versioning";
 
 export const API_V1 = {
   AUTH: {
@@ -69,18 +69,22 @@ export const API_V1 = {
     DUPLICATE: (id: string) => `${API_V1_PREFIX}/resume/${id}/duplicate` as const,
     COVER_LETTER: (id: string) => `${API_V1_PREFIX}/resume/${id}/cover-letter` as const,
     GENERATE: `${API_V1_PREFIX}/resume/generate`,
+    GENERATE_STREAM: `${API_V1_PREFIX}/resume/generate-stream`,
     GENERATE_SIMPLE: `${API_V1_PREFIX}/resume/generate-simple`,
     IMPORT: `${API_V1_PREFIX}/resume/import`,
+    IMPORT_TEMPLATE: `${API_V1_PREFIX}/template/import`,
   },
   COVER_LETTER: {
     LIST: `${API_V1_PREFIX}/cover-letter`,
     GET: (id: string) => `${API_V1_PREFIX}/cover-letter/${id}` as const,
     EXPORT: (id: string) => `${API_V1_PREFIX}/cover-letter/${id}/export` as const,
+    GENERATE: `${API_V1_PREFIX}/cover-letter/generate`,
   },
   TEMPLATE: {
     LIST: `${API_V1_PREFIX}/template`,
     GET: (id: string) => `${API_V1_PREFIX}/template/${id}` as const,
     DUPLICATE: (id: string) => `${API_V1_PREFIX}/template/${id}/duplicate` as const,
+    IMPORT: `${API_V1_PREFIX}/template/import`,
   },
   EXPORT: {
     PDF: `${API_V1_PREFIX}/export/pdf`,
@@ -108,6 +112,7 @@ export const API_V1 = {
   AI: {
     CHAT: `${API_V1_PREFIX}/ai/chat`,
     ENHANCE: `${API_V1_PREFIX}/ai/enhance`,
+    ENHANCE_STREAM: `${API_V1_PREFIX}/ai/enhance/stream`,
   },
 } as const;
 

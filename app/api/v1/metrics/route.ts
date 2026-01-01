@@ -9,7 +9,7 @@
 import { NextResponse } from 'next/server';
 import { metrics } from '@/lib/telemetry';
 import { circuitBreakerRegistry } from '@/lib/resilience';
-import { createApiHandler } from '@/lib/api-handler';
+import { createApiHandler } from '@/lib/api/handler';
 
 /**
  * GET /api/v1/metrics

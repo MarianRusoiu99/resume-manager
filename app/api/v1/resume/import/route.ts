@@ -6,7 +6,7 @@
 import { parseResumeFromText, parseResumeFromImage } from "@/lib/ai/resume-parser";
 import { resolveAIModelOrThrow, resolveVisionModelKey } from "@/lib/ai/runtime";
 import mammoth from "mammoth";
-import { createApiHandler } from "@/lib/api-handler";
+import { createApiHandler } from "@/lib/api/handler";
 import { failure, success } from "@/lib/types/service-result";
 
 export const POST = createApiHandler<{ resume: unknown }>(async (request, context, session) => {

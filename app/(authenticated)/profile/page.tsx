@@ -5,7 +5,7 @@
 
 import { Page } from "@/components/layout/Page";
 import { ProfileGallery } from "@/components/profile/ProfileGallery";
-import { profileService } from "@/lib/services/profile.service";
+import { profileService } from "@/lib/services";
 import { verifySession } from "@/lib/auth/dal";
 import type { Resume } from "@/lib/validations/jsonresume";
 import type { ProfileDto } from "@/lib/client";

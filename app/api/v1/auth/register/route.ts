@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { prisma } from "@/lib/db";
+import { prisma } from "@/lib/db/index";
 import { hashPassword } from "@/lib/auth/password";
 import { logger } from "@/lib/utils/logger";
-import { createApiHandler, ServiceError } from "@/lib/api-handler";
+import { createApiHandler, ServiceError } from "@/lib/api/handler";
 import { success } from "@/lib/types/service-result";
 
 const registerSchema = z.object({

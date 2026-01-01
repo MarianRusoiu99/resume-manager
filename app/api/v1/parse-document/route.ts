@@ -1,4 +1,4 @@
-import { createApiHandler, ApiErrors } from "@/lib/api-handler";
+import { createApiHandler, ApiErrors } from "@/lib/api/handler";
 import { documentParserService } from "@/lib/services/document-parser/document-parser.service";
 import { NextResponse } from "next/server";
 

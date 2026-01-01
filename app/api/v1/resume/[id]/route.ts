@@ -12,8 +12,8 @@
  *   - Kept for backward compatibility
  */
 
-import { resumeService } from '@/lib/services/resume.service';
-import { createApiHandler } from '@/lib/api-handler';
+import { resumeService } from '@/lib/services/resume';
+import { createApiHandler } from '@/lib/api/handler';
 import { success } from '@/lib/types/service-result';
 import { updateResumeContentSchema } from '@/lib/validations';
 

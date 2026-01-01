@@ -17,7 +17,7 @@ import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from './config';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 
 /**
  * Session payload returned by verifySession

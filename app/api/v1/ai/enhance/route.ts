@@ -8,7 +8,7 @@
 
 import { aiService } from '@/lib/services';
 import { enhanceRequestSchema } from '@/lib/validations/settings';
-import { createApiHandler } from '@/lib/api-handler';
+import { createApiHandler } from '@/lib/api/handler';
 
 
 /**

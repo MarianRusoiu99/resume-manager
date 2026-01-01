@@ -5,7 +5,7 @@
  * Data access layer for cover letters with CRUD operations.
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { Prisma, PrismaClient } from '@prisma/client';
 
 import { GenericUserOwnedRepository } from './generic.repository';

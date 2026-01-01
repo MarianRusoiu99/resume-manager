@@ -4,7 +4,7 @@
  */
 
 import type { Resume } from '@/lib/validations/jsonresume';
-import { createApiHandler } from '@/lib/api-handler';
+import { createApiHandler } from '@/lib/api/handler';
 import { requireFound, requireOwnership } from '@/lib/auth/guards';
 import { success } from '@/lib/types/service-result';
 import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';

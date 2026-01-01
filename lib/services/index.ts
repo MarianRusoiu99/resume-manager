@@ -25,7 +25,11 @@ export {
   apiProviderService,
   aiService,
   userAISettingsService,
+  documentParserService,
+  auditLogService,
+  auditLog,
 } from './container';
+
 
 // Service interfaces for dependency injection and testing
 export type {
@@ -40,7 +44,7 @@ export type {
 } from './interfaces';
 
 // Resume services (facade + split services)
-export { ResumeService } from './resume.service';
+export { ResumeService } from './resume';
 export type {
   GenerateResumeServiceInput,
   GenerateResumeWithProgressInput,
@@ -51,19 +55,19 @@ export type {
   ResumeListItem,
   ResumeDetails,
   UpdatedResumeData,
-} from './resume.service';
+} from './resume';
 
-export { ProfileService } from './profile.service';
-export type { Profile, ProfileList } from './profile';
+export { ProfileService } from './profile/profile.service';
+export type { Profile, ProfileList } from './profile/types';
 
-export { TemplateService } from './template.service';
+export { TemplateService } from './template/template.service';
 
-export { CoverLetterService } from './cover-letter.service';
+export { CoverLetterService } from './cover-letter';
 
-export { NotificationService } from './notification.service';
+export { NotificationService } from './notification/notification.service';
 
-export { AIService } from './ai.service';
-export { ApiProviderService } from './api-provider.service';
+export { AIService } from './ai';
+export { ApiProviderService } from './api-provider/api-provider.service';
 export type {
   AddApiProviderInput,
   UpdateApiProviderInput as ApiProviderUpdateInput,
@@ -73,13 +77,9 @@ export type {
   ProviderInstanceData,
   AvailableModelsData,
   ValidationData,
-} from './api-provider.service';
+} from './api-provider/types';
 
-export { apiKeyAuditService } from './api-key-audit.service';
-
-export { auditLogService } from './audit-log.service';
-
-
+export { apiKeyAuditService } from './api-key-audit';
 
 // Service utilities for reducing boilerplate
 export {
