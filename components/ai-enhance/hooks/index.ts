@@ -5,6 +5,10 @@
 export { useFileAttachments } from './useFileAttachments';
 export { useEnhanceHistory } from './useEnhanceHistory';
 
+export { useTemplateGeneration } from './useTemplateGeneration';
+export { useResumeGeneration } from './useResumeGeneration';
+export { useCoverLetterGeneration } from './useCoverLetterGeneration';
+
 // Centralized enhancement hooks
 export {
   useTextEnhancement,
