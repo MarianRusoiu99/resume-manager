@@ -30,7 +30,7 @@ export class DocumentParserService implements IDocumentParserService {
     try {
       if (!buffer || buffer.length === 0) {
         throw new Error('Empty buffer provided');
-      }npm
+      }
       // Use a fresh require inside the method to avoid any module caching/interop issues
       // and ensure we get the actual function.
       const pdfParse = require('pdf-parse');
