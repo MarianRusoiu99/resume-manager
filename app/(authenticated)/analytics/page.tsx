@@ -51,7 +51,7 @@ export default function AnalyticsPage() {
             <CardDescription>Last 30 days of generation activity</CardDescription>
           </CardHeader>
           <CardContent>
-            {data?.resumesOverTime.length ? (
+            {data?.resumesOverTime?.length ? (
               <div className="space-y-4">
                 {data.resumesOverTime.map((item) => (
                   <div key={item.date} className="flex items-center gap-4">
