@@ -13,14 +13,6 @@ datasource db {
 // Enums
 // -----------------------------------------------------------------------------
 
-enum TemplateCategory {
-  PROFESSIONAL
-  MODERN
-  CREATIVE
-  ATS_OPTIMIZED
-  MINIMAL
-}
-
 enum ProviderType {
   OPENAI
   ANTHROPIC
@@ -189,8 +181,7 @@ model ProfileDocument {
 model ResumeTemplate {
   id          String           @id @default(cuid())
   name        String
-  category    TemplateCategory
-  description String
+  description String?
 
   htmlTemplate String @db.Text
   cssStyles    String @db.Text
@@ -203,7 +194,6 @@ model ResumeTemplate {
   profiles Profile[] @relation("ProfileSelectedTemplate")
   resumes  Resume[]
 
-  @@index([category])
   @@index([isPublic])
 }
 

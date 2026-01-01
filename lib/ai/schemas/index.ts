@@ -51,7 +51,6 @@ export const templateGenerationOutputSchema = z.object({
   cssStyles: z.string().describe('The CSS styles for the template'),
   name: z.string().optional().describe('Suggested name for the template'),
   description: z.string().optional().describe('Description of the template'),
-  category: z.enum(['professional', 'modern', 'creative', 'minimal', 'ats_optimized']).optional(),
 });
 
 export type TemplateGenerationOutput = z.infer<typeof templateGenerationOutputSchema>;

@@ -49,7 +49,7 @@ export function TemplatePreviewModal({
         <div className="border-b px-6 py-4 flex items-center justify-between bg-card">
           <div>
             <h2 className="text-2xl font-bold">{template.name}</h2>
-            <p className="text-sm text-muted-foreground">{template.description}</p>
+            {template.description && <p className="text-sm text-muted-foreground">{template.description}</p>}
           </div>
           <button
             onClick={onClose}
@@ -63,12 +63,6 @@ export function TemplatePreviewModal({
         {/* Template Details */}
         <div className="px-6 py-4 border-b bg-muted/30">
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Category:</span>
-              <span className="px-3 py-1 rounded-md bg-muted text-muted-foreground text-sm font-medium capitalize">
-                {template.category}
-              </span>
-            </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">Visibility:</span>
               <span className="text-sm text-muted-foreground">

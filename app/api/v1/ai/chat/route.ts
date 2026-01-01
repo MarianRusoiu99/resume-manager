@@ -30,7 +30,7 @@ const requestAttachmentTypes = ['document', 'image', 'resume', 'job-description'
  */
 const chatRequestSchema = z.object({
   // Conversation management
-  conversationId: z.string().optional(),
+  conversationId: z.string().nullable().optional(),
   mode: z.enum([
     'resume-generation',
     'resume-enhancement',
@@ -41,7 +41,7 @@ const chatRequestSchema = z.object({
   ]),
 
   // Message content
-  message: z.string().min(1).max(50000),
+  message: z.string().max(50000).default(''),
 
   // Attachments (documents, images)
   attachments: z
@@ -54,7 +54,6 @@ const chatRequestSchema = z.object({
       })
     )
     .optional(),
-
   // Context data
   context: z
     .object({
@@ -89,6 +88,9 @@ const chatRequestSchema = z.object({
 
   // Streaming options
   stream: z.boolean().default(true),
+}).refine(data => data.message.trim().length > 0 || (data.attachments && data.attachments.length > 0), {
+  message: "Either message or attachments must be provided",
+  path: ["message"],
 });
 
 type ChatRequest = z.infer<typeof chatRequestSchema>;
@@ -148,7 +150,7 @@ export const POST = createApiHandler(
 
     // Get or create conversation
     const internalAttachments = convertAttachments(attachments);
-    const conversation = ConversationManager.getOrCreate(conversationId, {
+    const conversation = ConversationManager.getOrCreate(conversationId || undefined, {
       mode: mode as ConversationMode,
       initialContext: context as ConversationContext,
       attachments: internalAttachments,

@@ -80,20 +80,21 @@ export function PromptInput({
   );
 
   const handleSubmit = useCallback(() => {
+    if (!value.trim() && attachments.length === 0) return;
     onSubmit(attachments);
-  }, [onSubmit, attachments]);
+  }, [onSubmit, attachments, value]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
       // Submit on Cmd/Ctrl + Enter
       if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        if (value.trim() && !isLoading && !disabled) {
+        if ((value.trim() || attachments.length > 0) && !isLoading && !disabled) {
           handleSubmit();
         }
       }
     },
-    [value, isLoading, disabled, handleSubmit]
+    [value, attachments.length, isLoading, disabled, handleSubmit]
   );
 
   const handlePresetSelect = useCallback(
@@ -103,7 +104,7 @@ export function PromptInput({
     [onChange]
   );
 
-  const isSubmitDisabled = !value.trim() || isLoading || disabled || isProcessing;
+  const isSubmitDisabled = (!value.trim() && attachments.length === 0) || isLoading || disabled || isProcessing;
   const buttonLabel = hasExistingContent ? 'Regenerate' : submitLabel;
 
   return (

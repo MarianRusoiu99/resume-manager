@@ -387,6 +387,14 @@ export class AIOrchestrator {
         const imageAttachments = getImageAttachments(msg.attachments);
         const textAttachments = getTextAttachments(msg.attachments);
 
+        // Also include any "document" attachments that are PDFs if model has vision
+        const allVisionAttachments = [...imageAttachments];
+        
+        // Only treat PDFs as vision content if we are sure we want to (though for GPT-4o etc it works)
+        // For now let's keep it to images only to avoid breaking non-vision models that get PDF text via context
+        // const pdfAttachments = msg.attachments?.filter(att => att.type === 'document' && att.mimeType === 'application/pdf') || [];
+        // allVisionAttachments.push(...pdfAttachments);
+
         // Build content parts
         const parts: Array<{ type: 'text'; text: string } | { type: 'image'; image: string }> = [];
 
@@ -397,13 +405,16 @@ export class AIOrchestrator {
 
         // Add text attachment context
         if (textAttachments.length > 0) {
-          textContent = `${textContent}\n\n${formatAttachmentsAsContext(textAttachments)}`;
+          const nonPdfTextAttachments = textAttachments.filter(att => att.mimeType !== 'application/pdf');
+          if (nonPdfTextAttachments.length > 0) {
+            textContent = `${textContent}\n\n${formatAttachmentsAsContext(nonPdfTextAttachments)}`;
+          }
         }
 
         parts.push({ type: 'text', text: textContent });
 
-        // Add images
-        for (const img of imageAttachments) {
+        // Add images (and PDFs treated as images)
+        for (const img of allVisionAttachments) {
           parts.push({ type: 'image', image: img.content });
         }
 
@@ -497,23 +508,23 @@ export class AIOrchestrator {
   }
 }
 
-/**
- * Checks if a conversation requires vision capability
- */
-export function requiresVision(conversation: Conversation): boolean {
-  // Check if any message has image attachments
-  for (const msg of conversation.messages) {
-    if (hasImageAttachments(msg.attachments)) {
+  /**
+   * Checks if a conversation requires vision capability
+   */
+  export function requiresVision(conversation: Conversation): boolean {
+    // Check if any message has image attachments
+    for (const msg of conversation.messages) {
+      if (hasImageAttachments(msg.attachments)) {
+        return true;
+      }
+    }
+    
+    // Check context attachments
+    if (hasImageAttachments(conversation.context.attachments)) {
       return true;
     }
-  }
   
-  // Check context attachments
-  if (hasImageAttachments(conversation.context.attachments)) {
-    return true;
+    // Check mode requirement
+    const mode = getMode(conversation.mode);
+    return mode?.requiresVision ?? false;
   }
-
-  // Check mode requirement
-  const mode = getMode(conversation.mode);
-  return mode?.requiresVision ?? false;
-}

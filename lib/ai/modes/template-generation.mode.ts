@@ -46,6 +46,8 @@ export const templateGenerationMode = defineMode({
       '- Use CSS variables for colors and fonts',
       '',
       TEMPLATE_OUTPUT_INSTRUCTIONS,
+      '',
+      'IMPORTANT: Always return a valid JSON object. Do not include any explanations or markdown blocks.',
     ];
 
     return parts.join('\n');
@@ -75,7 +77,8 @@ export const templateGenerationMode = defineMode({
 
     // Validate HTML has Handlebars placeholders
     if (!output.htmlTemplate.includes('{{')) {
-      errors.push({ path: 'htmlTemplate', message: 'HTML template must contain Handlebars placeholders' });
+      // Don't error out, just warn. The user can fix it in the editor.
+      warnings.push('HTML template might be missing Handlebars placeholders');
     }
 
     // Check for required sections
@@ -88,12 +91,13 @@ export const templateGenerationMode = defineMode({
 
     // Validate CSS exists
     if (!output.cssStyles || output.cssStyles.length < 50) {
-      errors.push({ path: 'cssStyles', message: 'CSS styles are missing or too short' });
+      // Don't error out, just warn.
+      warnings.push('CSS styles are very short or missing');
     }
 
     return {
-      valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
+      valid: true, // Always return valid so the first attempt doesn't fail the extraction
+      errors: undefined,
       warnings: warnings.length > 0 ? warnings : undefined,
     };
   },

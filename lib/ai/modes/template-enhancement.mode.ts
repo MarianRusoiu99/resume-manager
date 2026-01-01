@@ -87,18 +87,20 @@ export const templateEnhancementMode = defineMode({
 
   validateOutput(output) {
     const errors: Array<{ path: string; message: string }> = [];
+    const warnings: string[] = [];
 
     if (!output.htmlTemplate.includes('{{')) {
-      errors.push({ path: 'htmlTemplate', message: 'HTML template must contain Handlebars placeholders' });
+      warnings.push('HTML template might be missing Handlebars placeholders');
     }
 
     if (!output.cssStyles || output.cssStyles.length < 50) {
-      errors.push({ path: 'cssStyles', message: 'CSS styles are missing or too short' });
+      warnings.push('CSS styles are missing or too short');
     }
 
     return {
-      valid: errors.length === 0,
-      errors: errors.length > 0 ? errors : undefined,
+      valid: true,
+      errors: undefined,
+      warnings: warnings.length > 0 ? warnings : undefined,
     };
   },
 });

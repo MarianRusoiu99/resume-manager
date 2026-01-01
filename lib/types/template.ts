@@ -11,8 +11,7 @@
 export interface TemplateBase {
   id: string;
   name: string;
-  category: string;
-  description: string;
+  description: string | null;
 }
 
 /**
@@ -38,6 +37,5 @@ export interface TemplateWithMeta extends Template {
 export interface TemplatePreview {
   id: string;
   name: string;
-  category: string;
   previewHtml?: string;
 }

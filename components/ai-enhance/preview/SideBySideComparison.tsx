@@ -69,7 +69,10 @@ export function SideBySideComparison({
             {enhancedLabel}
           </Label>
           {isLoading && (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] animate-pulse">Analyzing...</span>
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+            </div>
           )}
         </div>
         <ContentWrapper className={cn('flex-1 overflow-hidden', showCards && 'p-0')}>

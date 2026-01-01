@@ -81,13 +81,6 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
             <p className="text-lg font-semibold mt-1">
               {currentTemplate?.name || 'Default Template'}
             </p>
-            {currentTemplate && (
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700">
-                  {currentTemplate.category}
-                </span>
-              </div>
-            )}
           </div>
           <button
             onClick={() => setIsOpen(true)}
@@ -124,11 +117,6 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
                 <div className="flex-1">
                   <h4 className="font-medium">{template.name}</h4>
                   <p className="text-sm text-gray-600 mt-1">{template.description}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs px-2 py-0.5 rounded bg-gray-100 ">
-                      {template.category}
-                    </span>
-                  </div>
                 </div>
                 {selectedTemplateId === template.id && (
                   <svg

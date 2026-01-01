@@ -5,11 +5,10 @@
  * Displays grid of template cards with filtering and management actions
  */
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { TemplateCard } from './TemplateCard';
-import { Gallery, type GalleryFilterOption } from '@/components/shared/Gallery';
+import { Gallery } from '@/components/shared/Gallery';
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, ImagePlus } from 'lucide-react';
 
@@ -18,23 +17,8 @@ interface TemplateGalleryProps {
   showAdminActions?: boolean;
 }
 
-const categoryFilters: GalleryFilterOption[] = [
-  { value: 'all', label: 'All Templates' },
-  { value: 'professional', label: 'Professional' },
-  { value: 'modern', label: 'Modern' },
-  { value: 'creative', label: 'Creative' },
-  { value: 'ats-optimized', label: 'ATS-Optimized' },
-  { value: 'minimal', label: 'Minimal' },
-];
-
 export function TemplateGallery({ templates, showAdminActions = false }: TemplateGalleryProps) {
-  const [selectedCategory, setSelectedCategory] = useState('all');
   const router = useRouter();
-
-  const filteredTemplates =
-    selectedCategory === 'all'
-      ? templates
-      : templates.filter((t) => t.category === selectedCategory);
 
   const headerActions = showAdminActions ? (
     <div className="flex gap-2">
@@ -51,14 +35,12 @@ export function TemplateGallery({ templates, showAdminActions = false }: Templat
 
   return (
     <Gallery
-      items={filteredTemplates}
+      items={templates}
       getItemKey={(template) => template.id}
       emptyState={{
         icon: FileText,
         title: "No templates found",
-        description: selectedCategory === 'all'
-          ? "No templates are available"
-          : `No templates found in the "${selectedCategory}" category`,
+        description: "No templates are available",
         action: showAdminActions
           ? {
             label: "Create Template",
@@ -68,9 +50,6 @@ export function TemplateGallery({ templates, showAdminActions = false }: Templat
           : undefined,
       }}
       header={{
-        filters: categoryFilters,
-        selectedFilter: selectedCategory,
-        onFilterChange: setSelectedCategory,
         actions: headerActions,
       }}
       renderItem={(template) => (

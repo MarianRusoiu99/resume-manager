@@ -48,14 +48,6 @@ interface TemplateEditorProps {
   readonly isNew?: boolean;
 }
 
-const categories = [
-  'PROFESSIONAL',
-  'MODERN',
-  'CREATIVE',
-  'ATS-OPTIMIZED',
-  'MINIMAL',
-] as const;
-
 export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEditorProps>) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,7 +56,6 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
   const [templateEnhanceModalOpen, setTemplateEnhanceModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: template?.name || '',
-    category: template?.category || 'PROFESSIONAL',
     description: template?.description || '',
     htmlTemplate: template?.htmlTemplate || '',
     cssStyles: template?.cssStyles || '',
@@ -76,7 +67,6 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     htmlTemplate: string;
     cssStyles: string;
     name?: string;
-    category?: string;
     description?: string;
   }) => {
     setFormData((prev) => ({
@@ -84,7 +74,6 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       htmlTemplate: importedTemplate.htmlTemplate,
       cssStyles: importedTemplate.cssStyles,
       name: importedTemplate.name || prev.name,
-      category: (importedTemplate.category as typeof prev.category) || prev.category,
       description: importedTemplate.description || prev.description,
     }));
     setImportModalOpen(false);
@@ -203,25 +192,6 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="Modern Professional"
               />
-            </div>
-
-            <div>
-              <Label htmlFor="category">Category</Label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) => setFormData({ ...formData, category: value as typeof formData.category })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
 
             <div>
