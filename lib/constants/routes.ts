@@ -70,20 +70,17 @@ export const API_V1 = {
     COVER_LETTER: (id: string) => `${API_V1_PREFIX}/resume/${id}/cover-letter` as const,
     GENERATE: `${API_V1_PREFIX}/resume/generate`,
     GENERATE_SIMPLE: `${API_V1_PREFIX}/resume/generate-simple`,
-    GENERATE_STREAM: `${API_V1_PREFIX}/resume/generate-stream`,
     IMPORT: `${API_V1_PREFIX}/resume/import`,
   },
   COVER_LETTER: {
     LIST: `${API_V1_PREFIX}/cover-letter`,
     GET: (id: string) => `${API_V1_PREFIX}/cover-letter/${id}` as const,
-    GENERATE: `${API_V1_PREFIX}/cover-letter/generate`,
     EXPORT: (id: string) => `${API_V1_PREFIX}/cover-letter/${id}/export` as const,
   },
   TEMPLATE: {
     LIST: `${API_V1_PREFIX}/template`,
     GET: (id: string) => `${API_V1_PREFIX}/template/${id}` as const,
     DUPLICATE: (id: string) => `${API_V1_PREFIX}/template/${id}/duplicate` as const,
-    IMPORT: `${API_V1_PREFIX}/template/import`,
   },
   EXPORT: {
     PDF: `${API_V1_PREFIX}/export/pdf`,
@@ -109,8 +106,8 @@ export const API_V1 = {
   },
   DOCS: `${API_V1_PREFIX}/docs`,
   AI: {
+    CHAT: `${API_V1_PREFIX}/ai/chat`,
     ENHANCE: `${API_V1_PREFIX}/ai/enhance`,
-    ENHANCE_STREAM: `${API_V1_PREFIX}/ai/enhance/stream`,
   },
 } as const;
 
