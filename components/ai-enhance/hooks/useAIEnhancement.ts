@@ -202,8 +202,9 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
 
   const enhance = useCallback(
     async (attachments?: any[]) => {
-      if (!instructions.trim()) {
-        toast.error('Please provide instructions for the AI');
+      const hasAttachments = attachments && attachments.length > 0;
+      if (!instructions.trim() && !hasAttachments) {
+        toast.error('Please provide instructions or attach a file');
         return;
       }
 
@@ -228,7 +229,7 @@ ${options.content}`;
             : undefined,
           modelId: options.modelId,
           attachments: attachments?.map((a) => ({
-            type: a.type,
+            type: a.type.startsWith('image/') ? 'image' : 'document',
             content: a.content,
             name: a.name,
           })),
@@ -288,8 +289,9 @@ export function useResumeEnhancement<T>(): UseAIEnhancementReturn<T> & {
 
   const enhance = useCallback(
     async (attachments?: any[]) => {
-      if (!instructions.trim()) {
-        toast.error('Please provide instructions for the AI');
+      const hasAttachments = attachments && attachments.length > 0;
+      if (!instructions.trim() && !hasAttachments) {
+        toast.error('Please provide instructions or attach a file');
         return;
       }
 
@@ -316,7 +318,7 @@ Please enhance the resume according to the instructions above and return the upd
             currentResume: resume as Record<string, unknown>,
           },
           attachments: attachments?.map((a) => ({
-            type: a.type,
+            type: a.type.startsWith('image/') ? 'image' : 'document',
             content: a.content,
             name: a.name,
           })),
@@ -387,8 +389,9 @@ export function useTemplateEnhancement(): UseAIEnhancementReturn<{ html: string;
 
   const enhance = useCallback(
     async (attachments?: any[]) => {
-      if (!instructions.trim()) {
-        toast.error('Please provide instructions for the AI');
+      const hasAttachments = attachments && attachments.length > 0;
+      if (!instructions.trim() && !hasAttachments) {
+        toast.error('Please provide instructions or attach a file');
         return;
       }
 
@@ -420,7 +423,7 @@ Make sure to preserve both sections and the exact separator format.`;
             },
           },
           attachments: attachments?.map((a) => ({
-            type: a.type,
+            type: a.type.startsWith('image/') ? 'image' : 'document',
             content: a.content,
             name: a.name,
           })),

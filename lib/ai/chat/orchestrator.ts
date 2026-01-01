@@ -387,12 +387,13 @@ export class AIOrchestrator {
         const imageAttachments = getImageAttachments(msg.attachments);
         const textAttachments = getTextAttachments(msg.attachments);
 
-        // Add PDFs as images for vision models if they are marked as image type or we want to treat them as such
+        // Also include any "document" attachments that are PDFs if model has vision
         const allVisionAttachments = [...imageAttachments];
         
-        // Also include any "document" attachments that are PDFs
-        const pdfAttachments = msg.attachments?.filter(att => att.type === 'document' && att.mimeType === 'application/pdf') || [];
-        allVisionAttachments.push(...pdfAttachments);
+        // Only treat PDFs as vision content if we are sure we want to (though for GPT-4o etc it works)
+        // For now let's keep it to images only to avoid breaking non-vision models that get PDF text via context
+        // const pdfAttachments = msg.attachments?.filter(att => att.type === 'document' && att.mimeType === 'application/pdf') || [];
+        // allVisionAttachments.push(...pdfAttachments);
 
         // Build content parts
         const parts: Array<{ type: 'text'; text: string } | { type: 'image'; image: string }> = [];
@@ -507,29 +508,23 @@ export class AIOrchestrator {
   }
 }
 
-/**
- * Checks if a conversation requires vision capability
- */
-export function requiresVision(conversation: Conversation): boolean {
-  // Check if any message has image attachments or PDF documents
-  for (const msg of conversation.messages) {
-    if (hasImageAttachments(msg.attachments)) {
+  /**
+   * Checks if a conversation requires vision capability
+   */
+  export function requiresVision(conversation: Conversation): boolean {
+    // Check if any message has image attachments
+    for (const msg of conversation.messages) {
+      if (hasImageAttachments(msg.attachments)) {
+        return true;
+      }
+    }
+    
+    // Check context attachments
+    if (hasImageAttachments(conversation.context.attachments)) {
       return true;
     }
-    if (msg.attachments?.some(att => att.type === 'document' && att.mimeType === 'application/pdf')) {
-      return true;
-    }
-  }
   
-  // Check context attachments
-  if (hasImageAttachments(conversation.context.attachments)) {
-    return true;
+    // Check mode requirement
+    const mode = getMode(conversation.mode);
+    return mode?.requiresVision ?? false;
   }
-  if (conversation.context.attachments?.some(att => att.type === 'document' && att.mimeType === 'application/pdf')) {
-    return true;
-  }
-
-  // Check mode requirement
-  const mode = getMode(conversation.mode);
-  return mode?.requiresVision ?? false;
-}
