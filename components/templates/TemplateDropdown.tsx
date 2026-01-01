@@ -130,15 +130,11 @@ export function TemplateDropdown({
                       <Check className="h-4 w-4 text-primary shrink-0" />
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {template.description}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
-                      {template.category}
-                    </span>
-        
-                  </div>
+                  {template.description && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {template.description}
+                    </p>
+                  )}
                 </div>
               </DropdownMenuItem>
             ))}

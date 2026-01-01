@@ -88,11 +88,16 @@ export function TemplateImportModal({
       setSelectedFile(file);
       
       // Create preview
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+      } else if (file.type === 'application/pdf') {
+        // Use a placeholder for PDF preview for now
+        setPreview('pdf-placeholder');
+      }
     }
   }, []);
 
@@ -103,6 +108,7 @@ export function TemplateImportModal({
       'image/jpeg': ['.jpg', '.jpeg'],
       'image/webp': ['.webp'],
       'image/gif': ['.gif'],
+      'application/pdf': ['.pdf'],
     },
     maxFiles: 1,
     maxSize: 10 * 1024 * 1024, // 10MB
@@ -131,10 +137,10 @@ export function TemplateImportModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ImageIcon className="h-5 w-5" />
-            Import Template from Image
+            Import Template
           </DialogTitle>
           <DialogDescription>
-            Upload a screenshot or image of a resume template. Our AI will analyze
+            Upload a screenshot, image, or PDF of a resume template. Our AI will analyze
             the layout and generate a matching Handlebars template.
           </DialogDescription>
         </DialogHeader>
@@ -157,11 +163,11 @@ export function TemplateImportModal({
               <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
                 {isDragActive
-                  ? 'Drop the image here...'
-                  : 'Drag & drop a template image, or click to browse'}
+                  ? 'Drop the file here...'
+                  : 'Drag & drop a template file, or click to browse'}
               </p>
               <p className="text-xs text-muted-foreground mt-2">
-                PNG, JPEG, WebP, GIF up to 10MB
+                PNG, JPEG, WebP, GIF or PDF up to 10MB
               </p>
             </div>
           )}
@@ -169,15 +175,22 @@ export function TemplateImportModal({
           {/* Preview */}
           {preview && (
             <div className="space-y-4">
-              <div className="relative rounded-lg overflow-hidden border bg-muted/20">
-                <NextImage
-                  src={preview}
-                  alt="Template preview"
-                  width={800}
-                  height={192}
-                  className="w-full h-48 object-contain"
-                  unoptimized
-                />
+              <div className="relative rounded-lg overflow-hidden border bg-muted/20 min-h-[12rem] flex items-center justify-center">
+                {preview === 'pdf-placeholder' ? (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Upload className="h-12 w-12" />
+                    <p className="text-sm font-medium">PDF Document Selected</p>
+                  </div>
+                ) : (
+                  <NextImage
+                    src={preview}
+                    alt="Template preview"
+                    width={800}
+                    height={192}
+                    className="w-full h-48 object-contain"
+                    unoptimized
+                  />
+                )}
                 {!isLoading && (
                   <button
                     onClick={(e) => {
@@ -186,7 +199,7 @@ export function TemplateImportModal({
                       setPreview(null);
                     }}
                     className="absolute top-2 right-2 p-1 bg-background/80 rounded-full hover:bg-background"
-                    title="Clear selected image"
+                    title="Clear selected file"
                   >
                     <AlertCircle className="h-4 w-4" />
                   </button>

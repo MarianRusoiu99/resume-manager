@@ -20,8 +20,7 @@ export const POST = createApiHandler(async (_request, { params }) => {
   // Create duplicate with modified name
   return templateService.createTemplate({
     name: `${original.name} (Copy)`,
-    category: original.category,
-    description: original.description,
+    description: original.description ?? undefined,
     htmlTemplate: original.htmlTemplate,
     cssStyles: original.cssStyles,
     isPublic: false, // Duplicates are private by default

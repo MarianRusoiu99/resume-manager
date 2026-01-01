@@ -53,8 +53,7 @@ Return a JSON object with:
 - htmlTemplate: Complete HTML template with Handlebars placeholders
 - cssStyles: Complete CSS styles for the template
 - name: Suggested template name
-- description: Brief description of the template style
-- category: One of: professional, modern, creative, minimal, ats_optimized`;
+- description: Brief description of the template style`;
 
 export const HANDLEBARS_REFERENCE = `
 ## HANDLEBARS SYNTAX REFERENCE

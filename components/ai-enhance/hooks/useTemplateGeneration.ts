@@ -51,10 +51,10 @@ export function useTemplateGeneration(): UseTemplateGenerationReturn {
       const base64 = await base64Promise;
 
       await sendMessage({
-        message: 'Please extract the template from this image. Return the result in the specified JSON format including the Handlebars HTML template and CSS styles.',
+        message: 'Please extract the template from this file. Return the result in the specified JSON format including the Handlebars HTML template and CSS styles.',
         attachments: [
           {
-            type: 'image',
+            type: imageFile.type === 'application/pdf' ? 'document' : 'image',
             name: imageFile.name,
             content: base64,
             mimeType: imageFile.type,

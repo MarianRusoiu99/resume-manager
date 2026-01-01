@@ -12,8 +12,7 @@ import type { ServiceResult } from '@/lib/types/service-result';
  */
 export interface CreateTemplateServiceInput {
   name: string;
-  category: 'PROFESSIONAL' | 'MODERN' | 'CREATIVE' | 'ATS_OPTIMIZED' | 'MINIMAL';
-  description: string;
+  description?: string;
   htmlTemplate: string;
   cssStyles: string;
   previewUrl?: string;
@@ -25,7 +24,6 @@ export interface CreateTemplateServiceInput {
  */
 export interface UpdateTemplateServiceInput {
   name?: string;
-  category?: 'PROFESSIONAL' | 'MODERN' | 'CREATIVE' | 'ATS_OPTIMIZED' | 'MINIMAL';
   description?: string;
   htmlTemplate?: string;
   cssStyles?: string;
@@ -41,11 +39,6 @@ export interface ITemplateService {
    * Get all public templates
    */
   getAllPublicTemplates(): Promise<ServiceResult<ResumeTemplate[]>>;
-
-  /**
-   * Get templates by category
-   */
-  getTemplatesByCategory(category: string): Promise<ServiceResult<ResumeTemplate[]>>;
 
   /**
    * Get a template by ID
@@ -69,14 +62,4 @@ export interface ITemplateService {
    * Delete a template
    */
   deleteTemplate(id: string): Promise<ServiceResult<void>>;
-
-  /**
-   * Get all template categories
-   */
-  getCategories(): Promise<ServiceResult<string[]>>;
-
-  /**
-   * Get template counts by category
-   */
-  getCategoryCounts(): Promise<ServiceResult<Record<string, number>>>;
 }

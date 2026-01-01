@@ -5,15 +5,13 @@
  */
 
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { TemplateCategory } from '@prisma/client';
 
 /**
  * Input for creating a template
  */
 export interface CreateTemplateInput {
   name: string;
-  category: TemplateCategory;
-  description: string;
+  description?: string;
   htmlTemplate: string;
   cssStyles: string;
   previewUrl?: string;
@@ -25,7 +23,6 @@ export interface CreateTemplateInput {
  */
 export interface UpdateTemplateInput {
   name?: string;
-  category?: TemplateCategory;
   description?: string;
   htmlTemplate?: string;
   cssStyles?: string;
@@ -41,11 +38,6 @@ export interface ITemplateRepository {
    * Get all public templates
    */
   findAllPublic(): Promise<ResumeTemplate[]>;
-
-  /**
-   * Get templates by category
-   */
-  findByCategory(category: string): Promise<ResumeTemplate[]>;
 
   /**
    * Get template by ID
@@ -68,17 +60,7 @@ export interface ITemplateRepository {
   delete(id: string): Promise<ResumeTemplate>;
 
   /**
-   * Count templates by category
-   */
-  countByCategory(): Promise<Record<string, number>>;
-
-  /**
    * Check if a template is in use
    */
   isInUse(templateId: string): Promise<boolean>;
-
-  /**
-   * Get all unique categories
-   */
-  getCategories(): Promise<string[]>;
 }

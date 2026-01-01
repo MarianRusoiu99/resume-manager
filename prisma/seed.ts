@@ -7,7 +7,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { PrismaClient, TemplateCategory } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 function getTemplateAssetsPath() {
@@ -54,7 +54,7 @@ const sampleJsonResumeDocument = {
       area: 'Computer Science',
       startDate: '2014-09',
       endDate: '2018-05',
-    },
+      },
   ],
   skills: [
     {
@@ -74,7 +74,6 @@ async function upsertResumeTemplates() {
   const templates = [
     {
       name: 'Classic',
-      category: TemplateCategory.PROFESSIONAL,
       description:
         'Traditional serif-based design with clean typography. Perfect for corporate, legal, academic, and traditional industries where a timeless look is valued.',
       htmlTemplate: classic.html,
@@ -83,7 +82,6 @@ async function upsertResumeTemplates() {
     },
     {
       name: 'Modern',
-      category: TemplateCategory.MODERN,
       description:
         'Clean sans-serif design with blue accent colors and modern typography. Ideal for tech, startups, design, and progressive companies.',
       htmlTemplate: modern.html,
@@ -92,7 +90,6 @@ async function upsertResumeTemplates() {
     },
     {
       name: 'Minimal',
-      category: TemplateCategory.MINIMAL,
       description:
         'Ultra-clean design with generous whitespace and subtle typography. Best for designers, creatives, and roles where simplicity is valued.',
       htmlTemplate: minimal.html,
@@ -113,13 +110,12 @@ async function upsertResumeTemplates() {
           htmlTemplate: template.htmlTemplate,
           cssStyles: template.cssStyles,
           description: template.description,
-          category: template.category,
           isPublic: template.isPublic,
         },
       });
       console.log(`   🔄 Updated template: ${template.name}`);
     } else {
-      await prisma.resumeTemplate.create({ data: template });
+      await prisma.resumeTemplate.create({ data: template as any });
       console.log(`   ✅ Created template: ${template.name}`);
     }
   }

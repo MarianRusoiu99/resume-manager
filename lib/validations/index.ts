@@ -35,10 +35,8 @@ export {
   type UpdateProfileInput,
   
   // Template
-  templateCategorySchema,
   createTemplateSchema,
   updateTemplateSchema,
-  type TemplateCategory,
   type CreateTemplateInput,
   type UpdateTemplateInput,
   

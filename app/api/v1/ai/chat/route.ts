@@ -30,7 +30,7 @@ const requestAttachmentTypes = ['document', 'image', 'resume', 'job-description'
  */
 const chatRequestSchema = z.object({
   // Conversation management
-  conversationId: z.string().optional(),
+  conversationId: z.string().nullable().optional(),
   mode: z.enum([
     'resume-generation',
     'resume-enhancement',
@@ -148,7 +148,7 @@ export const POST = createApiHandler(
 
     // Get or create conversation
     const internalAttachments = convertAttachments(attachments);
-    const conversation = ConversationManager.getOrCreate(conversationId, {
+    const conversation = ConversationManager.getOrCreate(conversationId || undefined, {
       mode: mode as ConversationMode,
       initialContext: context as ConversationContext,
       attachments: internalAttachments,

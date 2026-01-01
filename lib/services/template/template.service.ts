@@ -35,15 +35,6 @@ export class TemplateService
   }
 
   /**
-   * Get templates by category
-   */
-  async getTemplatesByCategory(category: string): Promise<ServiceResult<ResumeTemplate[]>> {
-    return withServiceError('fetch templates by category', async () => {
-      return await this.repository.findByCategory(category);
-    });
-  }
-
-  /**
    * Get a template by ID
    */
   async getTemplateById(id: string): Promise<ServiceResult<ResumeTemplate>> {
@@ -111,24 +102,6 @@ export class TemplateService
       }
 
       await this.repository.delete(id);
-    });
-  }
-
-  /**
-   * Get all unique categories
-   */
-  async getCategories(): Promise<ServiceResult<string[]>> {
-    return withServiceError('fetch categories', async () => {
-      return await this.repository.getCategories();
-    });
-  }
-
-  /**
-   * Get template counts by category
-   */
-  async getCategoryCounts(): Promise<ServiceResult<Record<string, number>>> {
-    return withServiceError('fetch category counts', async () => {
-      return await this.repository.countByCategory();
     });
   }
 

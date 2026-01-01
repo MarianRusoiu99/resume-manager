@@ -57,25 +57,11 @@ export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
 // ============================================================================
 
 /**
- * Template category enum
- */
-export const templateCategorySchema = z.enum([
-  'PROFESSIONAL',
-  'MODERN',
-  'CREATIVE',
-  'ATS_OPTIMIZED',
-  'MINIMAL',
-]);
-
-export type TemplateCategory = z.infer<typeof templateCategorySchema>;
-
-/**
  * Schema for creating a new template
  */
 export const createTemplateSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
-  category: templateCategorySchema,
-  description: z.string().min(1, 'Description is required').max(500, 'Description too long'),
+  description: z.string().max(500, 'Description too long').optional(),
   htmlTemplate: z.string().min(1, 'HTML template is required'),
   cssStyles: z.string().min(1, 'CSS styles are required'),
   previewUrl: z

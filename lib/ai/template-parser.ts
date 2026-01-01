@@ -18,7 +18,6 @@ import { logger } from "@/lib/utils/logger";
  * Extracted template data with resolved types
  */
 export interface ExtractedTemplate extends ExtractedTemplateData {
-  category: 'PROFESSIONAL' | 'MODERN' | 'CREATIVE' | 'ATS_OPTIMIZED' | 'MINIMAL';
 }
 
 /**
@@ -117,7 +116,6 @@ export async function parseTemplateFromImage(input: ParseTemplateInput): Promise
         htmlTemplate: validated.htmlTemplate,
         cssStyles: validated.cssStyles,
         name: validated.name,
-        category: validated.category || 'PROFESSIONAL',
         description: validated.description,
       };
 

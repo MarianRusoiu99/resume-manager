@@ -7,7 +7,7 @@
 
 import { prisma } from '@/lib/db/index';
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { PrismaClient, Prisma, TemplateCategory } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { GenericRepository } from './generic.repository';
 import type { ITemplateRepository, CreateTemplateInput, UpdateTemplateInput } from './interfaces/template.repository.interface';
 
@@ -34,21 +34,6 @@ export class TemplateRepository
   }
 
   /**
-   * Get templates by category
-   */
-  async findByCategory(category: string): Promise<ResumeTemplate[]> {
-    const templates = await this.delegate.findMany({
-      where: {
-        isPublic: true,
-        category: category as TemplateCategory,
-      },
-      orderBy: [{ name: 'asc' }],
-    });
-
-    return templates.map((t: any) => this.mapToTemplate(t));
-  }
-
-  /**
    * Get template by ID
    */
   override async findById(id: string): Promise<ResumeTemplate | null> {
@@ -66,7 +51,6 @@ export class TemplateRepository
     const template = await this.delegate.create({
       data: {
         name: data.name,
-        category: data.category,
         description: data.description,
         htmlTemplate: data.htmlTemplate,
         cssStyles: data.cssStyles,
@@ -88,22 +72,6 @@ export class TemplateRepository
     const updateData: Prisma.ResumeTemplateUpdateInput = {};
 
     if (data.name !== undefined) updateData.name = data.name;
-    if (data.category !== undefined) {
-      // Map lowercase category to Prisma enum
-      const categoryMap: Record<string, string> = {
-        'professional': 'PROFESSIONAL',
-        'modern': 'MODERN',
-        'creative': 'CREATIVE',
-        'ats-optimized': 'ATS_OPTIMIZED',
-        'minimal': 'MINIMAL',
-      };
-      // Accept both enum and string
-      if (typeof data.category === 'string' && categoryMap[data.category]) {
-        updateData.category = categoryMap[data.category] as TemplateCategory;
-      } else {
-        updateData.category = data.category;
-      }
-    }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.htmlTemplate !== undefined) updateData.htmlTemplate = data.htmlTemplate;
     if (data.cssStyles !== undefined) updateData.cssStyles = data.cssStyles;
@@ -133,25 +101,6 @@ export class TemplateRepository
   }
 
   /**
-   * Count templates by category
-   */
-  async countByCategory(): Promise<Record<string, number>> {
-    const templates = await this.db.resumeTemplate.groupBy({
-      by: ['category'],
-      where: { isPublic: true },
-      _count: true,
-    });
-
-    return templates.reduce(
-      (acc: Record<string, number>, item: any) => {
-        acc[item.category] = item._count;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-  }
-
-  /**
    * Check if a template is in use by any resumes
    */
   async isInUse(templateId: string): Promise<boolean> {
@@ -162,25 +111,12 @@ export class TemplateRepository
   }
 
   /**
-   * Get all unique categories
-   */
-  async getCategories(): Promise<string[]> {
-    const categories = await this.db.resumeTemplate.findMany({
-      select: { category: true },
-      distinct: ['category'],
-      orderBy: { category: 'asc' },
-    });
-    return categories.map((c: any) => c.category);
-  }
-
-  /**
    * Map Prisma model to domain model
    */
   private mapToTemplate(template: {
     id: string;
     name: string;
-    category: TemplateCategory;
-    description: string;
+    description: string | null;
     htmlTemplate: string;
     cssStyles: string;
     previewUrl: string | null;
@@ -191,7 +127,6 @@ export class TemplateRepository
     return {
       id: template.id,
       name: template.name,
-      category: template.category,
       description: template.description,
       htmlTemplate: template.htmlTemplate,
       cssStyles: template.cssStyles,

@@ -207,17 +207,11 @@ export function TemplateCard({
       <EntityCard
         id={template.id}
         title={template.name}
-        subtitle={template.description}
+        subtitle={template.description ?? undefined}
         href={showAdminActions ? `/templates/${template.id}` : '#'}
         disableNavigation={!showAdminActions}
         previewHtml={previewHtml}
         isPreviewLoading={isLoadingPreview}
-        badges={[
-          {
-            label: template.category,
-            variant: 'outline',
-          },
-        ]}
         actions={actions}
         onDelete={showAdminActions ? handleDelete : undefined}
         deleteDialog={{

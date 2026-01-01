@@ -12,13 +12,8 @@ import { success } from '@/lib/types/service-result';
 
 
 export const GET = createApiHandler(
-  async (request) => {
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-
-    const templates = category
-      ? await templateRepository.findByCategory(category)
-      : await templateRepository.findAllPublic();
+  async () => {
+    const templates = await templateRepository.findAllPublic();
 
     return success({
       templates,

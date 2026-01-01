@@ -12,7 +12,6 @@ export const templateExtractionSchema = z.object({
     htmlTemplate: z.string().min(1, 'HTML template is required'),
     cssStyles: z.string().min(1, 'CSS styles are required'),
     name: z.string().optional(),
-    category: z.enum(['PROFESSIONAL', 'MODERN', 'CREATIVE', 'ATS_OPTIMIZED', 'MINIMAL']).optional(),
     description: z.string().optional(),
 });
 
@@ -74,7 +73,6 @@ Return a JSON object:
   "htmlTemplate": "<main>...</main>",
   "cssStyles": "/* your CSS */",
   "name": "Descriptive name based on the design",
-  "category": "PROFESSIONAL|MODERN|CREATIVE|ATS_OPTIMIZED|MINIMAL",
   "description": "Brief description of the visual style"
 }
 

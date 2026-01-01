@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import type { TemplateBase } from '@/lib/types/template';
 import { useComponentLogger } from '@/hooks';
 import { apiV1, type TemplateListResponseDto } from '@/lib/client';
@@ -65,17 +64,6 @@ export function PreviewTemplateSelector({
 
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId);
 
-  // Group templates by category
-  const templatesByCategory = templates.reduce((acc, template) => {
-    if (!acc[template.category]) {
-      acc[template.category] = [];
-    }
-    acc[template.category].push(template);
-    return acc;
-  }, {} as Record<string, TemplateBase[]>);
-
-  const categories = Object.keys(templatesByCategory).sort((a, b) => a.localeCompare(b));
-
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
@@ -112,43 +100,36 @@ export function PreviewTemplateSelector({
         )}
         
         {!isLoading && templates.length > 0 && (
-          <div className="max-h-[400px] overflow-y-auto">{categories.map((category, categoryIndex) => (
-              <div key={category}>
-                {categoryIndex > 0 && <DropdownMenuSeparator className="my-1" />}
-                <div className="px-2 py-1">
-                  <Badge variant="secondary" className="text-[10px] font-medium uppercase">
-                    {category}
-                  </Badge>
-                </div>
-                {templatesByCategory[category].map((template) => {
-                  const isSelected = template.id === selectedTemplateId;
-                  
-                  return (
-                    <DropdownMenuItem
-                      key={template.id}
-                      onClick={() => handleTemplateSelect(template.id)}
-                      className="flex items-start gap-2 py-2.5 px-2 cursor-pointer"
-                    >
-                      <div className="flex h-5 items-center shrink-0">
-                        {isSelected ? (
-                          <Check className="h-4 w-4 text-primary" />
-                        ) : (
-                          <div className="h-4 w-4" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 space-y-0.5">
-                        <div className="font-medium text-sm leading-tight">
-                          {template.name}
-                        </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                          {template.description}
-                        </p>
-                      </div>
-                    </DropdownMenuItem>
-                  );
-                })}
-              </div>
-            ))}
+          <div className="max-h-[400px] overflow-y-auto">
+            {templates.map((template) => {
+              const isSelected = template.id === selectedTemplateId;
+              
+              return (
+                <DropdownMenuItem
+                  key={template.id}
+                  onClick={() => handleTemplateSelect(template.id)}
+                  className="flex items-start gap-2 py-2.5 px-2 cursor-pointer"
+                >
+                  <div className="flex h-5 items-center shrink-0">
+                    {isSelected ? (
+                      <Check className="h-4 w-4 text-primary" />
+                    ) : (
+                      <div className="h-4 w-4" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-0.5">
+                    <div className="font-medium text-sm leading-tight">
+                      {template.name}
+                    </div>
+                    {template.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                        {template.description}
+                      </p>
+                    )}
+                  </div>
+                </DropdownMenuItem>
+              );
+            })}
           </div>
         )}
       </DropdownMenuContent>
