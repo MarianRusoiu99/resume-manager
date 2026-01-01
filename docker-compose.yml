@@ -59,7 +59,7 @@ services:
   # PostgreSQL Database
   # ---------------------------------------------------------------------------
   db:
-    image: postgres:15-alpine
+    image: postgres:18
     container_name: resume-optimizer-db
     restart: unless-stopped
     environment:
@@ -69,7 +69,7 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data9:/var/lib/postgresql
     networks:
       - resume-net
     healthcheck:
@@ -83,7 +83,7 @@ services:
   # Redis Cache & PubSub
   # ---------------------------------------------------------------------------
   redis:
-    image: redis:7-alpine
+    image: redis:8.4
     container_name: resume-optimizer-redis
     restart: unless-stopped
     ports:
@@ -105,5 +105,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data9:
   redis_data:

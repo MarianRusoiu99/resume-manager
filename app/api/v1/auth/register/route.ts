@@ -8,7 +8,6 @@ import { success } from "@/lib/types/service-result";
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  name: z.string().min(1, "Name is required").optional(),
 });
 
 export const POST = createApiHandler(
@@ -29,7 +28,6 @@ export const POST = createApiHandler(
       data: {
         email: body!.email,
         passwordHash,
-        name: body!.name,
       },
       select: {
         id: true,

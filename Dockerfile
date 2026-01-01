@@ -5,8 +5,20 @@
 
 FROM node:20-alpine AS base
 
-# Install OpenSSL for Prisma compatibility with Alpine
-RUN apk add --no-cache libc6-compat openssl
+# Install dependencies:
+# - OpenSSL/libc6-compat: for Prisma
+# - Chromium & fonts: for Puppeteer
+# - Tini: for proper process signal handling
+RUN apk add --no-cache \
+    libc6-compat \
+    openssl \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    tini
 
 # =============================================================================
 # Dependencies Stage - Install npm packages
@@ -20,6 +32,8 @@ COPY prisma ./prisma/
 
 # Install all dependencies (including devDependencies for build)
 # Use --legacy-peer-deps to handle React 19 peer dependency conflicts
+# Skip Puppeteer Chromium download as we use the system installed one
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN npm install --legacy-peer-deps
 
 # Generate Prisma Client with correct binary target
@@ -80,9 +94,14 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+# Puppeteer configuration for Alpine
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Health check endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start the application
+# Start the application via Tini for better signal handling
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "server.js"]

@@ -21,6 +21,8 @@ import {
 import { DEFAULT_LOGIN_REDIRECT } from '@/lib/auth/routes';
 import { sanitizeCallbackUrl } from '@/lib/utils/redirects';
 import { logger } from '@/lib/utils/logger';
+import { notificationService } from '@/lib/services';
+import { getVerifiedSession } from '@/lib/auth/dal';
 
 /**
  * Login action for use with useActionState
@@ -75,10 +77,9 @@ export async function registerAction(
   formData: FormData
 ): Promise<AuthFormState> {
   // Validate form fields
-  const validatedFields = registerSchema.safeParse({
+    const validatedFields = registerSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
-    name: formData.get('name') || undefined,
   });
 
   if (!validatedFields.success) {
@@ -88,7 +89,7 @@ export async function registerAction(
     };
   }
 
-  const { email, password, name } = validatedFields.data;
+  const { email, password } = validatedFields.data;
 
   try {
     // Check if user already exists
@@ -106,13 +107,29 @@ export async function registerAction(
     // Hash password and create user
     const passwordHash = await hashPassword(password);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
-        name,
       },
     });
+
+    // Send onboarding notifications
+    await notificationService.notifySystem(
+      user.id,
+      'Welcome! Set up your API Keys',
+      'To start using AI features, please add an API provider and your key.',
+      '/settings/api-keys',
+      'Set up API Keys'
+    );
+
+    await notificationService.notifySystem(
+      user.id,
+      'Configure AI Models',
+      'Choose which models to use for resume and cover letter generation.',
+      '/settings/ai-models',
+      'Configure Models'
+    );
 
     logger.info('User registered', { email });
 
@@ -125,6 +142,40 @@ export async function registerAction(
     
     return {
       message: 'An error occurred. Please try again.',
+    };
+  }
+}
+
+/**
+ * Delete account action
+ */
+export async function deleteAccountAction(): Promise<AuthFormState> {
+  const session = await getVerifiedSession();
+
+  if (!session?.userId) {
+    return {
+      message: 'You must be signed in to delete your account.',
+    };
+  }
+
+  try {
+    const userId = session.userId;
+
+    // Delete user from database (cascades will handle related data)
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    logger.info('User deleted account', { userId });
+
+    // Sign out the user
+    await signOut({ redirectTo: '/login' });
+
+    return { success: true };
+  } catch (error) {
+    logger.error('Delete account error', error);
+    return {
+      message: 'An error occurred while deleting your account. Please try again.',
     };
   }
 }
