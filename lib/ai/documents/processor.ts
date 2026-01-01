@@ -5,7 +5,7 @@
  * Extracts text from PDFs, DOCX, images, and other documents.
  */
 
-import { documentParserService } from '@/lib/services/document-parser/document-parser.service';
+import { documentParserService } from '@/lib/services';
 import { logger } from '@/lib/utils/logger';
 import type {
   DocumentInput,

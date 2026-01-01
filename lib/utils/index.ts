@@ -26,13 +26,13 @@ export {
     renderPDFDocument,
     PDF_CONFIG,
     A4_DIMENSIONS
-} from './pdf-renderer';
+} from '../templates/renderers/pdf';
 export {
     sanitizeTemplate,
     sanitizeTemplateHtml,
     sanitizeTemplateCss,
     type SanitizedTemplate,
-} from './template-sanitizer';
+} from '../templates/utils/sanitizer';
 export {
     formatDate,
     formatDateRange,

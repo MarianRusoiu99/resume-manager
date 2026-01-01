@@ -1,6 +1,6 @@
 'use server'
 
-import { profileService } from '@/lib/services/profile.service';
+import { profileService } from '@/lib/services';
 import { withServerAction } from '@/lib/actions/with-server-action';
 import { type Resume } from '@/lib/validations/jsonresume';
 

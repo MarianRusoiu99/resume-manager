@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSwaggerSpec } from '@/lib/swagger';
+import { getSwaggerSpec } from '@/lib/api/swagger/config';
 import { env } from '@/lib/config';
 
 export async function GET() {

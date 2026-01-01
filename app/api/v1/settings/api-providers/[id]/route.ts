@@ -7,8 +7,8 @@
  * Rate limited to 10 requests per minute for security
  */
 
-import { createApiHandler } from '@/lib/api-handler';
-import { apiProviderService } from '@/lib/services/api-provider.service';
+import { createApiHandler } from '@/lib/api/handler';
+import { apiProviderService } from '@/lib/services';
 import { updateApiProviderSchema } from '@/lib/validations/api-schemas';
 
 export const PATCH = createApiHandler(

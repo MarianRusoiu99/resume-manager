@@ -6,7 +6,7 @@
 
 import { streamText, generateText, generateObject, type CoreMessage } from 'ai';
 import { logger } from '@/lib/utils/logger';
-import { auditLogService } from '@/lib/services/audit-log/audit-log.service';
+import { auditLogService } from '@/lib/services';
 import { calculateAICost } from '../pricing';
 import { ConversationManager, type Conversation, type ConversationMode } from './conversation';
 import { formatAttachmentsAsContext, getImageAttachments, getTextAttachments, hasImageAttachments } from './message';

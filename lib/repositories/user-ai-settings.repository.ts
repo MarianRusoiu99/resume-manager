@@ -3,7 +3,7 @@
  * Compatibility layer over the new normalized AI preference schema.
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { PrismaClient, Prisma, type AiFeatureKey } from '@prisma/client';
 import { GenericUserOwnedRepository } from './generic.repository';
 import type { 

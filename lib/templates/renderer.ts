@@ -5,8 +5,8 @@
 
 import Handlebars from 'handlebars';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { renderPDFDocument } from '@/lib/utils/pdf-renderer';
-import { sanitizeTemplateCss, sanitizeTemplateHtml } from '@/lib/utils/template-sanitizer';
+import { renderPDFDocument } from '@/lib/templates/renderers/pdf';
+import { sanitizeTemplateCss, sanitizeTemplateHtml } from '@/lib/templates/utils/sanitizer';
 
 /**
  * Register Handlebars helpers for common formatting tasks

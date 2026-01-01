@@ -1,6 +1,6 @@
 'use server'
 
-import { coverLetterService } from '@/lib/services/cover-letter.service';
+import { coverLetterService } from '@/lib/services';
 import { withServerAction } from '@/lib/actions/with-server-action';
 
 /**

@@ -31,36 +31,11 @@ export class DocumentParserService implements IDocumentParserService {
       if (!buffer || buffer.length === 0) {
         throw new Error('Empty buffer provided');
       }
-      
       // Use a fresh require inside the method to avoid any module caching/interop issues
       // and ensure we get the actual function.
       const pdfParse = require('pdf-parse');
       
-      // Handle different export styles
-      // Based on tests, pdf-parse@2.4.5 exports an object with PDFParse class
-      // but the main function is usually the module itself.
-      // If it's an object, we might need to find the function.
-      
-      let parseFn;
-      if (typeof pdfParse === 'function') {
-        parseFn = pdfParse;
-      } else if (typeof pdfParse.default === 'function') {
-        parseFn = pdfParse.default;
-      } else {
-        // If it's an object with PDFParse class, we can't call it without 'new'
-        // but pdf-parse is supposed to be a function.
-        // Let's try to require the internal lib directly as a last resort
-        try {
-          parseFn = require('pdf-parse/lib/pdf-parse.js');
-        } catch (e) {
-          // If that fails, and we have the object, let's try to see if it's callable
-          parseFn = pdfParse;
-        }
-      }
-
-      if (typeof parseFn !== 'function') {
-        throw new Error('PDF parsing library not correctly loaded: ' + typeof parseFn);
-      }
+      let parseFn = pdfParse.default;
 
       const data = await parseFn(buffer);
       return data.text || '';

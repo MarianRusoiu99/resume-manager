@@ -18,7 +18,7 @@ import {
   DEFAULT_LOGIN_REDIRECT,
   DEFAULT_AUTH_REDIRECT,
   shouldSkipProxy,
-  isPublicRoute,
+  isPublicPath,
   isAuthRoute,
 } from '@/lib/auth/routes';
 
@@ -123,7 +123,7 @@ export async function proxy(request: NextRequest) {
 
   // Optimistic check: does session cookie exist?
   const hasSession = await hasSessionCookie();
-  const isPublic = isPublicRoute(pathname);
+  const isPublic = isPublicPath(pathname);
   const isAuth = isAuthRoute(pathname);
 
   // Redirect to login if accessing protected route without session cookie
@@ -133,10 +133,14 @@ export async function proxy(request: NextRequest) {
     return applyCspHeader(request, NextResponse.redirect(loginUrl));
   }
 
-  // Redirect to profile if accessing auth pages with session cookie
+  // Remove optimistic redirect to profile for auth pages
+  // This prevents infinite loops when session cookie exists but session is invalid
+  // Client-side logic in login page will handle redirecting authenticated users
+  /*
   if (isAuth && hasSession) {
     return applyCspHeader(request, NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, request.url)));
   }
+  */
 
   return applyCspHeader(request, NextResponse.next());
 }

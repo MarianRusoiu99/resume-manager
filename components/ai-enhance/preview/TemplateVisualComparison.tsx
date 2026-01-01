@@ -8,7 +8,7 @@
 
 import { SideBySideComparison, PreviewIframe } from './SideBySideComparison';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
-import { sampleResume } from '@/lib/utils/sample-resume';
+import { sampleResume } from '@/lib/templates/constants/sample-resume';
 import { useMemo } from 'react';
 
 export interface TemplateVisualComparisonProps {

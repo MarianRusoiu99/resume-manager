@@ -6,8 +6,8 @@
  *   - Kept for backward compatibility
  */
 
-import { profileService } from '@/lib/services/profile.service';
-import { createApiHandler } from '@/lib/api-handler';
+import { profileService } from '@/lib/services';
+import { createApiHandler } from '@/lib/api/handler';
 import { success } from '@/lib/types/service-result';
 
 export const POST = createApiHandler(async (request, { params }, session) => {

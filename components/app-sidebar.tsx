@@ -57,11 +57,6 @@ const navigationItems = [
     icon: LayoutDashboard,
   },
   {
-    title: "Analytics",
-    url: "/analytics",
-    icon: BarChart3,
-  },
-  {
     title: "Profile",
     url: "/profile",
     icon: User,

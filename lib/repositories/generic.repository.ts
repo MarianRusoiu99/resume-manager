@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 
 export interface EntityWithId {
   id: string;

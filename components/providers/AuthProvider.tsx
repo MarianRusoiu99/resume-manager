@@ -5,8 +5,7 @@ import { SessionProvider, useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { SESSION_EXPIRED_EVENT, triggerSessionExpiry as triggerSessionExpiryInternal } from "@/lib/auth/session-expiry";
 
-// Public routes that don't require authentication
-const publicRoutes = ["/login", "/register", "/public"];
+import { isPublicPath } from "@/lib/auth/routes";
 
 /**
  * Trigger session expiry from anywhere in the app
@@ -44,7 +43,7 @@ function SessionMonitor({ children }: { readonly children: React.ReactNode }) {
   // Listen for session expiry events (triggered by failed API calls)
   useEffect(() => {
     const handleExpiredEvent = () => {
-      if (wasAuthenticated.current && !publicRoutes.some((route) => pathname.startsWith(route))) {
+      if (wasAuthenticated.current && !isPublicPath(pathname)) {
         handleSessionExpiry();
       }
     };
@@ -63,7 +62,7 @@ function SessionMonitor({ children }: { readonly children: React.ReactNode }) {
     if (
       wasAuthenticated.current &&
       status === "unauthenticated" &&
-      !publicRoutes.some((route) => pathname.startsWith(route))
+      !isPublicPath(pathname)
     ) {
       router.push("/login");
       router.refresh();

@@ -3,12 +3,12 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import { type ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, NotFoundError } from '@/lib/services/utils';
 
-import type { IResumeCrudService } from '../interfaces';
+import type { IResumeCrudService } from '../../interfaces';
 import { invalidateUserResumesCache } from './cache';
 import { mapGeneratedResumeToDetails, mapGeneratedResumeToListItem } from './mappers';
 import type { ResumeDetails, ResumeListItem, UpdatedResumeData } from './types';
 
-import { GenericUserOwnedCrudService } from '../utils/generic-crud.service';
+import { GenericUserOwnedCrudService } from '../../utils/generic-crud.service';
 import type { CreateResumeInput, GeneratedResumeData } from '@/lib/repositories/interfaces/generated-resume.repository.interface';
 
 /**

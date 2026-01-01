@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { GenericUserOwnedRepository, UserOwnedEntity } from './generic.repository';
 import type { IProfileRepository, ProfileData, CreateProfileInput, UpdateProfileInput, ProfileWithTemplate } from './interfaces/profile.repository.interface';

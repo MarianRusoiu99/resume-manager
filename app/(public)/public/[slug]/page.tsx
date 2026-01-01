@@ -1,7 +1,7 @@
 import { profileRepository } from "@/lib/repositories/profile.repository";
 import { notFound } from "next/navigation";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { renderTemplateServerSide } from "@/lib/utils/server-template-renderer";
+import { renderTemplateServerSide } from "@/lib/templates/renderers/server";
 import type { ResumeTemplate } from "@/lib/templates/template";
 
 interface PublicResumePageProps {

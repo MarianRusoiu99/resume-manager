@@ -49,13 +49,13 @@ export default function DashboardPage() {
               </div>
             ) : analyticsData?.resumesOverTime.length ? (
               <div className="space-y-4">
-                {analyticsData.resumesOverTime.map((item) => (
+                {analyticsData?.resumesOverTime.map((item) => (
                   <div key={item.date} className="flex items-center gap-4">
                     <div className="text-sm font-medium w-24">{item.date}</div>
                     <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-primary" 
-                        style={{ width: `${(item.count / Math.max(...analyticsData.resumesOverTime.map(d => d.count))) * 100}%` }} 
+                        style={{ width: `${(item.count / Math.max(...analyticsData?.resumesOverTime.map(d => d.count))) * 100}%` }} 
                       />
                     </div>
                     <div className="text-sm font-bold">{item.count}</div>

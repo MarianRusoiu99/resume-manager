@@ -5,7 +5,7 @@
  * Handles data access for resume templates.
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { PrismaClient, Prisma, TemplateCategory } from '@prisma/client';
 import { GenericRepository } from './generic.repository';

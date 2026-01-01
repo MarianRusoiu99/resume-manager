@@ -1,5 +1,5 @@
 import { PrismaClient, Prisma } from '@prisma/client';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import type { Resume as JsonResume } from '@/lib/validations/jsonresume';
 import { GenericUserOwnedRepository } from './generic.repository';
 import type { IGeneratedResumeRepository, GeneratedResumeData, CreateResumeInput } from './interfaces/generated-resume.repository.interface';

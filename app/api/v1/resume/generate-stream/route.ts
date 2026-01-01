@@ -1,34 +1,24 @@
 /**
  * Resume Generation with Progress Streaming
  * POST /api/resume/generate-stream
- * 
- * Generates a resume with real-time progress updates via Server-Sent Events (SSE)
- * Supports configurable workflows via the `workflow` parameter
  */
 
 import { z } from 'zod';
-import { createApiHandler } from '@/lib/api-handler';
+import { createApiHandler } from '@/lib/api/handler';
 import { generateResumeSchema } from '@/lib/validations/api-schemas';
 import { logger } from '@/lib/utils/logger';
-import { profileService } from '@/lib/services/profile.service';
+import { resumeService, profileService, notificationService } from '@/lib/services';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 import { generateResume } from '@/lib/ai';
 import { getWorkflow, createCustomWorkflow } from '@/lib/ai/workflow';
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
 import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
-import { notificationService } from '@/lib/services/notification.service';
 
 const generateResumeStreamSchema = generateResumeSchema.extend({
-  /** Workflow type: 'resume', 'cover-letter', or 'full' */
   workflowType: z.enum(['resume', 'cover-letter', 'full']).optional().default('resume'),
-  /** Custom workflow steps (overrides workflowType) */
   customSteps: z.array(z.string()).optional(),
 });
 
-
-/**
- * POST /api/resume/generate-stream - Generate resume with progress streaming
- */
 export const POST = createApiHandler(
   async (request, context, session, body, meta) => {
     const { jobDescription, profileId, templateId, modelId, workflowType, customSteps } = body!;
@@ -39,20 +29,15 @@ export const POST = createApiHandler(
       userId,
       profileId: profileId || 'default',
       workflowType,
-      customSteps: customSteps?.join(', ') || 'none',
     });
 
-    // Create a readable stream for SSE
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         let isControllerClosed = false;
 
         const sendEvent = (event: string, data: unknown) => {
-          if (isControllerClosed) {
-            logger.warn(`SSE: Attempted to send ${event} after stream closed`);
-            return;
-          }
+          if (isControllerClosed) return;
           try {
             const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
             controller.enqueue(encoder.encode(message));
@@ -73,7 +58,6 @@ export const POST = createApiHandler(
           sendEvent('connected', { message: 'Connection established', requestId });
           sendEvent('start', { message: 'Starting workflow...' });
 
-          // Fetch and validate profile
           sendEvent('progress', { step: 'profile', message: 'Fetching profile...', progress: 5 });
           
           const profileResult = profileId
@@ -92,16 +76,9 @@ export const POST = createApiHandler(
           const userResume = resumeSchema.parse(profileData.resume);
           sendEvent('progress', { step: 'profile', message: 'Profile loaded', progress: 10 });
 
-          // Resolve provider/model (centralized)
           sendEvent('progress', { step: 'provider', message: 'Configuring AI provider...', progress: 12 });
           const resolvedModel = await resolveAIModelOrThrow({ userId, feature: 'resume', modelId });
-          logger.info('Using AI provider', {
-            providerType: resolvedModel.providerType,
-            modelId: resolvedModel.modelId,
-            modelKey: resolvedModel.modelKey,
-          });
 
-          // Determine workflow
           const workflow = customSteps?.length
             ? await createCustomWorkflow('Custom Workflow', 'User-defined workflow', customSteps)
             : getWorkflow(workflowType);
@@ -111,9 +88,7 @@ export const POST = createApiHandler(
             steps: workflow.steps.map(s => ({ id: s.id, name: s.name })) 
           });
 
-          // Progress callback for workflow engine
           const onProgress = (stepId: string, message: string, progress: number) => {
-            logger.debug(`SSE Progress: ${stepId} - ${message} (${progress}%)`);
             sendEvent('progress', {
               step: stepId,
               message,
@@ -122,7 +97,6 @@ export const POST = createApiHandler(
             });
           };
 
-          // Execute workflow
           const result = await generateResume({
             provider: resolvedModel.provider,
             modelKey: resolvedModel.modelKey,
@@ -134,16 +108,11 @@ export const POST = createApiHandler(
           });
 
           if (!result.success) {
-            sendEvent('error', {
-              error: 'Workflow failed',
-              details: result.error,
-              requestId,
-            });
+            sendEvent('error', { error: 'Workflow failed', details: result.error, requestId });
             closeController();
             return;
           }
 
-          // Save to database if we have a resume
           if (result.resume) {
             sendEvent('progress', { step: 'save', message: 'Saving to database...', progress: 95 });
             
@@ -179,20 +148,16 @@ export const POST = createApiHandler(
               executionTime: result.executionTime,
             });
 
-            // Create notification for the user
             await notificationService.notifyResumeGenerated(
               userId,
               savedResume.id,
               result.jobTitle,
               result.companyName
             );
-
-            logger.info('SSE: Resume generation complete', { resumeId: savedResume.id });
           } else {
-            // Workflow completed but no resume (e.g., cover letter only workflow)
             sendEvent('complete', {
               success: true,
-              coverLetter: result.resume, // In this case it might be cover letter data
+              coverLetter: result.resume,
               jobTitle: result.jobTitle,
               companyName: result.companyName,
               executedSteps: result.executedSteps,
@@ -210,7 +175,6 @@ export const POST = createApiHandler(
           closeController();
         }
       },
-
       cancel() {
         logger.debug('SSE: Client disconnected');
       },
@@ -231,4 +195,3 @@ export const POST = createApiHandler(
     bodySchema: generateResumeStreamSchema,
   }
 );
-

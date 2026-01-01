@@ -6,9 +6,9 @@
  *   - Kept for backward compatibility
  */
 
-import { profileService } from '@/lib/services/profile.service';
+import { profileService } from '@/lib/services';
 import { z } from 'zod';
-import { createApiHandler } from '@/lib/api-handler';
+import { createApiHandler } from '@/lib/api/handler';
 
 const duplicateSchema = z.object({
   name: z.string().min(1).max(100).optional(),

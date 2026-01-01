@@ -156,6 +156,7 @@ export const generateCoverLetterSchema = z.object({
   jobTitle: z.string().optional(),
   companyName: z.string().optional(),
   personalInstructions: z.string().max(1000).optional(),
+  modelId: z.string().optional(),
 }).refine(
   (data) => data.resumeId || data.profileId,
   { message: 'Either resumeId or profileId is required' }

@@ -5,8 +5,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { templateRepository } from '@/lib/repositories/template.repository';
-import { templateService } from '@/lib/services/template.service';
-import { createApiHandler } from '@/lib/api-handler';
+import { templateService } from '@/lib/services';
+import { createApiHandler } from '@/lib/api/handler';
 import { createTemplateSchema } from '@/lib/validations/api-schemas';
 import { success } from '@/lib/types/service-result';
 

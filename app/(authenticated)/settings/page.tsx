@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Page } from '@/components/layout/Page';
 import { Card } from '@/components/ui';
-import { Key, Cpu, ChevronRight } from 'lucide-react';
+import { Key, Cpu, ChevronRight, User } from 'lucide-react';
 
 const settingsPages = [
   {
@@ -17,6 +17,12 @@ const settingsPages = [
     description: 'Configure which AI models to use for each feature',
     href: '/settings/ai-models',
     icon: Cpu,
+  },
+  {
+    title: 'Account',
+    description: 'Manage your account settings and data',
+    href: '/settings/account',
+    icon: User,
   },
 ];
 

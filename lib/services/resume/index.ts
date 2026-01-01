@@ -17,15 +17,15 @@ export type {
   ResumeData,
   GeneratedResumeData,
   CoverLetterGenerationData,
-} from './resume-generation';
+} from './generation';
 
 // Re-export types from CRUD service
-export type { ResumeListItem, ResumeDetails, UpdatedResumeData } from './resume-crud';
+export type { ResumeListItem, ResumeDetails, UpdatedResumeData } from './crud';
 
 // Import services
-import { ResumeGenerationService, resumeGenerationService } from './resume-generation';
-import { ResumeCrudService, resumeCrudService } from './resume-crud';
-import type { IResumeService } from './interfaces';
+import { ResumeGenerationService, resumeGenerationService } from './generation';
+import { ResumeCrudService, resumeCrudService } from './crud';
+import type { IResumeService } from '../interfaces';
 import type { ServiceResult } from '@/lib/types/service-result';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type {
@@ -33,8 +33,8 @@ import type {
   GenerateResumeWithProgressInput,
   GeneratedResumeData,
   CoverLetterGenerationData,
-} from './resume-generation';
-import type { ResumeListItem, ResumeDetails, UpdatedResumeData } from './resume-crud';
+} from './generation';
+import type { ResumeListItem, ResumeDetails, UpdatedResumeData } from './crud';
 
 /**
  * Unified Resume Service - Composes generation and CRUD services
@@ -115,5 +115,5 @@ export class ResumeService implements IResumeService {
 export const resumeService = new ResumeService();
 
 // Also re-export individual services for direct use
-export { ResumeGenerationService, resumeGenerationService } from './resume-generation';
-export { ResumeCrudService, resumeCrudService } from './resume-crud';
+export { ResumeGenerationService, resumeGenerationService } from './generation';
+export { ResumeCrudService, resumeCrudService } from './crud';

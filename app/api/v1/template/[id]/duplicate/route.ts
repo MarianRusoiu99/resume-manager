@@ -3,8 +3,8 @@
  * Duplicate an existing template
  */
 
-import { createApiHandler } from '@/lib/api-handler';
-import { templateService } from '@/lib/services/template.service';
+import { createApiHandler } from '@/lib/api/handler';
+import { templateService } from '@/lib/services';
 import { templateRepository } from '@/lib/repositories/template.repository';
 import { failure } from '@/lib/types/service-result';
 

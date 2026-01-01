@@ -20,7 +20,7 @@
 
 import { getSession } from '@/lib/auth/dal';
 import { logger, isServiceResult, serviceResultToActionResult, failureActionResult } from '@/lib/utils';
-import { auditLog } from '@/lib/services/audit-log.service';
+import { auditLog } from '@/lib/services';
 import { revalidatePath } from 'next/cache';
 import type { ActionResult } from '@/lib/actions/types';
 import { isAppError, wrapError } from '@/lib/errors';

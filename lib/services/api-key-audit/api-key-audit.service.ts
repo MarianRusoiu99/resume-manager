@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { logger } from '@/lib/utils/logger';
 
 import type { ApiKeyAuditAction } from '@prisma/client';

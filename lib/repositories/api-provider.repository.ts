@@ -3,7 +3,7 @@
  * Handles database operations for API provider management
  */
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { PrismaClient, ProviderType, ApiProvider, ApiModel } from '@prisma/client';
 import { GenericUserOwnedRepository } from './generic.repository';
 import type { 

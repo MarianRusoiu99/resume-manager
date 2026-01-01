@@ -12,7 +12,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/db/index';
 import { env } from '@/lib/config';
 import { logger } from '@/lib/utils';
 import { checkRedisHealth } from '@/lib/redis';

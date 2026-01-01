@@ -4,8 +4,8 @@
  * PATCH /api/v1/settings/ai-models - Update a feature's model preference
  */
 
-import { createApiHandler } from '@/lib/api-handler';
-import { userAISettingsService } from '@/lib/services/user-ai-settings.service';
+import { createApiHandler } from '@/lib/api/handler';
+import { userAISettingsService } from '@/lib/services';
 import { updateAIPreferenceSchema } from '@/lib/validations/settings';
 
 /**

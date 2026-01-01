@@ -48,6 +48,16 @@ export const PUBLIC_API_ROUTES = [
 ] as const;
 
 /**
+ * Check if a path is considered public (no auth required)
+ * Includes exact public routes and routes starting with /public
+ */
+export function isPublicPath(pathname: string): boolean {
+  if (isPublicRoute(pathname)) return true;
+  if (pathname.startsWith('/public')) return true;
+  return false;
+}
+
+/**
  * Check if a path is a public route
  */
 export function isPublicRoute(pathname: string): boolean {

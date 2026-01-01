@@ -25,7 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, Code, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiV1 } from '@/lib/client';
-import { sampleResume } from '@/lib/utils/sample-resume';
+import { sampleResume } from '@/lib/templates/constants/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
 import { TemplateImportModal } from './TemplateImportModal';
 import { AIEnhanceButton, AIEnhanceTemplateModalUnified } from '@/components/ai-enhance';

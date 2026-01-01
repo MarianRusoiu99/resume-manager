@@ -7,7 +7,7 @@
 
 import { useEffect } from 'react';
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { sampleResume } from '@/lib/utils/sample-resume';
+import { sampleResume } from '@/lib/templates/constants/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
 
 interface TemplatePreviewModalProps {

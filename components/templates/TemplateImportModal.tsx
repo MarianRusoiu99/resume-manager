@@ -1,264 +1,256 @@
 'use client';
 
 /**
- * Template Import Modal Component
- * Allows users to upload template images for AI extraction
+ * Refactored Template Import Modal Component
+ * Uses the new useTemplateGeneration hook for AI extraction.
  */
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import NextImage from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Upload, Image as ImageIcon, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiV1 } from '@/lib/client';
+import { useTemplateGeneration } from '../ai-enhance/hooks/useTemplateGeneration';
 import type { ExtractedTemplate } from '@/lib/ai/template-parser';
 
-
 interface TemplateImportModalProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onImportComplete: (template: ExtractedTemplate) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onImportComplete: (template: ExtractedTemplate) => void;
 }
 
-type ImportStatus = 'idle' | 'uploading' | 'processing' | 'success' | 'error';
-
 export function TemplateImportModal({
-    open,
-    onOpenChange,
-    onImportComplete,
+  open,
+  onOpenChange,
+  onImportComplete,
 }: Readonly<TemplateImportModalProps>) {
-    const [status, setStatus] = useState<ImportStatus>('idle');
-    const [progress, setProgress] = useState(0);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [preview, setPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    const resetState = () => {
-        setStatus('idle');
-        setProgress(0);
-        setError(null);
-        setSelectedFile(null);
-        setPreview(null);
-    };
+  const { generate, template, isLoading, error, reset } = useTemplateGeneration();
 
-    const handleClose = () => {
-        if (status !== 'uploading' && status !== 'processing') {
-            resetState();
-            onOpenChange(false);
-        }
-    };
+  // Handle completion
+  useEffect(() => {
+    if (template) {
+      setProgress(100);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      
+      toast.success('Template extracted successfully!');
+      
+      const timer = setTimeout(() => {
+        onImportComplete(template);
+        handleClose();
+      }, 800);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [template, onImportComplete]);
 
-    const onDrop = useCallback((acceptedFiles: File[]) => {
-        const file = acceptedFiles[0];
-        if (file) {
-            setSelectedFile(file);
-            setError(null);
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      setProgress(0);
+    }
+  }, [error]);
 
-            // Create preview
-            const reader = new FileReader();
-            reader.onload = () => {
-                setPreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    }, []);
+  const handleClose = useCallback(() => {
+    if (!isLoading) {
+      reset();
+      setSelectedFile(null);
+      setPreview(null);
+      setProgress(0);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      onOpenChange(false);
+    }
+  }, [isLoading, onOpenChange, reset]);
 
-    const { getRootProps, getInputProps, isDragActive } = useDropzone({
-        onDrop,
-        accept: {
-            'image/png': ['.png'],
-            'image/jpeg': ['.jpg', '.jpeg'],
-            'image/webp': ['.webp'],
-            'image/gif': ['.gif'],
-        },
-        maxFiles: 1,
-        maxSize: 10 * 1024 * 1024, // 10MB
-        disabled: status === 'uploading' || status === 'processing',
-    });
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setSelectedFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
 
-    const handleImport = async () => {
-        if (!selectedFile) return;
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/png': ['.png'],
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/webp': ['.webp'],
+      'image/gif': ['.gif'],
+    },
+    maxFiles: 1,
+    maxSize: 10 * 1024 * 1024, // 10MB
+    disabled: isLoading,
+  });
 
-        try {
-            setStatus('uploading');
-            setProgress(20);
-            setError(null);
+  const handleImport = async () => {
+    if (!selectedFile) return;
 
-            const formData = new FormData();
-            formData.append('file', selectedFile);
+    setProgress(10);
+    
+    // Start progress simulation
+    progressIntervalRef.current = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 90) return 90;
+        return prev + 5;
+      });
+    }, 1500);
 
-            setStatus('processing');
-            setProgress(40);
+    await generate(selectedFile);
+  };
 
-            // Simulate progress during AI processing
-            const progressInterval = setInterval(() => {
-                setProgress((prev) => Math.min(prev + 10, 90));
-            }, 1000);
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            Import Template from Image
+          </DialogTitle>
+          <DialogDescription>
+            Upload a screenshot or image of a resume template. Our AI will analyze
+            the layout and generate a matching Handlebars template.
+          </DialogDescription>
+        </DialogHeader>
 
-            const result = await apiV1.TEMPLATE.IMPORT.postForm<{ template?: ExtractedTemplate }>(formData);
-
-            clearInterval(progressInterval);
-
-            if (result.error || !result.data?.template) {
-                throw new Error(result.error ?? 'Template import returned no template');
-            }
-
-            const template = result.data.template;
-
-            setProgress(100);
-            setStatus('success');
-
-            toast.success('Template extracted successfully!');
-
-            // Wait a moment to show success state
-            setTimeout(() => {
-                onImportComplete(template);
-                handleClose();
-            }, 500);
-        } catch (err) {
-            setStatus('error');
-            const errorMessage = err instanceof Error ? err.message : 'Failed to import template';
-            setError(errorMessage);
-            toast.error(errorMessage);
-        }
-    };
-
-    return (
-        <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <ImageIcon className="h-5 w-5" />
-                        Import Template from Image
-                    </DialogTitle>
-                    <DialogDescription>
-                        Upload a screenshot or image of a resume template. Our AI will analyze
-                        the layout and generate a matching Handlebars template.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <div className="space-y-4">
-                    {/* Dropzone */}
-                    {!preview && status === 'idle' && (
-                        <div
-                            {...getRootProps()}
-                            className={`
+        <div className="space-y-4">
+          {/* Dropzone */}
+          {!preview && !isLoading && (
+            <div
+              {...getRootProps()}
+              className={`
                 border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
                 transition-colors duration-200
                 ${isDragActive
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-muted-foreground/25 hover:border-primary/50'
-                                }
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted-foreground/25 hover:border-primary/50'
+                }
               `}
-                        >
-                            <input {...getInputProps()} />
-                            <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">
-                                {isDragActive
-                                    ? 'Drop the image here...'
-                                    : 'Drag & drop a template image, or click to browse'}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                PNG, JPEG, WebP, GIF up to 10MB
-                            </p>
-                        </div>
-                    )}
+            >
+              <input {...getInputProps()} />
+              <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                {isDragActive
+                  ? 'Drop the image here...'
+                  : 'Drag & drop a template image, or click to browse'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                PNG, JPEG, WebP, GIF up to 10MB
+              </p>
+            </div>
+          )}
 
-                    {/* Preview */}
-                    {preview && status !== 'success' && (
-                        <div className="space-y-4">
-                            <div className="relative rounded-lg overflow-hidden border bg-muted/20">
-                                <NextImage
-                                    src={preview}
-                                    alt="Template preview"
-                                    width={800}
-                                    height={192}
-                                    className="w-full h-48 object-contain"
-                                    unoptimized
-                                />
-                                {status === 'idle' && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setSelectedFile(null);
-                                            setPreview(null);
-                                        }}
-                                        className="absolute top-2 right-2 p-1 bg-background/80 rounded-full hover:bg-background"
-                                        title="Clear selected image"
-                                    >
-                                        <AlertCircle className="h-4 w-4" />
-                                    </button>
-                                )}
-                            </div>
+          {/* Preview */}
+          {preview && (
+            <div className="space-y-4">
+              <div className="relative rounded-lg overflow-hidden border bg-muted/20">
+                <NextImage
+                  src={preview}
+                  alt="Template preview"
+                  width={800}
+                  height={192}
+                  className="w-full h-48 object-contain"
+                  unoptimized
+                />
+                {!isLoading && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedFile(null);
+                      setPreview(null);
+                    }}
+                    className="absolute top-2 right-2 p-1 bg-background/80 rounded-full hover:bg-background"
+                    title="Clear selected image"
+                  >
+                    <AlertCircle className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
 
-                            {selectedFile && (
-                                <p className="text-sm text-muted-foreground text-center">
-                                    {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
-                                </p>
-                            )}
-                        </div>
-                    )}
+              {selectedFile && !isLoading && (
+                <p className="text-sm text-muted-foreground text-center">
+                  {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                </p>
+              )}
+            </div>
+          )}
 
-                    {/* Progress */}
-                    {(status === 'uploading' || status === 'processing') && (
-                        <div className="space-y-3">
-                            <Progress value={progress} className="h-2" />
-                            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                {status === 'uploading' && 'Uploading image...'}
-                                {status === 'processing' && 'AI is analyzing the template...'}
-                            </div>
-                        </div>
-                    )}
+          {/* Progress */}
+          {isLoading && (
+            <div className="space-y-3">
+              <Progress value={progress} className="h-2" />
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                AI is analyzing the template...
+              </div>
+            </div>
+          )}
 
-                    {/* Success */}
-                    {status === 'success' && (
-                        <div className="flex items-center justify-center gap-2 text-sm text-green-600">
-                            <CheckCircle className="h-5 w-5" />
-                            Template extracted successfully!
-                        </div>
-                    )}
+          {/* Success */}
+          {template && (
+            <div className="flex items-center justify-center gap-2 text-sm text-green-600">
+              <CheckCircle className="h-5 w-5" />
+              Template extracted successfully!
+            </div>
+          )}
 
-                    {/* Error */}
-                    {status === 'error' && error && (
-                        <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-                            <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                            <span>{error}</span>
-                        </div>
-                    )}
+          {/* Error */}
+          {error && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
-                    {/* Actions */}
-                    <div className="flex justify-end gap-2 pt-2">
-                        <Button
-                            variant="outline"
-                            onClick={handleClose}
-                            disabled={status === 'uploading' || status === 'processing'}
-                        >
-                            Cancel
-                        </Button>
-                        {status === 'idle' && selectedFile && (
-                            <Button onClick={handleImport}>
-                                <ImageIcon className="mr-2 h-4 w-4" />
-                                Extract Template
-                            </Button>
-                        )}
-                        {status === 'error' && (
-                            <Button onClick={handleImport}>
-                                Try Again
-                            </Button>
-                        )}
-                    </div>
-                </div>
-            </DialogContent>
-        </Dialog>
-    );
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            {!isLoading && selectedFile && !template && (
+              <Button onClick={handleImport}>
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Extract Template
+              </Button>
+            )}
+            {error && !isLoading && (
+              <Button onClick={handleImport}>
+                Try Again
+              </Button>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }

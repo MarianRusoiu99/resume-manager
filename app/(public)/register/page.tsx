@@ -53,22 +53,6 @@ export default function RegisterPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name (Optional)</Label>
-              <Input
-                id="name"
-                name="name"
-                type="text"
-                placeholder="John Doe"
-                aria-describedby={state?.errors?.name ? 'name-error' : undefined}
-              />
-              {state?.errors?.name && (
-                <p id="name-error" className="text-sm text-destructive">
-                  {state.errors.name[0]}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
               <Input
                 id="email"

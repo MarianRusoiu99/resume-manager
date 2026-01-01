@@ -59,7 +59,6 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export const registerSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
-  name: nameSchema.optional(),
 });
 
 export type RegisterFormData = z.infer<typeof registerSchema>;
