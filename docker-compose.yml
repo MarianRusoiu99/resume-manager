@@ -69,7 +69,7 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
-      - postgres_data9:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql
     networks:
       - resume-net
     healthcheck:
@@ -105,5 +105,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data9:
+  postgres_data:
   redis_data:
