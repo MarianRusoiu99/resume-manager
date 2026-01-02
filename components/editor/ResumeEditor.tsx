@@ -74,30 +74,27 @@ export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
   };
 
   return (
-    <div className="flex flex-col h-full bg-transparent overflow-hidden border-t">
-      {/* Main Content - Split Layout */}
-      <div className="flex flex-1 overflow-hidden flex-col md:flex-row p-0">
-        {/* Editor Area */}
-        <div className="flex flex-col min-h-0 w-full md:w-1/2 h-1/2 md:h-full bg-background overflow-hidden border-r">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            <EditorSidebar />
-            <div className="flex-1 overflow-y-auto">
-              <EditorContent />
-            </div>
-          </Tabs>
-        </div>
+    <div className="flex-1 min-h-0 flex flex-col md:flex-row bg-transparent gap-3 p-3">
+      {/* Editor Area */}
+      <div className="flex flex-col min-h-0 w-full md:w-1/2 bg-background rounded-xl overflow-hidden shadow-sm">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+          <EditorSidebar />
+          <div className="flex-1 overflow-y-auto">
+            <EditorContent />
+          </div>
+        </Tabs>
+      </div>
 
-        {/* Live Preview */}
-        <div className="bg-background overflow-hidden w-full md:w-1/2 h-1/2 md:h-full flex flex-col">
-          <ResumePreview
-            resumeData={resume}
-            profileId={id}
-            showTemplateSelector
-            showCard={false}
-            className="h-full"
-            onTemplateChange={setSelectedTemplateId}
-          />
-        </div>
+      {/* Live Preview */}
+      <div className="bg-background rounded-xl overflow-hidden shadow-sm w-full md:w-1/2 flex flex-col min-h-0">
+        <ResumePreview
+          resumeData={resume}
+          profileId={id}
+          showTemplateSelector
+          showCard={false}
+          className="h-full"
+          onTemplateChange={setSelectedTemplateId}
+        />
       </div>
 
       {/* Share Dialog */}

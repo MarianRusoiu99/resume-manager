@@ -21,13 +21,15 @@ interface PreviewTemplateSelectorProps {
   onTemplateChange: (templateId: string | null) => void;
   variant?: 'default' | 'ghost' | 'outline' | 'secondary';
   size?: 'default' | 'sm' | 'lg' | 'icon';
+  className?: string;
 }
 
-export function PreviewTemplateSelector({ 
-  selectedTemplateId, 
+export function PreviewTemplateSelector({
+  selectedTemplateId,
   onTemplateChange,
   variant = 'outline',
-  size = 'sm'
+  size = 'sm',
+  className
 }: Readonly<PreviewTemplateSelectorProps>) {
   const log = useComponentLogger('PreviewTemplateSelector');
   const [templates, setTemplates] = useState<TemplateBase[]>([]);
@@ -67,7 +69,7 @@ export function PreviewTemplateSelector({
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant={variant} size={size} className="gap-2">
+        <Button variant={variant} size={size} className={`gap-2 ${className ?? ''}`}>
           <span className="truncate">
             {selectedTemplate ? selectedTemplate.name : 'Select Template'}
           </span>
@@ -86,24 +88,24 @@ export function PreviewTemplateSelector({
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         {isLoading && (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         )}
-        
+
         {!isLoading && templates.length === 0 && (
           <div className="py-6 text-center text-sm text-muted-foreground">
             No templates available
           </div>
         )}
-        
+
         {!isLoading && templates.length > 0 && (
           <div className="max-h-[400px] overflow-y-auto">
             {templates.map((template) => {
               const isSelected = template.id === selectedTemplateId;
-              
+
               return (
                 <DropdownMenuItem
                   key={template.id}
