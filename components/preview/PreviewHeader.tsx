@@ -7,7 +7,7 @@
 
 import { Button } from '@/components/ui/button';
 import { PreviewTemplateSelector } from '@/components/templates/PreviewTemplateSelector';
-import { Download} from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 
 interface PreviewHeaderProps {
   showTemplateSelector: boolean;
@@ -47,8 +47,13 @@ export function PreviewHeader({
           size="sm"
           onClick={onExportPDF}
           disabled={isExportingPDF}
+          className="min-w-[120px]"
         >
-          <Download className="h-4 w-4 mr-2" />
+          {isExportingPDF ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4 mr-2" />
+          )}
           {isExportingPDF ? 'Exporting...' : 'Download PDF'}
         </Button>
       </div>
