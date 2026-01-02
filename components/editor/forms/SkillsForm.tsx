@@ -7,13 +7,15 @@ import { Button } from '@/components/ui/button';
 import type { Skill } from '@/lib/validations/jsonresume';
 import { useListForm } from '@/hooks/use-list-form';
 import { FormList } from '@/components/ui/form-list';
+import { useAutoSave } from '@/hooks/useAutoSave';
 
 interface SkillsFormProps {
   skills: Skill[];
   onChange: (skills: Skill[]) => void;
+  autoSave?: boolean;
 }
 
-export default function SkillsForm({ skills = [], onChange }: SkillsFormProps) {
+export default function SkillsForm({ skills = [], onChange, autoSave = true }: SkillsFormProps) {
   const { items, addItem, removeItem, updateItem } = useListForm<Skill>({
     initialItems: skills,
     onChange,
@@ -22,6 +24,13 @@ export default function SkillsForm({ skills = [], onChange }: SkillsFormProps) {
       level: "",
       keywords: [],
     },
+  });
+
+  useAutoSave({
+    data: skills,
+    onSave: async () => {},
+    enabled: autoSave,
+    delay: 1000,
   });
 
   const [newKeyword, setNewKeyword] = useState<Record<number, string>>({});

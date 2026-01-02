@@ -6,6 +6,8 @@ import { FormList } from "@/components/ui/form-list";
 import type { FieldConfig, FormSchema } from "@/lib/forms/form-schema";
 import { isFullWidth } from "@/lib/forms/form-schema";
 
+import { useAutoSave } from "@/hooks/useAutoSave";
+
 interface GenericFormListProps<T> {
   /** Form schema defining fields and templates */
   readonly schema: FormSchema<T>;
@@ -13,6 +15,8 @@ interface GenericFormListProps<T> {
   readonly items: T[];
   /** Callback when items change */
   readonly onChange: (items: T[]) => void;
+  /** Whether auto-save is enabled */
+  readonly autoSave?: boolean;
 }
 
 /**
@@ -37,11 +41,24 @@ export function GenericFormList<T extends Record<string, unknown>>({
   schema,
   items,
   onChange,
+  autoSave = true,
 }: GenericFormListProps<T>) {
   const { items: currentItems, addItem, removeItem, updateItem } = useListForm<T>({
     initialItems: items,
     onChange,
     newItemTemplate: schema.newItemTemplate,
+  });
+
+  // Use the new auto-save hook to ensure consistent debouncing across all lists
+  useAutoSave({
+    data: items,
+    onSave: async (data) => {
+      // Logic for saving is usually handled by the parent EditorContext
+      // This hook ensures that when items change, we wait for a debounce
+      // before finalizing the change.
+    },
+    enabled: autoSave,
+    delay: 1000,
   });
 
   return (

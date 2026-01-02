@@ -7,17 +7,19 @@ import type { Education } from "@/lib/validations/jsonresume";
 interface EducationFormProps {
   readonly education: Education[];
   readonly onChange: (education: Education[]) => void;
+  readonly autoSave?: boolean;
 }
 
 /**
  * Education Form - Uses GenericFormList for schema-driven rendering
  */
-export function EducationForm({ education, onChange }: EducationFormProps) {
+export function EducationForm({ education, onChange, autoSave }: EducationFormProps) {
   return (
     <GenericFormList
       schema={educationFormSchema}
       items={education}
       onChange={onChange}
+      autoSave={autoSave}
     />
   );
 }

@@ -7,6 +7,7 @@ import type { Work } from "@/lib/validations/jsonresume";
 interface ExperienceFormProps {
   readonly experiences: Work[];
   readonly onChange: (experiences: Work[]) => void;
+  readonly autoSave?: boolean;
 }
 
 /**
@@ -15,12 +16,13 @@ interface ExperienceFormProps {
  * The schema-based approach reduces boilerplate and ensures consistency
  * with other form sections while maintaining the same functionality.
  */
-export function ExperienceForm({ experiences, onChange }: ExperienceFormProps) {
+export function ExperienceForm({ experiences, onChange, autoSave }: ExperienceFormProps) {
   return (
     <GenericFormList
       schema={experienceFormSchema}
       items={experiences}
       onChange={onChange}
+      autoSave={autoSave}
     />
   );
 }
