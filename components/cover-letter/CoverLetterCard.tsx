@@ -5,14 +5,11 @@
 
 'use client';
 
-import { useTransition } from 'react';
 import { Download, FileText, Briefcase } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
-import { useToastAction, useExportPDF } from '@/hooks';
-import { deleteCoverLetter } from '@/app/actions/cover-letter';
-import { formatDate } from '@/lib/utils';
+import { useCoverLetterOperations } from '@/hooks/features/useCoverLetterOperations';
+import { useExportPDF } from '@/hooks';
 import { ROUTES } from '@/lib/constants';
-import { apiV1 } from '@/lib/client';
 
 interface CoverLetterCardProps {
   id: string;
@@ -35,9 +32,8 @@ export function CoverLetterCard({
   onEdit,
   onDelete,
 }: Readonly<CoverLetterCardProps>) {
-  const { runWithToast } = useToastAction();
   const { isExportingPDF, handleExportCoverLetter } = useExportPDF();
-  const [, startTransition] = useTransition();
+  const { handleDelete: handleDeleteOp } = useCoverLetterOperations();
 
   const getDisplayTitle = (): string => {
     if (jobTitle && companyName) {
@@ -57,25 +53,7 @@ export function CoverLetterCard({
   };
 
   const handleDelete = async () => {
-    return new Promise<void>((resolve, reject) => {
-      startTransition(async () => {
-        const result = await runWithToast(
-          () => deleteCoverLetter(id),
-          {
-            successMessage: 'Cover letter deleted successfully',
-            errorMessage: 'Failed to delete cover letter',
-          },
-        );
-
-        if (result?.success) {
-          onDelete(id);
-          resolve();
-          return;
-        }
-
-        reject(new Error('Failed to delete'));
-      });
-    });
+    await handleDeleteOp(id, onDelete);
   };
 
   // Preview fallback for cover letters (no HTML template)

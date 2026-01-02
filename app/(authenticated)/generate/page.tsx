@@ -365,7 +365,7 @@ export default function GeneratePage() {
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
-                    <div className="w-20 h-20 bg-background/80 backdrop-blur rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-primary/5">
+                    <div className="w-20 h-20 bg-background/80 backdrop-blur rounded-[2rem] flex items-center justify-center mb-6 shadow-sm border border-primary/5">
                       <FileText className="w-10 h-10 text-primary/30" />
                     </div>
                     <h3 className="text-lg font-bold text-foreground mb-2">Ready to Transform?</h3>
@@ -485,7 +485,7 @@ export default function GeneratePage() {
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
-                    <div className="w-20 h-20 bg-background/80 backdrop-blur rounded-3xl flex items-center justify-center mb-6 shadow-sm border border-primary/5">
+                    <div className="w-20 h-20 bg-background/80 backdrop-blur rounded-[2rem] flex items-center justify-center mb-6 shadow-sm border border-primary/5">
                       <Send className="w-10 h-10 text-primary/30" />
                     </div>
                     <h3 className="text-lg font-bold text-foreground mb-2">Craft a Winner</h3>

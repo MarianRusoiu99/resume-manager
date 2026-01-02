@@ -15,7 +15,7 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ data, loading }: RecentActivityProps) {
-  const getItemIcon = (type: RecentActivityProps["data"] extends Array<infer T> ? T["type"] : never) => {
+  const getItemIcon = (type: NonNullable<DashboardStats["recentActivity"]>[number]["type"]) => {
     switch (type) {
       case "RESUME":
         return <FileText className="h-4 w-4 text-primary" />;
@@ -28,7 +28,7 @@ export function RecentActivity({ data, loading }: RecentActivityProps) {
     }
   };
 
-  const getItemTypeLabel = (type: RecentActivityProps["data"] extends Array<infer T> ? T["type"] : never) => {
+  const getItemTypeLabel = (type: NonNullable<DashboardStats["recentActivity"]>[number]["type"]) => {
     switch (type) {
       case "RESUME":
         return "Resume";

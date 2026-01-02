@@ -2,6 +2,8 @@ import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "./PageHeader";
 import { PageContainer } from "./PageContainer";
+import { PageSkeleton } from "@/components/shared/skeletons/PageSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface BreadcrumbItem {
   label: string;
@@ -27,6 +29,10 @@ interface PageProps {
   className?: string;
   /** Whether the page content should be scrollable */
   scrollable?: boolean;
+  /** Loading state */
+  isLoading?: boolean;
+  /** Loading skeleton type */
+  loadingType?: 'default' | 'gallery' | 'form' | 'dashboard';
 }
 
 /**
@@ -45,14 +51,16 @@ export function Page({
   children,
   className,
   scrollable = true,
+  isLoading = false,
+  loadingType = 'default',
 }: PageProps) {
   return (
     <div className="flex flex-col h-full bg-muted/20 overflow-hidden">
       <PageHeader
-        title={title}
-        description={description}
+        title={isLoading ? <Skeleton className="h-8 w-48" /> : title}
+        description={isLoading ? undefined : description}
         breadcrumbs={breadcrumbs}
-        actions={actions}
+        actions={isLoading ? undefined : actions}
       />
       <div className={cn(
         "flex-1 min-h-0 flex flex-col",
@@ -60,13 +68,17 @@ export function Page({
       )}>
         <PageContainer maxWidth={maxWidth} className={className}>
           <div className="flex-1 flex flex-col min-h-0 gap-6">
-            {toolbar && (
+            {toolbar && !isLoading && (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
                 <div className="flex-1">{toolbar}</div>
               </div>
             )}
             <div className="flex-1 min-h-0">
-              {children}
+              {isLoading ? (
+                <PageSkeleton type={loadingType} />
+              ) : (
+                children
+              )}
             </div>
           </div>
         </PageContainer>

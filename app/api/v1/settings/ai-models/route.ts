@@ -78,3 +78,28 @@ export const PATCH = createApiHandler(
   },
   { bodySchema: updateAIPreferenceSchema, rateLimit: 'apiKeys' }
 );
+
+/**
+ * @swagger
+ * /api/v1/settings/ai-models:
+ *   post:
+ *     summary: Batch update AI model preferences
+ *     description: Update multiple AI model preferences at once
+ *     tags:
+ *       - Settings
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Preferences updated successfully
+ *       400:
+ *         description: Invalid request
+ *       401:
+ *         description: Unauthorized
+ */
+export const POST = createApiHandler(
+  async (_request, _context, session, body) => {
+    return userAISettingsService.updateAllPreferences(session.user.id, body!);
+  },
+  { bodySchema: updateAIPreferenceSchema.or(z.any()), rateLimit: 'apiKeys' }
+);

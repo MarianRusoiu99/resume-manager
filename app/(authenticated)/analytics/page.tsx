@@ -1,42 +1,15 @@
 "use client";
 
 import { Page } from "@/components/layout/Page";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useEffect, useState } from "react";
 import { Activity, Building2, Cpu, ArrowUpRight, TrendingUp } from "lucide-react";
 import type { AnalyticsData } from "@/lib/services/analytics/analytics.service";
+import { useFetch } from "@/hooks/useDataFetching";
 
 export default function AnalyticsPage() {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useFetch<AnalyticsData>("/api/v1/analytics");
 
-  useEffect(() => {
-    fetch("/api/v1/analytics")
-      .then((res) => res.json())
-      .then((data) => {
-        setData(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
-  if (loading) {
-    return (
-      <Page title="Analytics" description="Loading your activity data...">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="h-24 bg-muted" />
-              <CardContent className="h-48 bg-muted/50" />
-            </Card>
-          ))}
-        </div>
-      </Page>
-    );
-  }
-
-  const maxResumeCount = data?.resumesOverTime?.length 
-    ? Math.max(...data.resumesOverTime.map(d => d.count)) 
+  const maxResumeCount = data?.resumesOverTime?.length
+    ? Math.max(...data.resumesOverTime.map(d => d.count))
     : 0;
 
   return (
@@ -44,6 +17,8 @@ export default function AnalyticsPage() {
       title="Analytics"
       description="Insights into your resume optimization and job search activity"
       breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Analytics" }]}
+      isLoading={isLoading}
+      loadingType="dashboard"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border border-y -mx-4 sm:-mx-8">
         <div className="bg-background p-6">
@@ -59,9 +34,9 @@ export default function AnalyticsPage() {
               <div className="flex items-end justify-between h-48 gap-2 px-2">
                 {data.resumesOverTime.map((item) => (
                   <div key={item.date} className="flex-1 group relative flex flex-col items-center">
-                    <div 
+                    <div
                       className="w-full bg-primary/20 group-hover:bg-primary/40 transition-colors relative"
-                      style={{ 
+                      style={{
                         height: `${maxResumeCount > 0 ? (item.count / maxResumeCount) * 100 : 0}%`,
                         minHeight: item.count > 0 ? '4px' : '0'
                       }}
@@ -100,7 +75,7 @@ export default function AnalyticsPage() {
               <div className="space-y-4">
                 {data.topCompanies.slice(0, 5).map((company, i) => (
                   <div key={company.name} className="flex items-center gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                    <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center text-xs font-bold text-primary">
                       {i + 1}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -109,11 +84,11 @@ export default function AnalyticsPage() {
                         <span className="text-xs font-bold">{company.count}</span>
                       </div>
                       <div className="h-1 w-full bg-muted overflow-hidden">
-                        <div 
-                          className="h-full bg-primary transition-all duration-500" 
-                          style={{ 
-                            width: `${(company.count / data.topCompanies[0].count) * 100}%` 
-                          }} 
+                        <div
+                          className="h-full bg-primary transition-all duration-500"
+                          style={{
+                            width: `${(company.count / data.topCompanies[0].count) * 100}%`
+                          }}
                         />
                       </div>
                     </div>
@@ -167,7 +142,7 @@ export default function AnalyticsPage() {
               </div>
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Efficiency</p>
               <p className="text-3xl font-bold">
-                {data?.aiUsage.generationsCount 
+                {data?.aiUsage.generationsCount
                   ? Math.round(data.aiUsage.totalTokens / data.aiUsage.generationsCount).toLocaleString()
                   : 0}
               </p>

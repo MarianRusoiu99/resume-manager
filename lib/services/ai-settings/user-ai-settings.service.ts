@@ -132,6 +132,20 @@ export class UserAISettingsService extends GenericUserOwnedCrudService<
     });
   }
 
+  async updateAllPreferences(
+    userId: string,
+    input: UpsertAISettingsInput
+  ): Promise<ServiceResult<ResolvedAISettings>> {
+    return withServiceError('update all AI preferences', async () => {
+      await this.repository.upsert({ ...input, userId });
+      const result = await this.getSettings(userId);
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return result.data;
+    });
+  }
+
   async clearSettings(userId: string): Promise<ServiceResult<void>> {
     return withServiceError('clear AI settings', async () => {
       await this.repository.delete(userId);

@@ -1,19 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Input } from "@/components/ui/input";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useAutoSaveForm } from "@/hooks/useAutoSaveForm";
 import { Basics } from "@/lib/validations/jsonresume";
 
 // Temporary form schema that bridges the gap between old UI and JSON Resume
@@ -108,42 +105,16 @@ export function PersonalInfoForm({
   initialData,
   onChange,
 }: PersonalInfoFormProps) {
-  const prevInitialDataRef = useRef<string>("");
-
-  const form = useForm<PersonalInfoFormData>({
-    resolver: zodResolver(personalInfoFormSchema),
+  const form = useAutoSaveForm<PersonalInfoFormData>({
+    schema: personalInfoFormSchema,
     defaultValues: basicsToFormData(initialData),
+    onSave: (data) => {
+      if (onChange) {
+        onChange(formDataToBasics(data));
+      }
+    },
     mode: "onChange",
   });
-
-  // Reset form when initialData changes (using JSON comparison to avoid unnecessary resets)
-  useEffect(() => {
-    const currentDataStr = JSON.stringify(initialData);
-    if (initialData && currentDataStr !== prevInitialDataRef.current) {
-      prevInitialDataRef.current = currentDataStr;
-      form.reset(basicsToFormData(initialData));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialData]);
-
-  // Watch for changes and propagate to parent
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      if (onChange) {
-        // Debounce could be added here if needed, but for text inputs, 
-        // the parent context usually handles debouncing or we can add a small delay.
-        // For now, let's use a small timeout to avoid too many updates
-        const timeoutId = setTimeout(() => {
-          // We cast value to PersonalInfoFormData because watch returns Partial<T>
-          const data = value as PersonalInfoFormData;
-          const basicsData = formDataToBasics(data);
-          onChange(basicsData);
-        }, 500);
-        return () => clearTimeout(timeoutId);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form, onChange]);
 
   return (
     <Form {...form}>

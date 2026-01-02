@@ -283,18 +283,18 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
                   disabled={!formData.htmlTemplate.trim()}
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-auto px-2 rounded-xl hover:bg-primary/10 hover:text-primary transition-all"
+                  className="h-8 w-auto px-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-all"
                 />
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 hover:bg-muted rounded-xl"
+                  className="h-8 w-8 p-0 hover:bg-muted rounded-lg"
                   onClick={() => setIsFullscreen(!isFullscreen)}
                 >
                   {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </Button>
                 {isFullscreen && (
-                  <Button onClick={handleSave} disabled={saving} size="sm" className="h-8 px-4 ml-2 font-bold uppercase tracking-widest text-[10px] rounded-xl">
+                  <Button onClick={handleSave} disabled={saving} size="sm" className="h-8 px-4 ml-2 font-bold uppercase tracking-widest text-[10px] rounded-lg">
                     <Save className="mr-2 h-3.5 w-3.5" />
                     {saving ? 'Saving...' : 'Save'}
                   </Button>

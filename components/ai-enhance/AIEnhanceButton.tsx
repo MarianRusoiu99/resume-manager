@@ -41,7 +41,7 @@ export function AIEnhanceButton({
                         onClick={onClick}
                         disabled={disabled}
                         className={cn(
-                            'group relative rounded-full transition-all duration-200',
+                            'group relative rounded-lg transition-all duration-200',
                             'hover:bg-primary/10 hover:text-primary',
                             'focus-visible:ring-2 focus-visible:ring-primary/50',
                             size === 'icon' && 'h-8 w-8',

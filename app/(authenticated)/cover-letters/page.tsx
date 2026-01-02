@@ -12,6 +12,7 @@ import { Button } from '@/components/ui';
 import { CoverLetterList, type CoverLetterListItem } from '@/components/cover-letter/CoverLetterList';
 import { ErrorState } from '@/components/shared/states';
 import { useFetch } from '@/hooks/useDataFetching';
+import { useCoverLetterOperations } from '@/hooks/features/useCoverLetterOperations';
 import { ROUTES } from '@/lib/constants';
 import { apiV1 } from '@/lib/client';
 import { FileText } from 'lucide-react';
@@ -48,13 +49,17 @@ export default function CoverLettersPage() {
     mutate,
   } = useFetch<CoverLettersResponse>(apiV1.COVER_LETTER.LIST.url);
 
+  const { handleDelete: handleDeleteOp } = useCoverLetterOperations();
+
   const coverLetters = data?.coverLetters ?? [];
 
-  const handleDelete = (id: string) => {
-    // Optimistic update - remove from local state
-    mutate((prev) => ({
-      coverLetters: (prev?.coverLetters ?? []).filter((cl) => cl.id !== id),
-    }));
+  const handleDelete = async (id: string) => {
+    await handleDeleteOp(id, () => {
+      // Optimistic update - remove from local state
+      mutate((prev) => ({
+        coverLetters: (prev?.coverLetters ?? []).filter((cl) => cl.id !== id),
+      }));
+    });
   };
 
   return (
@@ -62,6 +67,8 @@ export default function CoverLettersPage() {
       title="My Cover Letters"
       description="Manage all your generated cover letters"
       breadcrumbs={[{ label: "Cover Letters" }]}
+      isLoading={isLoading}
+      loadingType="gallery"
       actions={
         <Link href={ROUTES.GENERATE_COVER_LETTER}>
           <Button>

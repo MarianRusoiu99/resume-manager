@@ -1,6 +1,6 @@
 import { ResumeCard } from '@/components/resume/ResumeCard';
 import { Gallery } from '@/components/shared/Gallery';
-import { useRouter } from 'next/navigation';
+import { useResumeOperations } from '@/hooks/features/useResumeOperations';
 import { FileText } from 'lucide-react';
 import type { Resume as JsonResume } from '@/lib/validations/jsonresume';
 
@@ -30,7 +30,7 @@ export function ResumeList({
     onGenerate,
     searchTerm
 }: ResumeListProps) {
-    const router = useRouter();
+    const { handleView, handleEdit } = useResumeOperations();
 
     return (
         <Gallery
@@ -59,8 +59,8 @@ export function ResumeList({
                     content={resume.content}
                     templateId={resume.templateId}
                     createdAt={resume.createdAt}
-                    onView={(id) => router.push(`/resumes/${id}`)}
-                    onEdit={(id) => router.push(`/resumes/${id}/edit`)}
+                    onView={handleView}
+                    onEdit={handleEdit}
                     onDelete={onDelete}
                 />
             )}

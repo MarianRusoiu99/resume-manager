@@ -96,6 +96,8 @@ export interface GalleryCardProps {
  */
 const log = createComponentLogger('GalleryCard');
 
+import { BaseGalleryCard } from '@/components/shared/cards/BaseGalleryCard';
+
 export function GalleryCard({
   id,
   title,
@@ -132,90 +134,65 @@ export function GalleryCard({
     }
   };
 
-  // Square card with vertical layout (A4 aspect ratio)
-  // Preview fills 100%, content overlays on hover
   return (
-    <Card
-      className={cn(
-        "group transition-all duration-300 relative overflow-hidden aspect-[1/1.414] flex bg-card border-none shadow-sm hover:shadow-xl hover:ring-1 hover:ring-primary/20 rounded-2xl",
-        disableNavigation ? "" : "cursor-pointer",
-        className
-      )}
+    <BaseGalleryCard
       onClick={handleCardClick}
-    >
-      {/* Preview Area - Full Background */}
-      <div className="absolute inset-0 w-full h-full bg-muted/5">
+      prefetchUrls={[href]}
+      className={className}
+      variant="overlay"
+      header={
         <GalleryCardPreview
           htmlContent={previewHtml}
           isLoading={isPreviewLoading}
           fallbackIcon={previewFallbackIcon}
           altText={`Preview of ${title}`}
         />
-      </div>
-
-      {/* Hover Information Overlay */}
-      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6 text-white">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0 space-y-1">
-            {/* Badges - show inline before title */}
-            {badges.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {badges.map((badge, index) => (
-                  <Badge
-                    key={`${id}-badge-${index}`}
-                    variant="secondary"
-                    className="bg-white/10 hover:bg-white/20 text-[10px] text-white border-none py-0.5 px-2 rounded-lg uppercase font-bold tracking-wider"
-                  >
-                    {badge.icon && <span className="mr-1">{badge.icon}</span>}
-                    {badge.label}
-                  </Badge>
-                ))}
+      }
+      badge={badges.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {badges.map((badge, index) => (
+            <Badge
+              key={`${id}-badge-${index}`}
+              variant={badge.variant || "secondary"}
+              className="bg-primary/90 text-primary-foreground border-none py-0.5 px-2 rounded-lg uppercase font-bold tracking-wider text-[10px]"
+            >
+              {badge.icon && <span className="mr-1">{badge.icon}</span>}
+              {badge.label}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+      footer={
+        <div className="flex items-center justify-between w-full">
+          <div className="flex flex-wrap gap-x-3 gap-y-1">
+            {metadata.slice(0, 2).map((item, index) => (
+              <div key={index} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/70">
+                {item.icon && <span className="opacity-70">{item.icon}</span>}
+                <span>{item.value} {item.label}</span>
               </div>
-            )}
-
-            <h3 className="text-lg font-bold leading-snug" title={title}>
-              {title}
-            </h3>
-
-            {/* Subtitle - Professional Summary or Job Description */}
-            {subtitle && (
-              <p className="text-sm text-white/80 line-clamp-3 font-medium leading-relaxed" title={subtitle}>
-                {subtitle}
-              </p>
-            )}
-
-            {/* Inline Metadata - only show if no subtitle or if brief */}
-            {metadata.length > 0 && !subtitle && (
-              <div className="flex flex-wrap gap-x-3 gap-y-1 pt-2 opacity-70">
-                {metadata.slice(0, 2).map((item, index) => (
-                  <div key={index} className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider">
-                    {item.icon && <span className="opacity-70">{item.icon}</span>}
-                    <span>{item.value} {item.label}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
-
-          <div className="shrink-0 pt-1">
-            <div className="bg-white/10 hover:bg-white/20 rounded-lg transition-colors border border-white/10">
-              <GalleryCardActionsMenu
-                id={id}
-                actions={actions}
-                isActionLoading={isActionLoading}
-                onActionClick={handleActionClick}
-              />
-            </div>
+          
+          <div className="bg-white/10 hover:bg-white/20 rounded-lg transition-colors border border-white/10">
+            <GalleryCardActionsMenu
+              id={id}
+              actions={actions}
+              isActionLoading={isActionLoading}
+              onActionClick={handleActionClick}
+            />
           </div>
         </div>
-      </div>
-
-      {/* Corner Status Indicator (Optional, e.g., for Default item) */}
-      {!disableNavigation && isPreviewLoading && (
-        <div className="absolute top-3 right-3">
-          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-        </div>
+      }
+    >
+      <h3 className="text-lg font-bold leading-snug text-white" title={title}>
+        {title}
+      </h3>
+      
+      {subtitle && (
+        <p className="text-sm text-white/80 line-clamp-3 font-medium leading-relaxed" title={subtitle}>
+          {subtitle}
+        </p>
       )}
-    </Card>
+    </BaseGalleryCard>
   );
 }

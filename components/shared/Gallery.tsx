@@ -123,38 +123,13 @@ const MAX_WIDTH_MAPPING = {
   full: "w-full",
 };
 
+import { GallerySkeleton } from "@/components/shared/skeletons/GallerySkeleton";
+
 /**
  * Gallery - Unified gallery/list component with loading, empty, and search states
  * 
  * Provides consistent patterns for displaying collections of items across the app.
  * Handles loading states, empty states, search empty states, and filtering.
- * 
- * @example
- * ```tsx
- * <Gallery
- *   items={profiles}
- *   renderItem={(profile) => (
- *     <ProfileCard key={profile.id} {...profile} />
- *   )}
- *   getItemKey={(profile) => profile.id}
- *   isLoading={isLoading}
- *   emptyState={{
- *     icon: User,
- *     title: "No profiles yet",
- *     description: "Create your first profile to get started",
- *     action: {
- *       label: "Create Profile",
- *       onClick: handleCreate,
- *       icon: <Plus />,
- *     },
- *   }}
- *   header={{
- *     showCount: true,
- *     countLabel: { singular: "profile", plural: "profiles" },
- *     actions: <Button onClick={handleCreate}>New Profile</Button>,
- *   }}
- * />
- * ```
  */
 export function Gallery<T>({
   items,
@@ -171,7 +146,7 @@ export function Gallery<T>({
 }: GalleryProps<T>) {
   // Handle loading state
   if (isLoading) {
-    return <LoadingState message={loadingMessage} />;
+    return <GallerySkeleton columns={gridCols} />;
   }
 
   // Handle search empty state

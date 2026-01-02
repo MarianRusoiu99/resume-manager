@@ -15,6 +15,7 @@ import { useNotifications, type Notification } from '@/lib/contexts';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from './NotificationBell';
 import { getNotificationIcon } from './notification-ui';
+import { Spinner } from "@/components/shared/Spinner";
 
 interface NotificationItemProps {
   readonly notification: Notification;
@@ -164,7 +165,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
         <ScrollArea className="h-[500px] min-w-[500px]">
           {isLoading && (
             <div className="flex items-center justify-center h-32 w-full">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+              <Spinner size="sm" />
             </div>
           )}
 

@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useAutoSaveForm } from "@/hooks/useAutoSaveForm";
 import * as z from "zod";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -27,36 +25,16 @@ interface SummaryFormProps {
 }
 
 export function SummaryForm({ summary, onChange }: SummaryFormProps) {
-  const form = useForm<SummaryFormData>({
-    resolver: zodResolver(summarySchema),
+  const form = useAutoSaveForm<SummaryFormData>({
+    schema: summarySchema,
+    onSave: (data) => onChange(data.summary),
     defaultValues: {
       summary: summary || "",
     },
+    debounceMs: 300,
   });
 
-  const currentSummary = form.watch("summary");
-
-  // Only reset form when summary prop changes from external source (not from user typing)
-  // Use a ref to track if we're currently typing to prevent reset during user input
-  useEffect(() => {
-    // Only reset if the prop is different from what's in the form
-    // This happens when data is loaded from server or changed externally
-    if (summary !== currentSummary) {
-      form.reset({ summary }, { keepDefaultValues: false });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [summary]); // Only depend on summary prop
-
-  // Call onChange when form value changes (debounced)
-  useEffect(() => {
-    if (currentSummary !== summary) {
-      const timeoutId = setTimeout(() => {
-        onChange(currentSummary);
-      }, 300); // 300ms debounce
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [currentSummary, onChange, summary]);
+  const currentSummary = form.watch("summary") || "";
 
   return (
     <Form {...form}>
