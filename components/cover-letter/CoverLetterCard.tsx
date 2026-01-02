@@ -90,10 +90,9 @@ export function CoverLetterCard({
     <EntityCard
       id={id}
       title={getDisplayTitle()}
-      subtitle={content.substring(0, 100) + '...'}
+      subtitle={content}
       href={ROUTES.COVER_LETTER(id)}
       previewFallbackIcon={previewFallback}
-      metadata={[{ label: 'Created', value: formatDate(createdAt) }]}
       badges={[
         {
           label: 'Cover Letter',

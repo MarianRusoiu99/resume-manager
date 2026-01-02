@@ -32,6 +32,7 @@ interface PreviewTemplateSelectorProps {
   variant?: 'default' | 'ghost' | 'outline' | 'secondary';
   size?: 'default' | 'sm' | 'lg' | 'icon';
   className?: string;
+  children?: React.ReactNode;
 }
 
 export function PreviewTemplateSelector({
@@ -39,7 +40,8 @@ export function PreviewTemplateSelector({
   onTemplateChange,
   variant = 'outline',
   size = 'sm',
-  className
+  className,
+  children
 }: Readonly<PreviewTemplateSelectorProps>) {
   const log = useComponentLogger('PreviewTemplateSelector');
   const [templates, setTemplates] = useState<ResumeTemplate[]>([]);
@@ -89,10 +91,14 @@ export function PreviewTemplateSelector({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button variant={variant} size={size} className={cn("gap-2", className)}>
-          <span className="truncate">
-            {selectedTemplate ? selectedTemplate.name : 'Select Template'}
-          </span>
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+          {children || (
+            <>
+              <span className="truncate">
+                {selectedTemplate ? selectedTemplate.name : 'Select Template'}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+            </>
+          )}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl h-[80vh] flex flex-col p-0 overflow-hidden">

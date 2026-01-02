@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { GalleryCardPreview } from '@/components/shared/GalleryCardPreview';
 import { GalleryCardActionsMenu } from '@/components/shared/GalleryCardActionsMenu';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { cn } from '@/lib/utils';
 
 /**
  * Action item for dropdown menu
@@ -131,16 +132,19 @@ export function GalleryCard({
     }
   };
 
-  // Square card with horizontal layout (preview left, content right)
+  // Square card with vertical layout (A4 aspect ratio)
+  // Preview fills 100%, content overlays on hover
   return (
     <Card
-      className={`group hover:shadow-md hover:border-primary/50 transition-all duration-200 ${
-        disableNavigation ? '' : 'cursor-pointer'
-      } relative overflow-hidden aspect-[3/2] flex bg-card ${className}`}
+      className={cn(
+        "group transition-all duration-300 relative overflow-hidden aspect-[1/1.414] flex bg-card border-none shadow-sm hover:shadow-xl hover:ring-1 hover:ring-primary/20 rounded-2xl",
+        disableNavigation ? "" : "cursor-pointer",
+        className
+      )}
       onClick={handleCardClick}
     >
-      {/* Preview Area - Left Half (50%) */}
-      <div className="w-1/2 shrink-0 bg-muted/30 border-r">
+      {/* Preview Area - Full Background */}
+      <div className="absolute inset-0 w-full h-full bg-muted/5">
         <GalleryCardPreview
           htmlContent={previewHtml}
           isLoading={isPreviewLoading}
@@ -149,59 +153,69 @@ export function GalleryCard({
         />
       </div>
 
-      {/* Content Area - Right Half (50%) */}
-      <div className="w-1/2 flex flex-col p-4 overflow-hidden">
-        {/* Header with Badges and Actions */}
-        <div className="flex items-start justify-between mb-2 gap-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold truncate" title={title}>
+      {/* Hover Information Overlay */}
+      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-6 text-white">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0 space-y-1">
+            {/* Badges - show inline before title */}
+            {badges.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {badges.map((badge, index) => (
+                  <Badge
+                    key={`${id}-badge-${index}`}
+                    variant="secondary"
+                    className="bg-white/10 hover:bg-white/20 text-[10px] text-white border-none py-0.5 px-2 rounded-lg uppercase font-bold tracking-wider"
+                  >
+                    {badge.icon && <span className="mr-1">{badge.icon}</span>}
+                    {badge.label}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            <h3 className="text-lg font-bold leading-snug" title={title}>
               {title}
             </h3>
+
+            {/* Subtitle - Professional Summary or Job Description */}
             {subtitle && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5" title={subtitle}>
+              <p className="text-sm text-white/80 line-clamp-3 font-medium leading-relaxed" title={subtitle}>
                 {subtitle}
               </p>
             )}
+
+            {/* Inline Metadata - only show if no subtitle or if brief */}
+            {metadata.length > 0 && !subtitle && (
+              <div className="flex flex-wrap gap-x-3 gap-y-1 pt-2 opacity-70">
+                {metadata.slice(0, 2).map((item, index) => (
+                  <div key={index} className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider">
+                    {item.icon && <span className="opacity-70">{item.icon}</span>}
+                    <span>{item.value} {item.label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Badges - show only first one */}
-            {badges.slice(0, 1).map((badge, index) => (
-              <Badge
-                key={`${id}-badge-${index}`}
-                variant={badge.variant || 'secondary'}
-                className="gap-1 text-xs"
-              >
-                {badge.icon}
-                {badge.label}
-              </Badge>
-            ))}
-
-            <GalleryCardActionsMenu
-              id={id}
-              actions={actions}
-              isActionLoading={isActionLoading}
-              onActionClick={handleActionClick}
-            />
+          <div className="shrink-0 pt-1">
+            <div className="bg-white/10 hover:bg-white/20 rounded-lg transition-colors border border-white/10">
+              <GalleryCardActionsMenu
+                id={id}
+                actions={actions}
+                isActionLoading={isActionLoading}
+                onActionClick={handleActionClick}
+              />
+            </div>
           </div>
         </div>
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Metadata Section */}
-        {metadata.length > 0 && (
-          <div className="flex flex-col gap-2 pt-2 mt-auto border-t text-xs">
-            {metadata.slice(0, 3).map((item, index) => (
-              <div key={`${id}-metadata-${index}`} className="flex items-center gap-1">
-                {item.icon}
-                <span className="font-medium text-foreground">{item.value}</span>
-                <span className="text-muted-foreground">{item.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
+
+      {/* Corner Status Indicator (Optional, e.g., for Default item) */}
+      {!disableNavigation && isPreviewLoading && (
+        <div className="absolute top-3 right-3">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+        </div>
+      )}
     </Card>
   );
 }

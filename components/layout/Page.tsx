@@ -20,7 +20,7 @@ interface PageProps {
   /** Optional toolbar shown above content */
   toolbar?: ReactNode;
   /** Maximum width of page content */
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "full";
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "full";
   /** Page content */
   children: ReactNode;
   /** Additional className for container */
@@ -41,13 +41,13 @@ export function Page({
   breadcrumbs,
   actions,
   toolbar,
-  maxWidth = "5xl",
+  maxWidth = "6xl",
   children,
   className,
   scrollable = true,
 }: PageProps) {
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
+    <div className="flex flex-col h-full bg-muted/20 overflow-hidden">
       <PageHeader
         title={title}
         description={description}

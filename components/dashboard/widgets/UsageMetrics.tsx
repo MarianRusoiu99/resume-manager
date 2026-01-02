@@ -13,52 +13,54 @@ interface UsageMetricsProps {
 
 export function UsageMetrics({ data, loading }: UsageMetricsProps) {
   return (
-    <div className="bg-muted/30 p-6 md:col-span-2 border-t">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h3 className="text-lg font-semibold uppercase tracking-tight">AI Resource Usage</h3>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Tokens and generations efficiency</p>
+    <Card className="rounded-xl shadow-sm overflow-hidden border-none bg-card/50 backdrop-blur-sm md:col-span-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+        <div className="space-y-1">
+          <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">AI Resource Usage</CardTitle>
+          <CardDescription className="text-[10px] uppercase tracking-wider">Efficiency and token consumption</CardDescription>
         </div>
-        <Cpu className="h-5 w-5 text-primary" />
-      </div>
-      <div>
+        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Cpu className="h-4 w-4 text-primary" />
+        </div>
+      </CardHeader>
+      <CardContent>
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border animate-pulse">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-pulse">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 bg-background" />
+              <div key={i} className="h-24 bg-muted rounded-xl" />
             ))}
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border">
-              <div className="p-6 bg-background">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Total Generations</p>
-                <p className="text-3xl font-bold">{data?.generationsCount || 0}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 bg-background/50 rounded-xl border border-primary/5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Total Generations</p>
+                <p className="text-2xl font-bold text-primary">{data?.generationsCount || 0}</p>
               </div>
-              <div className="p-6 bg-background">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Total Tokens Used</p>
-                <p className="text-3xl font-bold">{data?.totalTokens.toLocaleString() || 0}</p>
+              <div className="p-4 bg-background/50 rounded-xl border border-primary/5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Total Tokens Used</p>
+                <p className="text-2xl font-bold text-primary">{data?.totalTokens.toLocaleString() || 0}</p>
               </div>
-              <div className="p-6 bg-background">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Efficiency</p>
-                <p className="text-3xl font-bold">
-                  {data?.generationsCount 
+              <div className="p-4 bg-background/50 rounded-xl border border-primary/5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Avg Tokens / Gen</p>
+                <p className="text-2xl font-bold text-primary">
+                  {data?.generationsCount
                     ? Math.round(data.totalTokens / data.generationsCount).toLocaleString()
                     : 0}
                 </p>
               </div>
             </div>
             <div className="flex justify-end">
-              <Button variant="link" size="sm" asChild className="text-xs p-0 h-auto font-bold uppercase tracking-widest text-primary">
+              <Button variant="ghost" size="sm" asChild className="text-[10px] h-8 px-3 font-bold uppercase tracking-widest text-primary hover:bg-primary/5">
                 <Link href="/analytics" className="flex items-center">
                   Detailed Analytics
-                  <ArrowRight className="ml-2 h-3 w-3" />
+                  <ArrowRight className="ml-2 h-3.5 w-3.5" />
                 </Link>
               </Button>
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

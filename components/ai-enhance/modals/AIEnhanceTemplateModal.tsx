@@ -14,12 +14,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Check, X, Eye, Code, FileText } from 'lucide-react';
+import { Check, X, Eye, Code } from 'lucide-react';
 import { AIEnhanceBaseModal } from './AIEnhanceBaseModal';
 import { PromptInput } from '../prompt/PromptInput';
 import { TemplateVisualComparison } from '../preview/TemplateVisualComparison';
 import { TemplateCodeComparison } from '../preview/TemplateCodeComparison';
 import { useTemplateEnhancement } from '../hooks/useAIEnhancement';
+import { ModelSelector } from '@/components/shared/ModelSelector';
 
 export interface AIEnhanceTemplateModalProps {
   open: boolean;
@@ -41,6 +42,7 @@ export function AIEnhanceTemplateModal({
   description = 'AI will enhance the HTML template and its styles to improve structure, styling, and consistency.',
 }: Readonly<AIEnhanceTemplateModalProps>) {
   const [viewMode, setViewMode] = useState<ViewMode>('visual');
+  const [selectedModel, setSelectedModel] = useState<string>('gpt-4o');
 
   // Use centralized enhancement hook
   const {
@@ -85,9 +87,10 @@ export function AIEnhanceTemplateModal({
     <>
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         onClick={handleCancel}
         disabled={isLoading}
+        className="h-9 px-4 text-muted-foreground hover:text-foreground"
       >
         <X className="h-4 w-4 mr-2" />
         Cancel
@@ -97,11 +100,34 @@ export function AIEnhanceTemplateModal({
         type="button"
         onClick={handleAccept}
         disabled={!hasEnhancement || isLoading}
+        className="h-9 px-6 bg-primary shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all font-semibold"
       >
         <Check className="h-4 w-4 mr-2" />
         Accept Changes
       </Button>
     </>
+  );
+
+  const centerAction = (
+    <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="w-[300px]">
+      <TabsList className="grid w-full grid-cols-2 h-9">
+        <TabsTrigger value="visual" className="flex items-center gap-2 text-xs">
+          <Eye className="h-3.5 w-3.5" />
+          Preview
+        </TabsTrigger>
+        <TabsTrigger value="code" className="flex items-center gap-2 text-xs">
+          <Code className="h-3.5 w-3.5" />
+          Code View
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+
+  const rightAction = (
+    <ModelSelector
+      value={selectedModel}
+      onValueChange={setSelectedModel}
+    />
   );
 
   return (
@@ -111,38 +137,25 @@ export function AIEnhanceTemplateModal({
       title={title}
       description={description}
       footer={footer}
+      centerAction={centerAction}
+      rightAction={rightAction}
       size="fullscreen"
     >
-      <div className="flex flex-col gap-4 flex-1 min-h-0">
+      <div className="flex-1 flex flex-col gap-6 min-h-0">
         {/* ChatGPT-style prompt input with file support */}
         <PromptInput
           value={instructions}
           onChange={setInstructions}
-          onSubmit={enhance}
+          onSubmit={(attachments) => enhance(attachments, selectedModel)}
           isLoading={isLoading}
           hasExistingContent={hasEnhancement}
           showFileAttachment={true}
+          className="flex-shrink-0"
           placeholder="Describe how you want to improve the template... (e.g., 'Make it more modern', 'Improve typography')"
         />
 
-        {/* View toggle */}
-        <div className="flex items-center justify-between flex-shrink-0">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-            <TabsList>
-              <TabsTrigger value="visual" className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                Visual Preview
-              </TabsTrigger>
-              <TabsTrigger value="code" className="flex items-center gap-2">
-                <Code className="h-4 w-4" />
-                Code View
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
-
         {/* Side-by-side comparison (both views are always side-by-side) */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 rounded-2xl border border-muted/20 bg-muted/5 overflow-hidden shadow-inner flex flex-col">
           {viewMode === 'visual' ? (
             <TemplateVisualComparison
               originalHtml={originalHtml}

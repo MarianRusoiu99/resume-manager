@@ -22,11 +22,11 @@ import {
 } from '@/components/ui/tabs';
 import { Save, Code, ImagePlus, Check, Maximize2, Minimize2, Settings2, Download, Loader2 } from 'lucide-react';
 import { useExportPDF } from '@/components/preview/useExportPDF';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
@@ -83,9 +83,9 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
   const [templateEnhanceModalOpen, setTemplateEnhanceModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   const { isExportingPDF, handleExportPDF } = useExportPDF();
-  
+
   const [formData, setFormData] = useState({
     name: template?.name || '',
     description: template?.description || '',
@@ -219,9 +219,9 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       title={
         <div className="flex items-center gap-2">
           <span>{formData.name || (isNew ? 'New Template' : 'Unnamed Template')}</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-7 w-7 p-0 shrink-0 hover:bg-muted"
             onClick={() => setSettingsModalOpen(true)}
           >
@@ -265,41 +265,41 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
         </div>
       }
     >
-      <div className={`flex-1 min-h-0 flex flex-col md:flex-row bg-transparent gap-3 p-3 ${isFullscreen ? 'fixed inset-0 z-50 bg-background p-0' : ''}`}>
+      <div className={`flex-1 min-h-0 flex flex-col md:flex-row bg-transparent gap-4 p-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-background p-0' : ''}`}>
         {/* Left Panel - Code Editor */}
-        <div className={`flex flex-col min-h-0 w-full md:w-1/2 bg-background rounded-xl overflow-hidden shadow-sm ${isFullscreen ? 'md:w-full rounded-none' : ''}`}>
+        <div className={`flex flex-col min-h-0 w-full md:w-1/2 bg-card rounded-2xl overflow-hidden shadow-sm ${isFullscreen ? 'md:w-full rounded-none' : ''}`}>
           {/* Code Editors */}
           <Tabs defaultValue="html" className="flex-1 flex flex-col min-h-0">
-            <div className="flex items-center justify-end bg-muted/20 px-4 py-1 border-b shrink-0">
-                <TabsList className="bg-transparent gap-1 mr-auto">
-                <TabsTrigger value="html" className="text-xs data-[state=active]:bg-muted data-[state=active]:shadow-sm px-3 py-1 font-semibold">
+            <div className="flex items-center justify-end bg-muted/40 px-4 py-1.5 shrink-0">
+              <TabsList className="bg-transparent gap-1 mr-auto">
+                <TabsTrigger value="html" className="text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm px-3 py-1 font-bold rounded-lg transition-all">
                   <Code className="mr-1.5 h-3.5 w-3.5" />
                   HTML
                 </TabsTrigger>
-                </TabsList>
-                <div className="flex items-center gap-1">
+              </TabsList>
+              <div className="flex items-center gap-1">
                 <AIEnhanceButton
                   onClick={() => setTemplateEnhanceModalOpen(true)}
                   disabled={!formData.htmlTemplate.trim()}
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-auto px-2 rounded-md hover:bg-primary/10 hover:text-primary transition-all"
+                  className="h-8 w-auto px-2 rounded-xl hover:bg-primary/10 hover:text-primary transition-all"
                 />
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 w-7 p-0 hover:bg-muted"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-muted rounded-xl"
                   onClick={() => setIsFullscreen(!isFullscreen)}
                 >
                   {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
                 </Button>
                 {isFullscreen && (
-                   <Button onClick={handleSave} disabled={saving} size="sm" className="h-7 px-3 ml-2 font-semibold">
-                  <Save className="mr-2 h-3 w-3" />
-                  {saving ? 'Saving...' : 'Save'}
+                  <Button onClick={handleSave} disabled={saving} size="sm" className="h-8 px-4 ml-2 font-bold uppercase tracking-widest text-[10px] rounded-xl">
+                    <Save className="mr-2 h-3.5 w-3.5" />
+                    {saving ? 'Saving...' : 'Save'}
                   </Button>
                 )}
-                </div>
+              </div>
             </div>
 
             <TabsContent value="html" className="flex-1 mt-0 relative min-h-0 overflow-hidden">
@@ -323,62 +323,44 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
 
         {/* Right Panel - Live Preview */}
         {!isFullscreen && (
-          <div className="bg-background rounded-xl overflow-hidden shadow-sm w-full md:w-1/2 flex flex-col min-h-0">
-              <div className="px-6 py-2 bg-muted/20 flex items-center justify-between shrink-0 border-b">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Preview</span>
+          <div className="bg-card rounded-2xl overflow-hidden shadow-sm w-full md:w-1/2 flex flex-col min-h-0">
+            <div className="flex-1 relative bg-muted/5 overflow-auto p-0 flex flex-col min-h-0">
+              {isLoadingProfile && (
+                <div className="absolute inset-0 z-50 bg-background/50 flex items-center justify-center pointer-events-none">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-all mr-2"
-                    disabled={isExportingPDF}
-                    onClick={() => handleExportPDF({
-                      resume: previewResume,
-                      templateHtml: formData.htmlTemplate,
-                      fileName: `${formData.name || 'template'}_preview`
-                    })}
-                  >
-                    {isExportingPDF ? (
-                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
-                    ) : (
-                      <Download className="h-3 w-3 mr-2" />
-                    )}
-                    Export
-                  </Button>
-                  <div className="w-px h-4 bg-muted-foreground/20 mr-2" />
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-70">Context</span>
-                  <select 
-                    className="text-xs border-none bg-background rounded-md px-3 py-1 shadow-sm font-medium focus:ring-1 focus:ring-primary outline-none"
-                    value={selectedProfileId}
-                    onChange={(e) => setSelectedProfileId(e.target.value)}
-                  >
-                    <option value="sample">Sample Data</option>
-                    {profiles.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="flex-1 relative bg-muted/5 overflow-auto">
-                {isLoadingProfile && (
-                  <div className="absolute inset-0 z-10 bg-background/50 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              )}
+              <ResumePreview
+                resumeData={previewResume}
+                templateHtml={formData.htmlTemplate}
+                showTemplateSelector={false}
+                showCard={false}
+                disableScaling={false}
+                className="h-full"
+                headerTitle={
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Live Preview</span>
                   </div>
-                )}
-                <div className="min-h-full p-0 flex justify-center">
-                  <ResumePreview
-                    resumeData={previewResume}
-                    templateHtml={formData.htmlTemplate}
-                    showTemplateSelector={false}
-                    showCard={false}
-                    disableScaling={false}
-                    className="h-full"
-                  />
-                </div>
-              </div>
+                }
+                headerActions={
+                  <div className="flex items-center gap-2">
+                    <div className="w-px h-4 bg-muted-foreground/10 mr-1" />
+                    <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-black opacity-50">Context</span>
+                    <select
+                      className="text-[11px] border-none bg-background/50 rounded-lg px-3 py-1 shadow-sm font-bold uppercase tracking-wider focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer hover:bg-background/80"
+                      value={selectedProfileId}
+                      onChange={(e) => setSelectedProfileId(e.target.value)}
+                    >
+                      <option value="sample">Sample Data</option>
+                      {profiles.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                }
+              />
+            </div>
           </div>
         )}
       </div>
@@ -413,9 +395,9 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
               />
             </div>
             <div className="flex items-center gap-2">
-              <div 
+              <div
                 className="flex items-center justify-center w-5 h-5 border rounded cursor-pointer"
-                style={{ 
+                style={{
                   backgroundColor: formData.isPublic ? 'var(--primary)' : 'transparent',
                   borderColor: formData.isPublic ? 'var(--primary)' : 'var(--input)'
                 }}
@@ -423,7 +405,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
               >
                 {formData.isPublic && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
               </div>
-              <Label 
+              <Label
                 className="cursor-pointer select-none"
                 onClick={() => setFormData({ ...formData, isPublic: !formData.isPublic })}
               >

@@ -62,7 +62,7 @@ export async function loginAction(
     }
 
     logger.warn('Login failed', { email });
-    
+
     return {
       message: 'Invalid email or password.',
     };
@@ -77,7 +77,7 @@ export async function registerAction(
   formData: FormData
 ): Promise<AuthFormState> {
   // Validate form fields
-    const validatedFields = registerSchema.safeParse({
+  const validatedFields = registerSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
   });
@@ -117,29 +117,21 @@ export async function registerAction(
     // Send onboarding notifications
     await notificationService.notifySystem(
       user.id,
-      'Welcome! Set up your API Keys',
-      'To start using AI features, please add an API provider and your key.',
-      '/settings/api-keys',
-      'Set up API Keys'
-    );
-
-    await notificationService.notifySystem(
-      user.id,
-      'Configure AI Models',
-      'Choose which models to use for resume and cover letter generation.',
-      '/settings/ai-models',
-      'Configure Models'
+      'Welcome! Configure AI',
+      'Set up your API providers and model preferences to enable all features.',
+      '/settings/ai-config',
+      'Configure AI'
     );
 
     logger.info('User registered', { email });
 
-    return { 
+    return {
       success: true,
       message: 'Account created successfully. Please sign in.',
     };
   } catch (error) {
     logger.error('Registration error', error);
-    
+
     return {
       message: 'An error occurred. Please try again.',
     };

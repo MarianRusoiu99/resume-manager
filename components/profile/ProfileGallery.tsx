@@ -6,13 +6,17 @@ import { ProfileCard } from "./ProfileCard";
 import { ResumeImportButton } from "./ResumeImportButton";
 import { Button } from "@/components/ui";
 import { Gallery } from "@/components/shared/Gallery";
-import { Plus, User } from "lucide-react";
+import { Plus, User, AlertCircle, Key } from "lucide-react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createProfile } from "@/app/actions/profile";
 import { apiV1, type ProfileDto } from "@/lib/client";
 import { useComponentLogger } from "@/hooks";
 import { OnboardingModal } from "./OnboardingModal";
+import { useCanUseAI } from "@/lib/contexts";
+import { Callout } from "@/components/shared";
+import Link from "next/link";
+import { ROUTES } from "@/lib/constants";
 
 interface ProfileGalleryProps {
   initialProfiles: ProfileDto[];
@@ -23,6 +27,7 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
   const [profiles, setProfiles] = useState<ProfileDto[]>(initialProfiles);
   const [isPending, startTransition] = useTransition();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const canUseAI = useCanUseAI();
   const router = useRouter();
 
   // Check for empty state on mount
@@ -165,55 +170,80 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
 
   return (
     <>
-    <Gallery
-      items={profiles}
-      getItemKey={(profile) => profile.id}
-      emptyState={{
-        icon: User,
-        title: "No Profiles Yet",
-        description: "Create your first profile or import an existing resume to get started",
-        action: {
-          label: isPending ? "Creating..." : "Create Profile",
-          onClick: handleCreateProfile,
-          icon: <Plus className="w-4 h-4" />,
-          disabled: isPending,
-        },
-        secondaryAction: (
-          <ResumeImportButton onImportSuccess={handleImportSuccess} />
-        ),
-      }}
-      header={{
-        showCount: true,
-        countLabel: { singular: "profile", plural: "profiles" },
-        actions: headerActions,
-      }}
-      renderItem={(profile) => (
-        <ProfileCard
-          key={profile.id}
-          id={profile.id}
-          name={profile.name}
-          isDefault={profile.isDefault}
-          resumeData={profile.resume}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onDuplicate={handleDuplicate}
-          onSetDefault={handleSetDefault}
-        />
+      {!canUseAI && profiles.length > 0 && (
+        <div className="mb-6">
+          <Callout
+            variant="warning"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-yellow-100 rounded-lg text-yellow-700">
+                  <Key className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">AI Features Disabled</p>
+                  <p className="text-sm">
+                    Add an API key in settings to enable resume optimization and cover letter generation.
+                  </p>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" asChild className="shrink-0">
+                <Link href={ROUTES.SETTINGS_API_KEYS}>Add API Key</Link>
+              </Button>
+            </div>
+          </Callout>
+        </div>
       )}
-    />
 
-    <OnboardingModal
-      open={showOnboarding}
-      onOpenChange={setShowOnboarding}
-      onStartFromScratch={() => {
-        setShowOnboarding(false);
-        handleCreateProfile();
-      }}
-      onImportSuccess={(resume) => {
-        setShowOnboarding(false);
-        handleImportSuccess(resume);
-      }}
-    />
+      <Gallery
+        items={profiles}
+        getItemKey={(profile) => profile.id}
+        emptyState={{
+          icon: User,
+          title: "No Profiles Yet",
+          description: "Create your first profile or import an existing resume to get started",
+          action: {
+            label: isPending ? "Creating..." : "Create Profile",
+            onClick: handleCreateProfile,
+            icon: <Plus className="w-4 h-4" />,
+            disabled: isPending,
+          },
+          secondaryAction: (
+            <ResumeImportButton onImportSuccess={handleImportSuccess} />
+          ),
+        }}
+        header={{
+          showCount: true,
+          countLabel: { singular: "profile", plural: "profiles" },
+          actions: headerActions,
+        }}
+        renderItem={(profile) => (
+          <ProfileCard
+            key={profile.id}
+            id={profile.id}
+            name={profile.name}
+            isDefault={profile.isDefault}
+            resumeData={profile.resume}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onDuplicate={handleDuplicate}
+            onSetDefault={handleSetDefault}
+          />
+        )}
+      />
+
+      <OnboardingModal
+        open={showOnboarding}
+        onOpenChange={setShowOnboarding}
+        onStartFromScratch={() => {
+          setShowOnboarding(false);
+          handleCreateProfile();
+        }}
+        onImportSuccess={(resume) => {
+          setShowOnboarding(false);
+          handleImportSuccess(resume);
+        }}
+      />
     </>
   );
 }

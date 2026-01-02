@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 interface PageContainerProps {
   children: ReactNode;
   className?: string;
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "full";
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "full";
 }
 
 const maxWidthClasses = {
@@ -16,7 +16,8 @@ const maxWidthClasses = {
   "3xl": "max-w-5xl",
   "4xl": "max-w-6xl",
   "5xl": "max-w-7xl",
-  full: "max-w-full",
+  "6xl": "max-w-screen-2xl",
+  full: "w-full",
 };
 
 export function PageContainer({

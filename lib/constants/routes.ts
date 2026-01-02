@@ -11,35 +11,37 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   REGISTER: '/register',
-  
+
   // Dashboard
   DASHBOARD: '/dashboard',
-  
+
   // Profiles
   PROFILES: '/profile',
   PROFILE: (id: string) => `/profile/${id}` as const,
   PROFILE_PUBLIC: (slug: string) => `/public/${slug}` as const,
-  
+
   // Resumes
   RESUMES: '/resumes',
   RESUME: (id: string) => `/resumes/${id}` as const,
   RESUME_EDIT: (id: string) => `/resumes/${id}/edit` as const,
-  
+
   // Cover Letters
   COVER_LETTERS: '/cover-letters',
   COVER_LETTER: (id: string) => `/cover-letters/${id}` as const,
-  
+
   // Templates
   TEMPLATES: '/templates',
   TEMPLATE: (id: string) => `/templates/${id}` as const,
   TEMPLATE_NEW: '/templates/new',
-  
+
   // Generation
   GENERATE: '/generate',
   GENERATE_COVER_LETTER: '/generate?tab=cover-letter',
-  
+
   // Settings
+  SETTINGS: '/settings',
   SETTINGS_API_KEYS: '/settings/api-keys',
+  SETTINGS_AI_MODELS: '/settings/ai-models',
 } as const;
 
 /**

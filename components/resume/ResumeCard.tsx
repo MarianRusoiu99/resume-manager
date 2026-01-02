@@ -19,6 +19,7 @@ interface ResumeCardProps {
   id: string;
   jobTitle: string | null;
   companyName: string | null;
+  jobDescription: string | null;
   content: Resume;
   templateId: string | null;
   createdAt: string;
@@ -31,6 +32,7 @@ export function ResumeCard({
   id,
   jobTitle,
   companyName,
+  jobDescription,
   content,
   templateId,
   createdAt,
@@ -93,13 +95,10 @@ export function ResumeCard({
     <EntityCard
       id={id}
       title={title}
-      subtitle={subtitle}
+      subtitle={jobDescription || subtitle}
       href={ROUTES.RESUME(id)}
       previewHtml={previewHtml}
       isPreviewLoading={isLoadingPreview}
-      metadata={[
-        { label: 'Created', value: formatDate(createdAt) },
-      ]}
       actions={actions}
       onDelete={handleDelete}
       deleteDialog={{

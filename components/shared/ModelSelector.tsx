@@ -79,7 +79,7 @@ export function ModelSelector({
         >
           <Cpu className="h-3.5 w-3.5 text-muted-foreground" />
           <div className="flex flex-col items-start leading-none gap-0.5">
-            <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">AI Model</span>
+            {/* <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">AI Model</span> */}
             <span className="text-xs font-semibold">
               {isLoading ? 'Loading...' : selectedModel?.name || 'Select Model'}
             </span>

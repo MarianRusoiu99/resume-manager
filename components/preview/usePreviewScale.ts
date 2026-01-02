@@ -36,9 +36,18 @@ export function usePreviewScale({
         const availableHeight = containerHeight - 16;
 
         const scaleWidth = availableWidth / A4_WIDTH;
-        // In the Template Editor, we prioritize width fitting to maximize space, 
-        // since the preview is vertically scrollable anyway.
-        const newScale = isFullscreen ? Math.min(scaleWidth, availableHeight / A4_HEIGHT) : scaleWidth;
+        const scaleHeight = availableHeight / A4_HEIGHT;
+
+        // In fullscreen, we must fit both dimensions
+        // In editor view, we primarily fit width but enforce a minimum scale
+        let newScale = isFullscreen
+          ? Math.min(scaleWidth, scaleHeight)
+          : scaleWidth;
+
+        // On mobile/smaller screens, don't let it get ridiculously small
+        if (!isFullscreen && newScale < 0.6) {
+          newScale = 0.6;
+        }
 
         setScale(newScale);
       }

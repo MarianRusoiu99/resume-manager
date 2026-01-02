@@ -29,6 +29,8 @@ interface UseTemplatePreviewOptions {
 interface UseTemplatePreviewReturn {
   /** Rendered HTML content */
   htmlContent: string;
+  /** The template object used */
+  template: Template | null;
   /** Loading state */
   isLoading: boolean;
   /** Error message if any */
@@ -97,6 +99,7 @@ export function useTemplatePreview({
   useFallback = true,
 }: UseTemplatePreviewOptions): UseTemplatePreviewReturn {
   const [htmlContent, setHtmlContent] = useState<string>('');
+  const [template, setTemplate] = useState<Template | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,6 +107,7 @@ export function useTemplatePreview({
     // Skip if disabled or no resume data
     if (!enabled || !resumeData) {
       setHtmlContent('');
+      setTemplate(null);
       setIsLoading(false);
       return;
     }
@@ -111,6 +115,7 @@ export function useTemplatePreview({
     // If no templateId and no fallback, clear content
     if (!templateId && !useFallback) {
       setHtmlContent('');
+      setTemplate(null);
       setIsLoading(false);
       return;
     }
@@ -119,15 +124,17 @@ export function useTemplatePreview({
       setIsLoading(true);
       setError(null);
 
-      const template = await fetchTemplate(templateId, useFallback);
+      const fetchedTemplate = await fetchTemplate(templateId, useFallback);
 
-      if (!template) {
+      if (!fetchedTemplate) {
         throw new Error('No template available');
       }
 
+      setTemplate(fetchedTemplate);
+
       // Render template client-side
       const html = renderTemplateClientSide({
-        htmlTemplate: template.htmlTemplate,
+        htmlTemplate: fetchedTemplate.htmlTemplate,
         resumeData,
       });
 
@@ -136,6 +143,7 @@ export function useTemplatePreview({
       logger.error('Template preview error', err);
       setError(err instanceof Error ? err.message : 'Failed to load template');
       setHtmlContent('');
+      setTemplate(null);
     } finally {
       setIsLoading(false);
     }
@@ -148,6 +156,7 @@ export function useTemplatePreview({
 
   return {
     htmlContent,
+    template,
     isLoading,
     error,
     refresh: renderPreview,

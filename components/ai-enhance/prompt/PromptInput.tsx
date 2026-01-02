@@ -119,7 +119,7 @@ export function PromptInput({
       )}
 
       {/* Main input card - ChatGPT style */}
-      <Card className="shadow-sm border-2 focus-within:border-primary/50 transition-colors">
+      <Card className="shadow-lg shadow-black/5 border-muted/30 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/10 transition-all duration-300 overflow-hidden rounded-2xl bg-background/50 backdrop-blur-sm">
         <CardContent className="p-0">
           {/* Attachments inside the card */}
           {attachments.length > 0 && (

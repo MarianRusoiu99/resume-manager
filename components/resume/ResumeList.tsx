@@ -8,6 +8,7 @@ export interface ResumeListItem {
     id: string;
     jobTitle: string | null;
     companyName: string | null;
+    jobDescription: string | null;
     content: JsonResume;
     templateId: string | null;
     createdAt: string;
@@ -54,6 +55,7 @@ export function ResumeList({
                     id={resume.id}
                     jobTitle={resume.jobTitle}
                     companyName={resume.companyName}
+                    jobDescription={resume.jobDescription}
                     content={resume.content}
                     templateId={resume.templateId}
                     createdAt={resume.createdAt}

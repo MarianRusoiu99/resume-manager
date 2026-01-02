@@ -20,10 +20,14 @@ import {
   Cpu,
   Key,
   UserCircle,
+  Plus,
+  Trash2,
 } from "lucide-react"
-import { useTheme } from "@/lib/contexts"
+import { useTheme, useProfile } from "@/lib/contexts"
 import { signOut } from "next-auth/react"
 import { NotificationDropdown } from "@/components/notifications"
+import { deleteProfile } from "@/app/actions/profile"
+import { toast } from "sonner"
 
 import {
   Sidebar,
@@ -31,12 +35,15 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
   SidebarRail,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from "@/components/ui/sidebar"
 import {
   DropdownMenu,
@@ -97,19 +104,9 @@ const navigationItems = [
 // Settings items
 const settingsItems = [
   {
-    title: "Account",
-    url: "/settings/account",
-    icon: UserCircle,
-  },
-  {
-    title: "AI Models",
-    url: "/settings/ai-models",
-    icon: Cpu,
-  },
-  {
-    title: "API Keys",
-    url: "/settings/api-keys",
-    icon: Key,
+    title: "Settings",
+    url: "/settings",
+    icon: Settings,
   },
 ]
 
@@ -123,12 +120,29 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme()
+  const { profiles, activeProfileId, setActiveProfileId, refreshProfiles } = useProfile()
 
   const handleSignOut = async () => {
     await signOut({
       callbackUrl: "/login",
       redirect: true,
     })
+  }
+
+  const handleDeleteProfile = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete profile "${name}"?`)) return
+
+    try {
+      const result = await deleteProfile(id)
+      if (result.success) {
+        toast.success("Profile deleted")
+        await refreshProfiles()
+      } else {
+        toast.error(result.error || "Failed to delete profile")
+      }
+    } catch (error) {
+      toast.error("An error occurred")
+    }
   }
 
   return (
@@ -141,9 +155,9 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
               <SidebarMenuButton size="lg" asChild>
                 <Link href="/">
                   <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">Resume Manager</span>
+                    <span className="font-semibold">Resume Optimizer</span>
                     <span className="text-xs text-muted-foreground">
-                      AI-Powered Resumes
+                      AI-Powered Career Tools
                     </span>
                   </div>
                 </Link>
@@ -155,14 +169,14 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
       </SidebarHeader>
 
       {/* Main Navigation - Flat list with Settings group */}
-      <SidebarContent className="p-4">
+      <SidebarContent className="p-4 pt-0">
         <TooltipProvider delayDuration={0}>
           <SidebarMenu className="space-y-1">
             {navigationItems.map((item) => {
               const isActive =
                 pathname === item.url || pathname.startsWith(`${item.url}/`)
               return (
-                <SidebarMenuItem className="mt-4" key={item.title}>
+                <SidebarMenuItem className="mt-1" key={item.title}>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <SidebarMenuButton asChild isActive={isActive}>
@@ -179,33 +193,6 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
                 </SidebarMenuItem>
               )
             })}
-
-            {/* Settings Group */}
-            <Collapsible asChild defaultOpen={pathname.startsWith("/settings")} className="group/collapsible">
-              <SidebarMenuItem className="mt-4">
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton tooltip="Settings">
-                    <Settings />
-                    <span>Settings</span>
-                    <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    {settingsItems.map((subItem) => (
-                      <SidebarMenuSubItem key={subItem.title}>
-                        <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
-                          <Link href={subItem.url}>
-                            <subItem.icon className="size-4 mr-2" />
-                            <span>{subItem.title}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </SidebarMenuItem>
-            </Collapsible>
           </SidebarMenu>
         </TooltipProvider>
       </SidebarContent>
@@ -245,11 +232,11 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
 
                 <DropdownMenuSeparator />
 
-                {/* Profile Link */}
+                {/* Settings Link */}
                 <DropdownMenuItem asChild>
-                  <Link href="/profile">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
+                  <Link href="/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
                   </Link>
                 </DropdownMenuItem>
 

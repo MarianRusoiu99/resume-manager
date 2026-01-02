@@ -17,12 +17,12 @@ export default function ResumesPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Use the data fetching hook
-  const { 
-    data: resumes, 
-    isLoading, 
-    error, 
+  const {
+    data: resumes,
+    isLoading,
+    error,
     refetch,
-    mutate 
+    mutate
   } = useFetch<GeneratedResume[]>(apiV1.RESUME.LIST.url, {
     initialData: [],
     refetchOnFocus: true,
@@ -51,6 +51,7 @@ export default function ResumesPage() {
     content: r.content,
     templateId: r.templateId,
     createdAt: r.createdAt, // Already a string from GeneratedResume
+    jobDescription: r.jobDescription,
   }));
 
   return (

@@ -194,7 +194,6 @@ export default function CoverLetterDetailPage() {
     <Page
       title={getPageTitle()}
       description="View and edit your cover letter"
-      maxWidth="full"
       scrollable={false}
       breadcrumbs={[
         { label: 'Cover Letters', href: '/cover-letters' },
@@ -289,7 +288,7 @@ export default function CoverLetterDetailPage() {
             {/* Editor Pane */}
             <div className="bg-background flex flex-col">
               <div className="p-4 border-b bg-muted/10">
-                 <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Cover Letter Content
                 </span>
               </div>
@@ -311,20 +310,20 @@ export default function CoverLetterDetailPage() {
                   Context & Links
                 </span>
                 {coverLetter.resumeId ? (
-                   <div className="space-y-4">
-                      <div className="flex items-center gap-3 p-3 bg-muted/30 border border-dashed rounded-none">
-                        <ExternalLink className="w-4 h-4 text-primary" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Linked Resume</p>
-                          <Link
-                            href={`/resumes/${coverLetter.resumeId}`}
-                            className="text-sm font-medium hover:text-primary transition-colors block truncate"
-                          >
-                            View Source Resume →
-                          </Link>
-                        </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 p-3 bg-muted/30 border border-dashed rounded-none">
+                      <ExternalLink className="w-4 h-4 text-primary" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Linked Resume</p>
+                        <Link
+                          href={`/resumes/${coverLetter.resumeId}`}
+                          className="text-sm font-medium hover:text-primary transition-colors block truncate"
+                        >
+                          View Source Resume →
+                        </Link>
                       </div>
-                   </div>
+                    </div>
+                  </div>
                 ) : (
                   <p className="text-xs text-muted-foreground italic">No linked resume found.</p>
                 )}
@@ -336,7 +335,7 @@ export default function CoverLetterDetailPage() {
                   Target Job Description
                 </span>
                 <div className="p-4 bg-muted/20 border text-sm text-muted-foreground leading-relaxed max-h-[300px] overflow-y-auto font-mono text-[11px]">
-                   {coverLetter.jobPosting?.description ?? coverLetter.resume?.jobPosting?.description ?? 'No job description available.'}
+                  {coverLetter.jobPosting?.description ?? coverLetter.resume?.jobPosting?.description ?? 'No job description available.'}
                 </div>
               </div>
 

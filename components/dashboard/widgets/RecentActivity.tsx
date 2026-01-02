@@ -15,85 +15,99 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ data, loading }: RecentActivityProps) {
-  const getItemIcon = (type: string) => {
+  const getItemIcon = (type: RecentActivityProps["data"] extends Array<infer T> ? T["type"] : never) => {
     switch (type) {
-      case 'RESUME': return <FileCheck className="h-4 w-4 text-primary" />;
-      case 'COVER_LETTER': return <FileText className="h-4 w-4 text-primary" />;
-      case 'PROFILE': return <User className="h-4 w-4 text-primary" />;
-      default: return <FileText className="h-4 w-4 text-primary" />;
+      case "RESUME":
+        return <FileText className="h-4 w-4 text-primary" />;
+      case "COVER_LETTER":
+        return <FileCheck className="h-4 w-4 text-primary" />;
+      case "PROFILE":
+        return <User className="h-4 w-4 text-primary" />;
+      default:
+        return <FileText className="h-4 w-4 text-primary" />;
     }
   };
 
-  const getItemHref = (item: any) => {
+  const getItemTypeLabel = (type: RecentActivityProps["data"] extends Array<infer T> ? T["type"] : never) => {
+    switch (type) {
+      case "RESUME":
+        return "Resume";
+      case "COVER_LETTER":
+        return "Cover Letter";
+      case "PROFILE":
+        return "Profile";
+      default:
+        return type;
+    }
+  };
+
+  const getItemHref = (item: NonNullable<RecentActivityProps["data"]>[number]) => {
     switch (item.type) {
-      case 'RESUME': return ROUTES.RESUME(item.id);
-      case 'COVER_LETTER': return ROUTES.COVER_LETTER(item.id);
-      case 'PROFILE': return ROUTES.PROFILE(item.id);
-      default: return '#';
-    }
-  };
-
-  const getItemTypeLabel = (type: string) => {
-    switch (type) {
-      case 'RESUME': return 'Resume';
-      case 'COVER_LETTER': return 'Cover Letter';
-      case 'PROFILE': return 'Profile';
-      default: return 'Document';
+      case "RESUME":
+        return ROUTES.RESUME(item.id);
+      case "COVER_LETTER":
+        return ROUTES.COVER_LETTER(item.id);
+      case "PROFILE":
+        return ROUTES.PROFILE(item.id);
+      default:
+        return ROUTES.DASHBOARD;
     }
   };
 
   return (
-    <div className="bg-background p-6 md:col-span-2 border-t">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h3 className="text-lg font-semibold uppercase tracking-tight">Recent Activity</h3>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Your latest generated documents and updates</p>
+    <Card className="rounded-xl shadow-sm overflow-hidden border-none bg-card/50 backdrop-blur-sm md:col-span-2">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-6">
+        <div className="space-y-1">
+          <CardTitle className="text-sm font-bold uppercase tracking-widest text-primary">Recent Activity</CardTitle>
+          <CardDescription className="text-[10px] uppercase tracking-wider">Latest documents and updates</CardDescription>
         </div>
-        <Clock className="h-5 w-5 text-primary" />
-      </div>
-      <div>
+        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Clock className="h-4 w-4 text-primary" />
+        </div>
+      </CardHeader>
+      <CardContent>
         {loading ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-12 bg-muted animate-pulse" />
+              <div key={i} className="h-14 bg-muted animate-pulse rounded-xl" />
             ))}
           </div>
         ) : data?.length ? (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {data.map((item) => (
-              <Link 
-                key={item.id} 
+              <Link
+                key={item.id}
                 href={getItemHref(item)}
-                className="flex items-center justify-between p-3 hover:bg-primary/5 transition-colors group/item border-b last:border-0"
+                className="flex items-center justify-between p-3 hover:bg-primary/5 transition-all group/item rounded-xl border border-transparent hover:border-primary/5 active:scale-[0.99]"
               >
                 <div className="flex items-center gap-4">
-                  <div className="p-2 bg-primary/10 group-hover/item:bg-primary/20 transition-colors">
+                  <div className="p-2.5 bg-primary/10 rounded-lg group-hover/item:bg-primary/20 transition-colors">
                     {getItemIcon(item.type)}
                   </div>
                   <div>
-                    <p className="text-sm font-bold uppercase tracking-tight">{item.title}</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">
+                    <p className="text-xs font-bold uppercase tracking-tight">{item.title}</p>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">
                       {getItemTypeLabel(item.type)}
                     </p>
                   </div>
                 </div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground bg-muted/50 px-2 py-1 rounded-md">
                   {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
                 </div>
               </Link>
             ))}
             <div className="pt-6 flex justify-center">
-              <Button variant="link" size="sm" className="text-xs p-0 h-auto font-bold uppercase tracking-widest text-primary" asChild>
+              <Button variant="ghost" size="sm" className="text-[10px] px-4 font-bold uppercase tracking-widest text-primary hover:bg-primary/5 rounded-full" asChild>
                 <Link href={ROUTES.RESUMES}>View All Activity</Link>
               </Button>
             </div>
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground text-center py-8 border border-dashed">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center py-10 border border-dashed rounded-xl">
             No recent activity to show
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

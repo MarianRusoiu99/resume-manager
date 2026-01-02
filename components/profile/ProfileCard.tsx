@@ -53,9 +53,6 @@ export function ProfileCard({
   // Extract metadata from resume data
   const email = resumeData?.basics?.email || 'No email';
   const location = resumeData?.basics?.location?.city || 'No location';
-  const workExperienceCount = resumeData?.work?.length || 0;
-  const educationCount = resumeData?.education?.length || 0;
-  const skillsCount = resumeData?.skills?.length || 0;
 
   const handleExportPDF = async () => {
     await runWithToast(
@@ -130,26 +127,21 @@ export function ProfileCard({
     <EntityCard
       id={id}
       title={name}
-      subtitle={`${email} • ${location}`}
+      subtitle={resumeData?.basics?.summary || `${email} • ${location}`}
       href={ROUTES.PROFILE(id)}
       previewHtml={previewHtml}
       isPreviewLoading={isLoadingPreview}
       badges={
         isDefault
           ? [
-              {
-                label: 'Default',
-                variant: 'secondary',
-                icon: <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />,
-              },
-            ]
+            {
+              label: 'Default',
+              variant: 'secondary',
+              icon: <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />,
+            },
+          ]
           : []
       }
-      metadata={[
-        { label: 'Work', value: workExperienceCount },
-        { label: 'Education', value: educationCount },
-        { label: 'Skills', value: skillsCount },
-      ]}
       actions={actions}
       onDelete={handleDelete}
       deleteDialog={{

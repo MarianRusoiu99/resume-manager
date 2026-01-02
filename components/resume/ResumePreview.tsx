@@ -5,12 +5,13 @@
 
 'use client';
 
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useTemplatePreview } from '@/hooks/useTemplatePreview';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 // Custom hooks
 import { useTemplateSelection } from '../preview/useTemplateSelection';
@@ -18,7 +19,6 @@ import { useResumeData } from '../preview/useResumeData';
 import { useExportPDF } from '../preview/useExportPDF';
 import { usePagination } from '../preview/usePagination';
 import { usePreviewScale } from '../preview/usePreviewScale';
-import { useIframeResize } from '../preview/useIframeResize';
 
 // UI Components
 import { PreviewContent } from '../preview/PreviewContent';
@@ -46,6 +46,8 @@ interface ResumePreviewProps {
   templateHtml?: string;
   /** Custom header actions */
   headerActions?: React.ReactNode;
+  /** Custom header title */
+  headerTitle?: React.ReactNode;
   /** Disable automatic scaling */
   disableScaling?: boolean;
 }
@@ -61,12 +63,14 @@ export function ResumePreview({
   className = '',
   templateHtml,
   headerActions,
+  headerTitle,
   disableScaling = false,
 }: Readonly<ResumePreviewProps>) {
   // Refs
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fullscreenIframeRef = useRef<HTMLIFrameElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
 
   // Custom hooks for separated concerns
   const { selectedTemplateId, handleTemplateChange: onTemplateSelect } = useTemplateSelection({
@@ -92,24 +96,14 @@ export function ResumePreview({
     });
   };
 
-  const { isFullscreen, toggleFullscreen } = usePagination();
-
-  const { scale } = usePreviewScale({
-    containerRef,
-    isFullscreen,
-    disabled: disableScaling,
-  });
-
-  // Fetch template preview (only when not using custom template)
-  const { htmlContent: fetchedHtmlContent, isLoading, error } = useTemplatePreview({
+  // HTML content rendering logic
+  const { htmlContent: fetchedHtmlContent, template, isLoading, error } = useTemplatePreview({
     templateId: templateHtml ? null : selectedTemplateId,
     resumeData: resume,
   });
 
-  // Render custom template if provided
   const customHtmlContent = useMemo(() => {
     if (!templateHtml) return null;
-
     try {
       return renderTemplateClientSide({
         htmlTemplate: templateHtml,
@@ -121,24 +115,48 @@ export function ResumePreview({
     }
   }, [templateHtml, resume]);
 
-  // Use custom HTML if provided, otherwise use fetched template
   const htmlContent = customHtmlContent || fetchedHtmlContent;
 
-  // Handle iframe resizing
-  useIframeResize({
+  // Pagination hooks
+  const {
+    isFullscreen,
+    toggleFullscreen,
+    currentPage,
+    totalPages,
+    handlePageChange
+  } = usePagination({
     iframeRef,
     htmlContent,
   });
 
-  useIframeResize({
+  const {
+    currentPage: fullscreenCurrentPage,
+    totalPages: fullscreenTotalPages,
+    handlePageChange: handleFullscreenPageChange
+  } = usePagination({
     iframeRef: fullscreenIframeRef,
     htmlContent,
   });
 
+  // Scaling hooks
+  const { scale } = usePreviewScale({
+    containerRef,
+    isFullscreen: false,
+    disabled: disableScaling,
+  });
 
-  if (showCard) {
-    return (
-          
+  const { scale: fullscreenScale } = usePreviewScale({
+    containerRef: fullscreenContainerRef,
+    isFullscreen: true,
+    disabled: disableScaling,
+  });
+
+  // Sync pagination state when fullscreen opens
+  // (Optional: handle sync logic if needed)
+
+  return (
+    <>
+      {showCard ? (
         <Card className={className}>
           <CardHeader>
             <CardTitle>Live Preview</CardTitle>
@@ -146,14 +164,16 @@ export function ResumePreview({
           </CardHeader>
           <CardContent>
             <PreviewContent
-              showTemplateSelector={showTemplateSelector && !templateHtml}
+              showTemplateSelector={showTemplateSelector}
               selectedTemplateId={selectedTemplateId}
               onTemplateChange={onTemplateSelect}
               resumeId={resumeId}
+              template={template}
               templateHtml={templateHtml}
               isExportingPDF={isExportingPDF}
               onExportPDF={handleExport}
               onToggleFullscreen={toggleFullscreen}
+              isFullscreen={isFullscreen}
               onRefresh={handleRefresh}
               isLoading={isLoading}
               error={error}
@@ -162,30 +182,71 @@ export function ResumePreview({
               iframeRef={iframeRef}
               containerRef={containerRef}
               headerActions={headerActions}
+              headerTitle={headerTitle}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
             />
           </CardContent>
         </Card>
-    );
-  }
+      ) : (
+        <PreviewContent
+          showTemplateSelector={showTemplateSelector}
+          selectedTemplateId={selectedTemplateId}
+          onTemplateChange={onTemplateSelect}
+          resumeId={resumeId}
+          template={template}
+          templateHtml={templateHtml}
+          isExportingPDF={isExportingPDF}
+          onExportPDF={handleExport}
+          onToggleFullscreen={toggleFullscreen}
+          isFullscreen={isFullscreen}
+          onRefresh={handleRefresh}
+          isLoading={isLoading}
+          error={error}
+          htmlContent={htmlContent}
+          scale={scale}
+          iframeRef={iframeRef}
+          containerRef={containerRef}
+          headerActions={headerActions}
+          headerTitle={headerTitle}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      )}
 
-  return (
-    <PreviewContent
-        showTemplateSelector={showTemplateSelector && !templateHtml}
-        selectedTemplateId={selectedTemplateId}
-        onTemplateChange={onTemplateSelect}
-        resumeId={resumeId}
-        templateHtml={templateHtml}
-        isExportingPDF={isExportingPDF}
-        onExportPDF={handleExport}
-        onToggleFullscreen={toggleFullscreen}
-        onRefresh={handleRefresh}
-        isLoading={isLoading}
-        error={error}
-        htmlContent={htmlContent}
-        scale={scale}
-        iframeRef={iframeRef}
-        containerRef={containerRef}
-        headerActions={headerActions}
-      />
+      {/* Fullscreen Preview Dialog */}
+      <Dialog open={isFullscreen} onOpenChange={toggleFullscreen}>
+        <DialogContent showClose={false} className="max-w-[95vw] w-full h-[95vh] p-0 overflow-hidden border-none rounded-[2rem] bg-background shadow-2xl">
+          <div className="flex flex-col h-full">
+            <PreviewContent
+              showTemplateSelector={showTemplateSelector}
+              selectedTemplateId={selectedTemplateId}
+              onTemplateChange={onTemplateSelect}
+              resumeId={resumeId}
+              template={template}
+              templateHtml={templateHtml}
+              isExportingPDF={isExportingPDF}
+              onExportPDF={handleExport}
+              onToggleFullscreen={toggleFullscreen}
+              isFullscreen={true}
+              onRefresh={handleRefresh}
+              isLoading={isLoading}
+              error={error}
+              htmlContent={htmlContent}
+              scale={fullscreenScale}
+              iframeRef={fullscreenIframeRef}
+              containerRef={fullscreenContainerRef}
+              headerActions={headerActions}
+              headerTitle={headerTitle}
+              currentPage={fullscreenCurrentPage}
+              totalPages={fullscreenTotalPages}
+              onPageChange={handleFullscreenPageChange}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
