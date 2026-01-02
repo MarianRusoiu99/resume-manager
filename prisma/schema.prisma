@@ -184,7 +184,6 @@ model ResumeTemplate {
   description String?
 
   htmlTemplate String @db.Text
-  cssStyles    String @db.Text
 
   previewUrl String?
   isPublic   Boolean  @default(true)

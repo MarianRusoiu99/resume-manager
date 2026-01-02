@@ -13,9 +13,7 @@ import { useMemo } from 'react';
 
 export interface TemplateVisualComparisonProps {
   originalHtml: string;
-  originalCss: string;
   enhancedHtml: string | null;
-  enhancedCss: string | null;
   /** AI enhancement is in progress */
   isEnhancing?: boolean;
   className?: string;
@@ -26,9 +24,7 @@ export interface TemplateVisualComparisonProps {
  */
 export function TemplateVisualComparison({
   originalHtml,
-  originalCss,
   enhancedHtml,
-  enhancedCss,
   isEnhancing = false,
   className,
 }: Readonly<TemplateVisualComparisonProps>) {
@@ -37,13 +33,12 @@ export function TemplateVisualComparison({
     try {
       return renderTemplateClientSide({
         htmlTemplate: originalHtml,
-        cssStyles: originalCss,
         resumeData: sampleResume,
       });
     } catch {
       return null;
     }
-  }, [originalHtml, originalCss]);
+  }, [originalHtml]);
 
   // Generate preview HTML for enhanced template
   const enhancedPreview = useMemo(() => {
@@ -51,13 +46,12 @@ export function TemplateVisualComparison({
     try {
       return renderTemplateClientSide({
         htmlTemplate: enhancedHtml,
-        cssStyles: enhancedCss || originalCss,
         resumeData: sampleResume,
       });
     } catch {
       return null;
     }
-  }, [enhancedHtml, enhancedCss, originalCss]);
+  }, [enhancedHtml]);
 
   const hasEnhancement = enhancedHtml !== null;
 

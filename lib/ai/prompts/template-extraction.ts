@@ -10,7 +10,6 @@ import { z } from 'zod';
  */
 export const templateExtractionSchema = z.object({
     htmlTemplate: z.string().min(1, 'HTML template is required'),
-    cssStyles: z.string().min(1, 'CSS styles are required'),
     name: z.string().optional(),
     description: z.string().optional(),
 });
@@ -70,8 +69,7 @@ The template will receive this data structure. Use these Handlebars placeholders
 ## OUTPUT FORMAT
 Return a JSON object:
 {
-  "htmlTemplate": "<main>...</main>",
-  "cssStyles": "/* your CSS */",
+  "htmlTemplate": "<style>...</style><main>...</main>",
   "name": "Descriptive name based on the design",
   "description": "Brief description of the visual style"
 }

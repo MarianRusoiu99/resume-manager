@@ -129,7 +129,6 @@ export function useExportPdf({
           resume: content,
           template: {
             htmlTemplate: template.htmlTemplate,
-            cssStyles: template.cssStyles,
           },
           fileName: `${fileName.replaceAll(/\s+/g, '_')}.pdf`,
         },

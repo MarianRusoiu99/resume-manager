@@ -58,7 +58,7 @@ export function PreviewContent(props: Readonly<PreviewContentProps>) {
         actions={headerActions}
       />
 
-      <div className="flex flex-col items-center justify-center w-full h-full overflow-hidden">
+      <div className="flex flex-col items-center justify-center w-full h-full overflow-hidden bg-muted/5">
         <div
           className="relative w-full h-full flex items-center justify-center"
           style={{

@@ -97,7 +97,7 @@ export default function ResumesPage() {
 
       {/* Results Count */}
       {(resumes?.length ?? 0) > 0 && (
-        <div className="mt-6 text-center text-sm text-muted-foreground">
+        <div className="mt-6 text-center text-sm text-muted-foreground pb-8">
           Showing {resumeListItems.length} of {resumes?.length ?? 0} resume{(resumes?.length ?? 0) === 1 ? '' : 's'}
         </div>
       )}

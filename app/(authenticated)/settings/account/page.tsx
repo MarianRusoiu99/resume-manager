@@ -45,7 +45,6 @@ export default function AccountSettingsPage() {
     <Page
       title="Account Settings"
       description="Manage your account preferences and security"
-      maxWidth="md"
       breadcrumbs={[
         { label: 'Settings', href: '/settings' },
         { label: 'Account' },

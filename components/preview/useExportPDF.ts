@@ -15,7 +15,6 @@ interface ExportPDFParams {
   resume: Resume;
   templateId?: string | null;
   templateHtml?: string;
-  templateCss?: string;
   fileName?: string;
 }
 
@@ -32,7 +31,7 @@ export function useExportPDF() {
     try {
       setIsExportingPDF(true);
 
-      const { resume, templateId, templateHtml, templateCss, fileName } = params;
+      const { resume, templateId, templateHtml, fileName } = params;
 
       // If custom template is provided, use it directly
       if (templateHtml) {
@@ -41,7 +40,6 @@ export function useExportPDF() {
             resume,
             template: {
               htmlTemplate: templateHtml,
-              cssStyles: templateCss || '',
             },
             fileName,
           },
@@ -65,7 +63,6 @@ export function useExportPDF() {
       const templateResult = await apiV1.TEMPLATE.GET(templateId).get<{
         id: string;
         htmlTemplate: string;
-        cssStyles: string;
       }>();
       if (templateResult.error || !templateResult.data) {
         throw new Error(templateResult.error ?? 'Failed to fetch template');
@@ -78,7 +75,6 @@ export function useExportPDF() {
           resume,
           template: {
             htmlTemplate: template.htmlTemplate,
-            cssStyles: template.cssStyles,
           },
           fileName,
         },

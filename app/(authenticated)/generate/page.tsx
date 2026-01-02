@@ -23,6 +23,8 @@ import { useComponentLogger } from '@/hooks';
 import type { TemplateBase } from '@/lib/types/template';
 import { useResumeGeneration, useCoverLetterGeneration } from '@/components/ai-enhance/hooks';
 
+import { ModelSelector } from '@/components/shared/ModelSelector';
+
 export default function GeneratePage() {
   const log = useComponentLogger('GeneratePage');
   const searchParams = useSearchParams();
@@ -153,8 +155,9 @@ export default function GeneratePage() {
     await generateResume({
       jobDescription: resumeJobDescription,
       personalInstructions: '', 
+      overrideModelId: selectedResumeModelId,
     });
-  }, [generateResume, resumeJobDescription]);
+  }, [generateResume, resumeJobDescription, selectedResumeModelId]);
 
   const handleGenerateCoverLetter = useCallback(async () => {
     if (coverLetterJobDescription.length < 50) {
@@ -165,8 +168,9 @@ export default function GeneratePage() {
     await generateCoverLetter({
       jobDescription: coverLetterJobDescription,
       personalInstructions: coverLetterPersonalInstructions,
+      overrideModelId: selectedCoverLetterModelId,
     });
-  }, [generateCoverLetter, coverLetterJobDescription, coverLetterPersonalInstructions]);
+  }, [generateCoverLetter, coverLetterJobDescription, coverLetterPersonalInstructions, selectedCoverLetterModelId]);
 
   const activeProviders = providers.filter(p => p.isActive);
 
@@ -174,141 +178,153 @@ export default function GeneratePage() {
     <Page
       title="Generate Content"
       description="Create tailored resumes and cover letters with AI"
-      maxWidth="2xl"
       breadcrumbs={[{ label: 'Generate' }]}
     >
       <Tabs defaultValue={tabParam === 'cover-letter' ? 'cover-letter' : 'resume'} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-8">
-          <TabsTrigger value="resume" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Resume
-          </TabsTrigger>
-          <TabsTrigger value="cover-letter" className="flex items-center gap-2">
-            <Send className="w-4 h-4" />
-            Cover Letter
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between mb-8 gap-4">
+          <div className="hidden sm:block">
+            {tabParam === 'cover-letter' ? (
+               <ModelSelector value={selectedCoverLetterModelId} onValueChange={setSelectedCoverLetterModelId} align="start" />
+            ) : (
+               <ModelSelector value={selectedResumeModelId} onValueChange={setSelectedResumeModelId} align="start" />
+            )}
+          </div>
+          <TabsList className="grid w-full grid-cols-2 max-w-md">
+            <TabsTrigger value="resume" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Resume
+            </TabsTrigger>
+            <TabsTrigger value="cover-letter" className="flex items-center gap-2">
+              <Send className="w-4 h-4" />
+              Cover Letter
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <div className="mt-2">
           {/* Resume Tab */}
           <TabsContent value="resume" className="m-0">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-              <div className="space-y-6">
-                <Card className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-border border-y -mx-4 sm:-mx-8">
+              <div className="bg-background p-6 space-y-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
                     <Sparkles className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">Target Job Details</h3>
+                    <h3 className="text-lg font-semibold uppercase tracking-tight">Target Job Details</h3>
                   </div>
-                  <div className="space-y-5">
-                    <div>
-                      <label className="text-sm font-medium block mb-2">Job Description</label>
-                      <Textarea
-                        value={resumeJobDescription}
-                        onChange={(e) => setResumeJobDescription(e.target.value)}
-                        placeholder="Paste the job description here..."
-                        rows={10}
-                        className="font-mono text-xs resize-none"
-                      />
-                      <div className="flex justify-between items-center mt-1.5">
-                        <p className="text-[10px] text-muted-foreground">
-                          Min 50 characters: {resumeJobDescription.length}/50
-                        </p>
-                        {resumeJobDescription.length >= 50 && (
-                          <span className="text-[10px] text-green-600 font-medium">Ready</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Profile Source</label>
-                        <select
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                          value={selectedResumeProfileId}
-                          onChange={(e) => setSelectedResumeProfileId(e.target.value)}
-                        >
-                          {profiles.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Layout Template</label>
-                        <select
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                          value={selectedTemplateId}
-                          onChange={(e) => setSelectedTemplateId(e.target.value)}
-                        >
-                          {templates.map(t => (
-                            <option key={t.id} value={t.id}>{t.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">AI Model Preference</label>
-                      <SearchableSelect
-                        value={selectedResumeModelId}
-                        onValueChange={setSelectedResumeModelId}
-                        options={activeProviders.flatMap(p => 
-                          (p.models || []).map(m => ({ 
-                            value: m.id, 
-                            label: `${p.name}: ${m.name || m.id}` 
-                          }))
-                        )}
-                        placeholder="Select AI model"
-                      />
-                    </div>
-
-                    {!hasAIProviders && !isLoadingMetadata && (
-                      <Callout variant="warning">
-                        No AI providers configured. Go to <Link href={ROUTES.SETTINGS_API_KEYS} className="underline font-medium">Settings</Link> to add your API keys.
-                      </Callout>
-                    )}
-
-                    {resumeError && (
-                      <Callout variant="danger">
-                        {resumeError}
-                      </Callout>
-                    )}
-
-                    <Button 
-                      className="w-full shadow-sm" 
-                      size="lg"
-                      disabled={isGeneratingResume || resumeJobDescription.length < 50 || !hasAIProviders}
-                      onClick={handleGenerateResume}
-                    >
-                      {isGeneratingResume ? (
-                        <>
-                          <Spinner size="sm" className="mr-2" />
-                          Tailoring Resume...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Generate Tailored Resume
-                        </>
+                  <div className="sm:hidden">
+                    <ModelSelector value={selectedResumeModelId} onValueChange={setSelectedResumeModelId} />
+                  </div>
+                </div>
+                <div className="space-y-5">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">Job Description</label>
+                    <Textarea
+                      value={resumeJobDescription}
+                      onChange={(e) => setResumeJobDescription(e.target.value)}
+                      placeholder="Paste the job description here..."
+                      rows={12}
+                      className="font-mono text-xs resize-none rounded-none border-x-0 border-t-0 focus-visible:ring-0 px-0"
+                    />
+                    <div className="flex justify-between items-center mt-1.5">
+                      <p className="text-[10px] text-muted-foreground">
+                        Min 50 characters: {resumeJobDescription.length}/50
+                      </p>
+                      {resumeJobDescription.length >= 50 && (
+                        <span className="text-[10px] text-green-600 font-medium">Ready</span>
                       )}
-                    </Button>
+                    </div>
                   </div>
-                </Card>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Profile Source</label>
+                      <select
+                        className="w-full h-10 px-0 rounded-none border-x-0 border-t-0 border-b bg-background text-sm focus:ring-0 outline-none"
+                        value={selectedResumeProfileId}
+                        onChange={(e) => setSelectedResumeProfileId(e.target.value)}
+                      >
+                        {profiles.map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Layout Template</label>
+                      <select
+                        className="w-full h-10 px-0 rounded-none border-x-0 border-t-0 border-b bg-background text-sm focus:ring-0 outline-none"
+                        value={selectedTemplateId}
+                        onChange={(e) => setSelectedTemplateId(e.target.value)}
+                      >
+                        {templates.map(t => (
+                          <option key={t.id} value={t.id}>{t.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">AI Model Preference</label>
+                    <SearchableSelect
+                      value={selectedResumeModelId}
+                      onValueChange={setSelectedResumeModelId}
+                      options={activeProviders.flatMap(p => 
+                        (p.models || []).map(m => ({ 
+                          value: m.id, 
+                          label: `${p.name}: ${m.name || m.id}` 
+                        }))
+                      )}
+                      placeholder="Select AI model"
+                      className="rounded-none border-x-0 border-t-0"
+                    />
+                  </div>
+
+                  {!hasAIProviders && !isLoadingMetadata && (
+                    <Callout variant="warning" className="rounded-none border-x-0">
+                      No AI providers configured. Go to <Link href={ROUTES.SETTINGS_API_KEYS} className="underline font-medium">Settings</Link> to add your API keys.
+                    </Callout>
+                  )}
+
+                  {resumeError && (
+                    <Callout variant="danger" className="rounded-none border-x-0">
+                      {resumeError}
+                    </Callout>
+                  )}
+
+                  <Button 
+                    className="w-full rounded-none" 
+                    size="lg"
+                    disabled={isGeneratingResume || resumeJobDescription.length < 50 || !hasAIProviders}
+                    onClick={handleGenerateResume}
+                  >
+                    {isGeneratingResume ? (
+                      <>
+                        <Spinner size="sm" className="mr-2" />
+                        Tailoring Resume...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Generate Tailored Resume
+                      </>
+                    )}
+                  </Button>
+                </div>
 
                 {matchScore !== null && (
-                  <Card className="p-5 bg-primary/5 border-primary/20 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                  <div className="p-5 bg-primary/5 border-t animate-in fade-in slide-in-from-bottom-2 duration-500">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <AlertCircle className="h-4 w-4 text-primary" />
-                        <span className="text-sm font-semibold">Optimization Insights</span>
+                        <span className="text-xs font-bold uppercase tracking-wider">Optimization Insights</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Match Score</span>
+                        <span className="text-xs text-muted-foreground uppercase">Match Score</span>
                         <span className="text-2xl font-bold text-primary">{matchScore}%</span>
                       </div>
                     </div>
                     {suggestions.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-primary/10">
-                        <p className="text-xs font-bold uppercase tracking-wider text-primary/70 mb-2">Key Improvement Areas</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary/70 mb-2">Key Improvement Areas</p>
                         <ul className="text-xs space-y-2">
                           {suggestions.slice(0, 3).map((s, i) => (
                             <li key={i} className="flex gap-2">
@@ -319,22 +335,23 @@ export default function GeneratePage() {
                         </ul>
                       </div>
                     )}
-                  </Card>
+                  </div>
                 )}
               </div>
 
-              <div className="lg:sticky lg:top-24 mt-8 lg:mt-0">
+              <div className="bg-muted/30 p-6 flex flex-col min-h-[600px]">
                 {generatedResume ? (
-                  <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300 h-full">
                     <ResumePreview
                       resumeData={generatedResume}
                       showTemplateSelector={false}
-                      showCard={true}
+                      showCard={false}
+                      className="shadow-2xl"
                       headerActions={
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="h-8"
+                          className="h-8 rounded-none"
                           onClick={handleSaveResume}
                           disabled={isSavingResume}
                         >
@@ -345,15 +362,15 @@ export default function GeneratePage() {
                     />
                   </div>
                 ) : (
-                  <Card className="aspect-[3/4] flex flex-col items-center justify-center p-12 text-center border-dashed bg-muted/20">
-                    <div className="w-16 h-16 rounded-full bg-background shadow-sm border flex items-center justify-center mb-6">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+                    <div className="w-16 h-16 bg-background flex items-center justify-center mb-6 border">
                       <FileText className="w-8 h-8 text-muted-foreground/50" />
                     </div>
                     <h3 className="text-lg font-semibold mb-2">Preview Your New Resume</h3>
                     <p className="text-sm text-muted-foreground max-w-xs mx-auto">
                       Your AI-tailored resume will appear here in real-time as it&apos;s generated.
                     </p>
-                  </Card>
+                  </div>
                 )}
               </div>
             </div>
@@ -361,235 +378,117 @@ export default function GeneratePage() {
 
           {/* Cover Letter Tab */}
           <TabsContent value="cover-letter" className="m-0">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-              <div className="space-y-6">
-                <Card className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Send className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">Letter Specifications</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-border border-y -mx-4 sm:-mx-8">
+              <div className="bg-background p-6 space-y-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Send className="h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold uppercase tracking-tight">Letter Specifications</h3>
+                </div>
+                <div className="space-y-5">
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">Job Description</label>
+                    <Textarea
+                      value={coverLetterJobDescription}
+                      onChange={(e) => setCoverLetterJobDescription(e.target.value)}
+                      placeholder="Paste the job description here..."
+                      rows={12}
+                      className="font-mono text-xs resize-none rounded-none border-x-0 border-t-0 focus-visible:ring-0 px-0"
+                    />
                   </div>
-                  <div className="space-y-5">
-                    <div>
-                      <label className="text-sm font-medium block mb-2">Job Description</label>
-                      <Textarea
-                        value={coverLetterJobDescription}
-                        onChange={(e) => setCoverLetterJobDescription(e.target.value)}
-                        placeholder="Paste the job description here..."
-                        rows={10}
-                        className="font-mono text-xs resize-none"
-                      />
-                    </div>
 
-                    <div>
-                      <label className="text-sm font-medium block mb-2">Personal Touch (Tone, Instructions)</label>
-                      <Textarea
-                        value={coverLetterPersonalInstructions}
-                        onChange={(e) => setCoverLetterPersonalInstructions(e.target.value)}
-                        placeholder="e.g. Highlight my leadership experience. Use an energetic but professional tone."
-                        rows={3}
-                        className="text-sm resize-none"
-                      />
-                    </div>
+                  <div>
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-2">Personal Touch</label>
+                    <Textarea
+                      value={coverLetterPersonalInstructions}
+                      onChange={(e) => setCoverLetterPersonalInstructions(e.target.value)}
+                      placeholder="e.g. Highlight my leadership experience. Use an energetic but professional tone."
+                      rows={4}
+                      className="text-sm resize-none rounded-none border-x-0 border-t-0 focus-visible:ring-0 px-0"
+                    />
+                  </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Profile Data</label>
-                        <select
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                          value={selectedCoverLetterProfileId}
-                          onChange={(e) => setSelectedCoverLetterProfileId(e.target.value)}
-                        >
-                          {profiles.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">AI Model</label>
-                        <SearchableSelect
-                          value={selectedCoverLetterModelId}
-                          onValueChange={setSelectedCoverLetterModelId}
-                          options={activeProviders.flatMap(p => 
-                            (p.models || []).map(m => ({ 
-                              value: m.id, 
-                              label: `${p.name}: ${m.name || m.id}` 
-                            }))
-                          )}
-                          placeholder="Select model"
-                        />
-                      </div>
-                    </div>
-
-                    {coverLetterError && (
-                      <Callout variant="danger">
-                        {coverLetterError}
-                      </Callout>
-                    )}
-
-                    <div className="flex gap-3 pt-2">
-                      <Button 
-                        className="flex-1 shadow-sm" 
-                        size="lg"
-                        disabled={isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || !hasAIProviders}
-                        onClick={handleGenerateCoverLetter}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Profile Data</label>
+                      <select
+                        className="w-full h-10 px-0 rounded-none border-x-0 border-t-0 border-b bg-background text-sm focus:ring-0 outline-none"
+                        value={selectedCoverLetterProfileId}
+                        onChange={(e) => setSelectedCoverLetterProfileId(e.target.value)}
                       >
-                        {isGeneratingCoverLetter ? (
-                          <>
-                            <Spinner size="sm" className="mr-2" />
-                            Drafting Letter...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4 mr-2" />
-                            Generate Cover Letter
-                          </>
+                        {profiles.map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">AI Model</label>
+                      <SearchableSelect
+                        value={selectedCoverLetterModelId}
+                        onValueChange={setSelectedCoverLetterModelId}
+                        options={activeProviders.flatMap(p => 
+                          (p.models || []).map(m => ({ 
+                            value: m.id, 
+                            label: `${p.name}: ${m.name || m.id}` 
+                          }))
                         )}
-                      </Button>
-                      <Button variant="outline" size="lg" onClick={resetCoverLetter} className="px-6">Reset</Button>
+                        placeholder="Select model"
+                        className="rounded-none border-x-0 border-t-0"
+                      />
                     </div>
                   </div>
-                </Card>
+
+                  {coverLetterError && (
+                    <Callout variant="danger" className="rounded-none border-x-0">
+                      {coverLetterError}
+                    </Callout>
+                  )}
+
+                  <div className="flex gap-3 pt-2">
+                    <Button 
+                      className="flex-1 rounded-none" 
+                      size="lg"
+                      disabled={isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || !hasAIProviders}
+                      onClick={handleGenerateCoverLetter}
+                    >
+                      {isGeneratingCoverLetter ? (
+                        <>
+                          <Spinner size="sm" className="mr-2" />
+                          Drafting Letter...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Generate Cover Letter
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="outline" size="lg" onClick={resetCoverLetter} className="px-6 rounded-none">Reset</Button>
+                  </div>
+                </div>
               </div>
 
-              <div className="lg:sticky lg:top-24 mt-8 lg:mt-0">
+              <div className="bg-muted/30 p-6 flex flex-col min-h-[600px]">
                 {generatedCoverLetter ? (
-                  <div className="animate-in fade-in zoom-in-95 duration-300">
+                  <div className="animate-in fade-in zoom-in-95 duration-300 h-full">
                     <CoverLetterEditor
                       content={generatedCoverLetter}
                       editable={true}
                       onSave={async (content) => {
                         log.debug('Saving generated cover letter', { contentLength: content.length });
                       }}
+                      className="h-full shadow-2xl"
                     />
                   </div>
                 ) : (
-                  <Card className="aspect-[3/4] flex flex-col items-center justify-center p-12 text-center border-dashed bg-muted/20">
-                    <div className="w-16 h-16 rounded-full bg-background shadow-sm border flex items-center justify-center mb-6">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
+                    <div className="w-16 h-16 bg-background flex items-center justify-center mb-6 border">
                       <Send className="w-8 h-8 text-muted-foreground/50" />
                     </div>
                     <h3 className="text-lg font-semibold mb-2">Preview Cover Letter</h3>
                     <p className="text-sm text-muted-foreground max-w-xs mx-auto">
                       Your personalized cover letter will be ready for review here once generated.
                     </p>
-                  </Card>
-                )}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* Cover Letter Tab */}
-          <TabsContent value="cover-letter" className="m-0">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-              <div className="space-y-6">
-                <Card className="p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Send className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">Letter Specifications</h3>
                   </div>
-                  <div className="space-y-5">
-                    <div>
-                      <label className="text-sm font-medium block mb-2">Job Description</label>
-                      <Textarea
-                        value={coverLetterJobDescription}
-                        onChange={(e) => setCoverLetterJobDescription(e.target.value)}
-                        placeholder="Paste the job description here..."
-                        rows={10}
-                        className="font-mono text-xs resize-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium block mb-2">Personal Touch (Tone, Instructions)</label>
-                      <Textarea
-                        value={coverLetterPersonalInstructions}
-                        onChange={(e) => setCoverLetterPersonalInstructions(e.target.value)}
-                        placeholder="e.g. Highlight my leadership experience. Use an energetic but professional tone."
-                        rows={3}
-                        className="text-sm resize-none"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Profile Data</label>
-                        <select
-                          className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm focus:ring-1 focus:ring-primary outline-none"
-                          value={selectedCoverLetterProfileId}
-                          onChange={(e) => setSelectedCoverLetterProfileId(e.target.value)}
-                        >
-                          {profiles.map(p => (
-                            <option key={p.id} value={p.id}>{p.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">AI Model</label>
-                        <SearchableSelect
-                          value={selectedCoverLetterModelId}
-                          onValueChange={setSelectedCoverLetterModelId}
-                          options={activeProviders.flatMap(p => 
-                            (p.models || []).map(m => ({ 
-                              value: m.id, 
-                              label: `${p.name}: ${m.name || m.id}` 
-                            }))
-                          )}
-                          placeholder="Select model"
-                        />
-                      </div>
-                    </div>
-
-                    {coverLetterError && (
-                      <Callout variant="danger">
-                        {coverLetterError}
-                      </Callout>
-                    )}
-
-                    <div className="flex gap-3 pt-2">
-                      <Button 
-                        className="flex-1 shadow-sm" 
-                        size="lg"
-                        disabled={isGeneratingCoverLetter || coverLetterJobDescription.length < 50 || !hasAIProviders}
-                        onClick={handleGenerateCoverLetter}
-                      >
-                        {isGeneratingCoverLetter ? (
-                          <>
-                            <Spinner size="sm" className="mr-2" />
-                            Drafting Letter...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles className="w-4 h-4 mr-2" />
-                            Generate Cover Letter
-                          </>
-                        )}
-                      </Button>
-                      <Button variant="outline" size="lg" onClick={resetCoverLetter} className="px-6">Reset</Button>
-                    </div>
-                  </div>
-                </Card>
-              </div>
-
-              <div className="lg:sticky lg:top-24">
-                {generatedCoverLetter ? (
-                  <div className="animate-in fade-in zoom-in-95 duration-300">
-                    <CoverLetterEditor
-                      content={generatedCoverLetter}
-                      editable={true}
-                      onSave={async (content) => {
-                        log.debug('Saving generated cover letter', { contentLength: content.length });
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <Card className="aspect-[3/4] flex flex-col items-center justify-center p-12 text-center border-dashed bg-muted/20">
-                    <div className="w-16 h-16 rounded-full bg-background shadow-sm border flex items-center justify-center mb-6">
-                      <Send className="w-8 h-8 text-muted-foreground/50" />
-                    </div>
-                    <h3 className="text-lg font-semibold mb-2">Preview Cover Letter</h3>
-                    <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                      Your personalized cover letter will be ready for review here once generated.
-                    </p>
-                  </Card>
                 )}
               </div>
             </div>

@@ -83,6 +83,8 @@ export const API_V1 = {
   TEMPLATE: {
     LIST: `${API_V1_PREFIX}/template`,
     GET: (id: string) => `${API_V1_PREFIX}/template/${id}` as const,
+    CREATE: `${API_V1_PREFIX}/template`,
+    UPDATE: (id: string) => `${API_V1_PREFIX}/template/${id}` as const,
     DUPLICATE: (id: string) => `${API_V1_PREFIX}/template/${id}/duplicate` as const,
     IMPORT: `${API_V1_PREFIX}/template/import`,
   },

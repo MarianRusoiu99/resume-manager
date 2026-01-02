@@ -28,6 +28,11 @@ export function PreviewHeader({
   onExportPDF,
   actions,
 }: Readonly<PreviewHeaderProps>) {
+  // If templateHtml is provided, we're likely in the TemplateEditor and using a custom header
+  if (templateHtml) {
+    return null;
+  }
+
   return (
     <div className="flex items-center justify-between mb-2 px-6">
       <div className="flex items-center gap-2">

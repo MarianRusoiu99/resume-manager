@@ -15,8 +15,11 @@ import {
   Sun,
   Monitor,
   ChevronUp,
+  ChevronDown,
   LayoutDashboard,
-  BarChart3,
+  Cpu,
+  Key,
+  UserCircle,
 } from "lucide-react"
 import { useTheme } from "@/lib/contexts"
 import { signOut } from "next-auth/react"
@@ -30,6 +33,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarRail,
 } from "@/components/ui/sidebar"
 import {
@@ -48,8 +54,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 
-// Navigation items (flat structure, no grouping)
+// Main navigation items
 const navigationItems = [
   {
     title: "Dashboard",
@@ -81,10 +92,24 @@ const navigationItems = [
     url: "/templates",
     icon: Palette,
   },
+]
+
+// Settings items
+const settingsItems = [
   {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
+    title: "Account",
+    url: "/settings/account",
+    icon: UserCircle,
+  },
+  {
+    title: "AI Models",
+    url: "/settings/ai-models",
+    icon: Cpu,
+  },
+  {
+    title: "API Keys",
+    url: "/settings/api-keys",
+    icon: Key,
   },
 ]
 
@@ -129,7 +154,7 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
         </SidebarMenu>
       </SidebarHeader>
 
-      {/* Main Navigation - Flat list without grouping */}
+      {/* Main Navigation - Flat list with Settings group */}
       <SidebarContent className="p-4">
         <TooltipProvider delayDuration={0}>
           <SidebarMenu className="space-y-1">
@@ -154,6 +179,33 @@ export function AppSidebar({ user, ...props }: Readonly<AppSidebarProps>) {
                 </SidebarMenuItem>
               )
             })}
+
+            {/* Settings Group */}
+            <Collapsible asChild defaultOpen={pathname.startsWith("/settings")} className="group/collapsible">
+              <SidebarMenuItem className="mt-4">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton tooltip="Settings">
+                    <Settings />
+                    <span>Settings</span>
+                    <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    {settingsItems.map((subItem) => (
+                      <SidebarMenuSubItem key={subItem.title}>
+                        <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
+                          <Link href={subItem.url}>
+                            <subItem.icon className="size-4 mr-2" />
+                            <span>{subItem.title}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
           </SidebarMenu>
         </TooltipProvider>
       </SidebarContent>

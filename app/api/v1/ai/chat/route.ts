@@ -73,7 +73,6 @@ const chatRequestSchema = z.object({
       template: z
         .object({
           htmlTemplate: z.string().optional(),
-          cssStyles: z.string().optional(),
           name: z.string().optional(),
         })
         .optional(),

@@ -47,8 +47,7 @@ export type CoverLetterOutput = z.infer<typeof coverLetterOutputSchema>;
  * Template generation output schema
  */
 export const templateGenerationOutputSchema = z.object({
-  htmlTemplate: z.string().describe('The HTML template with Handlebars placeholders'),
-  cssStyles: z.string().describe('The CSS styles for the template'),
+  htmlTemplate: z.string().describe('The HTML template with Handlebars placeholders and inline <style> blocks'),
   name: z.string().optional().describe('Suggested name for the template'),
   description: z.string().optional().describe('Description of the template'),
 });
@@ -59,8 +58,7 @@ export type TemplateGenerationOutput = z.infer<typeof templateGenerationOutputSc
  * Template enhancement output schema
  */
 export const templateEnhancementOutputSchema = z.object({
-  htmlTemplate: z.string().describe('The enhanced HTML template'),
-  cssStyles: z.string().describe('The enhanced CSS styles'),
+  htmlTemplate: z.string().describe('The enhanced HTML template with inline <style> blocks'),
   changes: z.array(z.string()).optional().describe('List of changes made'),
 });
 

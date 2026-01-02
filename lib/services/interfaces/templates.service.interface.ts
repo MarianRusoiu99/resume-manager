@@ -14,7 +14,6 @@ export interface CreateTemplateServiceInput {
   name: string;
   description?: string;
   htmlTemplate: string;
-  cssStyles: string;
   previewUrl?: string;
   isPublic?: boolean;
 }
@@ -26,7 +25,6 @@ export interface UpdateTemplateServiceInput {
   name?: string;
   description?: string;
   htmlTemplate?: string;
-  cssStyles?: string;
   previewUrl?: string;
   isPublic?: boolean;
 }

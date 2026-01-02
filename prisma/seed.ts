@@ -20,9 +20,11 @@ function loadTemplateAssets(templateName: 'classic' | 'modern' | 'minimal') {
   const html = readFileSync(join(assetsPath, templateName, 'template.html'), 'utf-8');
   const templateCss = readFileSync(join(assetsPath, templateName, 'styles.css'), 'utf-8');
 
+  // Wrap styles in a <style> block and prepend to the HTML
+  const mergedHtml = `<style>\n${baseCss}\n\n${templateCss}\n</style>\n${html}`;
+
   return {
-    html,
-    css: `${baseCss}\n\n${templateCss}`,
+    html: mergedHtml,
   };
 }
 
@@ -77,7 +79,6 @@ async function upsertResumeTemplates() {
       description:
         'Traditional serif-based design with clean typography. Perfect for corporate, legal, academic, and traditional industries where a timeless look is valued.',
       htmlTemplate: classic.html,
-      cssStyles: classic.css,
       isPublic: true,
     },
     {
@@ -85,7 +86,6 @@ async function upsertResumeTemplates() {
       description:
         'Clean sans-serif design with blue accent colors and modern typography. Ideal for tech, startups, design, and progressive companies.',
       htmlTemplate: modern.html,
-      cssStyles: modern.css,
       isPublic: true,
     },
     {
@@ -93,7 +93,6 @@ async function upsertResumeTemplates() {
       description:
         'Ultra-clean design with generous whitespace and subtle typography. Best for designers, creatives, and roles where simplicity is valued.',
       htmlTemplate: minimal.html,
-      cssStyles: minimal.css,
       isPublic: true,
     },
   ];
@@ -108,7 +107,6 @@ async function upsertResumeTemplates() {
         where: { id: existing.id },
         data: {
           htmlTemplate: template.htmlTemplate,
-          cssStyles: template.cssStyles,
           description: template.description,
           isPublic: template.isPublic,
         },

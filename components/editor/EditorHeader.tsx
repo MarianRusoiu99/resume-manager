@@ -1,10 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Save, Edit2, Check, X, Share2, Sparkles } from "lucide-react";
+import { Save, Share2, Sparkles, Edit2 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { AIEnhanceResumeModal } from "@/components/ai-enhance";
 import type { Resume } from "@/lib/validations/jsonresume";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 interface EditorHeaderProps {
     displayName: string;
@@ -12,9 +14,7 @@ interface EditorHeaderProps {
     isSaving: boolean;
     lastSavedAt: Date | null;
     resume?: Resume;
-    /** Profile ID for live preview in AI enhance modal */
     profileId?: string;
-    /** Template ID for preview */
     templateId?: string | null;
     onSave: () => Promise<void>;
     onDisplayNameChange?: (name: string) => Promise<void>;
@@ -39,31 +39,9 @@ export function EditorHeader({
     onResumeChange,
     isPublic,
 }: Readonly<EditorHeaderProps>) {
-    const [isEditingName, setIsEditingName] = useState(false);
-    const [localDisplayName, setLocalDisplayName] = useState("");
     const [enhanceModalOpen, setEnhanceModalOpen] = useState(false);
-
-    const startEditing = () => {
-        setLocalDisplayName(displayName || "");
-        setIsEditingName(true);
-    };
-
-    const cancelEditing = () => {
-        setIsEditingName(false);
-        setLocalDisplayName("");
-    };
-
-    const handleSaveDisplayName = async () => {
-        if (!localDisplayName.trim()) {
-            toast.error("Name cannot be empty");
-            return;
-        }
-
-        if (onDisplayNameChange) {
-            await onDisplayNameChange(localDisplayName);
-            setIsEditingName(false);
-        }
-    };
+    const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+    const [newName, setNewName] = useState(displayName);
 
     const handleEnhancedResume = (enhancedResume: Resume) => {
         if (onResumeChange) {
@@ -71,90 +49,118 @@ export function EditorHeader({
         }
     };
 
+    const handleRename = async () => {
+        if (!newName.trim()) {
+            toast.error("Name cannot be empty");
+            return;
+        }
+        if (onDisplayNameChange) {
+            await onDisplayNameChange(newName);
+            setIsRenameModalOpen(false);
+        }
+    };
+
     return (
         <>
-            <div className="flex items-center justify-between bg-background px-6 py-3">
-                <div className="flex items-center gap-3">
-                    {isEditingName ? (
-                        <div className="flex items-center gap-2">
-                            <Input
-                                value={localDisplayName}
-                                onChange={(e) => setLocalDisplayName(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleSaveDisplayName();
-                                    if (e.key === "Escape") cancelEditing();
-                                }}
-                                className="text-lg font-semibold h-8"
-                                autoFocus
-                            />
-                            <Button size="sm" variant="ghost" onClick={handleSaveDisplayName}>
-                                <Check className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" onClick={cancelEditing}>
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-lg font-semibold">
-                                {displayName || "Untitled"}
-                            </h2>
-                            {onDisplayNameChange && (
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={startEditing}
-                                    className="h-6 w-6 p-0"
-                                >
-                                    <Edit2 className="h-3 w-3" />
-                                </Button>
-                            )}
-                        </div>
-                    )}
+            <div className="flex items-center justify-between bg-muted/20 px-4 sm:px-8 py-2 shrink-0 border-b">
+                <div className="flex items-center gap-4 flex-1">
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                            {displayName || "Untitled"}
+                        </span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => {
+                                setNewName(displayName);
+                                setIsRenameModalOpen(true);
+                            }}
+                        >
+                            <Edit2 className="h-3 w-3" />
+                        </Button>
+                    </div>
+
                     {isDirty && (
-                        <span className="text-xs text-muted-foreground">(Unsaved changes)</span>
+                        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                            Unsaved Changes
+                        </div>
                     )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
+                    {lastSavedAt && (
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-70 mr-4">
+                            Last saved {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                    )}
+
                     {resume && onResumeChange && (
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
+                            className="h-8 hover:bg-primary/10 hover:text-primary transition-all font-bold uppercase tracking-widest text-xs"
                             onClick={() => setEnhanceModalOpen(true)}
                         >
-                            <Sparkles className="h-4 w-4 mr-2" />
-                            Enhance with AI
+                            <Sparkles className="h-3 w-3 mr-2 text-primary" />
+                            AI Enhance
                         </Button>
                     )}
 
                     {onTogglePublic && (
                         <Button
-                            variant={isPublic ? "default" : "outline"}
+                            variant="ghost"
                             size="sm"
+                            className="h-8 font-bold uppercase tracking-widest text-xs"
                             onClick={onShareClick}
                         >
-                            <Share2 className="h-4 w-4 mr-2" />
+                            <Share2 className="h-3 w-3 mr-2" />
                             {isPublic ? "Public" : "Share"}
                         </Button>
                     )}
 
-                    {lastSavedAt && (
-                        <span className="text-xs text-muted-foreground mr-2">
-                            Saved {lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                    )}
-
                     <Button
                         size="sm"
+                        className="h-8 font-bold uppercase tracking-widest text-xs ml-2"
                         onClick={onSave}
                         disabled={isSaving || !isDirty}
                     >
-                        <Save className="h-4 w-4 mr-2" />
+                        <Save className="h-3 w-3 mr-2" />
                         {isSaving ? "Saving..." : "Save"}
                     </Button>
                 </div>
             </div>
+
+            <Dialog open={isRenameModalOpen} onOpenChange={setIsRenameModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rename Resume</DialogTitle>
+                        <DialogDescription>
+                            Give your resume a name that helps you identify it later.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Resume Name</Label>
+                            <Input
+                                id="name"
+                                value={newName}
+                                onChange={(e) => setNewName(e.target.value)}
+                                placeholder="e.g. Senior Frontend Engineer - Google"
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleRename}>
+                            Save Changes
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
             {resume && onResumeChange && (
                 <AIEnhanceResumeModal
@@ -169,3 +175,4 @@ export function EditorHeader({
         </>
     );
 }
+

@@ -16,6 +16,7 @@ export interface ResumeGenerationOptions {
   jobTitle?: string;
   company?: string;
   personalInstructions?: string;
+  overrideModelId?: string;
 }
 
 export interface UseResumeGenerationReturn {
@@ -48,7 +49,6 @@ export function useResumeGeneration(): UseResumeGenerationReturn {
   });
 
   const generate = useCallback(async (options: ResumeGenerationOptions) => {
-    // Set context first
     updateContext({
       job: {
         description: options.jobDescription,
@@ -61,6 +61,7 @@ export function useResumeGeneration(): UseResumeGenerationReturn {
     try {
       await sendMessage({
         message: 'Please generate a tailored resume based on my profile and the provided job description. Optimize for ATS and highlight relevant skills.',
+        modelId: options.overrideModelId,
       });
     } catch (error) {
       console.error('Failed to start resume generation:', error);

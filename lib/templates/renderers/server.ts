@@ -109,7 +109,6 @@ export async function renderTemplateServerSide(
   // Render the template with resume data
   let html = renderCompleteDocument(
     template.htmlTemplate,
-    template.cssStyles,
     resumeData
   );
 

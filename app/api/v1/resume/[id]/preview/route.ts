@@ -37,7 +37,6 @@ export const GET = createApiHandler(async (_req, { params }, session) => {
 
   const html = renderCompleteDocument(
     template.htmlTemplate,
-    template.cssStyles,
     resume.document?.document as Resume
   );
 

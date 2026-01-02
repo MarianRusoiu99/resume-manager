@@ -58,7 +58,6 @@ export interface ConversationContext {
   };
   template?: {
     htmlTemplate?: string;
-    cssStyles?: string;
     name?: string;
   };
   currentResume?: Record<string, unknown>;
@@ -189,88 +188,9 @@ export function useConversation(options: UseConversationOptions): UseConversatio
   }, []);
 
   /**
-   * Send a message
-   */
-  const sendMessage = useCallback(
-    async ({ message, attachments, modelId, stream = true }: SendMessageOptions) => {
-      // Abort any existing request
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = new AbortController();
-
-      // Add user message to state
-      const userMessage: ConversationMessage = {
-        id: generateId(),
-        role: 'user',
-        content: message,
-        timestamp: new Date(),
-        attachments,
-      };
-
-      setState((prev) => ({
-        ...prev,
-        messages: [...prev.messages, userMessage],
-        isLoading: true,
-        error: null,
-      }));
-
-      try {
-        const response = await fetch('/api/v1/ai/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            conversationId: state.id,
-            mode: state.mode,
-            message,
-            attachments,
-            context: state.context,
-            modelId,
-            stream,
-          }),
-          signal: abortControllerRef.current.signal,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `Request failed: ${response.status}`);
-        }
-
-        // Get conversation ID from header
-        const conversationId = response.headers.get('X-Conversation-Id');
-        if (conversationId && !state.id) {
-          setState((prev) => ({ ...prev, id: conversationId }));
-        }
-
-        if (stream && response.body) {
-          // Handle streaming response
-          await handleStreamResponse(response.body, conversationId);
-        } else {
-          // Handle non-streaming response
-          const result = await response.json();
-          handleNonStreamResponse(result);
-        }
-      } catch (error) {
-        if ((error as Error).name === 'AbortError') {
-          return; // Ignore abort errors
-        }
-
-        const errorMessage = error instanceof Error ? error.message : 'An error occurred';
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: errorMessage,
-        }));
-        onError?.(errorMessage);
-      }
-    },
-    [state.id, state.mode, state.context, onError]
-  );
-
-  /**
    * Handle streaming response
    */
-  async function handleStreamResponse(body: ReadableStream<Uint8Array>, conversationId: string | null) {
+  const handleStreamResponse = useCallback(async (body: ReadableStream<Uint8Array>, conversationId: string | null) => {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let fullContent = '';
@@ -340,12 +260,12 @@ export function useConversation(options: UseConversationOptions): UseConversatio
     } finally {
       reader.releaseLock();
     }
-  }
+  }, [onComplete, onStreamUpdate]);
 
   /**
    * Handle non-streaming response
    */
-  function handleNonStreamResponse(result: {
+  const handleNonStreamResponse = useCallback((result: {
     success: boolean;
     data?: {
       conversationId: string;
@@ -353,7 +273,7 @@ export function useConversation(options: UseConversationOptions): UseConversatio
       text: string;
     };
     error?: string;
-  }) {
+  }) => {
     if (!result.success || !result.data) {
       throw new Error(result.error || 'Request failed');
     }
@@ -375,7 +295,87 @@ export function useConversation(options: UseConversationOptions): UseConversatio
     }));
 
     onComplete?.(result.data.output);
-  }
+  }, [onComplete]);
+
+  /**
+   * Send a message
+   */
+  const sendMessage = useCallback(
+    async ({ message, attachments, modelId, stream = true }: SendMessageOptions) => {
+      // Abort any existing request
+      abortControllerRef.current?.abort();
+      abortControllerRef.current = new AbortController();
+
+      // Add user message to state
+      const userMessage: ConversationMessage = {
+        id: generateId(),
+        role: 'user',
+        content: message,
+        timestamp: new Date(),
+        attachments,
+      };
+
+      setState((prev) => ({
+        ...prev,
+        messages: [...prev.messages, userMessage],
+        isLoading: true,
+        error: null,
+      }));
+
+      try {
+        const response = await fetch('/api/v1/ai/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            conversationId: state.id,
+            mode: state.mode,
+            message,
+            attachments,
+            context: state.context,
+            modelId,
+            stream,
+          }),
+          signal: abortControllerRef.current.signal,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || `Request failed: ${response.status}`);
+        }
+
+        // Get conversation ID from header
+        const conversationId = response.headers.get('X-Conversation-Id');
+        if (conversationId && !state.id) {
+          setState((prev) => ({ ...prev, id: conversationId }));
+        }
+
+        if (stream && response.body) {
+          // Handle streaming response
+          await handleStreamResponse(response.body, conversationId || state.id);
+        } else {
+          // Handle non-streaming response
+          const result = await response.json();
+          handleNonStreamResponse(result);
+        }
+      } catch (error) {
+        if ((error as Error).name === 'AbortError') {
+          return; // Ignore abort errors
+        }
+
+        const errorMessage = error instanceof Error ? error.message : 'An error occurred';
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: errorMessage,
+        }));
+        onError?.(errorMessage);
+      }
+    },
+    [state.id, state.mode, state.context, onError, handleStreamResponse, handleNonStreamResponse]
+  );
+
 
   return {
     state,

@@ -1,53 +1,65 @@
-"use client";
-
-import { useState } from "react";
+import { useState, useImperativeHandle, forwardRef } from "react";
 import { Tabs } from "@/components/ui/tabs";
 import { Button, Input } from "@/components/ui";
-import { Copy } from "lucide-react";
+import { Copy, Sparkles } from "lucide-react";
 import { useEditor } from "@/lib/contexts";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ResumePreview } from "../resume/ResumePreview";
-import { EditorHeader } from "./EditorHeader";
 import { EditorSidebar } from "./EditorSidebar";
 import { EditorContent } from "./EditorContent";
+import { AIEnhanceResumeModal } from "@/components/ai-enhance/modals/AIEnhanceResumeModal";
+
+export interface ResumeEditorRef {
+  save: () => Promise<void>;
+  setShowShareDialog: (show: boolean) => void;
+  updateResume: (resume: any) => void;
+  setShowAIEnhance: (show: boolean) => void;
+  resume: any;
+  isDirty: boolean;
+  isSaving: boolean;
+  lastSavedAt: Date | null;
+}
 
 interface ResumeEditorProps {
-  /** ID for the resume/profile being edited */
   readonly id?: string;
-  /** Display name (profile name or job title) */
   readonly displayName?: string;
-  /** Whether this is a public profile/resume */
   readonly isPublic?: boolean;
-  /** Public slug for sharing */
   readonly publicSlug?: string;
-  /** Callback when display name changes */
   readonly onDisplayNameChange?: (name: string) => Promise<void>;
-  /** Callback when public status toggles */
   readonly onTogglePublic?: () => Promise<void>;
 }
 
-export function ResumeEditor({
+export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
   id,
   displayName: initialDisplayName,
   isPublic: initialIsPublic,
   publicSlug: initialPublicSlug,
   onDisplayNameChange,
   onTogglePublic,
-}: ResumeEditorProps) {
+}, ref) => {
   const { resume, save, isDirty, isSaving, lastSavedAt, updateResume } = useEditor();
   const [activeTab, setActiveTab] = useState("basics");
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showAIEnhance, setShowAIEnhance] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+
+  // Expose methods and state to parent via ref
+  useImperativeHandle(ref, () => ({
+    save: async () => { await save(); },
+    setShowShareDialog,
+    updateResume,
+    setShowAIEnhance,
+    resume,
+    isDirty,
+    isSaving,
+    lastSavedAt,
+  }));
 
   // Derive display values from props (parent is source of truth)
   const displayName = initialDisplayName || "";
   const isPublic = initialIsPublic || false;
   const publicSlug = initialPublicSlug || "";
-
-  const handleSave = async () => {
-    await save();
-  };
 
   const handleTogglePublic = async () => {
     if (onTogglePublic) {
@@ -62,35 +74,21 @@ export function ResumeEditor({
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <EditorHeader
-        displayName={displayName || resume.basics?.name || "Untitled"}
-        isDirty={isDirty}
-        isSaving={isSaving}
-        lastSavedAt={lastSavedAt}
-        resume={resume}
-        profileId={id}
-        templateId={selectedTemplateId}
-        onSave={handleSave}
-        onDisplayNameChange={onDisplayNameChange}
-        onTogglePublic={onTogglePublic}
-        onShareClick={() => setShowShareDialog(true)}
-        onResumeChange={updateResume}
-        isPublic={isPublic}
-      />
-
+    <div className="flex flex-col h-full bg-transparent overflow-hidden border-t">
       {/* Main Content - Split Layout */}
-      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
+      <div className="flex flex-1 overflow-hidden flex-col md:flex-row p-0">
         {/* Editor Area */}
-        <div className="overflow-y-auto w-full md:w-1/2 h-1/2 md:h-full">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+        <div className="flex flex-col min-h-0 w-full md:w-1/2 h-1/2 md:h-full bg-background overflow-hidden border-r">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
             <EditorSidebar />
-            <EditorContent />
+            <div className="flex-1 overflow-y-auto">
+              <EditorContent />
+            </div>
           </Tabs>
         </div>
 
         {/* Live Preview */}
-        <div className="border-t md:border-t-0 md:border-l bg-muted/20 overflow-hidden w-full md:w-1/2 h-1/2 md:h-full">
+        <div className="bg-background overflow-hidden w-full md:w-1/2 h-1/2 md:h-full flex flex-col">
           <ResumePreview
             resumeData={resume}
             profileId={id}
@@ -154,7 +152,21 @@ export function ResumeEditor({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* AI Enhance Modal */}
+      <AIEnhanceResumeModal
+        open={showAIEnhance}
+        onOpenChange={setShowAIEnhance}
+        resume={resume}
+        onAccept={(enhancedResume) => {
+          updateResume(enhancedResume);
+          setShowAIEnhance(false);
+          toast.success("Resume enhanced successfully!");
+        }}
+        templateId={selectedTemplateId}
+      />
     </div>
   );
-}
+});
 
+ResumeEditor.displayName = "ResumeEditor";

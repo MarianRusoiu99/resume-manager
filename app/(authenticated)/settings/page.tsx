@@ -31,26 +31,23 @@ export default function SettingsPage() {
     <Page
       title="Settings"
       description="Configure your application preferences"
-      maxWidth="md"
       breadcrumbs={[{ label: 'Settings' }]}
     >
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-px bg-border border">
         {settingsPages.map((page) => (
           <Link key={page.href} href={page.href}>
-            <Card className="p-6 hover:bg-muted/50 transition-colors cursor-pointer group">
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <page.icon className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
-                    {page.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{page.description}</p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors mt-1" />
+            <div className="p-8 bg-background hover:bg-muted/30 transition-colors cursor-pointer group flex items-start gap-6">
+              <div className="p-3 bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                <page.icon className="h-6 w-6" />
               </div>
-            </Card>
+              <div className="flex-1">
+                <h3 className="font-bold text-sm uppercase tracking-widest mb-2">
+                  {page.title}
+                </h3>
+                <p className="text-sm text-muted-foreground">{page.description}</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors mt-1" />
+            </div>
           </Link>
         ))}
       </div>

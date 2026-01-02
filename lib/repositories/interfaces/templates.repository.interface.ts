@@ -13,7 +13,6 @@ export interface CreateTemplateInput {
   name: string;
   description?: string;
   htmlTemplate: string;
-  cssStyles: string;
   previewUrl?: string;
   isPublic?: boolean;
 }
@@ -25,7 +24,6 @@ export interface UpdateTemplateInput {
   name?: string;
   description?: string;
   htmlTemplate?: string;
-  cssStyles?: string;
   previewUrl?: string;
   isPublic?: boolean;
 }

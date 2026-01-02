@@ -89,7 +89,6 @@ export function TemplateCard({
         // Render preview client-side with sample data
         const html = renderTemplateClientSide({
           htmlTemplate: template.htmlTemplate,
-          cssStyles: template.cssStyles,
           resumeData: SAMPLE_RESUME,
         });
 
@@ -111,7 +110,6 @@ export function TemplateCard({
           resume: SAMPLE_RESUME,
           template: {
             htmlTemplate: template.htmlTemplate,
-            cssStyles: template.cssStyles,
           },
           fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
         });

@@ -186,7 +186,7 @@ export function Gallery<T>({
 
   // Build grid class based on configuration
   const gridClass = cn(
-    "grid gap-6",
+    "grid gap-px bg-border border",
     gridCols.sm === 1 && "grid-cols-1",
     gridCols.sm === 2 && "grid-cols-2",
     gridCols.md === 2 && "md:grid-cols-2",
@@ -202,7 +202,7 @@ export function Gallery<T>({
     (header?.filters && header.filters.length > 0);
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn("space-y-8", className)}>
       {/* Header Section */}
       {hasHeader && (
         <GalleryHeader itemCount={items.length} {...header} />
@@ -211,7 +211,7 @@ export function Gallery<T>({
       {/* Grid Section */}
       <div className={gridClass}>
         {items.map((item, index) => (
-          <div key={getItemKey(item)}>
+          <div key={getItemKey(item)} className="bg-background">
             {renderItem(item, index)}
           </div>
         ))}
@@ -246,24 +246,24 @@ function GalleryHeader({
   }
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
       <div className="flex items-center gap-4">
         {countText && (
-          <p className="text-muted-foreground text-sm">{countText}</p>
+          <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">{countText}</p>
         )}
         
         {/* Filters */}
         {filters && filters.length > 0 && onFilterChange && (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-px bg-border border">
             {filters.map((filter) => (
               <button
                 key={filter.value}
                 onClick={() => onFilterChange(filter.value)}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-sm transition-colors",
+                  "px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors",
                   selectedFilter === filter.value
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    : "bg-background text-muted-foreground hover:bg-muted"
                 )}
               >
                 {filter.label}
@@ -302,7 +302,7 @@ export function GalleryGrid<T>({
   className,
 }: GalleryGridProps<T>) {
   const gridClass = cn(
-    "grid gap-6",
+    "grid gap-px bg-border border",
     gridCols.sm === 1 && "grid-cols-1",
     gridCols.sm === 2 && "grid-cols-2",
     gridCols.md === 2 && "md:grid-cols-2",
@@ -316,7 +316,7 @@ export function GalleryGrid<T>({
   return (
     <div className={gridClass}>
       {items.map((item, index) => (
-        <div key={getItemKey(item)}>
+        <div key={getItemKey(item)} className="bg-background">
           {renderItem(item, index)}
         </div>
       ))}

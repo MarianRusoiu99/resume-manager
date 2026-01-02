@@ -82,13 +82,11 @@ export function renderTemplateClient(htmlTemplate: string, resumeData: Resume): 
 /**
  * Render complete HTML document with styles (client-side)
  * @param htmlTemplate - HTML template for resume content
- * @param cssStyles - CSS styles for the template
  * @param resumeData - JSON Resume format data
  * @returns Complete HTML document string
  */
 export function renderCompleteDocumentClient(
   htmlTemplate: string,
-  cssStyles: string,
   resumeData: Resume
 ): string {
   const renderedContent = renderTemplateClient(htmlTemplate, resumeData);
@@ -165,9 +163,6 @@ export function renderCompleteDocumentClient(
         page-break-inside: avoid;
       }
     }
-
-    /* === External Custom CSS === */
-    ${cssStyles}
   </style>
 </head>
 <body>

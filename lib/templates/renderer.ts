@@ -5,7 +5,7 @@
 
 import Handlebars from 'handlebars';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { sanitizeTemplateCss, sanitizeTemplateHtml } from '@/lib/templates/utils/sanitizer';
+import { sanitizeTemplateHtml } from '@/lib/templates/utils/sanitizer';
 
 /**
  * Renders the full HTML structure for PDF export
@@ -107,17 +107,14 @@ export function renderTemplate(htmlTemplate: string, resumeData: Resume): string
 
 /**
  * Render complete HTML document with styles
- * @param htmlTemplate - HTML template for resume content
- * @param cssStyles - CSS styles for the template
+ * @param htmlTemplate - HTML template for resume content (including <style> blocks)
  * @param resumeData - JSON Resume format data
  * @returns Complete HTML document string
  */
 export function renderCompleteDocument(
   htmlTemplate: string,
-  cssStyles: string,
   resumeData: Resume
 ): string {
   const renderedContent = renderTemplate(htmlTemplate, resumeData);
-  const safeCss = sanitizeTemplateCss(cssStyles);
-  return renderPDFDocument(renderedContent, safeCss, resumeData);
+  return renderPDFDocument(renderedContent, '', resumeData);
 }

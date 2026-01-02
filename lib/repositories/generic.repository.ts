@@ -13,11 +13,11 @@ export interface UserOwnedEntity extends EntityWithId {
  * Common Prisma operation arguments
  */
 export interface PrismaArgs {
-  where?: Record<string, any>;
-  data?: Record<string, any>;
-  include?: Record<string, any>;
-  select?: Record<string, any>;
-  orderBy?: Record<string, any> | Record<string, any>[];
+  where?: Record<string, unknown>;
+  data?: Record<string, unknown>;
+  include?: Record<string, unknown>;
+  select?: Record<string, unknown>;
+  orderBy?: Record<string, unknown> | Record<string, unknown>[];
   take?: number;
   skip?: number;
 }
@@ -30,13 +30,13 @@ export abstract class GenericRepository<
   TCreateInput,
   TUpdateInput,
   TPrismaDelegate extends {
-    findUnique(args: { where: Record<string, any>; include?: any; select?: any }): Promise<any>;
-    findFirst(args: { where: Record<string, any>; include?: any; select?: any; orderBy?: any }): Promise<any>;
-    findMany(args?: PrismaArgs): Promise<any[]>;
-    create(args: { data: TCreateInput; include?: any; select?: any }): Promise<any>;
-    update(args: { where: Record<string, any>; data: TUpdateInput; include?: any; select?: any }): Promise<any>;
-    delete(args: { where: Record<string, any>; include?: any; select?: any }): Promise<any>;
-    count(args?: { where?: Record<string, any> }): Promise<number>;
+    findUnique(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
+    findFirst(args: { where: Record<string, unknown>; include?: unknown; select?: unknown; orderBy?: unknown }): Promise<unknown>;
+    findMany(args?: PrismaArgs): Promise<unknown[]>;
+    create(args: { data: TCreateInput; include?: unknown; select?: unknown }): Promise<unknown>;
+    update(args: { where: Record<string, unknown>; data: TUpdateInput; include?: unknown; select?: unknown }): Promise<unknown>;
+    delete(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
+    count(args?: { where?: Record<string, unknown> }): Promise<number>;
   }
 > {
   protected readonly db: PrismaClient;
@@ -49,36 +49,36 @@ export abstract class GenericRepository<
   }
 
   protected get delegate(): TPrismaDelegate {
-    return (this.db as any)[this.modelName] as TPrismaDelegate;
+    return (this.db as unknown as Record<string, TPrismaDelegate>)[this.modelName];
   }
 
   async findById(id: string, userId?: string): Promise<T | null> {
-    const where: Record<string, any> = { id };
+    const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
-    return this.delegate.findUnique({ where });
+    return this.delegate.findUnique({ where }) as Promise<T | null>;
   }
 
   async findAll(args?: PrismaArgs): Promise<T[]> {
-    return this.delegate.findMany(args);
+    return this.delegate.findMany(args) as Promise<T[]>;
   }
 
   async create(data: TCreateInput): Promise<T> {
-    return this.delegate.create({ data });
+    return this.delegate.create({ data }) as Promise<T>;
   }
 
   async update(id: string, data: TUpdateInput, userId?: string): Promise<T> {
-    const where: Record<string, any> = { id };
+    const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
-    return this.delegate.update({ where, data });
+    return this.delegate.update({ where, data }) as Promise<T>;
   }
 
   async delete(id: string, userId?: string): Promise<T> {
-    const where: Record<string, any> = { id };
+    const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
-    return this.delegate.delete({ where });
+    return this.delegate.delete({ where }) as Promise<T>;
   }
 
-  async count(where?: Record<string, any>): Promise<number> {
+  async count(where?: Record<string, unknown>): Promise<number> {
     return this.delegate.count({ where });
   }
 
@@ -96,13 +96,13 @@ export abstract class GenericUserOwnedRepository<
   TCreateInput,
   TUpdateInput,
   TPrismaDelegate extends {
-    findUnique(args: { where: Record<string, any>; include?: any; select?: any }): Promise<any>;
-    findFirst(args: { where: Record<string, any>; include?: any; select?: any; orderBy?: any }): Promise<any>;
-    findMany(args?: PrismaArgs): Promise<any[]>;
-    create(args: { data: TCreateInput; include?: any; select?: any }): Promise<any>;
-    update(args: { where: Record<string, any>; data: TUpdateInput; include?: any; select?: any }): Promise<any>;
-    delete(args: { where: Record<string, any>; include?: any; select?: any }): Promise<any>;
-    count(args?: { where?: Record<string, any> }): Promise<number>;
+    findUnique(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
+    findFirst(args: { where: Record<string, unknown>; include?: unknown; select?: unknown; orderBy?: unknown }): Promise<unknown>;
+    findMany(args?: PrismaArgs): Promise<unknown[]>;
+    create(args: { data: TCreateInput; include?: unknown; select?: unknown }): Promise<unknown>;
+    update(args: { where: Record<string, unknown>; data: TUpdateInput; include?: unknown; select?: unknown }): Promise<unknown>;
+    delete(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
+    count(args?: { where?: Record<string, unknown> }): Promise<number>;
   }
 > extends GenericRepository<T, TCreateInput, TUpdateInput, TPrismaDelegate> {
   
@@ -113,7 +113,7 @@ export abstract class GenericUserOwnedRepository<
   async findAllForUser(userId: string, args?: PrismaArgs): Promise<T[]> {
     return this.findAll({
       ...args,
-      where: { ...args?.where, userId },
+      where: { ...args?.where, userId } as Record<string, unknown>,
     });
   }
 
@@ -126,7 +126,7 @@ export abstract class GenericUserOwnedRepository<
   }
 
   async existsForUser(id: string, userId: string): Promise<boolean> {
-    const c = await this.count({ id, userId });
+    const c = await this.count({ id, userId } as Record<string, unknown>);
     return c > 0;
   }
 }

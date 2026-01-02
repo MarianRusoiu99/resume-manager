@@ -22,7 +22,9 @@ export default async function TemplatesPage() {
       description="Choose from professionally designed templates optimized for ATS systems"
       breadcrumbs={[{ label: "Templates" }]}
     >
-      <TemplateGallery templates={templates} showAdminActions={showAdminActions} />
+      <div className="pb-8">
+        <TemplateGallery templates={templates} showAdminActions={showAdminActions} />
+      </div>
     </Page>
   );
 }

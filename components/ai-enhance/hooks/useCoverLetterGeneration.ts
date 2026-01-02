@@ -16,6 +16,7 @@ export interface CoverLetterGenerationOptions {
   jobTitle?: string;
   company?: string;
   personalInstructions?: string;
+  overrideModelId?: string;
 }
 
 export interface UseCoverLetterGenerationReturn {
@@ -65,6 +66,7 @@ export function useCoverLetterGeneration(): UseCoverLetterGenerationReturn {
     try {
       await sendMessage({
         message: 'Please generate a professional cover letter tailored to this job description and my profile.',
+        modelId: options.overrideModelId,
       });
     } catch (error) {
       console.error('Failed to start cover letter generation:', error);

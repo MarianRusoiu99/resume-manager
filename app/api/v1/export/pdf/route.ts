@@ -17,7 +17,6 @@ const exportRequestSchema = z.object({
   resume: z.unknown(),
   template: z.object({
     htmlTemplate: z.string(),
-    cssStyles: z.string(),
   }),
   fileName: z.string().optional(),
 });
@@ -31,7 +30,6 @@ export const POST = createApiHandler(
     // Render HTML using template renderer (renderer sanitizes template HTML/CSS)
     const html = renderCompleteDocument(
       template.htmlTemplate,
-      template.cssStyles,
       parsedResume
     );
 

@@ -7,9 +7,10 @@
  * Uses the unified /api/v1/ai/chat endpoint for all AI interactions.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import type { ContentType } from '@/lib/validations/settings';
+import { useConversation } from './useConversation';
 
 /**
  * Conversation mode type (matches API)
@@ -39,11 +40,10 @@ export interface TextEnhancementOptions {
 }
 
 /**
- * Options for template enhancement (HTML + CSS)
+ * Options for template enhancement (Unified HTML with embedded styles)
  */
 export interface TemplateEnhancementOptions {
   html: string;
-  css: string;
   instructions: string;
   context?: string;
 }
@@ -64,7 +64,7 @@ export interface UseAIEnhancementReturn<T> {
   enhancedContent: T | null;
   isLoading: boolean;
   error: string | null;
-  enhance: (attachments?: any[]) => Promise<void>;
+  enhance: (attachments?: any[], overrideModelId?: string) => Promise<void>;
   reset: () => void;
   hasEnhancement: boolean;
 }
@@ -103,18 +103,11 @@ function parseResumeJson<T>(content: string): T {
 }
 
 /**
- * Parse template enhancement response (HTML + CSS)
+ * Parse template enhancement response (HTML)
  */
-function parseTemplateResponse(content: string, originalCss: string): { html: string; css: string } {
-  const htmlRegex = /=== HTML TEMPLATE ===\s*([\s\S]*?)(?:=== CSS STYLES ===|$)/;
-  const cssRegex = /=== CSS STYLES ===\s*([\s\S]*?)$/;
-
-  const htmlMatch = htmlRegex.exec(content);
-  const cssMatch = cssRegex.exec(content);
-
+function parseTemplateResponse(content: string): { html: string } {
   return {
-    html: htmlMatch ? htmlMatch[1].trim() : content,
-    css: cssMatch ? cssMatch[1].trim() : originalCss,
+    html: content.trim(),
   };
 }
 
@@ -190,7 +183,6 @@ async function streamChatRequest(
             throw new Error(parsed.error);
           }
         } catch (parseError) {
-          // Ignore parse errors for malformed chunks
         }
       }
     }
@@ -210,78 +202,67 @@ export function useTextEnhancement(): UseAIEnhancementReturn<string> & {
   instructions: string;
 } {
   const [enhancedContent, setEnhancedContent] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [instructions, setInstructions] = useState('');
   const [options, setOptions] = useState<Omit<TextEnhancementOptions, 'instructions'>>({
     content: '',
     contentType: 'text',
   });
-  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const { sendMessage, state, reset: resetConversation, updateContext } = useConversation({
+    mode: 'text-enhancement',
+    onStreamUpdate: (content) => {
+      setEnhancedContent(content);
+    },
+    onError: (err) => {
+      toast.error(err);
+    },
+  });
 
   const enhance = useCallback(
-    async (attachments?: any[]) => {
+    async (attachments?: any[], overrideModelId?: string) => {
       const hasAttachments = attachments && attachments.length > 0;
       if (!instructions.trim() && !hasAttachments) {
         toast.error('Please provide instructions or attach a file');
         return;
       }
 
-      // Abort any previous request
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = new AbortController();
+      updateContext({
+        personalInstructions: options.context,
+      });
 
       try {
-        setIsLoading(true);
-        setError(null);
-        setEnhancedContent(''); // Start with empty string for streaming
-
-        // Build the message including the content to enhance
         const message = `${instructions}
 
 --- CONTENT TO ENHANCE ---
 ${options.content}`;
 
-        await streamChatRequest('text-enhancement', message, {
-          context: options.context
-            ? { personalInstructions: options.context }
-            : undefined,
-          modelId: options.modelId,
+        await sendMessage({
+          message,
+          modelId: overrideModelId || options.modelId,
           attachments: attachments?.map((a) => ({
             type: a.type.startsWith('image/') ? 'image' : 'document',
             content: a.content,
             name: a.name,
+            mimeType: a.mimeType || (a.type.startsWith('image/') ? a.type : 'text/plain'),
           })),
-          signal: abortControllerRef.current.signal,
-          onChunk: (content) => {
-            setEnhancedContent(content);
-          },
         });
       } catch (err) {
-        if ((err as Error).name === 'AbortError') {
-          return;
-        }
-        const message = err instanceof Error ? err.message : 'Enhancement failed';
-        setError(message);
-        toast.error(message);
-      } finally {
-        setIsLoading(false);
+        console.error('Enhancement error:', err);
       }
     },
-    [instructions, options]
+    [instructions, options, sendMessage, updateContext]
   );
 
   const reset = useCallback(() => {
-    abortControllerRef.current?.abort();
+    resetConversation();
     setEnhancedContent(null);
-    setError(null);
     setInstructions('');
-  }, []);
+  }, [resetConversation]);
 
   return {
     enhancedContent,
-    isLoading,
-    error,
+    isLoading: state.isLoading,
+    error: state.error,
     enhance,
     reset,
     hasEnhancement: enhancedContent !== null,
@@ -300,14 +281,33 @@ export function useResumeEnhancement<T>(): UseAIEnhancementReturn<T> & {
   instructions: string;
 } {
   const [enhancedContent, setEnhancedContent] = useState<T | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [instructions, setInstructions] = useState('');
   const [resume, setResume] = useState<T | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const { sendMessage, state, reset: resetConversation, updateContext } = useConversation({
+    mode: 'resume-enhancement',
+    initialContext: resume ? { currentResume: resume as Record<string, unknown> } : {},
+    onComplete: (output: unknown) => {
+      try {
+        if (output) {
+          if (typeof output === 'object' && 'resume' in output) {
+            setEnhancedContent((output as { resume: T }).resume);
+          } else {
+            setEnhancedContent(output as T);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to process enhanced resume:', e);
+        toast.error('Failed to process AI response');
+      }
+    },
+    onError: (err) => {
+      toast.error(err);
+    },
+  });
 
   const enhance = useCallback(
-    async (attachments?: any[]) => {
+    async (attachments?: any[], overrideModelId?: string) => {
       const hasAttachments = attachments && attachments.length > 0;
       if (!instructions.trim() && !hasAttachments) {
         toast.error('Please provide instructions or attach a file');
@@ -319,65 +319,43 @@ export function useResumeEnhancement<T>(): UseAIEnhancementReturn<T> & {
         return;
       }
 
-      // Abort any previous request
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = new AbortController();
+      updateContext({
+        currentResume: resume as Record<string, unknown>,
+      });
 
       try {
-        setIsLoading(true);
-        setError(null);
-
         // Build the message
         const message = `${instructions}
 
 Please enhance the resume according to the instructions above and return the updated JSON Resume format.`;
 
-        const result = await streamChatRequest('resume-enhancement', message, {
-          context: {
-            currentResume: resume as Record<string, unknown>,
-          },
+        await sendMessage({
+          message,
+          modelId: overrideModelId,
           attachments: attachments?.map((a) => ({
             type: a.type.startsWith('image/') ? 'image' : 'document',
-            content: a.content,
             name: a.name,
+            content: a.content,
+            mimeType: a.mimeType || (a.type.startsWith('image/') ? a.type : 'text/plain'),
           })),
-          signal: abortControllerRef.current.signal,
         });
-
-        // Parse the final result
-        try {
-          const parsed = parseResumeJson<T>(result);
-          setEnhancedContent(parsed);
-        } catch (e) {
-          console.error('Failed to parse enhanced resume JSON:', e);
-          setError('Failed to parse the AI response as valid resume data. Please try again.');
-          toast.error('Failed to parse the AI response');
-        }
       } catch (err) {
-        if ((err as Error).name === 'AbortError') {
-          return;
-        }
-        const message = err instanceof Error ? err.message : 'Enhancement failed';
-        setError(message);
-        toast.error(message);
-      } finally {
-        setIsLoading(false);
+        console.error('Enhancement error:', err);
       }
     },
-    [instructions, resume]
+    [instructions, resume, sendMessage, updateContext]
   );
 
   const reset = useCallback(() => {
-    abortControllerRef.current?.abort();
+    resetConversation();
     setEnhancedContent(null);
-    setError(null);
     setInstructions('');
-  }, []);
+  }, [resetConversation]);
 
   return {
     enhancedContent,
-    isLoading,
-    error,
+    isLoading: state.isLoading,
+    error: state.error,
     enhance,
     reset,
     hasEnhancement: enhancedContent !== null,
@@ -388,94 +366,86 @@ Please enhance the resume according to the instructions above and return the upd
 }
 
 /**
- * Centralized hook for template enhancement (HTML + CSS)
+ * Centralized hook for template enhancement (Unified HTML)
  */
-export function useTemplateEnhancement(): UseAIEnhancementReturn<{ html: string; css: string }> & {
-  setTemplate: (html: string, css: string) => void;
+export function useTemplateEnhancement(): UseAIEnhancementReturn<{ html: string }> & {
+  setTemplate: (html: string) => void;
   setInstructions: (instructions: string) => void;
   instructions: string;
 } {
-  const [enhancedContent, setEnhancedContent] = useState<{ html: string; css: string } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [enhancedContent, setEnhancedContent] = useState<{ html: string } | null>(null);
   const [instructions, setInstructions] = useState('');
-  const [templateData, setTemplateData] = useState<{ html: string; css: string }>({ html: '', css: '' });
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [templateData, setTemplateData] = useState<{ html: string }>({ html: '' });
 
-  const setTemplate = useCallback((html: string, css: string) => {
-    setTemplateData({ html, css });
+  const { sendMessage, state, reset: resetConversation, updateContext } = useConversation({
+    mode: 'template-enhancement',
+    initialContext: {
+      template: {
+        htmlTemplate: templateData.html,
+      },
+    },
+    onComplete: (output: unknown) => {
+      if (output && typeof output === 'object' && 'html' in output) {
+        setEnhancedContent({ html: (output as { html: string }).html });
+      } else if (typeof output === 'string') {
+        setEnhancedContent(parseTemplateResponse(output));
+      }
+    },
+    onError: (err) => {
+      toast.error(err);
+    },
+  });
+
+  const setTemplate = useCallback((html: string) => {
+    setTemplateData({ html });
   }, []);
 
   const enhance = useCallback(
-    async (attachments?: any[]) => {
+    async (attachments?: any[], overrideModelId?: string) => {
       const hasAttachments = attachments && attachments.length > 0;
       if (!instructions.trim() && !hasAttachments) {
         toast.error('Please provide instructions or attach a file');
         return;
       }
 
-      // Abort any previous request
-      abortControllerRef.current?.abort();
-      abortControllerRef.current = new AbortController();
+      updateContext({
+        template: {
+          htmlTemplate: templateData.html,
+        },
+      });
 
       try {
-        setIsLoading(true);
-        setError(null);
-
-        // Build the message
         const message = `${instructions}
 
-IMPORTANT: You must return both the HTML and CSS in this exact format:
-=== HTML TEMPLATE ===
-[enhanced HTML here]
+IMPORTANT: You must return the complete HTML including internal <style> tags.`;
 
-=== CSS STYLES ===
-[enhanced CSS here]
-
-Make sure to preserve both sections and the exact separator format.`;
-
-        const result = await streamChatRequest('template-enhancement', message, {
-          context: {
-            template: {
-              htmlTemplate: templateData.html,
-              cssStyles: templateData.css,
-            },
-          },
+        await sendMessage({
+          message,
+          modelId: overrideModelId,
           attachments: attachments?.map((a) => ({
             type: a.type.startsWith('image/') ? 'image' : 'document',
             content: a.content,
             name: a.name,
+            mimeType: a.mimeType || (a.type.startsWith('image/') ? a.type : 'text/plain'),
           })),
-          signal: abortControllerRef.current.signal,
         });
-
-        const parsed = parseTemplateResponse(result, templateData.css);
-        setEnhancedContent(parsed);
       } catch (err) {
-        if ((err as Error).name === 'AbortError') {
-          return;
-        }
-        const message = err instanceof Error ? err.message : 'Enhancement failed';
-        setError(message);
-        toast.error(message);
-      } finally {
-        setIsLoading(false);
+        console.error('Enhancement error:', err);
       }
     },
-    [instructions, templateData]
+    [instructions, templateData, sendMessage, updateContext]
   );
 
   const reset = useCallback(() => {
-    abortControllerRef.current?.abort();
+    resetConversation();
     setEnhancedContent(null);
-    setError(null);
     setInstructions('');
-  }, []);
+  }, [resetConversation]);
 
   return {
     enhancedContent,
-    isLoading,
-    error,
+    isLoading: state.isLoading,
+    error: state.error,
     enhance,
     reset,
     hasEnhancement: enhancedContent !== null,

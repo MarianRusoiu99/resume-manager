@@ -175,8 +175,7 @@ export default function ResumeDetailPage() {
         { label: 'Resumes', href: '/resumes' },
         { label: resume.jobTitle || 'Resume' },
       ]}
-      maxWidth="2xl"
-      className="resume-content max-w-5xl"
+      className="resume-content"
       toolbar={
         <div className="no-print flex justify-end gap-2">
           <Link href={`/resumes/${resumeId}/edit`}>

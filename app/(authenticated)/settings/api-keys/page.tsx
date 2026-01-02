@@ -25,21 +25,13 @@ const PROVIDER_NAMES: Record<string, string> = {
 };
 
 
+import { ApiKeyForm } from '@/components/settings/ApiKeyForm';
+
 export default function ApiKeysPage() {
   const log = useComponentLogger('ApiKeysPage');
   const [providers, setProviders] = useState<ApiProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Add provider form state
-  const [newProvider, setNewProvider] = useState({
-    name: '',
-    provider: 'openai',
-    apiKey: '',
-  });
-
-  const [showApiKey, setShowApiKey] = useState(false);
 
   const loadProviders = useCallback(async () => {
     try {
@@ -62,40 +54,9 @@ export default function ApiKeysPage() {
     loadProviders();
   }, [loadProviders]);
 
-  const handleAddProvider = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!newProvider.name || !newProvider.apiKey) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const result = await apiV1.SETTINGS.API_PROVIDERS.post<unknown>({
-        name: newProvider.name,
-        provider: newProvider.provider,
-        apiKey: newProvider.apiKey,
-      });
-
-       if (!result.error) {
-        toast.success('API provider added successfully');
-        setShowAddDialog(false);
-        setNewProvider({
-          name: '',
-          provider: 'openai',
-          apiKey: '',
-        });
-        await loadProviders();
-      } else {
-        toast.error(result.error ?? 'Failed to add provider');
-      }
-    } catch (error) {
-      log.error('Error adding provider', error, { provider: newProvider.provider });
-      toast.error('Failed to add provider');
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handleAddSuccess = async () => {
+    setShowAddDialog(false);
+    await loadProviders();
   };
 
   const handleDeleteProvider = async (id: string, name: string) => {
@@ -246,7 +207,6 @@ export default function ApiKeysPage() {
       <Page
         title="API Keys"
         description="Manage your AI provider API keys securely"
-        maxWidth="md"
         breadcrumbs={[
           { label: 'Settings', href: '/settings' },
           { label: 'API Keys' },
@@ -271,91 +231,16 @@ export default function ApiKeysPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleAddProvider} className="space-y-4">
-            <div>
-              <label htmlFor="provider-name" className="block text-sm font-medium mb-2">
-                Provider Name
-              </label>
-              <input
-                id="provider-name"
-                type="text"
-                value={newProvider.name}
-                onChange={(e) => setNewProvider({ ...newProvider, name: e.target.value })}
-                placeholder="e.g., My OpenAI Key"
-                className="w-full px-3 py-2 border rounded-md"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="provider-type" className="block text-sm font-medium mb-2">
-                Provider Type
-              </label>
-              <select
-                id="provider-type"
-                value={newProvider.provider}
-                onChange={(e) =>
-                  setNewProvider({
-                    ...newProvider,
-                    provider: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 border rounded-md"
-              >
-                {Object.entries(PROVIDER_NAMES).map(([key, name]) => (
-                  <option key={key} value={key} className="bg-background text-foreground">
-                    {name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label htmlFor="api-key" className="block text-sm font-medium mb-2">
-                API Key
-              </label>
-              <div className="relative">
-                <input
-                  id="api-key"
-                  type={showApiKey ? 'text' : 'password'}
-                  value={newProvider.apiKey}
-                  onChange={(e) => setNewProvider({ ...newProvider, apiKey: e.target.value })}
-                  placeholder={`Enter your ${getProviderConfig(newProvider.provider)?.name} API key`}
-                  className="w-full px-3 py-2 border rounded-md pr-10 font-mono text-sm"
-                  autoComplete="off"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
-                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Your API key will be encrypted before storage. Only the first few characters will be visible.
-              </p>
-            </div>
+          <ApiKeyForm 
+            onSuccess={handleAddSuccess}
+            onCancel={() => setShowAddDialog(false)}
+          />
 
-            <Callout>
-              <p>
-                <strong>Note:</strong> Available models will be automatically detected from your API key when you add the provider.
-              </p>
-            </Callout>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowAddDialog(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Adding...' : 'Add Provider'}
-              </Button>
-            </div>
-          </form>
+          <Callout className="mt-4">
+            <p className="text-sm">
+              <strong>Note:</strong> Available models will be automatically detected from your API key when you add the provider.
+            </p>
+          </Callout>
         </DialogContent>
       </Dialog>
     </>

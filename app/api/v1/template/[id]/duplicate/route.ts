@@ -22,7 +22,6 @@ export const POST = createApiHandler(async (_request, { params }) => {
     name: `${original.name} (Copy)`,
     description: original.description ?? undefined,
     htmlTemplate: original.htmlTemplate,
-    cssStyles: original.cssStyles,
     isPublic: false, // Duplicates are private by default
   });
 });

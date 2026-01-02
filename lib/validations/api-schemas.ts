@@ -63,7 +63,6 @@ export const createTemplateSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
   description: z.string().max(500, 'Description too long').optional(),
   htmlTemplate: z.string().min(1, 'HTML template is required'),
-  cssStyles: z.string().min(1, 'CSS styles are required'),
   previewUrl: z
     .string()
     .optional()

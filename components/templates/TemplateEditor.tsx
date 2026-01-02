@@ -15,14 +15,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Code, ImagePlus } from 'lucide-react';
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import { Save, Code, ImagePlus, Check, Maximize2, Minimize2, Settings2, Download, Loader2 } from 'lucide-react';
+import { useExportPDF } from '@/components/preview/useExportPDF';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { apiV1, type ProfileListItem, type ProfileDto } from '@/lib/client';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
@@ -30,19 +37,38 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import { ResumePreview } from '../resume/ResumePreview';
 import { TemplateImportModal } from './TemplateImportModal';
 import { AIEnhanceButton, AIEnhanceTemplateModal } from '@/components/ai-enhance';
+import { Page } from '@/components/layout/Page';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (
-    <div className="h-[500px] w-full flex items-center justify-center bg-muted rounded-lg">
+    <div className="h-full w-full flex items-center justify-center bg-muted/20 rounded-lg">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2 opacity-20"></div>
         <p className="text-sm text-muted-foreground">Loading editor...</p>
       </div>
     </div>
   ),
 });
+
+const EDITOR_OPTIONS = {
+  minimap: { enabled: false },
+  fontSize: 14,
+  wordWrap: 'on' as const,
+  automaticLayout: true,
+  lineNumbers: 'on' as const,
+  scrollBeyondLastLine: false,
+  formatOnPaste: true,
+  formatOnType: true,
+  tabSize: 2,
+  padding: { top: 10 },
+  fixedOverflowWidgets: true,
+  glyphMargin: false,
+  folding: true,
+  lineDecorationsWidth: 0,
+  lineNumbersMinChars: 3,
+};
 
 interface TemplateEditorProps {
   readonly template?: ResumeTemplate;
@@ -55,11 +81,15 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
   const [saving, setSaving] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [templateEnhanceModalOpen, setTemplateEnhanceModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  const { isExportingPDF, handleExportPDF } = useExportPDF();
+  
   const [formData, setFormData] = useState({
     name: template?.name || '',
     description: template?.description || '',
     htmlTemplate: template?.htmlTemplate || '',
-    cssStyles: template?.cssStyles || '',
     isPublic: template?.isPublic ?? true,
   });
 
@@ -104,26 +134,17 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
   // Handle imported template data
   const handleImportComplete = (importedTemplate: {
     htmlTemplate: string;
-    cssStyles: string;
     name?: string;
     description?: string;
   }) => {
     setFormData((prev) => ({
       ...prev,
       htmlTemplate: importedTemplate.htmlTemplate,
-      cssStyles: importedTemplate.cssStyles,
       name: importedTemplate.name || prev.name,
       description: importedTemplate.description || prev.description,
     }));
     setImportModalOpen(false);
   };
-
-  // Auto-open import modal if ?import=true query param is present
-  useEffect(() => {
-    if (isNew && searchParams.get('import') === 'true') {
-      setImportModalOpen(true);
-    }
-  }, [isNew, searchParams]);
 
   // Auto-save draft to localStorage
   useEffect(() => {
@@ -147,228 +168,274 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
   }, [formData, isNew]);
 
   const handleSave = async () => {
+    setSaving(true);
     try {
-      setSaving(true);
+      const payload = {
+        name: formData.name || (isNew ? 'New Template' : 'Unnamed Template'),
+        description: formData.description,
+        htmlTemplate: formData.htmlTemplate,
+        isPublic: formData.isPublic,
+      };
 
-      const templateId = template?.id;
-      if (!isNew && !templateId) {
-        throw new Error('Missing template id');
-      }
-
-      const result = isNew
-        ? await apiV1.TEMPLATE.LIST.post<unknown>(formData)
-        : await apiV1.TEMPLATE.GET(templateId as string).patch<unknown>(formData);
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      // Clear draft
+      let result;
       if (isNew) {
-        localStorage.removeItem('template-editor-draft');
+        result = await apiV1.TEMPLATE.CREATE.post(payload);
+      } else if (template?.id) {
+        result = await apiV1.TEMPLATE.UPDATE(template.id).patch(payload);
       }
 
-      toast.success(isNew ? 'Template created successfully' : 'Template updated successfully');
-      router.push('/templates');
-      router.refresh();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to save template');
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success(`Template ${isNew ? 'created' : 'updated'} successfully`);
+        if (isNew) {
+          localStorage.removeItem('template-editor-draft');
+          router.push('/templates');
+          router.refresh();
+        }
+      }
+    } catch (err) {
+      toast.error('An unexpected error occurred');
     } finally {
       setSaving(false);
     }
   };
 
+  // Add mount state to ensure editor loads on client
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleEditorDidMount = (editor: any) => {
+    // Force a layout refresh after a short delay to ensure container is ready
+    setTimeout(() => {
+      editor.layout();
+    }, 0);
+  };
+
   return (
-    <div className="flex flex-col">
-      {/* Header */}
-      <div className="border-b px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">
-              {isNew ? 'Create New Template' : 'Edit Template'}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Design a resume template using HTML and Handlebars syntax
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => router.back()}
-            >
-              Cancel
-            </Button>
-            {isNew && (
-              <Button
-                variant="outline"
-                onClick={() => setImportModalOpen(true)}
-              >
-                <ImagePlus className="mr-2 h-4 w-4" />
-                Import from Image
-              </Button>
-            )}
-            <Button onClick={handleSave} disabled={saving}>
-              <Save className="mr-2 h-4 w-4" />
-              {saving ? 'Saving...' : 'Save Template'}
-            </Button>
-          </div>
+    <Page
+      title={
+        <div className="flex items-center gap-2">
+          <span>{formData.name || (isNew ? 'New Template' : 'Unnamed Template')}</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-7 w-7 p-0 shrink-0 hover:bg-muted"
+            onClick={() => setSettingsModalOpen(true)}
+          >
+            <Settings2 className="h-4 w-4 text-muted-foreground" />
+          </Button>
         </div>
-      </div>
-
-      {/* Main Content - Split Layout */}
-      <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-        {/* Left Panel - Form and Code Editor */}
-        <div className="flex flex-col gap-6 overflow-y-auto p-6 w-full md:w-1/2 h-1/2 md:h-full">
-          {/* Template Metadata */}
-          <div className="space-y-4 border rounded-lg p-4 bg-card">
-            <h3 className="font-semibold text-lg">Template Information</h3>
-
-            <div>
-              <Label htmlFor="name">Template Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Modern Professional"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="A modern, clean template optimized for tech roles..."
-                rows={3}
-              />
-            </div>
-
-
-            <div className="flex items-center gap-2">
-              <input
-                id="isPublic"
-                type="checkbox"
-                checked={formData.isPublic}
-                onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
-                className="rounded"
-              />
-              <Label htmlFor="isPublic">Make template public</Label>
-            </div>
-          </div>
-
+      }
+      description={formData.description || 'No description provided'}
+      breadcrumbs={[
+        { label: 'Templates', href: '/templates' },
+        { label: isNew ? 'New' : formData.name || 'Edit' }
+      ]}
+      maxWidth="full"
+      className="p-0"
+      scrollable={false}
+      actions={
+        <div className="flex gap-2 shrink-0">
+          {isNew && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setImportModalOpen(true)}
+              className="shrink-0 font-semibold"
+            >
+              <ImagePlus className="mr-2 h-4 w-4" />
+              Import
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="hover:bg-muted"
+          >
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleSave} disabled={saving} className="font-semibold shadow-sm">
+            <Save className="mr-2 h-4 w-4" />
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
+        </div>
+      }
+    >
+      <div className={`flex-1 min-h-0 flex flex-col md:flex-row bg-transparent gap-3 p-3 ${isFullscreen ? 'fixed inset-0 z-50 bg-background p-0' : ''}`}>
+        {/* Left Panel - Code Editor */}
+        <div className={`flex flex-col min-h-0 w-full md:w-1/2 bg-background rounded-xl overflow-hidden shadow-sm ${isFullscreen ? 'md:w-full rounded-none' : ''}`}>
           {/* Code Editors */}
-          <Tabs defaultValue="html" className="flex-1">
-            <div className="flex items-center justify-between">
-              <TabsList className="grid grid-cols-2 w-auto">
-                <TabsTrigger value="html">
-                  <Code className="mr-2 h-4 w-4" />
-                  HTML Template
+          <Tabs defaultValue="html" className="flex-1 flex flex-col min-h-0">
+            <div className="flex items-center justify-end bg-muted/20 px-4 py-1 border-b shrink-0">
+                <TabsList className="bg-transparent gap-1 mr-auto">
+                <TabsTrigger value="html" className="text-xs data-[state=active]:bg-muted data-[state=active]:shadow-sm px-3 py-1 font-semibold">
+                  <Code className="mr-1.5 h-3.5 w-3.5" />
+                  HTML
                 </TabsTrigger>
-                <TabsTrigger value="css">
-                  <Code className="mr-2 h-4 w-4" />
-                  CSS Styles
-                </TabsTrigger>
-              </TabsList>
-              <div className="flex gap-1">
+                </TabsList>
+                <div className="flex items-center gap-1">
                 <AIEnhanceButton
                   onClick={() => setTemplateEnhanceModalOpen(true)}
-                  disabled={!formData.htmlTemplate.trim() && !formData.cssStyles.trim()}
-                  variant="outline"
+                  disabled={!formData.htmlTemplate.trim()}
+                  variant="ghost"
                   size="sm"
-                  className="h-8 w-auto px-3 rounded-md"
+                  className="h-7 w-auto px-2 rounded-md hover:bg-primary/10 hover:text-primary transition-all"
                 />
-              </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 w-7 p-0 hover:bg-muted"
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                >
+                  {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
+                {isFullscreen && (
+                   <Button onClick={handleSave} disabled={saving} size="sm" className="h-7 px-3 ml-2 font-semibold">
+                  <Save className="mr-2 h-3 w-3" />
+                  {saving ? 'Saving...' : 'Save'}
+                  </Button>
+                )}
+                </div>
             </div>
 
-            <TabsContent value="html" className="mt-4">
-              <div className="border rounded-lg overflow-hidden h-[500px]">
-                <Editor
-                  height="100%"
-                  defaultLanguage="html"
-                  language="html"
-                  theme="vs-dark"
-                  value={formData.htmlTemplate}
-                  onChange={(value) => setFormData({ ...formData, htmlTemplate: value || '' })}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 13,
-                    wordWrap: 'on',
-                    automaticLayout: true,
-                    lineNumbers: 'on',
-                    scrollBeyondLastLine: false,
-                    formatOnPaste: true,
-                    formatOnType: true,
-                    tabSize: 2,
-                  }}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Use Handlebars syntax: <code className="bg-muted px-1 py-0.5 rounded">{'{{basics.name}}'}</code>, <code className="bg-muted px-1 py-0.5 rounded">{'{{#each work}}...{{/each}}'}</code>
-              </p>
-            </TabsContent>
-
-            <TabsContent value="css" className="mt-4">
-              <div className="border rounded-lg overflow-hidden h-[500px]">
-                <Editor
-                  height="100%"
-                  defaultLanguage="css"
-                  language="css"
-                  theme="vs-dark"
-                  value={formData.cssStyles}
-                  onChange={(value) => setFormData({ ...formData, cssStyles: value || '' })}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 13,
-                    wordWrap: 'on',
-                    automaticLayout: true,
-                    lineNumbers: 'on',
-                    scrollBeyondLastLine: false,
-                    formatOnPaste: true,
-                    formatOnType: true,
-                    tabSize: 2,
-                  }}
-                />
-              </div>
+            <TabsContent value="html" className="flex-1 mt-0 relative min-h-0 overflow-hidden">
+              {mounted && (
+                <div className="absolute inset-0">
+                  <Editor
+                    height="100%"
+                    defaultLanguage="html"
+                    language="html"
+                    theme="vs-dark"
+                    value={formData.htmlTemplate}
+                    onMount={handleEditorDidMount}
+                    onChange={(value) => setFormData({ ...formData, htmlTemplate: value || '' })}
+                    options={EDITOR_OPTIONS}
+                  />
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
 
         {/* Right Panel - Live Preview */}
-        <div className="border-t md:border-t-0 md:border-l bg-muted/20 overflow-hidden w-full md:w-1/2 h-1/2 md:h-full flex flex-col">
-            <div className="p-3 border-b bg-background flex items-center justify-between">
-              <span className="text-sm font-medium">Live Preview</span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Preview Data:</span>
-                <select 
-                  className="text-xs border rounded px-2 py-1 bg-background"
-                  value={selectedProfileId}
-                  onChange={(e) => setSelectedProfileId(e.target.value)}
-                >
-                  <option value="sample">Sample Data</option>
-                  {profiles.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="flex-1 relative">
-              {isLoadingProfile && (
-                <div className="absolute inset-0 z-10 bg-background/50 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        {!isFullscreen && (
+          <div className="bg-background rounded-xl overflow-hidden shadow-sm w-full md:w-1/2 flex flex-col min-h-0">
+              <div className="px-6 py-2 bg-muted/20 flex items-center justify-between shrink-0 border-b">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Preview</span>
                 </div>
-              )}
-              <ResumePreview
-                resumeData={previewResume}
-                templateHtml={formData.htmlTemplate}
-                templateCss={formData.cssStyles}
-                showTemplateSelector={false}
-                showCard={false}
-                className="h-full"
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-all mr-2"
+                    disabled={isExportingPDF}
+                    onClick={() => handleExportPDF({
+                      resume: previewResume,
+                      templateHtml: formData.htmlTemplate,
+                      fileName: `${formData.name || 'template'}_preview`
+                    })}
+                  >
+                    {isExportingPDF ? (
+                      <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-3 w-3 mr-2" />
+                    )}
+                    Export
+                  </Button>
+                  <div className="w-px h-4 bg-muted-foreground/20 mr-2" />
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold opacity-70">Context</span>
+                  <select 
+                    className="text-xs border-none bg-background rounded-md px-3 py-1 shadow-sm font-medium focus:ring-1 focus:ring-primary outline-none"
+                    value={selectedProfileId}
+                    onChange={(e) => setSelectedProfileId(e.target.value)}
+                  >
+                    <option value="sample">Sample Data</option>
+                    {profiles.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex-1 relative bg-muted/5 overflow-auto">
+                {isLoadingProfile && (
+                  <div className="absolute inset-0 z-10 bg-background/50 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  </div>
+                )}
+                <div className="min-h-full p-0 flex justify-center">
+                  <ResumePreview
+                    resumeData={previewResume}
+                    templateHtml={formData.htmlTemplate}
+                    showTemplateSelector={false}
+                    showCard={false}
+                    disableScaling={false}
+                    className="h-full"
+                  />
+                </div>
+              </div>
+          </div>
+        )}
+      </div>
+
+      {/* Settings Modal */}
+      <Dialog open={settingsModalOpen} onOpenChange={setSettingsModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Template Settings</DialogTitle>
+            <DialogDescription>
+              Configure your template's basic information and visibility.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="modal-name">Name</Label>
+              <Input
+                id="modal-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Modern Professional"
               />
             </div>
-        </div>
-      </div>
+            <div className="grid gap-2">
+              <Label htmlFor="modal-description">Description</Label>
+              <Textarea
+                id="modal-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Describe your template..."
+                rows={3}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <div 
+                className="flex items-center justify-center w-5 h-5 border rounded cursor-pointer"
+                style={{ 
+                  backgroundColor: formData.isPublic ? 'var(--primary)' : 'transparent',
+                  borderColor: formData.isPublic ? 'var(--primary)' : 'var(--input)'
+                }}
+                onClick={() => setFormData({ ...formData, isPublic: !formData.isPublic })}
+              >
+                {formData.isPublic && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
+              </div>
+              <Label 
+                className="cursor-pointer select-none"
+                onClick={() => setFormData({ ...formData, isPublic: !formData.isPublic })}
+              >
+                Make template public
+              </Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setSettingsModalOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Import Modal */}
       <TemplateImportModal
@@ -382,11 +449,10 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
         open={templateEnhanceModalOpen}
         onOpenChange={setTemplateEnhanceModalOpen}
         originalHtml={formData.htmlTemplate}
-        originalCss={formData.cssStyles}
-        onAccept={(enhancedHtml: string, enhancedCss: string) =>
-          setFormData({ ...formData, htmlTemplate: enhancedHtml, cssStyles: enhancedCss })
+        onAccept={(enhancedHtml: string) =>
+          setFormData({ ...formData, htmlTemplate: enhancedHtml })
         }
       />
-    </div>
+    </Page>
   );
 }

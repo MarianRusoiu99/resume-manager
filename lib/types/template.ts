@@ -19,7 +19,6 @@ export interface TemplateBase {
  */
 export interface Template extends TemplateBase {
   htmlTemplate: string;
-  cssStyles: string;
 }
 
 /**

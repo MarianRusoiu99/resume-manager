@@ -25,26 +25,22 @@ export interface AIEnhanceTemplateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   originalHtml: string;
-  originalCss: string;
-  onAccept: (enhancedHtml: string, enhancedCss: string) => void;
+  onAccept: (enhancedHtml: string) => void;
   title?: string;
   description?: string;
 }
 
 type ViewMode = 'visual' | 'code';
-type CodeTab = 'html' | 'css';
 
 export function AIEnhanceTemplateModal({
   open,
   onOpenChange,
   originalHtml,
-  originalCss,
   onAccept,
   title = 'Enhance Template with AI',
-  description = 'AI will enhance both HTML and CSS together to improve structure, styling, and consistency.',
+  description = 'AI will enhance the HTML template and its styles to improve structure, styling, and consistency.',
 }: Readonly<AIEnhanceTemplateModalProps>) {
   const [viewMode, setViewMode] = useState<ViewMode>('visual');
-  const [codeTab, setCodeTab] = useState<CodeTab>('html');
 
   // Use centralized enhancement hook
   const {
@@ -61,26 +57,25 @@ export function AIEnhanceTemplateModal({
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     onOpenChange(nextOpen);
     if (nextOpen) {
-      setTemplate(originalHtml, originalCss);
+      setTemplate(originalHtml);
       reset();
       setViewMode('visual');
-      setCodeTab('html');
     }
-  }, [onOpenChange, originalHtml, originalCss, setTemplate, reset]);
+  }, [onOpenChange, originalHtml, setTemplate, reset]);
 
   // Keep template inputs in sync if props change while open.
   useEffect(() => {
     if (!open) return;
-    setTemplate(originalHtml, originalCss);
-  }, [open, originalHtml, originalCss, setTemplate]);
+    setTemplate(originalHtml);
+  }, [open, originalHtml, setTemplate]);
 
   const handleAccept = useCallback(() => {
     if (enhancedContent) {
-      onAccept(enhancedContent.html || originalHtml, enhancedContent.css || originalCss);
+      onAccept(enhancedContent.html || originalHtml);
       onOpenChange(false);
       toast.success('Template enhanced successfully!');
     }
-  }, [enhancedContent, originalHtml, originalCss, onAccept, onOpenChange]);
+  }, [enhancedContent, originalHtml, onAccept, onOpenChange]);
 
   const handleCancel = useCallback(() => {
     onOpenChange(false);
@@ -144,22 +139,6 @@ export function AIEnhanceTemplateModal({
               </TabsTrigger>
             </TabsList>
           </Tabs>
-
-          {/* Code sub-tabs (only visible in code view) */}
-          {viewMode === 'code' && (
-            <Tabs value={codeTab} onValueChange={(v) => setCodeTab(v as CodeTab)}>
-              <TabsList>
-                <TabsTrigger value="html" className="gap-1 text-xs">
-                  <FileText className="h-3 w-3" />
-                  HTML
-                </TabsTrigger>
-                <TabsTrigger value="css" className="gap-1 text-xs">
-                  <FileText className="h-3 w-3" />
-                  CSS
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          )}
         </div>
 
         {/* Side-by-side comparison (both views are always side-by-side) */}
@@ -167,17 +146,15 @@ export function AIEnhanceTemplateModal({
           {viewMode === 'visual' ? (
             <TemplateVisualComparison
               originalHtml={originalHtml}
-              originalCss={originalCss}
               enhancedHtml={enhancedContent?.html ?? null}
-              enhancedCss={enhancedContent?.css ?? null}
               isEnhancing={isLoading}
               className="h-full"
             />
           ) : (
             <TemplateCodeComparison
-              originalCode={codeTab === 'html' ? originalHtml : originalCss}
-              enhancedCode={codeTab === 'html' ? (enhancedContent?.html ?? null) : (enhancedContent?.css ?? null)}
-              codeType={codeTab === 'html' ? 'HTML' : 'CSS'}
+              originalCode={originalHtml}
+              enhancedCode={enhancedContent?.html ?? null}
+              codeType={'HTML'}
               isEnhancing={isLoading}
               className="h-full"
             />

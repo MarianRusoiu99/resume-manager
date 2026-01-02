@@ -44,10 +44,10 @@ interface ResumePreviewProps {
   className?: string;
   /** Custom template HTML (for live editing in TemplateEditor) */
   templateHtml?: string;
-  /** Custom template CSS (for live editing in TemplateEditor) */
-  templateCss?: string;
   /** Custom header actions */
   headerActions?: React.ReactNode;
+  /** Disable automatic scaling */
+  disableScaling?: boolean;
 }
 
 export function ResumePreview({
@@ -60,8 +60,8 @@ export function ResumePreview({
   previewKey = 0,
   className = '',
   templateHtml,
-  templateCss,
   headerActions,
+  disableScaling = false,
 }: Readonly<ResumePreviewProps>) {
   // Refs
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -88,7 +88,6 @@ export function ResumePreview({
       resume,
       templateId: templateHtml ? null : selectedTemplateId,
       templateHtml,
-      templateCss,
       fileName: resume.basics?.name ? `${resume.basics.name.replaceAll(' ', '_')}_Resume.pdf` : 'resume.pdf',
     });
   };
@@ -98,6 +97,7 @@ export function ResumePreview({
   const { scale } = usePreviewScale({
     containerRef,
     isFullscreen,
+    disabled: disableScaling,
   });
 
   // Fetch template preview (only when not using custom template)
@@ -113,14 +113,13 @@ export function ResumePreview({
     try {
       return renderTemplateClientSide({
         htmlTemplate: templateHtml,
-        cssStyles: templateCss || '',
         resumeData: resume,
       });
     } catch (err) {
       logger.error('Error rendering custom template', err);
       return null;
     }
-  }, [templateHtml, templateCss, resume]);
+  }, [templateHtml, resume]);
 
   // Use custom HTML if provided, otherwise use fetched template
   const htmlContent = customHtmlContent || fetchedHtmlContent;

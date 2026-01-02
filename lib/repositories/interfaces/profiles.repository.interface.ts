@@ -34,7 +34,6 @@ export interface ProfileWithTemplate extends ProfileData {
     id: string;
     name: string;
     htmlTemplate: string;
-    cssStyles: string;
   } | null;
 }
 

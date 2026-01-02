@@ -49,13 +49,11 @@ export class TemplateService
       const validatedData = validateCreateTemplateInput(input);
       const sanitized = sanitizeTemplate({
         htmlTemplate: validatedData.htmlTemplate,
-        cssStyles: validatedData.cssStyles,
       });
 
       return await this.repository.create({
         ...validatedData,
         htmlTemplate: sanitized.htmlTemplate,
-        cssStyles: sanitized.cssStyles,
       });
     });
   }
@@ -77,13 +75,11 @@ export class TemplateService
       // Sanitize only the fields that can introduce script execution.
       const sanitized = sanitizeTemplate({
         htmlTemplate: validatedData.htmlTemplate ?? existing.htmlTemplate,
-        cssStyles: validatedData.cssStyles ?? existing.cssStyles,
       });
 
       return await this.repository.update(id, {
         ...validatedData,
         ...(validatedData.htmlTemplate !== undefined ? { htmlTemplate: sanitized.htmlTemplate } : {}),
-        ...(validatedData.cssStyles !== undefined ? { cssStyles: sanitized.cssStyles } : {}),
       });
     });
   }

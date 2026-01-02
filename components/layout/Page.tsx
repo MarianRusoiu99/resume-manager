@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { PageHeader } from "./PageHeader";
 import { PageContainer } from "./PageContainer";
 
@@ -9,7 +10,7 @@ interface BreadcrumbItem {
 
 interface PageProps {
   /** Page title displayed in header */
-  title: string;
+  title: React.ReactNode;
   /** Optional description below title */
   description?: string;
   /** Breadcrumb navigation items */
@@ -19,11 +20,13 @@ interface PageProps {
   /** Optional toolbar shown above content */
   toolbar?: ReactNode;
   /** Maximum width of page content */
-  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "full";
   /** Page content */
   children: ReactNode;
   /** Additional className for container */
   className?: string;
+  /** Whether the page content should be scrollable */
+  scrollable?: boolean;
 }
 
 /**
@@ -31,22 +34,6 @@ interface PageProps {
  * 
  * Combines PageHeader and PageContainer for consistent page structure.
  * Use this component for all authenticated pages.
- * 
- * @example
- * ```tsx
- * <Page
- *   title="My Resumes"
- *   description="Manage your AI-generated resumes"
- *   breadcrumbs={[{ label: "Resumes" }]}
- *   actions={
- *     <Button onClick={() => router.push('/generate')}>
- *       Generate New Resume
- *     </Button>
- *   }
- * >
- *   <ResumeList resumes={resumes} />
- * </Page>
- * ```
  */
 export function Page({
   title,
@@ -54,28 +41,36 @@ export function Page({
   breadcrumbs,
   actions,
   toolbar,
-  maxWidth = "xl",
+  maxWidth = "5xl",
   children,
   className,
+  scrollable = true,
 }: PageProps) {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col h-full bg-background overflow-hidden">
       <PageHeader
         title={title}
         description={description}
         breadcrumbs={breadcrumbs}
+        actions={actions}
       />
-      <PageContainer maxWidth={maxWidth} className={className}>
-        <div className="flex flex-col gap-6">
-          {(toolbar || actions) && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex-1">{toolbar}</div>
-              <div className="flex items-center gap-3">{actions}</div>
+      <div className={cn(
+        "flex-1 min-h-0 flex flex-col",
+        scrollable ? "overflow-y-auto" : "overflow-hidden"
+      )}>
+        <PageContainer maxWidth={maxWidth} className={className}>
+          <div className="flex-1 flex flex-col min-h-0 gap-6">
+            {toolbar && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+                <div className="flex-1">{toolbar}</div>
+              </div>
+            )}
+            <div className="flex-1 min-h-0">
+              {children}
             </div>
-          )}
-          {children}
-        </div>
-      </PageContainer>
+          </div>
+        </PageContainer>
+      </div>
     </div>
   );
 }
@@ -108,7 +103,7 @@ export function PageWithSidebar({
   sidebarPosition = "right",
   sidebarWidth = "w-80",
   className,
-}: PageWithSidebarProps) {
+}: Readonly<PageWithSidebarProps>) {
   const mainContent = (
     <div className="flex-1 min-w-0">
       {children}
@@ -127,10 +122,10 @@ export function PageWithSidebar({
         title={title}
         description={description}
         breadcrumbs={breadcrumbs}
+        actions={actions}
       />
       <PageContainer maxWidth={maxWidth} className={className}>
         {toolbar && <div className="mb-6">{toolbar}</div>}
-        {actions && <div className="flex justify-end mb-6">{actions}</div>}
         <div className="flex gap-6">
           {sidebarPosition === "left" && sidebarContent}
           {mainContent}

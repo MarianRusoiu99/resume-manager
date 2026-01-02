@@ -130,7 +130,6 @@ export interface CoverLetterOutput {
  */
 export interface TemplateGenerationOutput {
   htmlTemplate: string;
-  cssStyles: string;
   name?: string;
   description?: string;
   category?: string;
@@ -141,7 +140,6 @@ export interface TemplateGenerationOutput {
  */
 export interface TemplateEnhancementOutput {
   htmlTemplate: string;
-  cssStyles: string;
   changes?: string[];
 }
 

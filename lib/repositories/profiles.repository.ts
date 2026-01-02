@@ -167,7 +167,7 @@ export class ProfileRepository extends GenericUserOwnedRepository<
       where: { publicSlug: slug },
       include: {
         document: { select: { document: true } },
-        selectedTemplate: { select: { id: true, name: true, htmlTemplate: true, cssStyles: true } },
+        selectedTemplate: { select: { id: true, name: true, htmlTemplate: true } },
       },
     });
 
@@ -181,7 +181,6 @@ export class ProfileRepository extends GenericUserOwnedRepository<
             id: profile.selectedTemplate.id,
             name: profile.selectedTemplate.name,
             htmlTemplate: profile.selectedTemplate.htmlTemplate,
-            cssStyles: profile.selectedTemplate.cssStyles,
           }
         : null,
     };

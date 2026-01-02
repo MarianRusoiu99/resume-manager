@@ -9,7 +9,6 @@ import type { Resume } from '@/lib/validations/jsonresume';
 
 interface RenderTemplateOptions {
   htmlTemplate: string;
-  cssStyles: string;
   resumeData: Resume;
 }
 
@@ -19,10 +18,9 @@ interface RenderTemplateOptions {
  */
 export function renderTemplateClientSide({
   htmlTemplate,
-  cssStyles,
   resumeData,
 }: RenderTemplateOptions): string {
-  return renderCompleteDocument(htmlTemplate, cssStyles, resumeData);
+  return renderCompleteDocument(htmlTemplate, resumeData);
 }
 
 /**

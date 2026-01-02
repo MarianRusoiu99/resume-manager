@@ -81,12 +81,14 @@ export default function CoverLettersPage() {
         />
       )}
 
-      <CoverLetterList
-        coverLetters={coverLetters}
-        isLoading={isLoading}
-        onDelete={handleDelete}
-        onGenerate={() => router.push(ROUTES.GENERATE_COVER_LETTER)}
-      />
+      <div className="space-y-6">
+        <CoverLetterList
+          coverLetters={coverLetters}
+          isLoading={isLoading}
+          onDelete={handleDelete}
+          onGenerate={() => router.push(ROUTES.GENERATE_COVER_LETTER)}
+        />
+      </div>
     </Page>
   );
 }

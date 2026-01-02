@@ -24,8 +24,8 @@ export default async function AuthenticatedLayout({
             email: session.email, 
             name: session.name 
           }} />
-          <SidebarInset>
-            <main className="flex-1 overflow-y-auto">
+          <SidebarInset className="flex flex-col overflow-hidden">
+            <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
               {children}
             </main>
           </SidebarInset>

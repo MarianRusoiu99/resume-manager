@@ -12,17 +12,25 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { toast } from 'sonner';
-import { Button, Card } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import type { BlockNoteEditorMethods } from '@/components/editor/BlockNoteEditorWrapper.client';
 import { MarkdownPreview } from '@/components/editor/MarkdownPreview';
-import { Copy, Edit, Check, X } from 'lucide-react';
+import { Copy, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { AIEnhanceButton, AIEnhanceTextModal } from '@/components/ai-enhance';
 
+
+export interface CoverLetterEditorRef {
+  save: () => Promise<void>;
+  setIsEditing: (isEditing: boolean) => void;
+  isEditing: boolean;
+  copyToClipboard: () => Promise<void>;
+  enhance: () => void;
+}
 
 interface CoverLetterEditorProps {
   /**
@@ -59,27 +67,20 @@ interface CoverLetterEditorProps {
   className?: string;
 
   /**
-   * Show card wrapper
-   * @default true
-   */
-  showCard?: boolean;
-
-  /**
    * Custom title
    * @default "Generated Cover Letter"
    */
   title?: string;
 }
 
-export function CoverLetterEditor({
+export const CoverLetterEditor = forwardRef<CoverLetterEditorRef, CoverLetterEditorProps>(({
   content,
   contentJson,
   editable = false,
   onSave,
   className,
-  showCard = true,
   title = 'Generated Cover Letter',
-}: Readonly<CoverLetterEditorProps>) {
+}, ref) => {
   const log = createComponentLogger('CoverLetterEditor');
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -95,16 +96,6 @@ export function CoverLetterEditor({
       log.error('Failed to copy to clipboard', error);
       toast.error('Failed to copy to clipboard');
     }
-  };
-
-  const handleStartEdit = () => {
-    setEditedContent(content);
-    setIsEditing(true);
-  };
-
-  const handleCancelEdit = () => {
-    setEditedContent(content);
-    setIsEditing(false);
   };
 
   const handleSaveEdit = async (markdown: string) => {
@@ -123,10 +114,19 @@ export function CoverLetterEditor({
     } catch (error) {
       log.error('Save failed', error);
       toast.error('Failed to save cover letter');
+      throw error;
     } finally {
       setIsSaving(false);
     }
   };
+
+  useImperativeHandle(ref, () => ({
+    save: () => handleSaveEdit(editedContent),
+    setIsEditing,
+    isEditing,
+    copyToClipboard: handleCopy,
+    enhance: () => setEnhanceModalOpen(true),
+  }));
 
   const renderContent = () => {
     if (isEditing) {
@@ -148,67 +148,10 @@ export function CoverLetterEditor({
     return (
       <MarkdownPreview
         content={content}
-        className="bg-muted/50 p-6 rounded-lg border"
+        className="bg-muted/30 p-8 rounded-none border-none"
       />
     );
   };
-
-  const actionButtons = (
-    <div className="flex gap-2">
-      {editable && !isEditing && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleStartEdit}
-        >
-          <Edit className="w-4 h-4 mr-2" />
-          Edit
-        </Button>
-      )}
-
-      {isEditing && (
-        <>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCancelEdit}
-            disabled={isSaving}
-          >
-            <X className="w-4 h-4 mr-2" />
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => handleSaveEdit(editedContent)}
-            disabled={isSaving}
-          >
-            <Check className="w-4 h-4 mr-2" />
-            {isSaving ? 'Saving...' : 'Save'}
-          </Button>
-        </>
-      )}
-
-      {!isEditing && (
-        <>
-          <AIEnhanceButton
-            onClick={() => setEnhanceModalOpen(true)}
-            disabled={!content.trim()}
-            variant="outline"
-            size="sm"
-            className="h-8 w-auto px-3 rounded-md"
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopy}
-          >
-            <Copy className="w-4 h-4 mr-2" />
-            Copy
-          </Button>
-        </>
-      )}
-    </div>
-  );
 
   const handleEnhanceAccept = async (enhancedContent: string) => {
     if (onSave) {
@@ -226,38 +169,41 @@ export function CoverLetterEditor({
     }
   };
 
-  if (!showCard) {
-    return (
-      <>
-        <div className={cn('space-y-4', className)}>
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">{title}</h2>
-            {actionButtons}
-          </div>
-          {renderContent()}
-        </div>
-        <AIEnhanceTextModal
-          open={enhanceModalOpen}
-          onOpenChange={setEnhanceModalOpen}
-          originalContent={content}
-          onAccept={handleEnhanceAccept}
-          contentType="markdown"
-          title="Enhance Cover Letter"
-          description="Use AI to improve your cover letter's tone, clarity, or professionalism."
-        />
-      </>
-    );
-  }
-
   return (
     <>
-      <Card className={cn('p-6', className)}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">{title}</h2>
-          {actionButtons}
+      <div className={cn('bg-background', className)}>
+        {isEditing && (
+          <div className="flex items-center justify-between p-4 border-b bg-muted/20">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Editing Mode
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(false)}
+                disabled={isSaving}
+                className="h-8 rounded-none border-px"
+              >
+                <X className="w-3.5 h-3.5 mr-2" />
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => handleSaveEdit(editedContent)}
+                disabled={isSaving}
+                className="h-8 rounded-none border-px"
+              >
+                <Check className="w-3.5 h-3.5 mr-2" />
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        )}
+        <div className="p-0">
+          {renderContent()}
         </div>
-        {renderContent()}
-      </Card>
+      </div>
       <AIEnhanceTextModal
         open={enhanceModalOpen}
         onOpenChange={setEnhanceModalOpen}
@@ -269,4 +215,6 @@ export function CoverLetterEditor({
       />
     </>
   );
-}
+});
+
+CoverLetterEditor.displayName = 'CoverLetterEditor';

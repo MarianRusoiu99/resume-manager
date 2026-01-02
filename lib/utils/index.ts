@@ -25,7 +25,6 @@ export {
 export {
     sanitizeTemplate,
     sanitizeTemplateHtml,
-    sanitizeTemplateCss,
     type SanitizedTemplate,
 } from '../templates/utils/sanitizer';
 export {

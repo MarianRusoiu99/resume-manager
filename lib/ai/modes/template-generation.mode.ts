@@ -89,10 +89,9 @@ export const templateGenerationMode = defineMode({
       }
     }
 
-    // Validate CSS exists
-    if (!output.cssStyles || output.cssStyles.length < 50) {
-      // Don't error out, just warn.
-      warnings.push('CSS styles are very short or missing');
+    // Validate HTML has style tag
+    if (!output.htmlTemplate.includes('<style>')) {
+      warnings.push('HTML template is missing a <style> tag. Styles should be embedded in the HTML.');
     }
 
     return {

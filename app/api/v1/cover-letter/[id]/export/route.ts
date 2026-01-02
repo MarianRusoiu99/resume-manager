@@ -91,7 +91,8 @@ export const POST = createApiHandler(async (_request, { params }, session) => {
     coverLetterHtml: markdownishToHtml(coverLetter.content),
   } as Resume & { coverLetterHtml: string };
 
-  const html = renderCompleteDocument(COVER_LETTER_HTML_TEMPLATE, COVER_LETTER_CSS, resume as Resume);
+  const mergedHtml = `<style>\n${COVER_LETTER_CSS}\n</style>\n${COVER_LETTER_HTML_TEMPLATE}`;
+  const html = renderCompleteDocument(mergedHtml, resume as Resume);
 
   const pdfBuffer = await pdfService.generateFromHtml(html, DEFAULT_PDF_CONFIG);
 

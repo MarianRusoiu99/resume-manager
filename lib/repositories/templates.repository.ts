@@ -53,7 +53,6 @@ export class TemplateRepository
         name: data.name,
         description: data.description,
         htmlTemplate: data.htmlTemplate,
-        cssStyles: data.cssStyles,
         previewUrl: data.previewUrl,
         isPublic: data.isPublic ?? true,
       },
@@ -74,7 +73,6 @@ export class TemplateRepository
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.htmlTemplate !== undefined) updateData.htmlTemplate = data.htmlTemplate;
-    if (data.cssStyles !== undefined) updateData.cssStyles = data.cssStyles;
     if (data.previewUrl !== undefined) updateData.previewUrl = data.previewUrl;
     if (data.isPublic !== undefined) updateData.isPublic = data.isPublic;
 
@@ -118,7 +116,6 @@ export class TemplateRepository
     name: string;
     description: string | null;
     htmlTemplate: string;
-    cssStyles: string;
     previewUrl: string | null;
     isPublic: boolean;
     createdAt: Date;
@@ -129,7 +126,6 @@ export class TemplateRepository
       name: template.name,
       description: template.description,
       htmlTemplate: template.htmlTemplate,
-      cssStyles: template.cssStyles,
       previewUrl: template.previewUrl ?? undefined,
       isPublic: template.isPublic,
       createdAt: template.createdAt,

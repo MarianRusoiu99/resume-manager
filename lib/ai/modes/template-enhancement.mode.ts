@@ -47,8 +47,7 @@ export const templateEnhancementMode = defineMode({
       '',
       '## OUTPUT FORMAT',
       'Return a JSON object with:',
-      '- htmlTemplate: The modified HTML template',
-      '- cssStyles: The modified CSS styles',
+      '- htmlTemplate: The modified HTML template including inline <style> blocks',
       '- changes: Array of strings describing what was changed',
     ];
 
@@ -63,14 +62,6 @@ export const templateEnhancementMode = defineMode({
       parts.push('## CURRENT HTML TEMPLATE');
       parts.push('```html');
       parts.push(context.template.htmlTemplate);
-      parts.push('```');
-      parts.push('');
-    }
-
-    if (context.template?.cssStyles) {
-      parts.push('## CURRENT CSS STYLES');
-      parts.push('```css');
-      parts.push(context.template.cssStyles);
       parts.push('```');
       parts.push('');
     }
@@ -93,8 +84,8 @@ export const templateEnhancementMode = defineMode({
       warnings.push('HTML template might be missing Handlebars placeholders');
     }
 
-    if (!output.cssStyles || output.cssStyles.length < 50) {
-      warnings.push('CSS styles are missing or too short');
+    if (!output.htmlTemplate.includes('<style>')) {
+      warnings.push('HTML template is missing a <style> tag. Styles should be embedded in the HTML.');
     }
 
     return {

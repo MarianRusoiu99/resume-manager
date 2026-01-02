@@ -10,7 +10,6 @@ import DOMPurify from 'isomorphic-dompurify';
 
 export type SanitizedTemplate = {
   htmlTemplate: string;
-  cssStyles: string;
 };
 
 const MAX_TEMPLATE_LENGTH = 200_000;
@@ -44,30 +43,8 @@ export function sanitizeTemplateHtml(htmlTemplate: string): string {
   });
 }
 
-/**
- * Sanitize user-provided CSS.
- *
- * Goal: reduce obvious exfil/external-load vectors while allowing normal styling.
- * - Removes @import.
- * - Removes external URLs while keeping data: URLs.
- */
-export function sanitizeTemplateCss(cssStyles: string): string {
-  assertReasonableLength(cssStyles, 'CSS styles');
-
-  let css = cssStyles;
-
-  // Drop @import rules as DOMPurify doesn't handle raw CSS strings as deeply as HTML
-  css = css.replaceAll(/@import\s+[^;]+;/gi, '');
-
-  // Remove external URLs while still allowing data:
-  css = css.replaceAll(/url\(\s*("|')?\s*(https?:)?\/\/[\s\S]*?("|')?\s*\)/gi, '');
-
-  return css;
-}
-
 export function sanitizeTemplate(template: SanitizedTemplate): SanitizedTemplate {
   return {
     htmlTemplate: sanitizeTemplateHtml(template.htmlTemplate),
-    cssStyles: sanitizeTemplateCss(template.cssStyles),
   };
 }

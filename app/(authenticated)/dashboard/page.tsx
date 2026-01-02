@@ -31,9 +31,8 @@ export default function DashboardPage() {
       title="Dashboard"
       description="Here's an overview of your resume optimization activity"
       breadcrumbs={[{ label: "Dashboard" }]}
-      maxWidth="xl"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border border-y -mx-4 sm:-mx-8">
         <ActivityChart data={analyticsData?.resumesOverTime} loading={loading} />
         <TopCompanies data={analyticsData?.topCompanies} loading={loading} />
         <UsageMetrics data={analyticsData?.aiUsage} loading={loading} />

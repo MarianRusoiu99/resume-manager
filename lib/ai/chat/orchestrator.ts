@@ -198,24 +198,24 @@ export class AIOrchestrator {
       let fullText = '';
 
       for await (const part of result.fullStream) {
-        const p = part as any;
         switch (part.type) {
-          case 'text-delta':
-            const text = p.textDelta ?? p.text ?? '';
+          case 'text-delta': {
+            const text = (part as any).textDelta ?? (part as any).text ?? '';
             fullText += text;
             yield {
               type: 'text-delta',
               content: text,
             };
             break;
+          }
 
           case 'tool-call':
             yield {
               type: 'tool-call',
               toolCall: {
-                id: p.toolCallId,
-                name: p.toolName,
-                arguments: p.args ?? p.input ?? {},
+                id: (part as any).toolCallId,
+                name: (part as any).toolName,
+                arguments: ((part as any).args ?? (part as any).input ?? {}) as Record<string, unknown>,
               },
             };
             break;
@@ -224,22 +224,22 @@ export class AIOrchestrator {
             yield {
               type: 'tool-result',
               toolResult: {
-                toolCallId: p.toolCallId,
-                result: p.result ?? p.output,
+                toolCallId: (part as any).toolCallId,
+                result: (part as any).result ?? (part as any).output,
               },
             };
             break;
 
-          case 'finish':
-            const usage = normalizeUsage(p.usage ?? p.totalUsage);
+          case 'finish': {
+            const usage = normalizeUsage((part as any).usage ?? (part as any).totalUsage);
             yield {
               type: 'finish',
-              finishReason: p.finishReason,
+              finishReason: part.finishReason,
               usage,
             };
 
             // Log usage
-            this.logUsage(options, usage, p.finishReason, mode.id);
+            this.logUsage(options, usage, part.finishReason, mode.id);
 
             // Try to parse output if mode has structured output
             if (mode.useStructuredOutput !== false) {
@@ -254,6 +254,7 @@ export class AIOrchestrator {
               }
             }
             break;
+          }
         }
       }
 

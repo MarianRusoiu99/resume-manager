@@ -11,37 +11,49 @@ interface TopCompaniesProps {
 
 export function TopCompanies({ data, loading }: TopCompaniesProps) {
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">Top Companies</CardTitle>
-          <Building2 className="h-5 w-5 text-muted-foreground" />
+    <div className="bg-background p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-lg font-semibold uppercase tracking-tight">Top Companies</h3>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Companies you've targeted most</p>
         </div>
-        <CardDescription>Companies you've targeted most</CardDescription>
-      </CardHeader>
-      <CardContent>
+        <Building2 className="h-5 w-5 text-primary" />
+      </div>
+      <div>
         {loading ? (
           <div className="space-y-4 animate-pulse">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-4 bg-muted rounded" />
+              <div key={i} className="h-4 bg-muted" />
             ))}
           </div>
         ) : data?.length ? (
           <div className="space-y-4">
-            {data.map((company) => (
-              <div key={company.name} className="flex items-center justify-between">
-                <div className="text-sm font-medium">{company.name}</div>
-                <div className="flex items-center gap-2">
-                  <div className="text-sm font-bold">{company.count}</div>
-                  <div className="text-xs text-muted-foreground">resumes</div>
+            {data.slice(0, 5).map((company, i) => (
+              <div key={company.name} className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-8 h-8 bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                  {i + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium truncate uppercase tracking-tight">{company.name}</span>
+                    <span className="text-xs font-bold">{company.count}</span>
+                  </div>
+                  <div className="h-1 w-full bg-muted overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-500" 
+                      style={{ 
+                        width: `${(company.count / data[0].count) * 100}%` 
+                      }} 
+                    />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">No data available</div>
+          <div className="text-center py-8 text-muted-foreground border border-dashed text-sm">No data available</div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

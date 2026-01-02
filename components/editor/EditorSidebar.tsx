@@ -1,29 +1,16 @@
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Briefcase, GraduationCap, Code, FolderOpen, MoreHorizontal } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
+import { EDITOR_SECTIONS } from "./config/sections";
 
 export function EditorSidebar() {
     return (
-        <TabsList className="w-full justify-start rounded-none bg-muted/50 px-6 overflow-x-auto flex-wrap h-auto">
-            <TabsTrigger value="basics" className="gap-2">
-                <User className="h-4 w-4" />
-                Basics
-            </TabsTrigger>
-            <TabsTrigger value="experience" className="gap-2">
-                <Briefcase className="h-4 w-4" />
-                Experience
-            </TabsTrigger>
-            <TabsTrigger value="education" className="gap-2">
-                <GraduationCap className="h-4 w-4" />
-                Education
-            </TabsTrigger>
-            <TabsTrigger value="skills" className="gap-2">
-                <Code className="h-4 w-4" />
-                Skills
-            </TabsTrigger>
-            <TabsTrigger value="projects" className="gap-2">
-                <FolderOpen className="h-4 w-4" />
-                Projects
-            </TabsTrigger>
+        <TabsList className="w-full justify-start rounded-none bg-muted/20 px-4 overflow-x-auto flex-wrap h-auto shrink-0">
+            {EDITOR_SECTIONS.filter(s => s.isPrimary).map(section => (
+                <TabsTrigger key={section.id} value={section.id} className="gap-2">
+                    {section.icon}
+                    {section.label}
+                </TabsTrigger>
+            ))}
             <TabsTrigger value="more" className="gap-2">
                 <MoreHorizontal className="h-4 w-4" />
                 More

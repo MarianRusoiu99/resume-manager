@@ -307,7 +307,6 @@ export default function AIModelsSettingsPage() {
     <Page
       title="AI Model Settings"
       description="Configure which AI models to use for each feature"
-      maxWidth="md"
       breadcrumbs={[
         { label: 'Settings', href: '/settings' },
         { label: 'AI Models' },

@@ -17,7 +17,10 @@ import { logger } from "@/lib/utils/logger";
 /**
  * Extracted template data with resolved types
  */
-export interface ExtractedTemplate extends ExtractedTemplateData {
+export interface ExtractedTemplate {
+  htmlTemplate: string;
+  name?: string;
+  description?: string;
 }
 
 /**
@@ -114,7 +117,6 @@ export async function parseTemplateFromImage(input: ParseTemplateInput): Promise
 
       return {
         htmlTemplate: validated.htmlTemplate,
-        cssStyles: validated.cssStyles,
         name: validated.name,
         description: validated.description,
       };

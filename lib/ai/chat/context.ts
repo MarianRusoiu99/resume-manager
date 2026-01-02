@@ -35,10 +35,8 @@ export interface JobContext {
  * Template context for template generation/enhancement
  */
 export interface TemplateContext {
-  /** Current HTML template */
+  /** Current HTML template (including styles) */
   htmlTemplate?: string;
-  /** Current CSS styles */
-  cssStyles?: string;
   /** Template name */
   name?: string;
 }
@@ -112,10 +110,6 @@ export function formatContextForPrompt(context: ConversationContext): string {
 
   if (context.template?.htmlTemplate) {
     parts.push(`## Current Template HTML\n\`\`\`html\n${context.template.htmlTemplate}\n\`\`\``);
-  }
-
-  if (context.template?.cssStyles) {
-    parts.push(`## Current Template CSS\n\`\`\`css\n${context.template.cssStyles}\n\`\`\``);
   }
 
   if (context.personalInstructions) {

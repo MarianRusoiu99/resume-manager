@@ -128,7 +128,6 @@ export function useTemplatePreview({
       // Render template client-side
       const html = renderTemplateClientSide({
         htmlTemplate: template.htmlTemplate,
-        cssStyles: template.cssStyles,
         resumeData,
       });
 
