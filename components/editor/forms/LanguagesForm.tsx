@@ -7,6 +7,7 @@ import type { Language } from "@/lib/validations/jsonresume";
 interface LanguagesFormProps {
   readonly languages: Language[];
   readonly onChange: (languages: Language[]) => void;
+  readonly autoSave?: boolean;
 }
 
 /**
@@ -15,12 +16,14 @@ interface LanguagesFormProps {
 export default function LanguagesForm({
   languages = [],
   onChange,
+  autoSave,
 }: LanguagesFormProps) {
   return (
     <GenericFormList
       schema={languagesFormSchema}
       items={languages}
       onChange={onChange}
+      autoSave={autoSave}
     />
   );
 }

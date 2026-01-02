@@ -1,12 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Save, Share2, Sparkles, Edit2 } from "lucide-react";
-import { useState } from "react";
+import { Save, Share2, Sparkles, Edit2, Check, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { AIEnhanceResumeModal } from "@/components/ai-enhance";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface EditorHeaderProps {
     displayName: string;
@@ -42,6 +43,16 @@ export function EditorHeader({
     const [enhanceModalOpen, setEnhanceModalOpen] = useState(false);
     const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
     const [newName, setNewName] = useState(displayName);
+    const [showSavedFeedback, setShowSavedFeedback] = useState(false);
+
+    // Provide visual feedback after successful save
+    useEffect(() => {
+        if (!isSaving && lastSavedAt) {
+            setShowSavedFeedback(true);
+            const timer = setTimeout(() => setShowSavedFeedback(false), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [isSaving, lastSavedAt]);
 
     const handleEnhancedResume = (enhancedResume: Resume) => {
         if (onResumeChange) {
@@ -121,12 +132,21 @@ export function EditorHeader({
 
                     <Button
                         size="sm"
-                        className="h-8 font-bold uppercase tracking-widest text-xs ml-2"
+                        className={cn(
+                            "h-8 font-bold uppercase tracking-widest text-xs ml-2 min-w-[100px] transition-all duration-300",
+                            showSavedFeedback && !isDirty && "bg-green-600 hover:bg-green-600 text-white border-green-600 shadow-green-200"
+                        )}
                         onClick={onSave}
-                        disabled={isSaving || !isDirty}
+                        disabled={isSaving || (!isDirty && !showSavedFeedback)}
                     >
-                        <Save className="h-3 w-3 mr-2" />
-                        {isSaving ? "Saving..." : "Save"}
+                        {isSaving ? (
+                            <Loader2 className="h-3 w-3 mr-2 animate-spin" />
+                        ) : showSavedFeedback && !isDirty ? (
+                            <Check className="h-3 w-3 mr-2" />
+                        ) : (
+                            <Save className="h-3 w-3 mr-2" />
+                        )}
+                        {isSaving ? "Saving..." : showSavedFeedback && !isDirty ? "Saved" : "Save"}
                     </Button>
                 </div>
             </div>

@@ -7,14 +7,16 @@ import type { Reference } from "@/lib/validations/jsonresume";
 interface ReferencesFormProps {
   readonly references: Reference[];
   readonly onChange: (references: Reference[]) => void;
+  readonly autoSave?: boolean;
 }
 
-export function ReferencesForm({ references, onChange }: ReferencesFormProps) {
+export function ReferencesForm({ references, onChange, autoSave }: ReferencesFormProps) {
   return (
     <GenericFormList
       schema={referencesFormSchema}
       items={references}
       onChange={onChange}
+      autoSave={autoSave}
     />
   );
 }
