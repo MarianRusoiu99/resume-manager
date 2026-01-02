@@ -3,7 +3,7 @@
  * Handles file uploads (PDF, Image, Word) and triggers AI extraction
  */
 
-import { parseResumeFromText, parseResumeFromImage } from "@/lib/ai/resume-parser";
+import { parseResumeFromText, parseResumeFromImage } from "@/lib/ai/agents/resume-parsing";
 import { resolveAIModelOrThrow, resolveVisionModelKey } from "@/lib/ai/runtime";
 import mammoth from "mammoth";
 import { createApiHandler } from "@/lib/api/handler";

@@ -10,7 +10,7 @@ import { ErrorState, LoadingState } from '@/components/shared/states';
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
-import { Edit } from 'lucide-react';
+import { Edit, Copy, Trash2 } from 'lucide-react';
 import { apiV1, type DeleteResumeResponseDto, type DuplicateResumeResponseDto, type ResumeCoverLetterResponseDto, type ResumeDetailsDto, type UpdateCoverLetterResponseDto } from '@/lib/client';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 
@@ -180,27 +180,11 @@ export default function ResumeDetailPage() {
       toolbar={
         <div className="no-print flex justify-end gap-2">
           <Link href={`/resumes/${resumeId}/edit`}>
-            <Button variant="outline">
+            <Button variant="outline" size="sm">
               <Edit className="w-4 h-4 mr-2" />
-              Edit Resume
+              Edit
             </Button>
           </Link>
-
-          <Button
-            onClick={handleDuplicate}
-            variant="secondary"
-            disabled={isDuplicating}
-          >
-            {isDuplicating ? 'Duplicating...' : 'Duplicate'}
-          </Button>
-
-          <Button
-            variant="destructive"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </Button>
         </div>
       }
     >
@@ -212,6 +196,30 @@ export default function ResumeDetailPage() {
           showTemplateSelector={true}
           previewKey={pdfPreviewKey}
           className="mb-6 no-print"
+          headerActions={
+            <>
+              <Button
+                onClick={handleDuplicate}
+                variant="outline"
+                size="sm"
+                className="h-8"
+                disabled={isDuplicating}
+              >
+                {isDuplicating ? <LoadingState message="" /> : <Copy className="w-3.5 h-3.5 mr-1.5" />}
+                Duplicate
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                Delete
+              </Button>
+            </>
+          }
         />
 
         {/* Job Description */}

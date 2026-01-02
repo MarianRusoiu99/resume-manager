@@ -1,8 +1,8 @@
 'use server'
 
-import { resumeService } from '@/lib/services/resume';
+import { resumeService } from '@/lib/services/resumes';
 import { withServerAction } from '@/lib/actions/with-server-action';
-import type { GenerateResumeServiceInput } from '@/lib/services/resume';
+import type { GenerateResumeServiceInput } from '@/lib/services/resumes';
 
 /**
  * Get all resumes for the current user

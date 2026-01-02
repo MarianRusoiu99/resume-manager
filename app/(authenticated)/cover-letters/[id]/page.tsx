@@ -15,8 +15,9 @@ import { Callout } from '@/components/shared';
 import { ErrorState, LoadingState } from '@/components/shared/states';
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
-import { ArrowLeft, Trash2, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Trash2, ExternalLink, Download } from 'lucide-react';
 import { apiV1 } from '@/lib/client';
+import { useExportPDF } from '@/hooks';
 import type { CoverLetterWithResume } from '@/lib/types/cover-letter';
 
 type CoverLetterMetadata = {
@@ -37,6 +38,7 @@ export default function CoverLetterDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const { isExportingPDF, handleExportCoverLetter } = useExportPDF();
 
   const fetchCoverLetter = async () => {
     try {
@@ -110,6 +112,13 @@ export default function CoverLetterDetailPage() {
 
   const cancelDelete = () => {
     setDeleteDialogOpen(false);
+  };
+
+  const handleExport = async () => {
+    if (!coverLetter) return;
+    const jobTitle = coverLetter.jobPosting?.title ?? null;
+    const companyName = coverLetter.jobPosting?.company?.name ?? null;
+    await handleExportCoverLetter(coverLetterId, jobTitle || companyName || 'cover-letter');
   };
 
   const getMetadata = (): CoverLetterMetadata => {
@@ -191,14 +200,25 @@ export default function CoverLetterDetailPage() {
             </Button>
           </Link>
 
-          <Button
-            variant="ghost"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            <Trash2 className="w-4 h-4 mr-2 text-red-600" />
-            Delete
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={handleExport}
+              disabled={isExportingPDF}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              {isExportingPDF ? 'Exporting...' : 'Export PDF'}
+            </Button>
+
+            <Button
+              variant="ghost"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <Trash2 className="w-4 h-4 mr-2 text-red-600" />
+              Delete
+            </Button>
+          </div>
         </div>
       }
     >
@@ -244,23 +264,52 @@ export default function CoverLetterDetailPage() {
           title="Cover Letter"
         />
 
-        {/* Job Description Card */}
-        <Card className="p-6 mt-6">
-          <h3 className="text-lg font-semibold mb-3">Original Job Description</h3>
-          <div className="p-4 rounded-md border  max-h-96 overflow-y-auto">
-            <pre className="whitespace-pre-wrap text-sm text-foreground  font-sans">
-               {coverLetter.jobPosting?.description ?? coverLetter.resume?.jobPosting?.description ?? 'No job description available.'}
-            </pre>
-          </div>
-          {getMetadata().personalInstructions && (
-            <div className="mt-4">
-              <h4 className="text-sm font-semibold mb-2">Personal Instructions</h4>
-               <Callout tone="soft" className="p-3">
-                 <p className="text-sm">{getMetadata().personalInstructions}</p>
-               </Callout>
+        {/* Info Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          {/* Job Description Card */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-3">Target Job Description</h3>
+            <div className="p-4 rounded-md border bg-muted/30 max-h-96 overflow-y-auto">
+              <pre className="whitespace-pre-wrap text-sm text-foreground font-sans">
+                 {coverLetter.jobPosting?.description ?? coverLetter.resume?.jobPosting?.description ?? 'No job description available.'}
+              </pre>
             </div>
-          )}
-        </Card>
+          </Card>
+
+          {/* AI Instructions Card */}
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-3">AI Instructions & Metadata</h3>
+            <div className="space-y-4">
+              {getMetadata().personalInstructions ? (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Personal Touch</h4>
+                   <Callout tone="soft" className="p-3 bg-primary/5 border-primary/10">
+                    <p className="text-sm italic">&quot;{getMetadata().personalInstructions}&quot;</p>
+                  </Callout>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">No custom instructions provided.</p>
+              )}
+
+              <div className="pt-4 border-t space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground font-medium uppercase tracking-wider">Model Used</span>
+                  <span>{getMetadata().model || 'Unknown'}</span>
+                </div>
+                {getMetadata().tokens && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground font-medium uppercase tracking-wider">Tokens</span>
+                    <span>{getMetadata().tokens}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground font-medium uppercase tracking-wider">Generated On</span>
+                  <span>{new Date(coverLetter.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
 
         {/* Delete Confirmation Dialog */}
         <ConfirmDialog

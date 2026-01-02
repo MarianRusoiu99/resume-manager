@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Save, Edit2, Check, X, Share2, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AIEnhanceResumeModalUnified } from "@/components/ai-enhance";
+import { AIEnhanceResumeModal } from "@/components/ai-enhance";
 import type { Resume } from "@/lib/validations/jsonresume";
 
 interface EditorHeaderProps {
@@ -21,6 +21,7 @@ interface EditorHeaderProps {
     onTogglePublic?: () => Promise<void>;
     onShareClick?: () => void;
     onResumeChange?: (resume: Resume) => void;
+    isPublic?: boolean;
 }
 
 export function EditorHeader({
@@ -36,6 +37,7 @@ export function EditorHeader({
     onTogglePublic,
     onShareClick,
     onResumeChange,
+    isPublic,
 }: Readonly<EditorHeaderProps>) {
     const [isEditingName, setIsEditingName] = useState(false);
     const [localDisplayName, setLocalDisplayName] = useState("");
@@ -128,12 +130,12 @@ export function EditorHeader({
 
                     {onTogglePublic && (
                         <Button
-                            variant="outline"
+                            variant={isPublic ? "default" : "outline"}
                             size="sm"
                             onClick={onShareClick}
                         >
                             <Share2 className="h-4 w-4 mr-2" />
-                            Share
+                            {isPublic ? "Public" : "Share"}
                         </Button>
                     )}
 
@@ -155,7 +157,7 @@ export function EditorHeader({
             </div>
 
             {resume && onResumeChange && (
-                <AIEnhanceResumeModalUnified
+                <AIEnhanceResumeModal
                     open={enhanceModalOpen}
                     onOpenChange={setEnhanceModalOpen}
                     resume={resume}

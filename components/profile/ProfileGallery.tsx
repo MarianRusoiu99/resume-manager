@@ -12,6 +12,7 @@ import type { Resume } from "@/lib/validations/jsonresume";
 import { createProfile } from "@/app/actions/profile";
 import { apiV1, type ProfileDto } from "@/lib/client";
 import { useComponentLogger } from "@/hooks";
+import { OnboardingModal } from "./OnboardingModal";
 
 interface ProfileGalleryProps {
   initialProfiles: ProfileDto[];
@@ -21,7 +22,15 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
   const log = useComponentLogger("ProfileGallery");
   const [profiles, setProfiles] = useState<ProfileDto[]>(initialProfiles);
   const [isPending, startTransition] = useTransition();
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const router = useRouter();
+
+  // Check for empty state on mount
+  useEffect(() => {
+    if (profiles.length === 0) {
+      setShowOnboarding(true);
+    }
+  }, []);
 
   // Refresh profiles when the page becomes visible
   useEffect(() => {
@@ -155,17 +164,18 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
   );
 
   return (
+    <>
     <Gallery
       items={profiles}
       getItemKey={(profile) => profile.id}
       emptyState={{
         icon: User,
-        title: "No profiles yet",
-        description: "Create your first profile or import an existing resume",
+        title: "No Profiles Yet",
+        description: "Create your first profile or import an existing resume to get started",
         action: {
           label: isPending ? "Creating..." : "Create Profile",
           onClick: handleCreateProfile,
-          icon: <Plus className="h-5 w-5" />,
+          icon: <Plus className="w-4 h-4" />,
           disabled: isPending,
         },
         secondaryAction: (
@@ -191,5 +201,19 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
         />
       )}
     />
+
+    <OnboardingModal
+      open={showOnboarding}
+      onOpenChange={setShowOnboarding}
+      onStartFromScratch={() => {
+        setShowOnboarding(false);
+        handleCreateProfile();
+      }}
+      onImportSuccess={(resume) => {
+        setShowOnboarding(false);
+        handleImportSuccess(resume);
+      }}
+    />
+    </>
   );
 }

@@ -23,8 +23,8 @@ export { AIEnhanceTextarea } from './AIEnhanceTextarea';
 export {
   AIEnhanceTextModal,
   AIEnhanceBaseModal,
-  AIEnhanceResumeModalUnified,
-  AIEnhanceTemplateModalUnified,
+  AIEnhanceResumeModal,
+  AIEnhanceTemplateModal,
 } from './modals';
 
 // Prompt components

@@ -14,8 +14,7 @@ import { createApiHandler } from '@/lib/api/handler';
 import { coverLetterService } from '@/lib/services';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
-import { PDF_CONFIG } from '@/lib/templates/renderers/pdf';
-import puppeteer, { type Browser } from 'puppeteer';
+import { pdfService, DEFAULT_PDF_CONFIG } from '@/lib/services/pdf/pdf.service';
 
 const COVER_LETTER_HTML_TEMPLATE = `
 <div class="cover-letter">
@@ -94,44 +93,16 @@ export const POST = createApiHandler(async (_request, { params }, session) => {
 
   const html = renderCompleteDocument(COVER_LETTER_HTML_TEMPLATE, COVER_LETTER_CSS, resume as Resume);
 
-  let browser: Browser | undefined;
+  const pdfBuffer = await pdfService.generateFromHtml(html, DEFAULT_PDF_CONFIG);
 
-  try {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+  const safeNameBase = displayTitle || 'cover-letter';
+  const safeName = safeNameBase.replaceAll(/\s+/g, '_').replaceAll(/[^a-zA-Z0-9_\-]/g, '');
 
-    const page = await browser.newPage();
-
-    // Block all network requests during rendering to prevent SSRF/external loads.
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-      const url = req.url();
-      if (url.startsWith('data:') || url.startsWith('about:')) {
-        req.continue();
-        return;
-      }
-      req.abort();
-    });
-
-    await page.setContent(html, { waitUntil: 'networkidle0', timeout: 30000 });
-
-    const pdfBuffer = await page.pdf(PDF_CONFIG);
-
-    const safeNameBase = displayTitle || 'cover-letter';
-    const safeName = safeNameBase.replaceAll(/\s+/g, '_').replaceAll(/[^a-zA-Z0-9_\-]/g, '');
-
-    return new NextResponse(Buffer.from(pdfBuffer), {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${safeName || 'cover-letter'}.pdf"`,
-        'Cache-Control': 'no-cache',
-      },
-    });
-  } finally {
-    if (browser) {
-      await browser.close().catch(() => {});
-    }
-  }
+  return new NextResponse(new Uint8Array(pdfBuffer), {
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${safeName || 'cover-letter'}.pdf"`,
+      'Cache-Control': 'no-cache',
+    },
+  });
 });

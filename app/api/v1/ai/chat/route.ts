@@ -15,7 +15,7 @@ import { AIOrchestrator, requiresVision } from '@/lib/ai/chat/orchestrator';
 import { ensureModesRegistered } from '@/lib/ai/modes';
 import type { ConversationContext } from '@/lib/ai/chat/context';
 import type { Attachment, AttachmentType } from '@/lib/ai/chat/message';
-import type { AIFeatureType } from '@/lib/repositories/interfaces/user-ai-settings.repository.interface';
+import type { AIFeatureType } from '@/lib/repositories/interfaces/ai-settings.repository.interface';
 
 // Ensure modes are registered on module load
 ensureModesRegistered();

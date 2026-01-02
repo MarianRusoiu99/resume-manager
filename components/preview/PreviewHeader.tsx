@@ -16,7 +16,7 @@ interface PreviewHeaderProps {
   onTemplateChange: (templateId: string | null) => void;
   isExportingPDF: boolean;
   onExportPDF: () => void;
-
+  actions?: React.ReactNode;
 }
 
 export function PreviewHeader({
@@ -26,6 +26,7 @@ export function PreviewHeader({
   onTemplateChange,
   isExportingPDF,
   onExportPDF,
+  actions,
 }: Readonly<PreviewHeaderProps>) {
   return (
     <div className="flex items-center justify-between mb-2 px-6">
@@ -40,6 +41,7 @@ export function PreviewHeader({
         )}
       </div>
       <div className="flex items-center gap-2">
+        {actions}
         <Button
           variant="outline"
           size="sm"

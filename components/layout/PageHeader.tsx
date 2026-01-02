@@ -15,7 +15,7 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, breadcrumbs }: Readonly<PageHeaderProps>) {
   return (
-    <header className="flex flex-col gap-4 bg-background px-6 py-4">
+    <header className="sticky top-0 z-30 flex flex-col gap-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6 py-4 border-b">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="-ml-2" />
 

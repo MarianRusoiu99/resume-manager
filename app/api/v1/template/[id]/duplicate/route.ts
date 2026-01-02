@@ -5,7 +5,7 @@
 
 import { createApiHandler } from '@/lib/api/handler';
 import { templateService } from '@/lib/services';
-import { templateRepository } from '@/lib/repositories/template.repository';
+import { templateRepository } from '@/lib/repositories/templates.repository';
 import { failure } from '@/lib/types/service-result';
 
 export const POST = createApiHandler(async (_request, { params }) => {

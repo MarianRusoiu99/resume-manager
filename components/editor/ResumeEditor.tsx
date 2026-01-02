@@ -76,12 +76,13 @@ export function ResumeEditor({
         onTogglePublic={onTogglePublic}
         onShareClick={() => setShowShareDialog(true)}
         onResumeChange={updateResume}
+        isPublic={isPublic}
       />
 
       {/* Main Content - Split Layout */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden flex-col md:flex-row">
         {/* Editor Area */}
-        <div className="overflow-y-auto w-1/2">
+        <div className="overflow-y-auto w-full md:w-1/2 h-1/2 md:h-full">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
             <EditorSidebar />
             <EditorContent />
@@ -89,7 +90,7 @@ export function ResumeEditor({
         </div>
 
         {/* Live Preview */}
-        <div className="border-l bg-muted/20 overflow-hidden w-1/2">
+        <div className="border-t md:border-t-0 md:border-l bg-muted/20 overflow-hidden w-full md:w-1/2 h-1/2 md:h-full">
           <ResumePreview
             resumeData={resume}
             profileId={id}

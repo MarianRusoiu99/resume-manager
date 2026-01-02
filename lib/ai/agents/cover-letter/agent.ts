@@ -21,6 +21,7 @@ export interface GenerateCoverLetterInput {
   jobDescription: string;
   userResume: Resume;
   context?: string;
+  userId?: string;
 }
 
 export interface GenerateCoverLetterResult {
@@ -66,7 +67,7 @@ export async function generateCoverLetter(
     system,
     prompt,
     schema: resultSchema,
-    userId: (input as any).userId,
+    userId: input.userId,
     feature: 'cover-letter-generation',
   });
 

@@ -23,11 +23,6 @@ export {
     revokePreviewDataUrl
 } from './client-renderer';
 export {
-    renderPDFDocument,
-    PDF_CONFIG,
-    A4_DIMENSIONS
-} from '../templates/renderers/pdf';
-export {
     sanitizeTemplate,
     sanitizeTemplateHtml,
     sanitizeTemplateCss,

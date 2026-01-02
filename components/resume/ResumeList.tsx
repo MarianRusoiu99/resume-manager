@@ -40,11 +40,12 @@ export function ResumeList({
             searchTerm={searchTerm}
             emptyState={{
                 icon: FileText,
-                title: "No resumes yet",
-                description: "Generate your first AI-optimized resume by providing a job description",
+                title: "No Resumes Yet",
+                description: "Generate your first AI-optimized resume to start your job application",
                 action: {
-                    label: "Generate Your First Resume",
+                    label: "Generate Resume",
                     onClick: onGenerate,
+                    icon: <FileText className="w-4 h-4" />,
                 },
             }}
             renderItem={(resume) => (

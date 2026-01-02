@@ -43,22 +43,22 @@ export {
 export { 
   profileRepository, 
   ProfileRepository 
-} from './profile.repository';
+} from './profiles.repository';
 
 export { 
   generatedResumeRepository, 
   GeneratedResumeRepository 
-} from './generated-resume.repository';
+} from './generated-resumes.repository';
 
 export { 
   templateRepository, 
   TemplateRepository 
-} from './template.repository';
+} from './templates.repository';
 
 export { 
   coverLetterRepository, 
   CoverLetterRepository 
-} from './cover-letter.repository';
+} from './cover-letters.repository';
 export type {
   CreateCoverLetterInput,
   UpdateCoverLetterInput,
@@ -67,26 +67,26 @@ export type {
 export { 
   notificationRepository, 
   NotificationRepository 
-} from './notification.repository';
+} from './notifications.repository';
 
 export { 
   apiProviderRepository,
   ApiProviderRepository,
-} from './api-provider.repository';
+} from './api-providers.repository';
 
 export {
   userRepository,
   UserRepository,
-} from './user.repository';
+} from './users.repository';
 export type {
   CreateUserInput,
   UpdateUserInput,
-} from './user.repository';
+} from './users.repository';
 
 export {
   userAISettingsRepository,
   UserAISettingsRepository,
-} from './user-ai-settings.repository';
+} from './ai-settings.repository';
 export type {
   AIFeatureType,
   ModelPreference,

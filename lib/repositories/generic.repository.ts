@@ -10,6 +10,19 @@ export interface UserOwnedEntity extends EntityWithId {
 }
 
 /**
+ * Common Prisma operation arguments
+ */
+export interface PrismaArgs {
+  where?: Record<string, any>;
+  data?: Record<string, any>;
+  include?: Record<string, any>;
+  select?: Record<string, any>;
+  orderBy?: Record<string, any> | Record<string, any>[];
+  take?: number;
+  skip?: number;
+}
+
+/**
  * Generic Repository for Prisma entities
  */
 export abstract class GenericRepository<
@@ -17,13 +30,13 @@ export abstract class GenericRepository<
   TCreateInput,
   TUpdateInput,
   TPrismaDelegate extends {
-    findUnique(args: any): Promise<any>;
-    findFirst(args: any): Promise<any>;
-    findMany(args: any): Promise<any[]>;
-    create(args: any): Promise<any>;
-    update(args: any): Promise<any>;
-    delete(args: any): Promise<any>;
-    count(args: any): Promise<number>;
+    findUnique(args: { where: Record<string, any>; include?: any; select?: any }): Promise<any>;
+    findFirst(args: { where: Record<string, any>; include?: any; select?: any; orderBy?: any }): Promise<any>;
+    findMany(args?: PrismaArgs): Promise<any[]>;
+    create(args: { data: TCreateInput; include?: any; select?: any }): Promise<any>;
+    update(args: { where: Record<string, any>; data: TUpdateInput; include?: any; select?: any }): Promise<any>;
+    delete(args: { where: Record<string, any>; include?: any; select?: any }): Promise<any>;
+    count(args?: { where?: Record<string, any> }): Promise<number>;
   }
 > {
   protected readonly db: PrismaClient;
@@ -36,16 +49,16 @@ export abstract class GenericRepository<
   }
 
   protected get delegate(): TPrismaDelegate {
-    return (this.db as any)[this.modelName];
+    return (this.db as any)[this.modelName] as TPrismaDelegate;
   }
 
   async findById(id: string, userId?: string): Promise<T | null> {
-    const where: any = { id };
+    const where: Record<string, any> = { id };
     if (userId) where.userId = userId;
     return this.delegate.findUnique({ where });
   }
 
-  async findAll(args?: any): Promise<T[]> {
+  async findAll(args?: PrismaArgs): Promise<T[]> {
     return this.delegate.findMany(args);
   }
 
@@ -54,18 +67,18 @@ export abstract class GenericRepository<
   }
 
   async update(id: string, data: TUpdateInput, userId?: string): Promise<T> {
-    const where: any = { id };
+    const where: Record<string, any> = { id };
     if (userId) where.userId = userId;
     return this.delegate.update({ where, data });
   }
 
   async delete(id: string, userId?: string): Promise<T> {
-    const where: any = { id };
+    const where: Record<string, any> = { id };
     if (userId) where.userId = userId;
     return this.delegate.delete({ where });
   }
 
-  async count(where?: any): Promise<number> {
+  async count(where?: Record<string, any>): Promise<number> {
     return this.delegate.count({ where });
   }
 
@@ -83,13 +96,13 @@ export abstract class GenericUserOwnedRepository<
   TCreateInput,
   TUpdateInput,
   TPrismaDelegate extends {
-    findUnique(args: any): Promise<any>;
-    findFirst(args: any): Promise<any>;
-    findMany(args: any): Promise<any[]>;
-    create(args: any): Promise<any>;
-    update(args: any): Promise<any>;
-    delete(args: any): Promise<any>;
-    count(args: any): Promise<number>;
+    findUnique(args: { where: Record<string, any>; include?: any; select?: any }): Promise<any>;
+    findFirst(args: { where: Record<string, any>; include?: any; select?: any; orderBy?: any }): Promise<any>;
+    findMany(args?: PrismaArgs): Promise<any[]>;
+    create(args: { data: TCreateInput; include?: any; select?: any }): Promise<any>;
+    update(args: { where: Record<string, any>; data: TUpdateInput; include?: any; select?: any }): Promise<any>;
+    delete(args: { where: Record<string, any>; include?: any; select?: any }): Promise<any>;
+    count(args?: { where?: Record<string, any> }): Promise<number>;
   }
 > extends GenericRepository<T, TCreateInput, TUpdateInput, TPrismaDelegate> {
   
@@ -97,7 +110,7 @@ export abstract class GenericUserOwnedRepository<
     return this.findById(id, userId);
   }
 
-  async findAllForUser(userId: string, args?: any): Promise<T[]> {
+  async findAllForUser(userId: string, args?: PrismaArgs): Promise<T[]> {
     return this.findAll({
       ...args,
       where: { ...args?.where, userId },

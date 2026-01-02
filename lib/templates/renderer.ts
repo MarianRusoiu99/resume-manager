@@ -5,8 +5,35 @@
 
 import Handlebars from 'handlebars';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { renderPDFDocument } from '@/lib/templates/renderers/pdf';
 import { sanitizeTemplateCss, sanitizeTemplateHtml } from '@/lib/templates/utils/sanitizer';
+
+/**
+ * Renders the full HTML structure for PDF export
+ */
+function renderPDFDocument(html: string, css: string, resumeData: Resume): string {
+  const name = resumeData.basics?.name || 'Resume';
+  
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${name}</title>
+        <style>
+            ${css}
+            @media print {
+                body { margin: 0; padding: 0; }
+                @page { margin: 0.4in; }
+            }
+        </style>
+    </head>
+    <body>
+        ${html}
+    </body>
+    </html>
+  `;
+}
 
 /**
  * Register Handlebars helpers for common formatting tasks

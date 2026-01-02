@@ -134,12 +134,13 @@ export function GalleryCard({
   // Square card with horizontal layout (preview left, content right)
   return (
     <Card
-      className={`group hover:shadow-lg transition-shadow ${disableNavigation ? '' : 'cursor-pointer'
-        } relative overflow-hidden aspect-[3/2] flex ${className}`}
+      className={`group hover:shadow-md hover:border-primary/50 transition-all duration-200 ${
+        disableNavigation ? '' : 'cursor-pointer'
+      } relative overflow-hidden aspect-[3/2] flex bg-card ${className}`}
       onClick={handleCardClick}
     >
       {/* Preview Area - Left Half (50%) */}
-      <div className="w-1/2  shrink-0">
+      <div className="w-1/2 shrink-0 bg-muted/30 border-r">
         <GalleryCardPreview
           htmlContent={previewHtml}
           isLoading={isPreviewLoading}

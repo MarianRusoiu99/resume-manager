@@ -38,11 +38,14 @@ export function TemplateImportModal({
   const [progress, setProgress] = useState(0);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  const [loadingStep, setLoadingStep] = useState<string>('');
+
   const { generate, template, isLoading, error, reset } = useTemplateGeneration();
 
   // Handle completion
   useEffect(() => {
     if (template) {
+      setLoadingStep('Template extracted!');
       setProgress(100);
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
@@ -66,6 +69,7 @@ export function TemplateImportModal({
         clearInterval(progressIntervalRef.current);
       }
       setProgress(0);
+      setLoadingStep('');
     }
   }, [error]);
 
@@ -75,6 +79,7 @@ export function TemplateImportModal({
       setSelectedFile(null);
       setPreview(null);
       setProgress(0);
+      setLoadingStep('');
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current);
       }
@@ -119,14 +124,21 @@ export function TemplateImportModal({
     if (!selectedFile) return;
 
     setProgress(10);
+    setLoadingStep('Uploading image...');
     
     // Start progress simulation
     progressIntervalRef.current = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 90) return 90;
+        
+        // Update loading steps based on progress
+        if (prev > 20 && prev <= 50) setLoadingStep('AI is analyzing layout...');
+        if (prev > 50 && prev <= 80) setLoadingStep('Extracting CSS styles...');
+        if (prev > 80) setLoadingStep('Finalizing template...');
+        
         return prev + 5;
       });
-    }, 1500);
+    }, 1200);
 
     await generate(selectedFile);
   };
@@ -218,9 +230,9 @@ export function TemplateImportModal({
           {isLoading && (
             <div className="space-y-3">
               <Progress value={progress} className="h-2" />
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground h-6">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                AI is analyzing the template...
+                {loadingStep || 'AI is analyzing the template...'}
               </div>
             </div>
           )}

@@ -31,6 +31,7 @@ export default function SettingsPage() {
     <Page
       title="Settings"
       description="Configure your application preferences"
+      maxWidth="md"
       breadcrumbs={[{ label: 'Settings' }]}
     >
       <div className="grid gap-4 md:grid-cols-2">

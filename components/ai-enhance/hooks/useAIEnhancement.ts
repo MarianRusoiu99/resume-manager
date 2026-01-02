@@ -75,12 +75,31 @@ export interface UseAIEnhancementReturn<T> {
 function parseResumeJson<T>(content: string): T {
   let cleaned = content.trim();
 
-  // Remove markdown code blocks if present
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+  // Try to find JSON within the content if it's not a pure JSON string
+  // This handles cases where the AI might include preamble or postamble text
+  const startBracket = cleaned.indexOf('{');
+  const endBracket = cleaned.lastIndexOf('}');
+
+  if (startBracket !== -1 && endBracket !== -1 && endBracket > startBracket) {
+    cleaned = cleaned.substring(startBracket, endBracket + 1);
+  } else if (cleaned.startsWith('```')) {
+    // Fallback to markdown code block removal if brackets not found or malformed
+    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
   }
 
-  return JSON.parse(cleaned) as T;
+  try {
+    const parsed = JSON.parse(cleaned);
+
+    // If the response follows the structured output schema { resume: ..., changes: ... }
+    if (parsed && typeof parsed === 'object' && 'resume' in parsed) {
+      return parsed.resume as T;
+    }
+
+    return parsed as T;
+  } catch (e) {
+    console.error('Parse error content:', cleaned);
+    throw e;
+  }
 }
 
 /**

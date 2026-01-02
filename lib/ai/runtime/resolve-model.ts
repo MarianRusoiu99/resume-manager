@@ -1,5 +1,5 @@
-import { apiProviderService } from '@/lib/services/api-provider';
-import { userAISettingsService } from '@/lib/services/user-ai-settings';
+import { apiProviderService } from '@/lib/services/api-providers';
+import { aiSettingsService } from '@/lib/services/ai-settings';
 import { logger } from '@/lib/utils/logger';
 import { failure, success, type ServiceResult } from '@/lib/types/service-result';
 import { AIProviderNotConfiguredError, ModelNotFoundError } from '@/lib/errors/ai';
@@ -37,7 +37,7 @@ export async function resolveAIModel(input: ResolveAIModelInput): Promise<Servic
     }
 
     if (!targetModel) {
-      const preferenceResult = await userAISettingsService.resolveProviderForFeature(
+      const preferenceResult = await aiSettingsService.resolveProviderForFeature(
         input.userId,
         input.feature,
         undefined
@@ -103,7 +103,7 @@ export async function resolveAIModelOrThrow(input: ResolveAIModelInput): Promise
   }
 
   if (!targetModel) {
-    const preferenceResult = await userAISettingsService.resolveProviderForFeature(input.userId, input.feature);
+    const preferenceResult = await aiSettingsService.resolveProviderForFeature(input.userId, input.feature);
     if (preferenceResult.success && preferenceResult.data) {
       targetModel =
         allModels.find(

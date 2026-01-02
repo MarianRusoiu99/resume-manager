@@ -7,7 +7,7 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import { createApiHandler } from '@/lib/api/handler';
 import { requireFound, requireOwnership } from '@/lib/auth/guards';
 import { success } from '@/lib/types/service-result';
-import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
+import { generatedResumeRepository } from '@/lib/repositories/generated-resumes.repository';
 
 export const POST = createApiHandler(async (request, { params }, session) => {
   const { id: resumeId } = await params;

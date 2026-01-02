@@ -6,7 +6,7 @@
 import { z } from 'zod';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 import { createApiHandler } from '@/lib/api/handler';
-import { resumeService } from '@/lib/services/resume';
+import { resumeService } from '@/lib/services/resumes';
 
 const contentSchema = z.object({ content: resumeSchema });
 

@@ -125,6 +125,7 @@ export interface OptimizeResumeInput {
   model: LanguageModel;
   jobDescription: string;
   userResume: Resume;
+  userId?: string;
 }
 
 export interface OptimizeResumeResult {
@@ -166,7 +167,7 @@ export async function optimizeResume(
     system,
     prompt,
     schema: resultSchema,
-    userId: (input as any).userId,
+    userId: input.userId,
     feature: 'resume-optimization',
   });
 

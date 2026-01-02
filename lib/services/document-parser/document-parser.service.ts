@@ -31,16 +31,32 @@ export class DocumentParserService implements IDocumentParserService {
       if (!buffer || buffer.length === 0) {
         throw new Error('Empty buffer provided');
       }
-      // Use a fresh require inside the method to avoid any module caching/interop issues
-      // and ensure we get the actual function.
-      const pdfParse = require('pdf-parse');
-      
-      let parseFn = pdfParse.default;
 
-      const data = await parseFn(buffer);
-      return data.text || '';
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      
+      const uint8Array = new Uint8Array(buffer);
+      const loadingTask = pdfjs.getDocument({
+        data: uint8Array,
+        useWorkerFetch: false,
+        isEvalSupported: false,
+        useSystemFonts: true
+      });
+
+      const pdf = await loadingTask.promise;
+      let fullText = '';
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => ('str' in item ? item.str : ''))
+          .join(' ');
+        fullText += pageText + '\n';
+      }
+
+      return fullText.trim();
     } catch (error) {
-      console.error('PDF Parse Error:', error);
+      console.error('PDF JS Parse Error:', error);
       throw ServiceErrors.externalService('Failed to parse PDF. The file might be encrypted or corrupted.', error);
     }
   }

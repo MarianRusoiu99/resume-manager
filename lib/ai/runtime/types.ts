@@ -1,5 +1,5 @@
 import type { AIProvider } from '@/lib/ai/providers';
-import type { AIFeatureType } from '@/lib/services/user-ai-settings';
+import type { AIFeatureType } from '@/lib/services/ai-settings';
 
 export type AIModelFeature = AIFeatureType;
 

@@ -112,13 +112,54 @@ export function getModeOrThrow(modeId: ConversationMode): AIMode {
 /**
  * Normalizes AI SDK usage to our format
  */
-function normalizeUsage(usage: any): { promptTokens: number; completionTokens: number; totalTokens: number } {
+function normalizeUsage(usage: {
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+} | undefined): { promptTokens: number; completionTokens: number; totalTokens: number } {
+  const promptTokens = usage?.promptTokens ?? usage?.inputTokens ?? 0;
+  const completionTokens = usage?.completionTokens ?? usage?.outputTokens ?? 0;
   return {
-    promptTokens: usage?.promptTokens ?? usage?.inputTokens ?? 0,
-    completionTokens: usage?.completionTokens ?? usage?.outputTokens ?? 0,
-    totalTokens: usage?.totalTokens ?? (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0),
+    promptTokens,
+    completionTokens,
+    totalTokens: usage?.totalTokens ?? (promptTokens + completionTokens),
   };
 }
+
+/**
+ * Stream part types from AI SDK
+ */
+interface TextDeltaPart {
+  type: 'text-delta';
+  textDelta?: string;
+  text?: string;
+}
+
+interface ToolCallPart {
+  type: 'tool-call';
+  toolCallId: string;
+  toolName: string;
+  args?: Record<string, unknown>;
+  input?: Record<string, unknown>;
+}
+
+interface ToolResultPart {
+  type: 'tool-result';
+  toolCallId: string;
+  result?: unknown;
+  output?: unknown;
+}
+
+interface FinishPart {
+  type: 'finish';
+  finishReason: string;
+  usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+  totalUsage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number };
+}
+
+type StreamPart = TextDeltaPart | ToolCallPart | ToolResultPart | FinishPart | { type: string };
 
 /**
  * AI Orchestrator
@@ -157,53 +198,62 @@ export class AIOrchestrator {
       let fullText = '';
 
       for await (const part of result.fullStream) {
-        if (part.type === 'text-delta') {
-          const text = (part as any).textDelta ?? (part as any).text ?? '';
-          fullText += text;
-          yield {
-            type: 'text-delta',
-            content: text,
-          };
-        } else if (part.type === 'tool-call') {
-          yield {
-            type: 'tool-call',
-            toolCall: {
-              id: (part as any).toolCallId,
-              name: (part as any).toolName,
-              arguments: (part as any).args ?? (part as any).input ?? {},
-            },
-          };
-        } else if (part.type === 'tool-result') {
-          yield {
-            type: 'tool-result',
-            toolResult: {
-              toolCallId: (part as any).toolCallId,
-              result: (part as any).result ?? (part as any).output,
-            },
-          };
-        } else if (part.type === 'finish') {
-          const usage = normalizeUsage((part as any).usage ?? (part as any).totalUsage);
-          yield {
-            type: 'finish',
-            finishReason: (part as any).finishReason,
-            usage,
-          };
+        const p = part as any;
+        switch (part.type) {
+          case 'text-delta':
+            const text = p.textDelta ?? p.text ?? '';
+            fullText += text;
+            yield {
+              type: 'text-delta',
+              content: text,
+            };
+            break;
 
-          // Log usage
-          this.logUsage(options, usage, (part as any).finishReason, mode.id);
+          case 'tool-call':
+            yield {
+              type: 'tool-call',
+              toolCall: {
+                id: p.toolCallId,
+                name: p.toolName,
+                arguments: p.args ?? p.input ?? {},
+              },
+            };
+            break;
 
-          // Try to parse output if mode has structured output
-          if (mode.useStructuredOutput !== false) {
-            try {
-              const output = this.parseOutput(fullText, mode);
-              ConversationManager.setOutput(conversation.id, output);
-            } catch (parseError) {
-              logger.warn('Failed to parse structured output from stream', {
-                error: parseError instanceof Error ? parseError.message : String(parseError),
-                conversationId: conversation.id,
-              });
+          case 'tool-result':
+            yield {
+              type: 'tool-result',
+              toolResult: {
+                toolCallId: p.toolCallId,
+                result: p.result ?? p.output,
+              },
+            };
+            break;
+
+          case 'finish':
+            const usage = normalizeUsage(p.usage ?? p.totalUsage);
+            yield {
+              type: 'finish',
+              finishReason: p.finishReason,
+              usage,
+            };
+
+            // Log usage
+            this.logUsage(options, usage, p.finishReason, mode.id);
+
+            // Try to parse output if mode has structured output
+            if (mode.useStructuredOutput !== false) {
+              try {
+                const output = this.parseOutput(fullText, mode);
+                ConversationManager.setOutput(conversation.id, output);
+              } catch (parseError) {
+                logger.warn('Failed to parse structured output from stream', {
+                  error: parseError instanceof Error ? parseError.message : String(parseError),
+                  conversationId: conversation.id,
+                });
+              }
             }
-          }
+            break;
         }
       }
 

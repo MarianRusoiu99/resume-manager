@@ -3,7 +3,7 @@
  * Browse and preview available resume templates
  */
 
-import { templateRepository } from '@/lib/repositories/template.repository';
+import { templateRepository } from '@/lib/repositories/templates.repository';
 import { Page } from '@/components/layout/Page';
 import { TemplateGallery } from '@/components/templates/TemplateGallery';
 import { getSession } from '@/lib/auth/dal';

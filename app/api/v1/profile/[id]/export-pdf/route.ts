@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createApiHandler } from "@/lib/api/handler";
-import { profileRepository } from "@/lib/repositories/profile.repository";
+import { profileRepository } from "@/lib/repositories/profiles.repository";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import { PDFDocument } from "pdf-lib";
 import { z } from "zod";

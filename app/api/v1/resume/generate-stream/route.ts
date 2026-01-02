@@ -12,7 +12,7 @@ import { resumeSchema } from '@/lib/validations/jsonresume';
 import { generateResume } from '@/lib/ai';
 import { getWorkflow, createCustomWorkflow } from '@/lib/ai/workflow';
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
-import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
+import { generatedResumeRepository } from '@/lib/repositories/generated-resumes.repository';
 
 const generateResumeStreamSchema = generateResumeSchema.extend({
   workflowType: z.enum(['resume', 'cover-letter', 'full']).optional().default('resume'),

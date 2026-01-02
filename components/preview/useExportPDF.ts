@@ -102,7 +102,7 @@ export function useExportPDF() {
   /**
    * Download PDF blob from response
    */
-  const downloadPDF = async (response: Response) => {
+  const downloadPDF = async (response: Response, defaultFileName?: string) => {
     // Download the PDF blob
     const blob = await response.blob();
     const url = globalThis.URL.createObjectURL(blob);
@@ -110,7 +110,7 @@ export function useExportPDF() {
     // Extract filename from Content-Disposition header
     const contentDisposition = response.headers.get('Content-Disposition');
     const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
-    const fileName = fileNameMatch?.[1] || 'resume.pdf';
+    const fileName = fileNameMatch?.[1] || defaultFileName || 'resume.pdf';
 
     // Trigger download
     const link = document.createElement('a');
@@ -124,8 +124,28 @@ export function useExportPDF() {
     globalThis.URL.revokeObjectURL(url);
   };
 
+  const handleExportCoverLetter = async (id: string, fileName?: string) => {
+    try {
+      setIsExportingPDF(true);
+      const response = await apiV1.COVER_LETTER.EXPORT(id).postFetch();
+
+      if (!response.ok) {
+        throw new Error('Failed to export cover letter');
+      }
+
+      await downloadPDF(response, fileName ? `${fileName}.pdf` : 'cover-letter.pdf');
+      toast.success('Cover letter exported successfully');
+    } catch (err) {
+      logger.error('Cover letter export error', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to export cover letter');
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   return {
     isExportingPDF,
     handleExportPDF,
+    handleExportCoverLetter,
   };
 }

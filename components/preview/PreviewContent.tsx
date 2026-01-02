@@ -27,6 +27,7 @@ interface PreviewContentProps {
   scale: number;
   iframeRef: RefObject<HTMLIFrameElement | null>;
   containerRef: RefObject<HTMLDivElement | null>;
+  headerActions?: React.ReactNode;
 }
 
 export function PreviewContent(props: Readonly<PreviewContentProps>) {
@@ -43,6 +44,7 @@ export function PreviewContent(props: Readonly<PreviewContentProps>) {
     scale,
     iframeRef,
     containerRef,
+    headerActions,
   } = props;
   return (
     <>
@@ -53,6 +55,7 @@ export function PreviewContent(props: Readonly<PreviewContentProps>) {
         templateHtml={templateHtml}
         isExportingPDF={isExportingPDF}
         onExportPDF={onExportPDF}
+        actions={headerActions}
       />
 
       <div className="flex flex-col items-center justify-center w-full h-full overflow-hidden">

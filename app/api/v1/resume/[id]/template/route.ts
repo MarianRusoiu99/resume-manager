@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { createApiHandler } from '@/lib/api/handler';
 import { requireFound } from '@/lib/auth/guards';
-import { generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
-import { templateRepository } from '@/lib/repositories/template.repository';
+import { generatedResumeRepository } from '@/lib/repositories/generated-resumes.repository';
+import { templateRepository } from '@/lib/repositories/templates.repository';
 import { success } from '@/lib/types/service-result';
 
 const updateTemplateSchema = z.object({

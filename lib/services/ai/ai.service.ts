@@ -1,10 +1,10 @@
-import { resolveAIModelOrThrow, resolveAIModel } from '@/lib/ai/runtime';
+import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
 import { enhanceText, streamEnhanceText } from '@/lib/ai/features/enhance';
 import { optimizeResume } from '@/lib/ai/agents/resume-optimization/agent';
 import { generateCoverLetter } from '@/lib/ai/agents/cover-letter/agent';
 import { success, failure, type ServiceResult } from '@/lib/types/service-result';
 import { logger } from '@/lib/utils/logger';
-import { apiProviderService } from '@/lib/services/api-provider';
+import { apiProviderService } from '@/lib/services/api-providers';
 import type { 
   IAIService, 
   EnhanceTextInput, 
@@ -14,15 +14,16 @@ import type {
   GenerateCoverLetterInput,
   GenerateCoverLetterResult
 } from '../interfaces/ai.service.interface';
+import type { ResolvedAIModel, AIModelFeature } from '@/lib/ai/runtime/types';
 
 export class AIService implements IAIService {
   private async withFallback<T>(
     userId: string,
-    feature: any,
+    feature: AIModelFeature,
     modelId: string | undefined,
-    operation: (resolvedModel: any) => Promise<T>
+    operation: (resolvedModel: ResolvedAIModel) => Promise<T>
   ): Promise<ServiceResult<T>> {
-    let primaryModel: any = null;
+    let primaryModel: ResolvedAIModel | null = null;
     try {
       primaryModel = await resolveAIModelOrThrow({ userId, feature, modelId });
       const result = await operation(primaryModel);
@@ -39,14 +40,14 @@ export class AIService implements IAIService {
     const modelsResult = await apiProviderService.getAvailableModels(userId);
     if (!modelsResult.success) return failure('No AI providers available');
 
-    const fallbacks = modelsResult.data.allModels.filter(m => m.id !== primaryModel?.modelId);
+    const fallbacks = modelsResult.data.allModels.filter((m: any) => m.id !== primaryModel?.modelId);
     
     for (const fallback of fallbacks) {
       try {
         const providerResult = await apiProviderService.getProviderInstance(fallback.providerId, userId);
         if (!providerResult.success) continue;
 
-        const resolvedFallback = {
+        const resolvedFallback: ResolvedAIModel = {
           provider: providerResult.data.provider,
           providerId: fallback.providerId,
           providerType: providerResult.data.providerType,
@@ -137,7 +138,7 @@ export class AIService implements IAIService {
         jobDescription: input.jobDescription,
         userResume: input.userResume,
         userId,
-      } as any);
+      });
     });
   }
 
@@ -148,7 +149,7 @@ export class AIService implements IAIService {
         jobDescription: input.jobDescription,
         userResume: input.userResume,
         userId,
-      } as any);
+      });
     });
   }
 }

@@ -54,23 +54,29 @@ export function Page({
   breadcrumbs,
   actions,
   toolbar,
-  maxWidth = "2xl",
+  maxWidth = "xl",
   children,
   className,
 }: PageProps) {
   return (
-    <>
+    <div className="flex flex-col min-h-screen bg-background">
       <PageHeader
         title={title}
         description={description}
         breadcrumbs={breadcrumbs}
       />
       <PageContainer maxWidth={maxWidth} className={className}>
-        {toolbar && <div className="mb-6">{toolbar}</div>}
-        {actions && <div className="flex justify-end mb-6">{actions}</div>}
-        {children}
+        <div className="flex flex-col gap-6">
+          {(toolbar || actions) && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1">{toolbar}</div>
+              <div className="flex items-center gap-3">{actions}</div>
+            </div>
+          )}
+          {children}
+        </div>
       </PageContainer>
-    </>
+    </div>
   );
 }
 

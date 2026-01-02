@@ -1,8 +1,10 @@
+import DOMPurify from 'isomorphic-dompurify';
+
 /**
  * Template Sanitization Utilities
  *
  * Templates are user-authored (Handlebars + HTML + CSS) and later rendered server-side.
- * This module applies minimal, targeted sanitization to reduce XSS/SSRF risk while
+ * This module uses DOMPurify for robust sanitization to eliminate XSS risk while
  * preserving the ability to write templates.
  */
 
@@ -20,39 +22,26 @@ function assertReasonableLength(value: string, label: string) {
 }
 
 /**
- * Remove patterns that are dangerous in a user-provided HTML template.
+ * Sanitize user-provided HTML template using DOMPurify.
  *
- * Notes:
- * - This is not a full HTML sanitizer.
- * - It focuses on blocking obvious script execution and external loads.
- * - Handlebars placeholders ({{...}} / {{{...}}}) are preserved.
+ * It focuses on blocking script execution and external loads while preserving 
+ * Handlebars placeholders ({{...}} / {{{...}}}).
  */
 export function sanitizeTemplateHtml(htmlTemplate: string): string {
   assertReasonableLength(htmlTemplate, 'HTML template');
 
-  let html = htmlTemplate;
-
-  // Remove script tags entirely.
-  html = html.replaceAll(/<\s*script\b[^>]*>[\s\S]*?<\s*\/\s*script\s*>/gi, '');
-
-  // Remove inline event handlers. (e.g. onclick="..." / onload='...')
-  html = html.replaceAll(/\son[a-zA-Z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/g, '');
-
-  // Block javascript: URLs in href/src attributes.
-  html = html.replaceAll(
-    /(\s(?:href|src)\s*=\s*)("|')\s*javascript:[\s\S]*?\2/gi,
-    '$1$2#$2'
-  );
-
-  // Strip <iframe> tags.
-  html = html.replaceAll(/<\s*iframe\b[^>]*>[\s\S]*?<\s*\/\s*iframe\s*>/gi, '');
-  html = html.replaceAll(/<\s*iframe\b[^>]*\/\s*>/gi, '');
-
-  // Strip <object>/<embed> tags.
-  html = html.replaceAll(/<\s*object\b[^>]*>[\s\S]*?<\s*\/\s*object\s*>/gi, '');
-  html = html.replaceAll(/<\s*embed\b[^>]*\/\s*>/gi, '');
-
-  return html;
+  return DOMPurify.sanitize(htmlTemplate, {
+    ALLOWED_TAGS: [
+      'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li',
+      'b', 'i', 'strong', 'em', 'a', 'br', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+      'img', 'section', 'header', 'footer', 'main', 'aside', 'article', 'style'
+    ],
+    ALLOWED_ATTR: ['href', 'src', 'class', 'id', 'style', 'target', 'rel', 'alt', 'title'],
+    // We allow same-origin to enable Handlebars processing later, but block dangerous protocols
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|data):|[^&#\/+.\w]|[\w!$&\-+.,;=@~]|(?:\/(?!\/)))/i,
+    ADD_TAGS: ['style'], // Allow style tags within HTML if needed
+    FORCE_BODY: true,
+  });
 }
 
 /**
@@ -60,18 +49,17 @@ export function sanitizeTemplateHtml(htmlTemplate: string): string {
  *
  * Goal: reduce obvious exfil/external-load vectors while allowing normal styling.
  * - Removes @import.
- * - Removes url(http/https/...) and url(//...).
- * - Keeps data: URLs for embedded fonts/images.
+ * - Removes external URLs while keeping data: URLs.
  */
 export function sanitizeTemplateCss(cssStyles: string): string {
   assertReasonableLength(cssStyles, 'CSS styles');
 
   let css = cssStyles;
 
-  // Drop @import rules.
+  // Drop @import rules as DOMPurify doesn't handle raw CSS strings as deeply as HTML
   css = css.replaceAll(/@import\s+[^;]+;/gi, '');
 
-  // Remove external URLs while still allowing data:.
+  // Remove external URLs while still allowing data:
   css = css.replaceAll(/url\(\s*("|')?\s*(https?:)?\/\/[\s\S]*?("|')?\s*\)/gi, '');
 
   return css;

@@ -24,11 +24,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, Code, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
-import { apiV1 } from '@/lib/client';
+import { apiV1, type ProfileListItem, type ProfileDto } from '@/lib/client';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
+import type { Resume } from '@/lib/validations/jsonresume';
 import { ResumePreview } from '../resume/ResumePreview';
 import { TemplateImportModal } from './TemplateImportModal';
-import { AIEnhanceButton, AIEnhanceTemplateModalUnified } from '@/components/ai-enhance';
+import { AIEnhanceButton, AIEnhanceTemplateModal } from '@/components/ai-enhance';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -61,6 +62,44 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     cssStyles: template?.cssStyles || '',
     isPublic: template?.isPublic ?? true,
   });
+
+  // Profile selection for preview
+  const [profiles, setProfiles] = useState<ProfileListItem[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string>('sample');
+  const [previewResume, setPreviewResume] = useState<Resume>(sampleResume as Resume);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+
+  useEffect(() => {
+    const loadProfiles = async () => {
+      const result = await apiV1.PROFILE.LIST.get<ProfileListItem[]>();
+      if (!result.error && result.data) {
+        setProfiles(result.data);
+      }
+    };
+    loadProfiles();
+  }, []);
+
+  useEffect(() => {
+    if (selectedProfileId === 'sample') {
+      setPreviewResume(sampleResume as Resume);
+      return;
+    }
+
+    const loadProfileData = async () => {
+      setIsLoadingProfile(true);
+      try {
+        const result = await apiV1.PROFILE.GET(selectedProfileId).get<ProfileDto>();
+        if (!result.error && result.data?.resume) {
+          setPreviewResume(result.data.resume as Resume);
+        }
+      } catch (err) {
+        toast.error('Failed to load profile for preview');
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+    loadProfileData();
+  }, [selectedProfileId]);
 
   // Handle imported template data
   const handleImportComplete = (importedTemplate: {
@@ -177,9 +216,9 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       </div>
 
       {/* Main Content - Split Layout */}
-      <div className="flex-1 overflow-hidden flex">
+      <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
         {/* Left Panel - Form and Code Editor */}
-        <div className="flex flex-col gap-6 overflow-y-auto p-6 w-1/2">
+        <div className="flex flex-col gap-6 overflow-y-auto p-6 w-full md:w-1/2 h-1/2 md:h-full">
           {/* Template Metadata */}
           <div className="space-y-4 border rounded-lg p-4 bg-card">
             <h3 className="font-semibold text-lg">Template Information</h3>
@@ -296,15 +335,38 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
         </div>
 
         {/* Right Panel - Live Preview */}
-        <div className="border-l bg-muted/20 overflow-hidden w-1/2">
-            <ResumePreview
-              resumeData={sampleResume}
-              templateHtml={formData.htmlTemplate}
-              templateCss={formData.cssStyles}
-              showTemplateSelector={false}
-              showCard={false}
-              className="h-full"
-            />
+        <div className="border-t md:border-t-0 md:border-l bg-muted/20 overflow-hidden w-full md:w-1/2 h-1/2 md:h-full flex flex-col">
+            <div className="p-3 border-b bg-background flex items-center justify-between">
+              <span className="text-sm font-medium">Live Preview</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Preview Data:</span>
+                <select 
+                  className="text-xs border rounded px-2 py-1 bg-background"
+                  value={selectedProfileId}
+                  onChange={(e) => setSelectedProfileId(e.target.value)}
+                >
+                  <option value="sample">Sample Data</option>
+                  {profiles.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex-1 relative">
+              {isLoadingProfile && (
+                <div className="absolute inset-0 z-10 bg-background/50 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              )}
+              <ResumePreview
+                resumeData={previewResume}
+                templateHtml={formData.htmlTemplate}
+                templateCss={formData.cssStyles}
+                showTemplateSelector={false}
+                showCard={false}
+                className="h-full"
+              />
+            </div>
         </div>
       </div>
 
@@ -316,7 +378,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       />
 
       {/* AI Enhancement Modal */}
-      <AIEnhanceTemplateModalUnified
+      <AIEnhanceTemplateModal
         open={templateEnhanceModalOpen}
         onOpenChange={setTemplateEnhanceModalOpen}
         originalHtml={formData.htmlTemplate}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeTemplateCss, sanitizeTemplateHtml } from './template-sanitizer';
+import { sanitizeTemplateCss, sanitizeTemplateHtml } from '../templates/utils/sanitizer';
 
 describe('template-sanitizer', () => {
   it('removes <script> tags', () => {

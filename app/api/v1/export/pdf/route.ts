@@ -5,11 +5,10 @@
  */
 
 import { NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
 
 import { createApiHandler } from '@/lib/api/handler';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
-import { PDF_CONFIG } from '@/lib/templates/renderers/pdf';
+import { pdfService, DEFAULT_PDF_CONFIG } from '@/lib/services/pdf/pdf.service';
 import { resumeSchema, type Resume } from '@/lib/validations/jsonresume';
 import { z } from 'zod';
 
@@ -25,70 +24,31 @@ const exportRequestSchema = z.object({
 
 export const POST = createApiHandler(
   async (_request, _context, _session, body) => {
-    let browser;
+    const { resume, template, fileName } = body!;
 
-    try {
-      const { resume, template, fileName } = body!;
+    const parsedResume = resumeSchema.parse(resume) as Resume;
 
-      const parsedResume = resumeSchema.parse(resume) as Resume;
+    // Render HTML using template renderer (renderer sanitizes template HTML/CSS)
+    const html = renderCompleteDocument(
+      template.htmlTemplate,
+      template.cssStyles,
+      parsedResume
+    );
 
-      // Render HTML using unified renderer (renderer sanitizes template HTML/CSS)
-      const html = renderCompleteDocument(
-        template.htmlTemplate,
-        template.cssStyles,
-        parsedResume
-      );
+    const pdfBuffer = await pdfService.generateFromHtml(html, DEFAULT_PDF_CONFIG);
 
-      // Launch browser with optimal settings
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
+    // Generate filename from resume data or use provided name
+    const defaultFileName = parsedResume.basics?.name?.replaceAll(/\s+/g, '_') || 'resume';
+    const finalFileName = fileName || `${defaultFileName}.pdf`;
 
-      const page = await browser.newPage();
-
-      // Block all network requests during rendering to prevent SSRF/external loads.
-      await page.setRequestInterception(true);
-      page.on('request', (req) => {
-        const url = req.url();
-        if (url.startsWith('data:') || url.startsWith('about:')) {
-          req.continue();
-          return;
-        }
-
-        // The HTML is provided via setContent; its base URL is typically about:blank.
-        // Deny any attempted external fetches.
-        req.abort();
-      });
-
-      // Set content and wait for render
-      await page.setContent(html, {
-        waitUntil: 'networkidle0',
-        timeout: 30000
-      });
-
-      const pdfBuffer = await page.pdf(PDF_CONFIG);
-
-      await browser.close();
-
-      // Generate filename from resume data or use provided name
-      const defaultFileName = parsedResume.basics?.name?.replaceAll(/\s+/g, '_') || 'resume';
-      const finalFileName = fileName || `${defaultFileName}.pdf`;
-
-      // Return PDF with proper headers
-      return new NextResponse(Buffer.from(pdfBuffer), {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${finalFileName}"`,
-          'Cache-Control': 'no-cache',
-        },
-      });
-    } finally {
-      // Ensure browser cleanup
-      if (browser) {
-        await browser.close().catch(() => { });
-      }
-    }
+    // Return PDF with proper headers
+    return new NextResponse(new Uint8Array(pdfBuffer), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${finalFileName}"`,
+        'Cache-Control': 'no-cache',
+      },
+    });
   },
   { bodySchema: exportRequestSchema }
 );

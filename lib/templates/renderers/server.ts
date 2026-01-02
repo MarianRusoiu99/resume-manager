@@ -5,7 +5,7 @@
  */
 
 import { renderCompleteDocument } from '@/lib/templates/renderer';
-import { templateRepository } from '@/lib/repositories/template.repository';
+import { templateRepository } from '@/lib/repositories/templates.repository';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { ResumeTemplate } from '@/lib/templates/template';
 

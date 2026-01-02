@@ -1,4 +1,4 @@
-import { profileRepository } from "@/lib/repositories/profile.repository";
+import { profileRepository } from "@/lib/repositories/profiles.repository";
 import { notFound } from "next/navigation";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { renderTemplateServerSide } from "@/lib/templates/renderers/server";

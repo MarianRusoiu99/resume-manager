@@ -1,5 +1,5 @@
 import { createApiHandler } from "@/lib/api/handler";
-import { profileRepository } from "@/lib/repositories/profile.repository";
+import { profileRepository } from "@/lib/repositories/profiles.repository";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { failure, success } from "@/lib/types/service-result";

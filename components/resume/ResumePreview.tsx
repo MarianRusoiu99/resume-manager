@@ -25,7 +25,7 @@ import { PreviewContent } from '../preview/PreviewContent';
 
 const logger = createComponentLogger('ResumePreview');
 
-interface UnifiedResumePreviewProps {
+interface ResumePreviewProps {
   /** Resume data to preview */
   resumeData: Resume;
   /** Optional resume ID for fetching data */
@@ -46,6 +46,8 @@ interface UnifiedResumePreviewProps {
   templateHtml?: string;
   /** Custom template CSS (for live editing in TemplateEditor) */
   templateCss?: string;
+  /** Custom header actions */
+  headerActions?: React.ReactNode;
 }
 
 export function ResumePreview({
@@ -59,7 +61,8 @@ export function ResumePreview({
   className = '',
   templateHtml,
   templateCss,
-}: Readonly<UnifiedResumePreviewProps>) {
+  headerActions,
+}: Readonly<ResumePreviewProps>) {
   // Refs
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const fullscreenIframeRef = useRef<HTMLIFrameElement>(null);
@@ -159,6 +162,7 @@ export function ResumePreview({
               scale={scale}
               iframeRef={iframeRef}
               containerRef={containerRef}
+              headerActions={headerActions}
             />
           </CardContent>
         </Card>
@@ -182,6 +186,7 @@ export function ResumePreview({
         scale={scale}
         iframeRef={iframeRef}
         containerRef={containerRef}
+        headerActions={headerActions}
       />
   );
 }

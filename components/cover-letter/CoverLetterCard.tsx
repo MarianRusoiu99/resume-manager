@@ -8,7 +8,7 @@
 import { useTransition } from 'react';
 import { Download, FileText, Briefcase } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
-import { useToastAction } from '@/hooks';
+import { useToastAction, useExportPDF } from '@/hooks';
 import { deleteCoverLetter } from '@/app/actions/cover-letter';
 import { formatDate } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
@@ -36,6 +36,7 @@ export function CoverLetterCard({
   onDelete,
 }: Readonly<CoverLetterCardProps>) {
   const { runWithToast } = useToastAction();
+  const { isExportingPDF, handleExportCoverLetter } = useExportPDF();
   const [, startTransition] = useTransition();
 
   const getDisplayTitle = (): string => {
@@ -52,31 +53,7 @@ export function CoverLetterCard({
   };
 
   const handleExport = async () => {
-    await runWithToast(
-      async () => {
-        const response = await apiV1.COVER_LETTER.EXPORT(id).postFetch();
-
-        if (!response.ok) {
-          throw new Error('Failed to export cover letter');
-        }
-
-        const blob = await response.blob();
-        const url = globalThis.URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = `cover-letter-${jobTitle || companyName || 'download'}.pdf`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        globalThis.URL.revokeObjectURL(url);
-        anchor.remove();
-
-        return true;
-      },
-      {
-        successMessage: 'Cover letter exported successfully',
-        errorMessage: 'Failed to export cover letter',
-      },
-    );
+    await handleExportCoverLetter(id, jobTitle || companyName || 'download');
   };
 
   const handleDelete = async () => {
@@ -131,6 +108,7 @@ export function CoverLetterCard({
           label: 'Export PDF',
           icon: <Download className="h-4 w-4" />,
           onClick: handleExport,
+          disabled: isExportingPDF,
         },
       ]}
       onDelete={handleDelete}

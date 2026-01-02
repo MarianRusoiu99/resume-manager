@@ -246,6 +246,7 @@ export default function ApiKeysPage() {
       <Page
         title="API Keys"
         description="Manage your AI provider API keys securely"
+        maxWidth="md"
         breadcrumbs={[
           { label: 'Settings', href: '/settings' },
           { label: 'API Keys' },
