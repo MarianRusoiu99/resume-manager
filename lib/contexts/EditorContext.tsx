@@ -207,13 +207,22 @@ export function EditorProvider({
    * Save resume using onSave callback
    */
   const save = useCallback(async (): Promise<boolean> => {
+    if (isSaving) return false;
+    
     setIsSaving(true);
     try {
       const success = await onSave(resume);
       if (success) {
         setIsDirty(false);
         setLastSavedAt(new Date());
-        toast.success("Changes saved successfully!");
+        // Silent success for auto-save, but manual save shows toast
+        // The check for auto-save context is implicitly handled by the fact that
+        // this function is called either manually or via the internal auto-save effect.
+        // We'll keep the toast here but maybe make it conditional or rely on Sonner's 
+        // built-in deduplication/throttling.
+        toast.success("Changes saved successfully!", {
+          id: 'editor-save-success', // Deduplicate toasts
+        });
       } else {
         toast.error("Failed to save changes");
       }
@@ -225,7 +234,7 @@ export function EditorProvider({
     } finally {
       setIsSaving(false);
     }
-  }, [resume, onSave]);
+  }, [resume, onSave, isSaving]);
 
   /**
    * Reload data from source
