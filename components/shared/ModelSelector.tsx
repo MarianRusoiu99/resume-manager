@@ -12,7 +12,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { apiV1, type ApiProvider } from '@/lib/client';
+import { type ApiProvider } from '@/lib/client';
+import { getApiProviders } from '@/app/actions/api-provider';
 
 interface ModelOption {
   id: string;
@@ -40,10 +41,10 @@ export function ModelSelector({
     const loadModels = async () => {
       setIsLoading(true);
       try {
-        const result = await apiV1.SETTINGS.API_PROVIDERS.get<ApiProvider[]>();
-        if (!result.error && result.data) {
+        const result = await getApiProviders();
+        if (result.success && result.data) {
           const allModels: ModelOption[] = [];
-          result.data.filter(p => p.isActive).forEach(provider => {
+          (result.data as unknown as ApiProvider[]).filter(p => p.isActive).forEach(provider => {
             (provider.models || []).forEach(model => {
               allModels.push({
                 id: model.id,

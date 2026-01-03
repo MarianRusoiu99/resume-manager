@@ -16,7 +16,7 @@ import { ErrorState, LoadingState } from '@/components/shared/states';
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor, type CoverLetterEditorRef } from '@/components/cover-letter';
 import { Trash2, ExternalLink, Download, Copy, Sparkles, Edit, Save } from 'lucide-react';
-import { apiV1 } from '@/lib/client';
+import { getCoverLetter, updateCoverLetter, deleteCoverLetter } from '@/app/actions/cover-letter';
 import { useExportPDF } from '@/hooks';
 import type { CoverLetterWithResume } from '@/lib/types/cover-letter';
 
@@ -48,16 +48,13 @@ export default function CoverLetterDetailPage() {
       setIsLoading(true);
       setError(null);
 
-      const result = await apiV1.COVER_LETTER.GET(coverLetterId).get<CoverLetterWithResume>();
+      const result = await getCoverLetter(coverLetterId);
 
-      if (result.error || !result.data) {
-        if (result.status === 404) {
-          throw new Error('Cover letter not found');
-        }
-        throw new Error(result.error || 'Failed to fetch cover letter');
+      if (!result.success || !result.data) {
+        throw new Error((result as any).error || 'Failed to fetch cover letter');
       }
 
-      setCoverLetter(result.data);
+      setCoverLetter(result.data as any);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load cover letter');
       toast.error(err instanceof Error ? err.message : 'Failed to load cover letter');
@@ -76,16 +73,18 @@ export default function CoverLetterDetailPage() {
   const handleSaveCoverLetter = async (content: string, contentJson: string) => {
     try {
       setIsSaving(true);
-      const result = await apiV1.COVER_LETTER.GET(coverLetterId).put<CoverLetterWithResume>({
+      const result = await updateCoverLetter(coverLetterId, {
         content,
-        contentJson,
+        metadata: {
+          contentJson,
+        },
       });
 
-      if (result.error || !result.data) {
-        throw new Error(result.error || 'Failed to save cover letter');
+      if (!result.success || !result.data) {
+        throw new Error((result as any).error || 'Failed to save cover letter');
       }
 
-      setCoverLetter(result.data);
+      setCoverLetter(result.data as any);
       setIsEditing(false);
     } catch (err) {
       throw new Error(err instanceof Error ? err.message : 'Failed to save cover letter');
@@ -102,9 +101,9 @@ export default function CoverLetterDetailPage() {
     try {
       setIsDeleting(true);
 
-      const result = await apiV1.COVER_LETTER.GET(coverLetterId).delete<{ success: boolean }>();
+      const result = await deleteCoverLetter(coverLetterId);
 
-      if (result.error) {
+      if (!result.success) {
         throw new Error(result.error || 'Failed to delete cover letter');
       }
 

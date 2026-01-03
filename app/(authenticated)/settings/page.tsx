@@ -43,7 +43,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useSettings } from '@/lib/contexts/SettingsContext';
-import { apiV1 } from '@/lib/client';
+import { addApiProvider, deleteApiProvider } from '@/app/actions/api-provider';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { deleteAccountAction } from '@/app/actions/auth';
@@ -63,21 +63,13 @@ const PROVIDERS = [
   { id: 'google', name: 'Google (Gemini)', url: 'https://aistudio.google.com/app/apikey' },
 ];
 
-const FEATURES = [
-  { id: 'resume_optimize', name: 'Resume Optimization', icon: Sparkles, description: 'Enhancing existing bullet points and summaries' },
-  { id: 'resume_generate', name: 'Resume Generation', icon: FileText, description: 'Generating content from scratch/import' },
-  { id: 'cover_letter_generate', name: 'Cover Letter Generation', icon: Mail, description: 'Generating personalized cover letters' },
-  { id: 'job_scan', name: 'Job Matching (Scan)', icon: Search, description: 'Analyzing resume against job description' },
-];
-
 /**
  * Settings Page
  * Unified management of API providers and account security.
- * Model selection has been moved to contextual UIs where the AI is used.
  */
 export default function SettingsPage() {
   const router = useRouter();
-  const { providers, refreshProviders, aiSettings, refreshAISettings } = useSettings();
+  const { providers, refreshProviders } = useSettings();
 
   // API Keys state
   const [loadingKeys, setLoadingKeys] = useState(false);
@@ -90,7 +82,6 @@ export default function SettingsPage() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [confirmDeleteText, setConfirmDeleteText] = useState('');
 
-
   const toggleShowKey = (id: string) => {
     setShowKey(prev => ({ ...prev, [id]: !prev[id] }));
   };
@@ -100,17 +91,17 @@ export default function SettingsPage() {
     setLoadingKeys(true);
     try {
       const providerInfo = PROVIDERS.find(p => p.id === newProvider);
-      const result = await apiV1.SETTINGS.API_PROVIDERS.post({
+      const result = await addApiProvider({
         name: providerInfo?.name || newProvider,
         provider: newProvider,
         apiKey: newApiKey.trim(),
       });
-      if (!result.error) {
+      if (result.success) {
         toast.success(`${providerInfo?.name} key added`);
         setNewApiKey('');
         await refreshProviders();
       } else {
-        toast.error(result.error);
+        toast.error((result as any).error);
       }
     } catch (error) {
       toast.error('An error occurred');
@@ -123,12 +114,12 @@ export default function SettingsPage() {
     if (!confirm(`Remove ${name} key?`)) return;
     setLoadingKeys(true);
     try {
-      const result = await apiV1.SETTINGS.API_PROVIDERS.query({ id }).delete();
-      if (!result.error) {
+      const result = await deleteApiProvider(id);
+      if (result.success) {
         toast.success(`${name} key removed`);
         await refreshProviders();
       } else {
-        toast.error(result.error);
+        toast.error((result as any).error);
       }
     } catch (error) {
       toast.error('An error occurred');

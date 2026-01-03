@@ -10,12 +10,11 @@ import { Edit, Eye, Copy, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from '@/components/shared/EntityCard';
 import type { GalleryCardAction } from '@/components/shared/GalleryCard';
 import { TemplatePreviewModal } from './TemplatePreviewModal';
-import { useToastAction } from '@/hooks';
+import { getTemplate, deleteTemplate, duplicateTemplate } from '@/app/actions/template';
+import { useToastAction, useComponentLogger } from '@/hooks';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { useComponentLogger } from '@/hooks';
-import { apiV1 } from '@/lib/client';
 
 interface TemplateCardProps {
   template: ResumeTemplate;
@@ -106,12 +105,21 @@ export function TemplateCard({
   const handleExportPDF = async () => {
     await runWithToast(
       async () => {
-        const response = await apiV1.EXPORT.PDF.postFetch({
-          resume: SAMPLE_RESUME,
-          template: {
-            htmlTemplate: template.htmlTemplate,
+        // This still uses a client-side fetch because it's a file download
+        // and we don't have a direct "download file" server action yet.
+        // But we could potentially move the PDF generation logic.
+        const response = await fetch('/api/v1/export/pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
+          body: JSON.stringify({
+            resume: SAMPLE_RESUME,
+            template: {
+              htmlTemplate: template.htmlTemplate,
+            },
+            fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
+          }),
         });
 
         if (!response.ok) {
@@ -140,11 +148,10 @@ export function TemplateCard({
   const handleDelete = async () => {
     const result = await runWithToast(
       async () => {
-        const { error } = await apiV1.TEMPLATE.GET(template.id).delete<unknown>();
-        if (error) {
-          throw new Error(error);
+        const res = await deleteTemplate(template.id);
+        if (!res.success) {
+          throw new Error(res.error);
         }
-
         return true;
       },
       {
@@ -161,11 +168,10 @@ export function TemplateCard({
   const handleDuplicate = async () => {
     const result = await runWithToast(
       async () => {
-        const { error } = await apiV1.TEMPLATE.DUPLICATE(template.id).post<unknown>();
-        if (error) {
-          throw new Error(error);
+        const res = await duplicateTemplate(template.id);
+        if (!res.success) {
+          throw new Error(res.error);
         }
-
         return true;
       },
       {

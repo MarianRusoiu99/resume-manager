@@ -1,30 +1,18 @@
 'use client';
 
-import { useEffect, useState } from "react";
 import type { DashboardStats, AnalyticsData } from "@/lib/services/analytics/analytics.service";
 import { ActivityChart } from "@/components/dashboard/widgets/ActivityChart";
 import { TopCompanies } from "@/components/dashboard/widgets/TopCompanies";
 import { UsageMetrics } from "@/components/dashboard/widgets/UsageMetrics";
 import { RecentActivity } from "@/components/dashboard/widgets/RecentActivity";
 
-export function DashboardContent() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
+interface DashboardContentProps {
+  stats: DashboardStats | null;
+  analyticsData: AnalyticsData | null;
+  loading?: boolean;
+}
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/v1/dashboard/stats").then((res) => res.json()),
-      fetch("/api/v1/analytics").then((res) => res.json())
-    ])
-      .then(([statsData, analytics]) => {
-        setStats(statsData);
-        setAnalyticsData(analytics);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
-
+export function DashboardContent({ stats, analyticsData, loading = false }: DashboardContentProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <ActivityChart data={analyticsData?.resumesOverTime} loading={loading} />

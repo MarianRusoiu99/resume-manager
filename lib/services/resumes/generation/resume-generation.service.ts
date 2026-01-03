@@ -1,6 +1,6 @@
 import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resumes.repository';
 
-import type { IResumeGenerationService } from '../../interfaces';
+import type { IResumeGenerationService, IProfileService } from '../../interfaces';
 
 import type { GenerateResumeServiceInput, GenerateResumeWithProgressInput } from './types';
 import {
@@ -14,14 +14,23 @@ import {
  * Single Responsibility: Exposes resume generation operations.
  */
 export class ResumeGenerationService implements IResumeGenerationService {
-  constructor(private readonly repository: GeneratedResumeRepository = generatedResumeRepository) {}
+  constructor(
+    private readonly repository: GeneratedResumeRepository = generatedResumeRepository,
+    private readonly profileService?: IProfileService
+  ) {}
 
   async generateResume(input: GenerateResumeServiceInput) {
-    return runResumeGenerationWorkflow(this.repository, input);
+    if (!this.profileService) {
+      throw new Error('ProfileService is required for resume generation');
+    }
+    return runResumeGenerationWorkflow(this.repository, this.profileService, input);
   }
 
   async generateResumeWithProgress(input: GenerateResumeWithProgressInput) {
-    return runResumeGenerationWorkflowWithProgress(this.repository, input);
+    if (!this.profileService) {
+      throw new Error('ProfileService is required for resume generation');
+    }
+    return runResumeGenerationWorkflowWithProgress(this.repository, this.profileService, input);
   }
 
   async generateStandaloneCoverLetter(input: {

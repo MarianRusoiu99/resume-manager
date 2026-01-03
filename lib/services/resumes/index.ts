@@ -36,6 +36,8 @@ import type {
 } from './generation';
 import type { ResumeListItem, ResumeDetails, UpdatedResumeData } from './crud';
 
+import type { CreateResumeInput, GeneratedResumeData as RepoGeneratedResumeData } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
+
 /**
  * Resume Service - Composes generation and CRUD services
  *
@@ -70,6 +72,9 @@ export class ResumeService implements IResumeService {
   }
 
   // CRUD methods - delegate to ResumeCrudService
+  create(data: CreateResumeInput): Promise<ServiceResult<RepoGeneratedResumeData>> {
+    return this.crudService.create(data);
+  }
   listResumes(userId: string): Promise<ServiceResult<ResumeListItem[]>> {
     return this.crudService.listResumes(userId);
   }
@@ -109,9 +114,14 @@ export class ResumeService implements IResumeService {
   ): Promise<ServiceResult<UpdatedResumeData>> {
     return this.crudService.updateResumeJobDetails(resumeId, userId, input);
   }
+
+  duplicateResume(resumeId: string, userId: string): Promise<ServiceResult<ResumeDetails>> {
+    return this.crudService.duplicateResume(resumeId, userId);
+  }
 }
 
 // Export singleton instance for backward compatibility
+// Note: This singleton might not have all dependencies injected correctly if used outside ServiceContainer
 export const resumeService = new ResumeService();
 
 // Also re-export individual services for direct use

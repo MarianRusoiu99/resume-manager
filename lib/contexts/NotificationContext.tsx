@@ -13,6 +13,13 @@ import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { apiV1 } from '@/lib/client';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import {
+  getNotifications,
+  getUnreadCount,
+  markAsRead as markAsReadAction,
+  markAllAsRead as markAllAsReadAction,
+  deleteNotification as deleteNotificationAction,
+} from '@/app/actions/notification';
 
 export type Notification = {
   id: string;
@@ -78,14 +85,18 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await apiV1.NOTIFICATIONS.ROOT.get<{ notifications?: Notification[]; unreadCount?: number }>();
+      const result = await getNotifications({ includeRead: true });
 
-      if (result.error) {
+      if (!result.success) {
         throw new Error(result.error);
       }
 
-      setNotifications(result.data?.notifications ?? []);
-      setUnreadCount(result.data?.unreadCount ?? 0);
+      setNotifications((result.data as unknown as Notification[]) ?? []);
+      
+      const countResult = await getUnreadCount();
+      if (countResult.success) {
+        setUnreadCount(countResult.data?.count ?? 0);
+      }
     } catch (error) {
       log.error('Error fetching notifications', error);
     } finally {
@@ -98,9 +109,9 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const fetchUnreadCount = useCallback(async () => {
     try {
-      const result = await apiV1.NOTIFICATIONS.COUNT.get<{ count?: number }>();
+      const result = await getUnreadCount();
 
-      if (result.error) return;
+      if (!result.success) return;
 
       setUnreadCount(result.data?.count ?? 0);
     } catch (error) {
@@ -113,8 +124,8 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const markAsRead = useCallback(async (id: string) => {
     try {
-      const result = await apiV1.NOTIFICATIONS.ITEM(id).patch<unknown>();
-      if (result.error) {
+      const result = await markAsReadAction(id);
+      if (!result.success) {
         throw new Error(result.error);
       }
 
@@ -133,8 +144,8 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const markAllAsRead = useCallback(async () => {
     try {
-      const result = await apiV1.NOTIFICATIONS.ROOT.post<unknown>({ action: 'markAllRead' });
-      if (result.error) {
+      const result = await markAllAsReadAction();
+      if (!result.success) {
         throw new Error(result.error);
       }
 
@@ -151,8 +162,8 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
    */
   const deleteNotification = useCallback(async (id: string) => {
     try {
-      const result = await apiV1.NOTIFICATIONS.ITEM(id).delete<unknown>();
-      if (result.error) {
+      const result = await deleteNotificationAction(id);
+      if (!result.success) {
         throw new Error(result.error);
       }
 
@@ -178,12 +189,12 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
 
     try {
       // Mark all read first (preserves current API behavior)
-      const markResult = await apiV1.NOTIFICATIONS.ROOT.post<unknown>({ action: 'markAllRead' });
-      if (markResult.error) {
+      const markResult = await markAllAsReadAction();
+      if (!markResult.success) {
         throw new Error(markResult.error);
       }
 
-      await Promise.all(idsToDelete.map((id) => apiV1.NOTIFICATIONS.ITEM(id).delete<unknown>()));
+      await Promise.all(idsToDelete.map((id) => deleteNotificationAction(id)));
 
       setNotifications([]);
       setUnreadCount(0);

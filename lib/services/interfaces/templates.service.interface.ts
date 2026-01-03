@@ -60,4 +60,9 @@ export interface ITemplateService {
    * Delete a template
    */
   deleteTemplate(id: string): Promise<ServiceResult<void>>;
+
+  /**
+   * Duplicate a template
+   */
+  duplicateTemplate(id: string): Promise<ServiceResult<ResumeTemplate>>;
 }

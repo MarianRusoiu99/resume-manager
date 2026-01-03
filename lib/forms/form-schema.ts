@@ -27,7 +27,7 @@ interface BaseFieldConfig<T> {
  * Text input field configuration
  */
 interface TextFieldConfig<T> extends BaseFieldConfig<T> {
-  type: 'text' | 'email' | 'url' | 'tel';
+  type: 'text' | 'email' | 'url' | 'tel' | 'password';
 }
 
 /**

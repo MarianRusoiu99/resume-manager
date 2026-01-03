@@ -31,7 +31,15 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { apiV1, type ProfileListItem, type ProfileDto } from '@/lib/client';
+import { type ProfileListItem, type ProfileDto } from '@/lib/client';
+import {
+  createTemplate,
+  updateTemplate,
+} from '@/app/actions/template';
+import {
+  getProfiles,
+  getProfile,
+} from '@/app/actions/profile';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { ResumePreview } from '../resume/ResumePreview';
@@ -101,9 +109,9 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
 
   useEffect(() => {
     const loadProfiles = async () => {
-      const result = await apiV1.PROFILE.LIST.get<ProfileListItem[]>();
-      if (!result.error && result.data) {
-        setProfiles(result.data);
+      const result = await getProfiles();
+      if (result.success && result.data) {
+        setProfiles(result.data as unknown as ProfileListItem[]);
       }
     };
     loadProfiles();
@@ -118,9 +126,9 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     const loadProfileData = async () => {
       setIsLoadingProfile(true);
       try {
-        const result = await apiV1.PROFILE.GET(selectedProfileId).get<ProfileDto>();
-        if (!result.error && result.data?.resume) {
-          setPreviewResume(result.data.resume as Resume);
+        const result = await getProfile(selectedProfileId);
+        if (result.success && result.data?.resume) {
+          setPreviewResume(result.data.resume as unknown as Resume);
         }
       } catch (err) {
         toast.error('Failed to load profile for preview');
@@ -179,12 +187,12 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
 
       let result;
       if (isNew) {
-        result = await apiV1.TEMPLATE.CREATE.post(payload);
+        result = await createTemplate(payload as any);
       } else if (template?.id) {
-        result = await apiV1.TEMPLATE.UPDATE(template.id).patch(payload);
+        result = await updateTemplate(template.id, payload as any);
       }
 
-      if (result?.error) {
+      if (result && !result.success) {
         toast.error(result.error);
       } else {
         toast.success(`Template ${isNew ? 'created' : 'updated'} successfully`);

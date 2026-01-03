@@ -1,19 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff } from 'lucide-react';
-import { apiV1 } from '@/lib/client';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { addApiProvider } from '@/app/actions/api-provider';
+import { GenericForm } from '@/components/forms/GenericForm';
+import { FieldConfig } from '@/lib/forms/form-schema';
 
-const PROVIDER_NAMES: Record<string, string> = {
-  openai: 'OpenAI',
-  anthropic: 'Anthropic',
-  google: 'Google AI',
-};
+const PROVIDER_OPTIONS = [
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'anthropic', label: 'Anthropic' },
+  { value: 'google', label: 'Google AI' },
+];
 
 interface ApiKeyFormProps {
   onSuccess?: () => void;
@@ -21,102 +20,69 @@ interface ApiKeyFormProps {
   submitLabel?: string;
 }
 
+interface ApiKeyFormData {
+  name: string;
+  provider: string;
+  apiKey: string;
+}
+
+const API_KEY_FIELDS: FieldConfig<ApiKeyFormData>[] = [
+  {
+    key: 'name',
+    label: 'Provider Name',
+    type: 'text',
+    placeholder: 'e.g., My OpenAI Key',
+    required: true,
+    colSpan: 2,
+  },
+  {
+    key: 'provider',
+    label: 'Provider Type',
+    type: 'select',
+    options: PROVIDER_OPTIONS,
+    required: true,
+  },
+  {
+    key: 'apiKey',
+    label: 'API Key',
+    type: 'password',
+    placeholder: 'Enter your API key',
+    required: true,
+    description: 'Your key is encrypted before storage.',
+  },
+];
+
 export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider' }: ApiKeyFormProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ApiKeyFormData>({
     name: '',
     provider: 'openai',
     apiKey: '',
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const [state, action, isPending] = useActionState(async (prevState: any, fd: FormData) => {
+    // Ensure all fields from the state are in FormData if they aren't already
+    // GenericForm with SimpleFormField uses native inputs with names
+    const result = await addApiProvider(fd);
+    return result;
+  }, null);
 
-    if (!formData.name || !formData.apiKey) {
-      toast.error('Please fill in all fields');
-      return;
+  useEffect(() => {
+    if (state?.success) {
+      toast.success('API provider added successfully');
+      onSuccess?.();
+    } else if (state?.error) {
+      toast.error(state.error);
     }
-
-    try {
-      setIsSubmitting(true);
-      const result = await apiV1.SETTINGS.API_PROVIDERS.post<unknown>({
-        name: formData.name,
-        provider: formData.provider,
-        apiKey: formData.apiKey,
-      });
-
-      if (!result.error) {
-        toast.success('API provider added successfully');
-        onSuccess?.();
-      } else {
-        toast.error(result.error ?? 'Failed to add provider');
-      }
-    } catch (error) {
-      toast.error('Failed to add provider');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  }, [state, onSuccess]);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="provider-name">Provider Name</Label>
-        <Input
-          id="provider-name"
-          type="text"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="e.g., My OpenAI Key"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="provider-type">Provider Type</Label>
-        <Select
-          value={formData.provider}
-          onValueChange={(value) => setFormData({ ...formData, provider: value })}
-        >
-          <SelectTrigger id="provider-type">
-            <SelectValue placeholder="Select a provider" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(PROVIDER_NAMES).map(([key, name]) => (
-              <SelectItem key={key} value={key}>
-                {name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="api-key">API Key</Label>
-        <div className="relative">
-          <Input
-            id="api-key"
-            type={showApiKey ? 'text' : 'password'}
-            value={formData.apiKey}
-            onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-            placeholder={`Enter your ${PROVIDER_NAMES[formData.provider]} API key`}
-            className="pr-10 font-mono text-sm"
-            autoComplete="off"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowApiKey(!showApiKey)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-          >
-            {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </button>
-        </div>
-        <p className="text-[10px] text-muted-foreground mt-1">
-          Your key is encrypted before storage.
-        </p>
-      </div>
+    <form action={action} className="space-y-4">
+      <GenericForm
+        fields={API_KEY_FIELDS}
+        data={formData}
+        onChange={setFormData}
+        disabled={isPending}
+      />
 
       <div className="flex justify-end gap-2 pt-4">
         {onCancel && (
@@ -124,13 +90,20 @@ export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider' }
             type="button"
             variant="outline"
             onClick={onCancel}
-            disabled={isSubmitting}
+            disabled={isPending}
           >
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-          {isSubmitting ? 'Adding...' : submitLabel}
+        <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
+          {isPending ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Adding...
+            </>
+          ) : (
+            submitLabel
+          )}
         </Button>
       </div>
     </form>

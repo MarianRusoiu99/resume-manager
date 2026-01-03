@@ -102,6 +102,25 @@ export class TemplateService
   }
 
   /**
+   * Duplicate a template
+   */
+  async duplicateTemplate(id: string): Promise<ServiceResult<ResumeTemplate>> {
+    return withServiceError('duplicate template', async () => {
+      const existingResult = await this.getById(id);
+      if (isFailure(existingResult)) throw new Error(existingResult.error);
+      const existing = existingResult.data;
+
+      return await this.repository.create({
+        name: `${existing.name} (Copy)`,
+        description: existing.description ?? undefined,
+        htmlTemplate: existing.htmlTemplate,
+        isPublic: false,
+        previewUrl: existing.previewUrl ?? undefined,
+      });
+    });
+  }
+
+  /**
    * Validate Handlebars template syntax
    */
   validateTemplateSyntax(htmlTemplate: string): {

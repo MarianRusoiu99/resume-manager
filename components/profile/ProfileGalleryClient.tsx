@@ -1,98 +1,62 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ProfileCard } from "./ProfileCard";
 import { ResumeImportButton } from "./ResumeImportButton";
 import { Button } from "@/components/ui";
 import { Gallery } from "@/components/shared/Gallery";
-import { Plus, User, AlertCircle, Key } from "lucide-react";
+import { Plus, User, Key } from "lucide-react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { createProfile } from "@/app/actions/profile";
-import { apiV1, type ProfileDto } from "@/lib/client";
-import { useComponentLogger } from "@/hooks";
+import { createProfile, deleteProfile, setDefaultProfile } from "@/app/actions/profile";
+import { type ProfileDto } from "@/lib/client";
 import { OnboardingModal } from "./OnboardingModal";
 import { useCanUseAI } from "@/lib/contexts";
-import { Callout } from "@/components/shared";
+import { Callout, SearchInput } from "@/components/shared";
 import Link from "next/link";
 import { ROUTES } from "@/lib/constants";
 
-interface ProfileGalleryProps {
+interface ProfileGalleryClientProps {
   initialProfiles: ProfileDto[];
+  searchTerm?: string;
 }
 
-export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps>) {
-  const log = useComponentLogger("ProfileGallery");
-  const [profiles, setProfiles] = useState<ProfileDto[]>(initialProfiles);
+export function ProfileGalleryClient({ 
+  initialProfiles,
+  searchTerm = ""
+}: Readonly<ProfileGalleryClientProps>) {
   const [isPending, startTransition] = useTransition();
-  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(initialProfiles.length === 0);
   const canUseAI = useCanUseAI();
   const router = useRouter();
 
-  // Check for empty state on mount
-  useEffect(() => {
-    if (profiles.length === 0) {
-      setShowOnboarding(true);
+  const [optimisticProfiles, updateOptimisticProfiles] = useOptimistic(
+    initialProfiles,
+    (state, action: { type: 'delete' | 'default', id: string }) => {
+      if (action.type === 'delete') {
+        return state.filter(p => p.id !== action.id);
+      }
+      if (action.type === 'default') {
+        return state.map(p => ({
+          ...p,
+          isDefault: p.id === action.id
+        }));
+      }
+      return state;
     }
-  }, []);
-
-  // Refresh profiles when the page becomes visible
-  useEffect(() => {
-    const refreshProfiles = async () => {
-      try {
-        const result = await apiV1.PROFILE.LIST.get<ProfileDto[]>();
-        if (!result.error && result.data) {
-          setProfiles(
-            result.data.map((p) => ({
-              ...p,
-              resume: p.resume as Resume | null,
-            }))
-          );
-        }
-      } catch (error) {
-        log.error("Failed to refresh profiles", error);
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        refreshProfiles();
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [log]);
+  );
 
   const handleCreateProfile = () => {
     startTransition(async () => {
       const result = await createProfile(
-        `Profile ${profiles.length + 1}`,
+        `Profile ${optimisticProfiles.length + 1}`,
         { basics: { name: "" } } as Resume,
-        profiles.length === 0 // First profile is default
+        optimisticProfiles.length === 0 // First profile is default
       );
 
       if (result.success) {
         toast.success("Profile created successfully");
-        // Add the new profile to the local state
-        setProfiles((prev) => [
-          ...prev,
-          {
-            id: result.data.id,
-            userId: result.data.userId,
-            name: result.data.name,
-            resume: result.data.resume as Resume | null,
-            templateId: result.data.templateId ?? null,
-            selectedTemplateId: result.data.selectedTemplateId ?? null,
-            isDefault: result.data.isDefault,
-            isPublic: result.data.isPublic,
-            publicSlug: result.data.publicSlug,
-            createdAt: result.data.createdAt.toISOString(),
-            updatedAt: result.data.updatedAt.toISOString(),
-          },
-        ]);
-        // Navigate to edit the new profile
         router.push(`/profile/${result.data.id}`);
       } else {
         toast.error(result.error || "Failed to create profile");
@@ -105,51 +69,33 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
   };
 
   const handleDelete = (id: string) => {
-    setProfiles((prev) => prev.filter((p) => p.id !== id));
+    startTransition(async () => {
+      updateOptimisticProfiles({ type: 'delete', id });
+      await deleteProfile(id);
+    });
   };
 
   const handleDuplicate = () => {
-    // Refresh the page to show the new profile
     router.refresh();
   };
 
   const handleSetDefault = (id: string) => {
-    setProfiles((prev) =>
-      prev.map((p) => ({
-        ...p,
-        isDefault: p.id === id,
-      }))
-    );
+    startTransition(async () => {
+      updateOptimisticProfiles({ type: 'default', id });
+      await setDefaultProfile(id);
+    });
   };
 
   const handleImportSuccess = (resume: Resume) => {
     startTransition(async () => {
       const result = await createProfile(
-        `Imported Profile ${profiles.length + 1}`,
+        `Imported Profile ${optimisticProfiles.length + 1}`,
         resume,
-        profiles.length === 0
+        optimisticProfiles.length === 0
       );
 
       if (result.success) {
         toast.success("Profile created from imported resume!");
-        // Add the new profile to the local state
-        setProfiles((prev) => [
-          ...prev,
-          {
-            id: result.data.id,
-            userId: result.data.userId,
-            name: result.data.name,
-            resume: result.data.resume as Resume | null,
-            templateId: result.data.templateId ?? null,
-            selectedTemplateId: result.data.selectedTemplateId ?? null,
-            isDefault: result.data.isDefault,
-            isPublic: result.data.isPublic,
-            publicSlug: result.data.publicSlug,
-            createdAt: result.data.createdAt.toISOString(),
-            updatedAt: result.data.updatedAt.toISOString(),
-          },
-        ]);
-        // Navigate to edit the new profile
         router.push(`/profile/${result.data.id}`);
       } else {
         toast.error(result.error || "Failed to create profile");
@@ -157,7 +103,11 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
     });
   };
 
-  // Header actions for the gallery
+  const filteredProfiles = optimisticProfiles.filter(p => {
+    if (!searchTerm) return true;
+    return p.name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
   const headerActions = (
     <div className="flex gap-2">
       <ResumeImportButton onImportSuccess={handleImportSuccess} />
@@ -170,11 +120,16 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
 
   return (
     <>
-      {!canUseAI && profiles.length > 0 && (
+      <div className="mb-6">
+        <SearchInput 
+          placeholder="Search profiles..." 
+          defaultValue={searchTerm}
+        />
+      </div>
+
+      {!canUseAI && optimisticProfiles.length > 0 && (
         <div className="mb-6">
-          <Callout
-            variant="warning"
-          >
+          <Callout variant="warning">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-yellow-100 rounded-lg text-yellow-700">
@@ -196,12 +151,15 @@ export function ProfileGallery({ initialProfiles }: Readonly<ProfileGalleryProps
       )}
 
       <Gallery
-        items={profiles}
+        items={filteredProfiles}
         getItemKey={(profile) => profile.id}
+        searchTerm={searchTerm}
         emptyState={{
           icon: User,
           title: "No Profiles Yet",
-          description: "Create your first profile or import an existing resume to get started",
+          description: searchTerm 
+            ? `No profiles match "${searchTerm}"`
+            : "Create your first profile or import an existing resume to get started",
           action: {
             label: isPending ? "Creating..." : "Create Profile",
             onClick: handleCreateProfile,

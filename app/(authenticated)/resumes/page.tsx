@@ -1,40 +1,70 @@
-'use client';
-
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense } from 'react';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui/button';
-import { ResumeList, type ResumeListItem } from '@/components/resume/ResumeList';
-import { Input } from '@/components/ui/input';
+import { ResumeListClient } from '@/components/resume/ResumeListClient';
+import { SearchInput } from '@/components/shared/SearchInput';
 import { ErrorState } from '@/components/shared/states';
-import { useFetch } from '@/hooks/useDataFetching';
 import { ROUTES } from '@/lib/constants';
-import { apiV1 } from '@/lib/client';
-import type { GeneratedResume } from '@/lib/types';
+import { getResumes } from '@/app/actions/resume';
+import { GallerySkeleton } from '@/components/shared/skeletons/GallerySkeleton';
+import Link from 'next/link';
 
-export default function ResumesPage() {
-  const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
+interface Props {
+  searchParams: Promise<{ q?: string }>;
+}
 
-  // Use the data fetching hook
-  const {
-    data: resumes,
-    isLoading,
-    error,
-    refetch,
-    mutate
-  } = useFetch<GeneratedResume[]>(apiV1.RESUME.LIST.url, {
-    initialData: [],
-    refetchOnFocus: true,
-  });
+export default async function ResumesPage({ searchParams }: Props) {
+  const { q: searchTerm = '' } = await searchParams;
 
-  const handleDelete = (id: string) => {
-    // Optimistic update - remove from local state
-    mutate((prev) => (prev ?? []).filter((r) => r.id !== id));
-  };
+  return (
+    <Page
+      title="My Resumes"
+      description="Manage your AI-generated resumes"
+      breadcrumbs={[{ label: "Resumes" }]}
+      actions={
+        <Button asChild>
+          <Link href={ROUTES.GENERATE}>
+            Generate New Resume
+          </Link>
+        </Button>
+      }
+    >
+      <div className="mb-6">
+        <SearchInput 
+          placeholder="Search by job title, company, or description..." 
+          defaultValue={searchTerm}
+        />
+      </div>
 
-  // Filter resumes based on search term
-  const filteredResumes = (resumes ?? []).filter(resume => {
+      <Suspense fallback={<GallerySkeleton columns={{ sm: 1, md: 2, lg: 4, xl: 4 }} />}>
+        <ResumesContent searchTerm={searchTerm} />
+      </Suspense>
+    </Page>
+  );
+}
+
+async function ResumesContent({ searchTerm }: { searchTerm: string }) {
+  const result = await getResumes();
+
+  if (!result.success) {
+    return (
+      <ErrorState
+        message={result.error}
+        variant="inline"
+        className="mb-6"
+      />
+    );
+  }
+
+  const resumes = (result.data || []).map(r => ({
+    ...r,
+    createdAt: r.createdAt.toISOString()
+  }));
+
+  // Filter resumes based on search term (Server-side filtering for simplicity now, 
+  // could be moved to database query later)
+  const filteredResumes = resumes.filter(resume => {
+    if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
       (resume.jobTitle?.toLowerCase().includes(searchLower)) ||
@@ -43,65 +73,19 @@ export default function ResumesPage() {
     );
   });
 
-  // Convert to ResumeListItem format
-  const resumeListItems: ResumeListItem[] = filteredResumes.map(r => ({
-    id: r.id,
-    jobTitle: r.jobTitle,
-    companyName: r.companyName,
-    content: r.content,
-    templateId: r.templateId,
-    createdAt: r.createdAt, // Already a string from GeneratedResume
-    jobDescription: r.jobDescription,
-  }));
-
   return (
-    <Page
-      title="My Resumes"
-      description="Manage your AI-generated resumes"
-      breadcrumbs={[{ label: "Resumes" }]}
-      actions={
-        <Button onClick={() => router.push(ROUTES.GENERATE)}>
-          Generate New Resume
-        </Button>
-      }
-    >
-
-      {/* Search Bar */}
-      {(resumes?.length ?? 0) > 0 && (
-        <div className="mb-6">
-          <Input
-            type="text"
-            placeholder="Search by job title, company, or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <ErrorState
-          message={error}
-          onRetry={refetch}
-          variant="inline"
-          className="mb-6"
-        />
-      )}
-
-      <ResumeList
-        resumes={resumeListItems}
-        isLoading={isLoading}
-        onDelete={handleDelete}
-        onGenerate={() => router.push(ROUTES.GENERATE)}
+    <>
+      <ResumeListClient
+        resumes={filteredResumes}
+        onGenerate={() => {}} // Not used in client component anymore for routing
         searchTerm={searchTerm}
       />
 
-      {/* Results Count */}
-      {(resumes?.length ?? 0) > 0 && (
+      {resumes.length > 0 && (
         <div className="mt-6 text-center text-sm text-muted-foreground pb-8">
-          Showing {resumeListItems.length} of {resumes?.length ?? 0} resume{(resumes?.length ?? 0) === 1 ? '' : 's'}
+          Showing {filteredResumes.length} of {resumes.length} resume{resumes.length === 1 ? '' : 's'}
         </div>
       )}
-    </Page>
+    </>
   );
 }

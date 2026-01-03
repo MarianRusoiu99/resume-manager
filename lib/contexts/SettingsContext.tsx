@@ -28,8 +28,10 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import { apiV1, type AISettings as SettingsAISettings, type ApiProvider as SettingsApiProvider } from '@/lib/client';
+import { type AISettings as SettingsAISettings, type ApiProvider as SettingsApiProvider } from '@/lib/client';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { getApiProviders } from '@/app/actions/api-provider';
+import { getAISettings } from '@/app/actions/ai-settings';
 
 const logger = createComponentLogger('SettingsContext');
 
@@ -97,13 +99,13 @@ export function SettingsProvider({
       setIsLoadingProviders(true);
       setProvidersError(null);
 
-      const result = await apiV1.SETTINGS.API_PROVIDERS.get<SettingsApiProvider[]>();
+      const result = await getApiProviders();
 
-      if (result.error) {
+      if (!result.success) {
         throw new Error(result.error);
       }
 
-      setProviders(result.data ?? []);
+      setProviders((result.data as unknown as SettingsApiProvider[]) ?? []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch providers';
       setProvidersError(message);
@@ -121,13 +123,13 @@ export function SettingsProvider({
       setIsLoadingAISettings(true);
       setAISettingsError(null);
 
-      const result = await apiV1.SETTINGS.AI_MODELS.get<SettingsAISettings>();
+      const result = await getAISettings();
 
-      if (result.error) {
+      if (!result.success) {
         throw new Error(result.error);
       }
 
-      setAISettings(result.data);
+      setAISettings(result.data as unknown as SettingsAISettings);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch AI settings';
       setAISettingsError(message);

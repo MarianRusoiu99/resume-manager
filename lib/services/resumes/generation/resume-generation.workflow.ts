@@ -4,17 +4,15 @@ import { generateResume as runAIWorkflow } from '@/lib/ai/workflow/resume-genera
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
 import { success, failure } from '@/lib/types/service-result';
 import { logger } from '@/lib/utils/logger';
-import { ServiceContainer } from '../../container';
+import type { IProfileService } from '../../interfaces';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 export async function runResumeGenerationWorkflow(
   repository: GeneratedResumeRepository,
+  profileService: IProfileService,
   input: GenerateResumeServiceInput
 ): Promise<any> {
   try {
-    const container = ServiceContainer.getInstance();
-    const profileService = container.profileService;
-    
     // Get the user's default profile or a specific profile
     let profileResult;
     if (input.profileId) {
@@ -81,10 +79,11 @@ export async function runResumeGenerationWorkflow(
 
 export async function runResumeGenerationWorkflowWithProgress(
   repository: GeneratedResumeRepository,
+  profileService: IProfileService,
   input: GenerateResumeWithProgressInput
 ): Promise<any> {
     // Basic implementation for now to satisfy types
-    return runResumeGenerationWorkflow(repository, input);
+    return runResumeGenerationWorkflow(repository, profileService, input);
 }
 
 export async function runStandaloneCoverLetterWorkflow(input: any): Promise<any> {

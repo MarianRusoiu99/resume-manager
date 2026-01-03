@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiV1, type ProfileDto } from "@/lib/client";
+import { getProfile, updateProfile } from "@/app/actions/profile";
 import { createComponentLogger } from "@/lib/utils/client-logger";
 import { Save, Share2, Edit2, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -23,7 +23,7 @@ interface ProfileEditorProps {
 
 export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const router = useRouter();
-  const [profile, setProfile] = useState<ProfileDto | null>(null);
+  const [profile, setProfile] = useState<any | null>(null);
   const editorRef = useRef<ResumeEditorRef>(null);
 
   // State for title rename
@@ -32,8 +32,8 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const loadProfile = useCallback(async () => {
     try {
-      const result = await apiV1.PROFILE.GET(profileId).get<ProfileDto>();
-      if (result.error || !result.data) throw new Error(result.error ?? 'Failed to load profile');
+      const result = await getProfile(profileId);
+      if (!result.success || !result.data) throw new Error(!result.success ? result.error : 'Failed to load profile');
       setProfile(result.data);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load profile");
@@ -45,10 +45,9 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const result = await apiV1.PROFILE.GET(profileId).get<ProfileDto>({ skipSessionCheck: true });
-      if (result.status === 404) return null;
-      if (result.error || !result.data) throw new Error(result.error ?? "Failed to load profile");
-      return result.data.resume ?? null;
+      const result = await getProfile(profileId);
+      if (!result.success || !result.data) throw new Error(!result.success ? result.error : "Failed to load profile");
+      return result.data.resume as unknown as Resume | null;
     } catch (error) {
       logger.error('Error loading profile', error);
       return null;
@@ -57,9 +56,9 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const result = await apiV1.PROFILE.GET(profileId).patch<ProfileDto>({ resume });
-      if (result.error) throw new Error(result.error);
-      setProfile((prev) => (prev ? { ...prev, resume } : prev));
+      const result = await updateProfile(profileId, { resume });
+      if (!result.success) throw new Error(result.error);
+      setProfile((prev: any) => (prev ? { ...prev, resume } : prev));
       return true;
     } catch (error) {
       logger.error('Error saving profile', error);
@@ -73,14 +72,18 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
       return;
     }
     try {
-      const result = await apiV1.PROFILE.GET(profileId).patch<ProfileDto>({ name: newName });
-      if (result.error) throw new Error(result.error);
-      setProfile((prev) => prev ? { ...prev, name: newName } : null);
+      const result = await updateProfile(profileId, { name: newName });
+      if (!result.success) throw new Error(result.error);
+      setProfile((prev: any) => prev ? { ...prev, name: newName } : null);
       setIsRenameModalOpen(false);
       toast.success("Profile renamed");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update profile name");
     }
+  };
+
+  const onDisplayNameChange = async (name: string) => {
+    setProfile((prev: any) => prev ? { ...prev, name } : null);
   };
 
   if (!profile) return null;
@@ -150,7 +153,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
             displayName={profile.name}
             isPublic={profile.isPublic}
             publicSlug={profile.publicSlug ?? undefined}
-            onDisplayNameChange={async (name) => { setProfile(prev => prev ? {...prev, name} : null); }}
+            onDisplayNameChange={onDisplayNameChange}
           />
         </EditorProvider>
       </div>

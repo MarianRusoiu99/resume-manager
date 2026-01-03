@@ -82,7 +82,7 @@ export class ServiceContainer {
     // Initialize services with dependency injection
     this._profileService = new ProfileService(profileRepo, cache);
     this._analyticsService = analyticsServiceInstance;
-    this._resumeGenerationService = new ResumeGenerationService(generatedResumeRepo);
+    this._resumeGenerationService = new ResumeGenerationService(generatedResumeRepo, this._profileService);
     this._resumeCrudService = new ResumeCrudService(generatedResumeRepo);
     this._notificationService = new NotificationService(notificationRepo);
     this._apiProviderService = new ApiProviderService(apiProviderRepo);
@@ -162,7 +162,10 @@ export class ServiceContainer {
     }
     
     if (mocks.generatedResumeRepository) {
-      container._resumeGenerationService = new ResumeGenerationService(mocks.generatedResumeRepository);
+      container._resumeGenerationService = new ResumeGenerationService(
+        mocks.generatedResumeRepository,
+        container._profileService
+      );
       container._resumeCrudService = new ResumeCrudService(mocks.generatedResumeRepository);
     }
     

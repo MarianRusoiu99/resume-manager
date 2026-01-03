@@ -44,6 +44,8 @@ export interface IResumeGenerationService {
   }): Promise<ServiceResult<CoverLetterGenerationData>>;
 }
 
+import type { CreateResumeInput, GeneratedResumeData as RepoGeneratedResumeData } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
+
 /**
  * Resume CRUD Service Interface
  * 
@@ -51,6 +53,11 @@ export interface IResumeGenerationService {
  * Follows Single Responsibility - only CRUD concerns.
  */
 export interface IResumeCrudService {
+  /**
+   * Create a new resume
+   */
+  create(data: CreateResumeInput): Promise<ServiceResult<RepoGeneratedResumeData>>;
+
   /**
    * List all resumes for a user
    */

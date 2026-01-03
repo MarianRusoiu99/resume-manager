@@ -4,17 +4,39 @@
  */
 
 import { Page } from "@/components/layout/Page";
-import { ProfileGallery } from "@/components/profile/ProfileGallery";
+import { ProfileGalleryClient } from "@/components/profile/ProfileGalleryClient";
 import { profileService } from "@/lib/services";
 import { verifySession } from "@/lib/auth/dal";
 import type { Resume } from "@/lib/validations/jsonresume";
 import type { ProfileDto } from "@/lib/client";
+import { Suspense } from "react";
+import { GallerySkeleton } from "@/components/shared/skeletons/GallerySkeleton";
 
-export default async function ProfilesPage() {
+interface Props {
+  searchParams: Promise<{ q?: string }>;
+}
+
+export default async function ProfilesPage({ searchParams }: Props) {
+  const { q: searchTerm = '' } = await searchParams;
+  
   // Use DAL for auth - will redirect if not authenticated
   const session = await verifySession();
 
-  const result = await profileService.getProfiles(session.userId);
+  return (
+    <Page
+      title="Professional Profiles"
+      description="Manage your professional profiles for targeted resume generation"
+      breadcrumbs={[{ label: "Profiles" }]}
+    >
+      <Suspense fallback={<GallerySkeleton columns={{ sm: 1, md: 2, lg: 4, xl: 4 }} />}>
+        <ProfilesContent userId={session.userId} searchTerm={searchTerm} />
+      </Suspense>
+    </Page>
+  );
+}
+
+async function ProfilesContent({ userId, searchTerm }: { userId: string; searchTerm: string }) {
+  const result = await profileService.getProfiles(userId);
   
   if (!result.success) {
     throw new Error(result.error);
@@ -39,14 +61,5 @@ export default async function ProfilesPage() {
     updatedAt: p.updatedAt.toISOString(),
   }));
 
-  return (
-    <Page
-      title="Professional Profiles"
-      description="Manage your professional profiles for targeted resume generation"
-      breadcrumbs={[{ label: "Profiles" }]}
-    >
-      <ProfileGallery initialProfiles={profiles} />
-    </Page>
-  );
+  return <ProfileGalleryClient initialProfiles={profiles} searchTerm={searchTerm} />;
 }
-

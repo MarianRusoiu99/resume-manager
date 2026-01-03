@@ -175,6 +175,34 @@ export class ResumeCrudService
       };
     });
   }
+  /**
+   * Duplicate a resume
+   */
+  async duplicateResume(resumeId: string, userId: string): Promise<ServiceResult<ResumeDetails>> {
+    return withServiceError('duplicate resume', async () => {
+      const existingResume = await this.repository.findById(resumeId, userId);
+      if (!existingResume) {
+        throw new NotFoundError('Resume');
+      }
+
+      const duplicatedResume = await this.repository.create({
+        userId,
+        resume: existingResume.resume as any,
+        jobDescription: existingResume.jobDescription || '',
+        jobMetadata: {
+          ...(existingResume.jobMetadata as Record<string, unknown>),
+          jobTitle: `${(existingResume.jobMetadata as any)?.jobTitle || 'Resume'} (Copy)`,
+        },
+        templateId: existingResume.templateId || undefined,
+        metadata: (existingResume.metadata as Record<string, unknown>) || {},
+      });
+
+      // Invalidate cache
+      invalidateUserResumesCache(userId);
+
+      return mapGeneratedResumeToDetails(duplicatedResume);
+    });
+  }
 }
 
 // Export singleton instance

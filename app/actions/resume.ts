@@ -1,8 +1,9 @@
 'use server'
 
-import { resumeService } from '@/lib/services/resumes';
+import { resumeService } from '@/lib/services';
 import { withServerAction } from '@/lib/actions/with-server-action';
 import type { GenerateResumeServiceInput } from '@/lib/services/resumes';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Get all resumes for the current user
@@ -24,6 +25,111 @@ export const getResume = withServerAction(
     'getResume',
     async (session, resumeId: string) => resumeService.getResume(resumeId, session.user.id),
     { resourceType: 'resume' }
+);
+
+/**
+ * Duplicate a resume
+ */
+export const duplicateResume = withServerAction(
+    'duplicateResume',
+    async (session, resumeId: string) => resumeService.duplicateResume(resumeId, session.user.id),
+    {
+        auditAction: 'RESUME_CREATE',
+        resourceType: 'resume',
+        revalidatePaths: ['/resumes'],
+    }
+);
+
+/**
+ * Update resume content
+ */
+export const updateResumeContent = withServerAction(
+    'updateResumeContent',
+    async (session, resumeId: string, content: Resume) =>
+        resumeService.updateResumeContent(resumeId, session.user.id, content),
+    {
+        auditAction: 'RESUME_UPDATE',
+        resourceType: 'resume',
+        revalidatePaths: ['/resumes/[id]'],
+    }
+);
+
+/**
+ * Update resume metadata (title, template, etc.)
+ */
+export const updateResumeMetadata = withServerAction(
+    'updateResumeMetadata',
+    async (
+        session,
+        resumeId: string,
+        data: {
+            jobTitle?: string;
+            companyName?: string;
+            templateId?: string | null;
+            isPublic?: boolean;
+        }
+    ) => {
+        // Handle template update if provided
+        if (data.templateId !== undefined) {
+            const templateResult = await resumeService.updateResumeTemplate(
+                resumeId,
+                session.user.id,
+                data.templateId
+            );
+            if (!templateResult.success) return templateResult;
+        }
+
+        // Handle job details update if provided
+        if (data.jobTitle !== undefined || data.companyName !== undefined) {
+            const jobResult = await resumeService.updateResumeJobDetails(resumeId, session.user.id, {
+                jobTitle: data.jobTitle,
+                companyName: data.companyName,
+            });
+            if (!jobResult.success) return jobResult;
+        }
+
+        return { success: true, data: null };
+    },
+    {
+        auditAction: 'RESUME_UPDATE',
+        resourceType: 'resume',
+        revalidatePaths: ['/resumes/[id]'],
+    }
+);
+
+/**
+ * Save a generated resume
+ */
+export const saveGeneratedResume = withServerAction(
+    'saveGeneratedResume',
+    async (
+        session,
+        data: {
+            resume: Resume;
+            jobDescription: string;
+            jobTitle?: string;
+            companyName?: string;
+            templateId?: string;
+            metadata?: Record<string, unknown>;
+        }
+    ) => {
+        return resumeService.create({
+            userId: session.user.id,
+            resume: data.resume,
+            jobDescription: data.jobDescription,
+            jobMetadata: {
+                jobTitle: data.jobTitle || 'Optimized Resume',
+                companyName: data.companyName || '',
+            },
+            templateId: data.templateId,
+            metadata: data.metadata || {},
+        });
+    },
+    {
+        auditAction: 'RESUME_CREATE',
+        resourceType: 'resume',
+        revalidatePaths: ['/resumes', '/dashboard'],
+    }
 );
 
 /**

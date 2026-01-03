@@ -11,7 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "./button";
 
 export interface SelectOption {
   value: string;
@@ -21,6 +23,8 @@ export interface SelectOption {
 export interface SimpleFormFieldProps {
   /** Field name/id - used for accessibility */
   id: string;
+  /** Field name for forms */
+  name?: string;
   /** Label text */
   label: string;
   /** Current value */
@@ -28,7 +32,7 @@ export interface SimpleFormFieldProps {
   /** Change handler */
   onChange: (value: string) => void;
   /** Input type - defaults to "text" */
-  type?: "text" | "email" | "tel" | "url" | "month" | "date" | "number" | "textarea" | "select";
+  type?: "text" | "email" | "tel" | "url" | "month" | "date" | "number" | "textarea" | "select" | "password";
   /** Placeholder text */
   placeholder?: string;
   /** Whether field is required */
@@ -66,6 +70,7 @@ export interface SimpleFormFieldProps {
  */
 export function SimpleFormField({
   id,
+  name,
   label,
   value,
   onChange,
@@ -79,6 +84,8 @@ export function SimpleFormField({
   error,
   options = [],
 }: SimpleFormFieldProps) {
+  const [showPassword, setShowPassword] = React.useState(false);
+
   const handleChange = React.useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       onChange(e.target.value);
@@ -87,12 +94,14 @@ export function SimpleFormField({
   );
 
   const displayLabel = required ? `${label} *` : label;
+  const fieldName = name || id;
 
   const renderInput = () => {
     if (type === "textarea") {
       return (
         <Textarea
           id={id}
+          name={fieldName}
           value={value}
           onChange={handleChange}
           placeholder={placeholder}
@@ -107,7 +116,7 @@ export function SimpleFormField({
     if (type === "select") {
       return (
         <Select value={value} onValueChange={onChange} disabled={disabled}>
-          <SelectTrigger id={id} aria-invalid={!!error}>
+          <SelectTrigger id={id} name={fieldName} aria-invalid={!!error}>
             <SelectValue placeholder={placeholder || "Select..."} />
           </SelectTrigger>
           <SelectContent>
@@ -121,10 +130,48 @@ export function SimpleFormField({
       );
     }
 
+    if (type === "password") {
+      return (
+        <div className="relative">
+          <Input
+            id={id}
+            name={fieldName}
+            type={showPassword ? "text" : "password"}
+            value={value}
+            onChange={handleChange}
+            placeholder={placeholder}
+            required={required}
+            disabled={disabled}
+            className="pr-10"
+            aria-invalid={!!error}
+            aria-describedby={description ? `${id}-description` : undefined}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+            onClick={() => setShowPassword((prev) => !prev)}
+            disabled={disabled}
+          >
+            {showPassword ? (
+              <EyeOff className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <Eye className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="sr-only">
+              {showPassword ? "Hide password" : "Show password"}
+            </span>
+          </Button>
+        </div>
+      );
+    }
+
     if (type === "month" || type === "date") {
       return (
         <Input
           id={id}
+          name={fieldName}
           type="text"
           value={value}
           onChange={handleChange}
@@ -140,6 +187,7 @@ export function SimpleFormField({
     return (
       <Input
         id={id}
+        name={fieldName}
         type={type}
         value={value}
         onChange={handleChange}

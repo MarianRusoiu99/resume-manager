@@ -5,10 +5,10 @@ import { ResumeEditor, type ResumeEditorRef } from "@/components/editor/ResumeEd
 import { EditorProvider } from "@/lib/contexts";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { Button } from "@/components/ui/button";
-import { Save, Share2, Sparkles, Edit2 } from "lucide-react";
+import { Save, Share2, Edit2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
-import { apiV1, type ResumeDetailsDto } from "@/lib/client";
+import { getResume, updateResumeContent, updateResumeMetadata } from "@/app/actions/resume";
 import { useComponentLogger } from "@/hooks";
 import { Page } from "@/components/layout/Page";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,8 +30,8 @@ export default function ResumeEditPage() {
   useEffect(() => {
     const loadJobTitle = async () => {
       try {
-        const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetailsDto>();
-        if (!result.error && result.data) {
+        const result = await getResume(resumeId);
+        if (result.success && result.data) {
           setJobTitle(result.data.jobTitle);
         }
       } catch (error) {
@@ -43,8 +43,8 @@ export default function ResumeEditPage() {
 
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetailsDto>();
-      if (result.error || !result.data) throw new Error(result.error || "Failed to load");
+      const result = await getResume(resumeId);
+      if (!result.success || !result.data) throw new Error((result as any).error || "Failed to load");
       return result.data.content as Resume;
     } catch (error) {
       log.error("Error loading resume", error);
@@ -54,8 +54,8 @@ export default function ResumeEditPage() {
 
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const result = await apiV1.RESUME.CONTENT(resumeId).patch<unknown>({ content: resume });
-      if (result.error) throw new Error(result.error);
+      const result = await updateResumeContent(resumeId, resume);
+      if (!result.success) throw new Error(result.error);
       return true;
     } catch (error) {
       log.error("Error saving resume", error);
@@ -69,8 +69,8 @@ export default function ResumeEditPage() {
       return;
     }
     try {
-      const result = await apiV1.RESUME.GET(resumeId).patch<unknown>({ jobTitle: newTitle });
-      if (result.error) throw new Error(result.error);
+      const result = await updateResumeMetadata(resumeId, { jobTitle: newTitle });
+      if (!result.success) throw new Error(result.error);
       setJobTitle(newTitle);
       setIsRenameModalOpen(false);
       toast.success("Resume renamed");

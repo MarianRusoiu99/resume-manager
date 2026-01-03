@@ -5,6 +5,7 @@
  * Supports reading file content for text-based files (txt, pdf, docx, md).
  */
 
+import { parseDocumentAction } from '@/app/actions/document-parser';
 import { useState, useCallback } from 'react';
 import type { FileAttachment } from '../types';
 
@@ -64,18 +65,13 @@ async function readFileContent(file: File): Promise<string> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch('/api/v1/parse-document', {
-      method: 'POST',
-      body: formData,
-    });
+    const result = await parseDocumentAction(formData);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Failed to parse ${file.name}`);
+    if (!result.success) {
+      throw new Error(result.error || `Failed to parse ${file.name}`);
     }
 
-    const { data } = await response.json();
-    return data.text;
+    return result.data.text;
   }
 
   // For text-like formats, use Blob.text()

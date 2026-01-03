@@ -7,6 +7,7 @@
 import { createApiHandler } from '@/lib/api/handler';
 import { userAISettingsService } from '@/lib/services';
 import { updateAIPreferenceSchema } from '@/lib/validations/settings';
+import { z } from 'zod';
 
 /**
  * @swagger

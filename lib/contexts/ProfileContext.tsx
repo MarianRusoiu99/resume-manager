@@ -4,7 +4,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useSession } from "next-auth/react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
-import { apiV1, type ProfileDto } from "@/lib/client";
+import { type ProfileDto } from "@/lib/client";
+import { getProfiles } from "@/app/actions/profile";
 
 interface ProfileContextType {
   profiles: ProfileDto[];
@@ -40,14 +41,14 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
       setLoading(true);
       setError(null);
 
-      const result = await apiV1.PROFILE.LIST.get<ProfileDto[]>();
-      if (result.error) {
+      const result = await getProfiles();
+      if (!result.success) {
         throw new Error(result.error);
       }
 
-      const profilesData = (result.data ?? []).map((profile) => ({
+      const profilesData = ((result.data as unknown as ProfileDto[]) ?? []).map((profile) => ({
         ...profile,
-        resume: profile.resume as Resume,
+        resume: profile.resume as unknown as Resume,
       }));
 
       setProfiles(profilesData);
