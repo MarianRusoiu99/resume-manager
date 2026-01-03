@@ -8,17 +8,15 @@ import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/lib/constants';
 import type { CoverLetterListItem } from './CoverLetterList';
 
+import { deleteCoverLetter } from '@/app/actions/cover-letter';
+
 interface CoverLetterListClientProps {
     coverLetters: CoverLetterListItem[];
-    onDelete: (id: string) => void;
-    onGenerate: () => void;
     searchTerm?: string;
 }
 
 export function CoverLetterListClient({
     coverLetters,
-    onDelete,
-    onGenerate,
     searchTerm
 }: CoverLetterListClientProps) {
     const router = useRouter();
@@ -32,8 +30,12 @@ export function CoverLetterListClient({
     const handleDelete = async (id: string) => {
         startTransition(async () => {
             removeLetterOptimistically(id);
-            await onDelete(id);
+            await deleteCoverLetter(id);
         });
+    };
+
+    const handleGenerate = () => {
+        router.push(ROUTES.GENERATE_COVER_LETTER);
     };
 
     return (
@@ -50,7 +52,7 @@ export function CoverLetterListClient({
                     : "Start by generating your first cover letter for a job application",
                 action: {
                     label: "Generate Cover Letter",
-                    onClick: onGenerate,
+                    onClick: handleGenerate,
                     icon: <FileText className="w-4 h-4" />,
                 },
             }}
