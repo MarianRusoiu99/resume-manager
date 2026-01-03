@@ -15,6 +15,7 @@ import type { ITemplateRepository, CreateTemplateInput, UpdateTemplateInput } fr
  * Template Repository Implementation
  */
 export class TemplateRepository 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GenericRepository requires a Prisma delegate type, but we use direct delegate access with custom mapping
   extends GenericRepository<ResumeTemplate, CreateTemplateInput, UpdateTemplateInput, any>
   implements ITemplateRepository 
 {
@@ -30,7 +31,7 @@ export class TemplateRepository
       orderBy: [{ name: 'asc' }],
     });
 
-    return templates.map((t: any) => this.mapToTemplate(t));
+    return templates.map((t: unknown) => this.mapToTemplate(t as Parameters<typeof this.mapToTemplate>[0]));
   }
 
   /**

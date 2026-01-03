@@ -20,7 +20,15 @@ import { PromptInput } from '../prompt/PromptInput';
 import { TemplateVisualComparison } from '../preview/TemplateVisualComparison';
 import { TemplateCodeComparison } from '../preview/TemplateCodeComparison';
 import { useTemplateEnhancement } from '../hooks/useTemplateEnhancement';
-import { ModelSelector } from '@/components/shared/ModelSelector';
+import { ModelSelector } from '@/components/ai/ModelSelector';
+import type { ConversationAttachment } from '../hooks/useConversation';
+
+// Local file attachment type to match PromptInput's expected type
+interface PromptFileAttachment {
+  type: string;
+  content: string;
+  name: string;
+}
 
 export interface AIEnhanceTemplateModalProps {
   open: boolean;
@@ -42,7 +50,11 @@ export function AIEnhanceTemplateModal({
   description = 'AI will enhance the HTML template and its styles to improve structure, styling, and consistency.',
 }: Readonly<AIEnhanceTemplateModalProps>) {
   const [viewMode, setViewMode] = useState<ViewMode>('visual');
-  const [selectedModel, setSelectedModel] = useState<string>('gpt-4o');
+  const [selectedModel, setSelectedModel] = useState<string>('');
+
+  const handleModelChange = useCallback((modelId: string, _providerId: string) => {
+    setSelectedModel(modelId);
+  }, []);
 
   // Use centralized enhancement hook
   const {
@@ -55,6 +67,16 @@ export function AIEnhanceTemplateModal({
     setInstructions,
     instructions,
   } = useTemplateEnhancement();
+
+  const handleEnhance = useCallback((fileAttachments?: PromptFileAttachment[]) => {
+    const mappedAttachments: ConversationAttachment[] | undefined = fileAttachments?.map((a) => ({
+      type: a.type.startsWith('image/') ? 'image' as const : 'document' as const,
+      content: a.content,
+      name: a.name,
+      mimeType: a.type,
+    }));
+    enhance(mappedAttachments, selectedModel);
+  }, [enhance, selectedModel]);
 
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     onOpenChange(nextOpen);
@@ -126,7 +148,8 @@ export function AIEnhanceTemplateModal({
   const rightAction = (
     <ModelSelector
       value={selectedModel}
-      onValueChange={setSelectedModel}
+      onValueChange={handleModelChange}
+      className="h-9"
     />
   );
 
@@ -146,7 +169,7 @@ export function AIEnhanceTemplateModal({
         <PromptInput
           value={instructions}
           onChange={setInstructions}
-          onSubmit={(attachments) => enhance(attachments, selectedModel)}
+          onSubmit={handleEnhance}
           isLoading={isLoading}
           hasExistingContent={hasEnhancement}
           showFileAttachment={true}

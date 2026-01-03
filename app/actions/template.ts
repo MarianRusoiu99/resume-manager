@@ -34,7 +34,7 @@ export const createTemplate = withServerAction(
         return templateService.createTemplate({
             ...data,
             isPublic: data.isPublic ?? false,
-        } as any);
+        });
     },
     {
         auditAction: 'TEMPLATE_CREATE',

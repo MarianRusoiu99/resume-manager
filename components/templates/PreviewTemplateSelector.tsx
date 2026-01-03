@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
-import { Check, ChevronDown, Loader2 } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import { Search, Info } from 'lucide-react';
 import {
   Dialog,
@@ -125,7 +125,7 @@ export function PreviewTemplateSelector({
           ) : filteredTemplates.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-muted-foreground space-y-2">
               <Search className="h-10 w-10 opacity-20" />
-              <p>No templates found matching "{searchQuery}"</p>
+              <p>No templates found matching &quot;{searchQuery}&quot;</p>
             </div>
           ) : (
             <ScrollArea className="h-full pr-4">

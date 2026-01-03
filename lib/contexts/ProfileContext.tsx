@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
 import { type ProfileDto } from "@/lib/actions/types";
+// eslint-disable-next-line no-restricted-imports -- ProfileContext is a client boundary that needs this action
 import { getProfiles } from "@/app/actions/profile";
 
 interface ProfileContextType {

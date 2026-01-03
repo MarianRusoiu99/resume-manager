@@ -2,7 +2,7 @@ import type { GeneratedResumeRepository } from '@/lib/repositories/generated-res
 import type { GenerateResumeServiceInput, GenerateResumeWithProgressInput, GeneratedResumeData } from './types';
 import { generateResume as runAIWorkflow } from '@/lib/ai/workflow/resume-generation';
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
-import { success, failure } from '@/lib/types/service-result';
+import { success, failure, type ServiceResult } from '@/lib/types/service-result';
 import { logger } from '@/lib/utils/logger';
 import type { IProfileService } from '../../interfaces';
 import type { Resume } from '@/lib/validations/jsonresume';
@@ -11,7 +11,7 @@ export async function runResumeGenerationWorkflow(
   repository: GeneratedResumeRepository,
   profileService: IProfileService,
   input: GenerateResumeServiceInput
-): Promise<any> {
+): Promise<ServiceResult<GeneratedResumeData>> {
   try {
     // Get the user's default profile or a specific profile
     let profileResult;
@@ -46,7 +46,7 @@ export async function runResumeGenerationWorkflow(
     // Persist the generated resume
     const saved = await repository.create({
       userId: input.userId,
-      resume: result.resume as any,
+      resume: result.resume as Resume,
       jobDescription: input.jobDescription,
       jobMetadata: {
           jobTitle: result.jobTitle || 'Optimized Resume',
@@ -81,11 +81,12 @@ export async function runResumeGenerationWorkflowWithProgress(
   repository: GeneratedResumeRepository,
   profileService: IProfileService,
   input: GenerateResumeWithProgressInput
-): Promise<any> {
-    // Basic implementation for now to satisfy types
+): Promise<ServiceResult<GeneratedResumeData>> {
+    // Basic implementation for now to satisfy types - onProgress is in input but not used yet
     return runResumeGenerationWorkflow(repository, profileService, input);
 }
 
-export async function runStandaloneCoverLetterWorkflow(input: any): Promise<any> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Placeholder for future implementation
+export async function runStandaloneCoverLetterWorkflow(_input: Record<string, unknown>): Promise<ServiceResult<never>> {
     return failure('Cover letter generation not implemented in this workflow', 'INTERNAL_ERROR');
 }

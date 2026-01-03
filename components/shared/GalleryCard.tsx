@@ -14,12 +14,10 @@
 
 import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { GalleryCardPreview } from '@/components/shared/GalleryCardPreview';
 import { GalleryCardActionsMenu } from '@/components/shared/GalleryCardActionsMenu';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { cn } from '@/lib/utils';
 
 /**
  * Action item for dropdown menu

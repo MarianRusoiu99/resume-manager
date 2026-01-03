@@ -15,6 +15,8 @@ interface CoverLetterListClientProps {
     onGenerate?: () => void;
 }
 
+type DeleteFn = (id: string) => Promise<{ success: boolean; error?: string }>;
+
 export function CoverLetterListClient({
     coverLetters,
     searchTerm,
@@ -26,11 +28,13 @@ export function CoverLetterListClient({
         router.push(ROUTES.GENERATE_COVER_LETTER);
     };
 
+    const deleteHandler: DeleteFn = onDelete || deleteCoverLetter;
+
     return (
         <ResourceGallery
             initialItems={coverLetters}
             resourceName="Cover Letter"
-            onDelete={onDelete || (deleteCoverLetter as any)}
+            onDelete={deleteHandler}
             searchTerm={searchTerm}
             getItemKey={(cl: CoverLetterListItem) => cl.id}
             filterFn={(cl: CoverLetterListItem, term: string) => {

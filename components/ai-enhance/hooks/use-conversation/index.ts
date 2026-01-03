@@ -73,7 +73,7 @@ export function useConversation(options: UseConversationOptions): UseConversatio
    * Send a message
    */
   const sendMessage = useCallback(
-    async ({ message, attachments, modelId, stream = true }: SendMessageOptions) => {
+    async ({ message, attachments, modelId, stream = true, contextOverride }: SendMessageOptions) => {
       // Abort any existing request
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
@@ -87,9 +87,15 @@ export function useConversation(options: UseConversationOptions): UseConversatio
         attachments,
       };
 
+      // Merge context override with existing context
+      const mergedContext = contextOverride 
+        ? { ...state.context, ...contextOverride }
+        : state.context;
+
       setState((prev) => ({
         ...prev,
         messages: [...prev.messages, userMessage],
+        context: mergedContext,
         isLoading: true,
         error: null,
       }));
@@ -101,12 +107,14 @@ export function useConversation(options: UseConversationOptions): UseConversatio
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            conversationId: state.id,
+            // Only include conversationId if it exists (avoid sending null)
+            ...(state.id && { conversationId: state.id }),
             mode: state.mode,
             message,
             attachments,
-            context: state.context,
-            modelId,
+            context: mergedContext,
+            // Only include modelId if it's a non-empty string
+            ...(modelId && { modelId }),
             stream,
           }),
           signal: abortControllerRef.current.signal,
@@ -114,7 +122,15 @@ export function useConversation(options: UseConversationOptions): UseConversatio
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `Request failed: ${response.status}`);
+          // Include validation details if available
+          let errorMessage = errorData.error || `Request failed: ${response.status}`;
+          if (errorData.details && Array.isArray(errorData.details)) {
+            const details = errorData.details
+              .map((d: { field?: string; message?: string }) => `${d.field}: ${d.message}`)
+              .join(', ');
+            errorMessage = `${errorMessage} (${details})`;
+          }
+          throw new Error(errorMessage);
         }
 
         // Get conversation ID from header

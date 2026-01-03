@@ -7,7 +7,6 @@
 
 import { useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { toast } from 'sonner';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui';
 import { ErrorState, LoadingState } from '@/components/shared/states';

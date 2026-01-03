@@ -30,9 +30,9 @@ export const addApiProvider = withServerAction(
     const validated = apiKeySchema.safeParse(input);
     if (!validated.success) {
       return { 
-        success: false, 
+        success: false as const, 
         error: validated.error.issues[0].message 
-      } as any;
+      };
     }
 
     return apiProviderService.addProvider({

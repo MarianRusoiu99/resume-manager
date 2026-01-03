@@ -1,9 +1,6 @@
 'use client';
 
-import { useOptimistic, useTransition } from 'react';
 import { ResumeCard } from '@/components/resume/ResumeCard';
-import { Gallery } from '@/components/shared/Gallery';
-import { useResumeOperations } from '@/hooks/features/useResumeOperations';
 import { FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/lib/constants';

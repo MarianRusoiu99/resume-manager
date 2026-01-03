@@ -44,7 +44,10 @@ export default function ResumeEditPage() {
   const handleLoad = async (): Promise<Resume | null> => {
     try {
       const result = await getResume(resumeId);
-      if (!result.success || !result.data) throw new Error((result as any).error || "Failed to load");
+      if (!result.success || !result.data) {
+        const errorResult = result as { error?: string };
+        throw new Error(errorResult.error || "Failed to load");
+      }
       return result.data.content as Resume;
     } catch (error) {
       log.error("Error loading resume", error);

@@ -10,7 +10,7 @@ import { Edit, Eye, Copy, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from '@/components/shared/EntityCard';
 import type { GalleryCardAction } from '@/components/shared/GalleryCard';
 import { TemplatePreviewModal } from './TemplatePreviewModal';
-import { getTemplate, deleteTemplate, duplicateTemplate } from '@/app/actions/template';
+import { deleteTemplate, duplicateTemplate } from '@/app/actions/template';
 import { useToastAction, useComponentLogger } from '@/hooks';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';

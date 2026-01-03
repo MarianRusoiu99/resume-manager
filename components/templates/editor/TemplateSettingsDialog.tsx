@@ -14,15 +14,17 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 
+interface FormData {
+  name: string;
+  description: string;
+  isPublic: boolean;
+}
+
 interface TemplateSettingsDialogProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
-  readonly formData: {
-    name: string;
-    description: string;
-    isPublic: boolean;
-  };
-  readonly setFormData: (data: any) => void;
+  readonly formData: FormData;
+  readonly setFormData: (data: FormData) => void;
 }
 
 export function TemplateSettingsDialog({
@@ -37,7 +39,7 @@ export function TemplateSettingsDialog({
         <DialogHeader>
           <DialogTitle>Template Settings</DialogTitle>
           <DialogDescription>
-            Configure your template's basic information and visibility.
+            Configure your template&apos;s basic information and visibility.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

@@ -10,7 +10,7 @@
  * - Centralized enhancement logic via useResumeEnhancement hook
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -22,7 +22,15 @@ import { ResumeTextComparison } from '../preview/ResumeTextComparison';
 import { useAITask } from '../hooks/useAITask';
 import { RESUME_PRESETS } from '../types';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { ModelSelector } from '@/components/shared/ModelSelector';
+import { ModelSelector } from '@/components/ai/ModelSelector';
+
+import type { ConversationAttachment } from '../hooks/useConversation';
+
+interface AttachmentInput {
+  type: string;
+  content: string;
+  name: string;
+}
 
 export interface AIEnhanceResumeModalProps {
   open: boolean;
@@ -49,8 +57,12 @@ export function AIEnhanceResumeModal({
   description = 'AI will improve your entire resume: better wording, stronger impact, and professional tone.',
 }: Readonly<AIEnhanceResumeModalProps>) {
   const [viewMode, setViewMode] = useState<ViewMode>('visual');
-  const [selectedModel, setSelectedModel] = useState<string>('gpt-4o');
+  const [selectedModel, setSelectedModel] = useState<string>('');
   const [instructions, setInstructions] = useState('');
+
+  const handleModelChange = useCallback((modelId: string, _providerId: string) => {
+    setSelectedModel(modelId);
+  }, []);
 
   // Use centralized enhancement hook
   const {
@@ -84,15 +96,17 @@ export function AIEnhanceResumeModal({
     onOpenChange(false);
   }, [onOpenChange]);
 
-  const handleEnhance = useCallback((attachments?: any[]) => {
+  const handleEnhance = useCallback((attachments?: AttachmentInput[]) => {
+    const mappedAttachments: ConversationAttachment[] | undefined = attachments?.map((a) => ({
+      type: a.type.startsWith('image/') ? 'image' as const : 'document' as const,
+      content: a.content,
+      name: a.name,
+      mimeType: a.type,
+    }));
+
     runTask({
       message: instructions,
-      attachments: attachments?.map((a) => ({
-        type: a.type.startsWith('image/') ? 'image' : 'document',
-        content: a.content,
-        name: a.name,
-        mimeType: a.type,
-      })) as any,
+      attachments: mappedAttachments,
       modelId: selectedModel,
       context: {
         currentResume: resume,
@@ -143,7 +157,8 @@ export function AIEnhanceResumeModal({
   const rightAction = (
     <ModelSelector
       value={selectedModel}
-      onValueChange={setSelectedModel}
+      onValueChange={handleModelChange}
+      className="h-9"
     />
   );
 

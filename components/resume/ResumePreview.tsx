@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useRef, useMemo, useEffect } from 'react';
+import { useRef, useMemo } from 'react';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

@@ -4,23 +4,6 @@ import { NextResponse } from 'next/server';
 
 /**
  * SSE endpoint for real-time notifications
- * 
- * @swagger
- * /api/v1/notifications/stream:
- *   get:
- *     summary: Subscribe to real-time notifications via Server-Sent Events
- *     tags: [Notifications]
- *     security:
- *       - session: []
- *     responses:
- *       200:
- *         description: SSE stream established
- *         content:
- *           text/event-stream:
- *             schema:
- *               type: string
- *       401:
- *         description: Not authenticated
  */
 export async function GET() {
   const session = await auth();

@@ -113,7 +113,7 @@ async function upsertResumeTemplates() {
       });
       console.log(`   🔄 Updated template: ${template.name}`);
     } else {
-      await prisma.resumeTemplate.create({ data: template as any });
+      await prisma.resumeTemplate.create({ data: template });
       console.log(`   ✅ Created template: ${template.name}`);
     }
   }

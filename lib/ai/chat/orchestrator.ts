@@ -4,7 +4,7 @@
  * Bridges conversations to the Vercel AI SDK with streaming support
  */
 
-import { streamText, generateText, generateObject } from 'ai';
+import { streamText, streamObject, generateText, generateObject, type Tool } from 'ai';
 import { logger } from '@/lib/utils/logger';
 import { ConversationManager, type Conversation } from './conversation';
 import { hasImageAttachments } from './message';
@@ -49,7 +49,184 @@ export class AIOrchestrator {
     // Build system prompt
     const systemPrompt = mode.buildSystemPrompt(conversation.context);
     
-    // Build tools if mode has them
+    // Use structured output streaming for modes that require it
+    if (mode.useStructuredOutput !== false && mode.outputSchema) {
+      yield* this.streamStructuredResponse(conversation, mode, model, messages, systemPrompt, options);
+    } else {
+      yield* this.streamTextResponse(conversation, mode, model, messages, systemPrompt, options);
+    }
+  }
+
+  /**
+   * Stream with structured JSON output (uses streamObject for guaranteed JSON)
+   * Falls back to streamText + parsing for models that don't support json_schema
+   */
+  private static async *streamStructuredResponse(
+    conversation: Conversation,
+    mode: ReturnType<typeof getModeOrThrow>,
+    model: ReturnType<OrchestratorOptions['provider']['createLanguageModel']>,
+    messages: ReturnType<typeof buildMessages>,
+    systemPrompt: string,
+    options: OrchestratorOptions
+  ): AsyncGenerator<AIStreamChunk> {
+    try {
+      const result = streamObject({
+        model,
+        system: systemPrompt,
+        messages,
+        schema: mode.outputSchema,
+        abortSignal: options.abortSignal,
+      });
+
+      let lastJsonString = '';
+
+      for await (const part of result.partialObjectStream) {
+        // Convert partial object to string for streaming display
+        const jsonString = JSON.stringify(part, null, 2);
+        if (jsonString !== lastJsonString) {
+          // Only send the new content
+          const newContent = jsonString.slice(lastJsonString.length);
+          if (newContent) {
+            yield {
+              type: 'text-delta',
+              content: newContent,
+            };
+          }
+          lastJsonString = jsonString;
+        }
+      }
+
+      // Get the final object
+      const finalResult = await result.object;
+      const usage = normalizeUsage(await result.usage);
+      const finishReason = await result.finishReason;
+
+      // Log usage
+      logUsage(options, usage, finishReason, mode.id);
+
+      // Post-process if mode has it
+      const output = mode.postprocessOutput 
+        ? mode.postprocessOutput(finalResult)
+        : finalResult;
+
+      // Store output
+      ConversationManager.setOutput(conversation.id, output);
+      
+      const fullText = JSON.stringify(output, null, 2);
+      ConversationManager.addAssistantMessage(conversation.id, fullText, output);
+
+      yield {
+        type: 'finish',
+        finishReason,
+        usage,
+      };
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // Check if this is a model compatibility error (json_schema not supported)
+      // Fall back to streamText with manual parsing for older models
+      if (errorMessage.includes('json_schema') || errorMessage.includes('not supported')) {
+        logger.warn('Model does not support streamObject, falling back to streamText', {
+          conversationId: conversation.id,
+          error: errorMessage,
+        });
+        
+        // Fall back to text streaming with parsing
+        yield* this.streamTextWithParsing(conversation, mode, model, messages, systemPrompt, options);
+        return;
+      }
+      
+      logger.error('Structured stream response failed', error);
+      
+      yield {
+        type: 'error',
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Stream text and parse JSON at the end (fallback for older models)
+   */
+  private static async *streamTextWithParsing(
+    conversation: Conversation,
+    mode: ReturnType<typeof getModeOrThrow>,
+    model: ReturnType<OrchestratorOptions['provider']['createLanguageModel']>,
+    messages: ReturnType<typeof buildMessages>,
+    systemPrompt: string,
+    options: OrchestratorOptions
+  ): AsyncGenerator<AIStreamChunk> {
+    try {
+      const result = streamText({
+        model,
+        system: systemPrompt,
+        messages,
+        abortSignal: options.abortSignal,
+      });
+
+      let fullText = '';
+
+      for await (const part of result.fullStream) {
+        if (part.type === 'text-delta') {
+          const streamPart = part as { textDelta?: string; text?: string };
+          const text = streamPart.textDelta ?? streamPart.text ?? '';
+          fullText += text;
+          yield {
+            type: 'text-delta',
+            content: text,
+          };
+        } else if (part.type === 'finish') {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const finishPart = part as any;
+          const usage = normalizeUsage(finishPart.usage ?? finishPart.totalUsage);
+
+          // Log usage
+          logUsage(options, usage, part.finishReason, mode.id);
+
+          // Try to parse the output
+          try {
+            const output = parseOutput(fullText, mode);
+            ConversationManager.setOutput(conversation.id, output);
+            ConversationManager.addAssistantMessage(conversation.id, fullText, output);
+          } catch (parseError) {
+            logger.warn('Failed to parse structured output from text stream', {
+              error: parseError instanceof Error ? parseError.message : String(parseError),
+              conversationId: conversation.id,
+            });
+            // Still save the raw text
+            ConversationManager.addAssistantMessage(conversation.id, fullText);
+          }
+
+          yield {
+            type: 'finish',
+            finishReason: part.finishReason,
+            usage,
+          };
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Text stream with parsing failed', error);
+      
+      yield {
+        type: 'error',
+        error: errorMessage,
+      };
+    }
+  }
+
+  /**
+   * Stream plain text (for text-enhancement and other text modes)
+   */
+  private static async *streamTextResponse(
+    conversation: Conversation,
+    mode: ReturnType<typeof getModeOrThrow>,
+    model: ReturnType<OrchestratorOptions['provider']['createLanguageModel']>,
+    messages: ReturnType<typeof buildMessages>,
+    systemPrompt: string,
+    options: OrchestratorOptions
+  ): AsyncGenerator<AIStreamChunk> {
     const tools = this.buildTools(mode.getTools());
     
     try {
@@ -66,7 +243,8 @@ export class AIOrchestrator {
       for await (const part of result.fullStream) {
         switch (part.type) {
           case 'text-delta': {
-            const text = (part as any).textDelta ?? (part as any).text ?? '';
+            const streamPart = part as { textDelta?: string; text?: string };
+            const text = streamPart.textDelta ?? streamPart.text ?? '';
             fullText += text;
             yield {
               type: 'text-delta',
@@ -75,29 +253,35 @@ export class AIOrchestrator {
             break;
           }
 
-          case 'tool-call':
+          case 'tool-call': {
+            const toolPart = part as { toolCallId: string; toolName: string; args?: Record<string, unknown>; input?: Record<string, unknown> };
             yield {
               type: 'tool-call',
               toolCall: {
-                id: (part as any).toolCallId,
-                name: (part as any).toolName,
-                arguments: ((part as any).args ?? (part as any).input ?? {}) as Record<string, unknown>,
+                id: toolPart.toolCallId,
+                name: toolPart.toolName,
+                arguments: (toolPart.args ?? toolPart.input ?? {}) as Record<string, unknown>,
               },
             };
             break;
+          }
 
-          case 'tool-result':
+          case 'tool-result': {
+            const resultPart = part as { toolCallId: string; result?: unknown; output?: unknown };
             yield {
               type: 'tool-result',
               toolResult: {
-                toolCallId: (part as any).toolCallId,
-                result: (part as any).result ?? (part as any).output,
+                toolCallId: resultPart.toolCallId,
+                result: resultPart.result ?? resultPart.output,
               },
             };
             break;
+          }
 
           case 'finish': {
-            const usage = normalizeUsage((part as any).usage ?? (part as any).totalUsage);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI SDK finish event usage structure varies
+            const finishPart = part as any;
+            const usage = normalizeUsage(finishPart.usage ?? finishPart.totalUsage);
             yield {
               type: 'finish',
               finishReason: part.finishReason,
@@ -106,25 +290,13 @@ export class AIOrchestrator {
 
             // Log usage
             logUsage(options, usage, part.finishReason, mode.id);
-
-            // Try to parse output if mode has structured output
-            if (mode.useStructuredOutput !== false) {
-              try {
-                const output = parseOutput(fullText, mode);
-                ConversationManager.setOutput(conversation.id, output);
-              } catch (parseError) {
-                logger.warn('Failed to parse structured output from stream', {
-                  error: parseError instanceof Error ? parseError.message : String(parseError),
-                  conversationId: conversation.id,
-                });
-              }
-            }
             break;
           }
         }
       }
 
-      // Add assistant message
+      // Store the output as plain text for text modes
+      ConversationManager.setOutput(conversation.id, fullText);
       ConversationManager.addAssistantMessage(conversation.id, fullText);
 
     } catch (error) {
@@ -252,13 +424,15 @@ export class AIOrchestrator {
   /**
    * Builds tools for Vercel AI SDK
    */
-  private static buildTools(modeTools: AITool[]): Record<string, any> {
-    const tools: Record<string, any> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI SDK Tool type is complex and version-specific
+  private static buildTools(modeTools: AITool[]): Record<string, Tool<any, any>> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI SDK Tool type
+    const tools: Record<string, Tool<any, any>> = {};
 
     for (const tool of modeTools) {
       tools[tool.name] = {
         description: tool.description,
-        parameters: tool.parameters,
+        inputSchema: tool.parameters,
         execute: async (_params: unknown) => {
           // Note: In actual usage, we'd need to pass the context
           // For now, tools are primarily for AI guidance

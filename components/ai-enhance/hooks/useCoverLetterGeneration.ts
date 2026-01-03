@@ -3,12 +3,16 @@
 import { useAITask } from './useAITask';
 import { useCallback } from 'react';
 
+interface CoverLetterOutput {
+  content?: string;
+}
+
 /**
  * useCoverLetterGeneration - Specialized hook for cover letter generation using the unified AITask orchestrator.
  */
 export function useCoverLetterGeneration() {
   const { runTask, isLoading, error, output, partialOutput, reset } = useAITask({
-    mode: 'cover-letter' as any,
+    mode: 'cover-letter-generation',
   });
 
   const generate = useCallback(async ({
@@ -29,9 +33,11 @@ export function useCoverLetterGeneration() {
     });
   }, [runTask]);
 
+  const typedOutput = output as CoverLetterOutput | null;
+
   return {
     generate,
-    coverLetter: (output as any)?.content || partialOutput,
+    coverLetter: typedOutput?.content || partialOutput,
     isLoading,
     error,
     reset,

@@ -19,7 +19,7 @@ export async function resolveProviderForFeature(
   if (overrideModelId) {
     const modelsResult = await apiProviderService.getAvailableModels(userId);
     if (modelsResult.success) {
-      const model = modelsResult.data.allModels.find((m: any) => m.id === overrideModelId);
+      const model = modelsResult.data.allModels.find((m) => m.id === overrideModelId);
       if (model) {
         return { providerId: model.providerId, modelId: overrideModelId };
       }
@@ -35,7 +35,7 @@ export async function resolveProviderForFeature(
     if (providerResult.success) {
       const modelsResult = await apiProviderService.getAvailableModels(userId);
       if (modelsResult.success) {
-        const preferredModel = modelsResult.data.allModels.find((m: any) => {
+        const preferredModel = modelsResult.data.allModels.find((m) => {
           if (m.providerId !== preference.providerId) return false;
           if (m.id === preference.modelId) return true;
           if (m.modelKey === preference.modelId) return true;

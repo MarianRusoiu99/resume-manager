@@ -3,10 +3,13 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useConversation, ConversationMode, ConversationAttachment } from './useConversation';
+import { createComponentLogger } from '@/lib/utils/client-logger';
+
+const logger = createComponentLogger('useAITask');
 
 export interface AITaskOptions {
   mode: ConversationMode;
-  onSuccess?: (output: any) => void;
+  onSuccess?: (output: unknown) => void;
   onError?: (error: string) => void;
   stream?: boolean;
 }
@@ -15,7 +18,7 @@ export interface RunTaskOptions {
   message: string;
   attachments?: ConversationAttachment[];
   modelId?: string;
-  context?: any;
+  context?: unknown;
 }
 
 /**
@@ -31,7 +34,7 @@ export function useAITask(options: AITaskOptions) {
     onStreamUpdate: (content: string) => {
       setPartialOutput(content);
     },
-    onComplete: (output: any) => {
+    onComplete: (output: unknown) => {
       onSuccess?.(output);
     },
     onError: (err: string) => {
@@ -44,22 +47,20 @@ export function useAITask(options: AITaskOptions) {
     async ({ message, attachments, modelId, context }: RunTaskOptions) => {
       setPartialOutput('');
       
-      if (context) {
-        updateContext(context);
-      }
-
       try {
         await sendMessage({
           message,
           attachments,
           modelId,
           stream,
+          // Pass context directly to avoid race condition with setState
+          contextOverride: context as Record<string, unknown> | undefined,
         });
       } catch (err) {
-        console.error(`AI Task Error (${mode}):`, err);
+        logger.error(`AI Task Error (${mode})`, err);
       }
     },
-    [sendMessage, mode, updateContext, stream]
+    [sendMessage, mode, stream]
   );
 
   return {

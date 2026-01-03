@@ -8,13 +8,14 @@ import { EditorContent } from "./EditorContent";
 import { AIEnhanceResumeModal } from "@/components/ai-enhance/modals/AIEnhanceResumeModal";
 import { ShareDialog } from "./modals/ShareDialog";
 import { useShareState } from "@/hooks/editor/useShareState";
+import type { Resume } from "@/lib/validations/jsonresume";
 
 export interface ResumeEditorRef {
   save: () => Promise<void>;
   setShowShareDialog: (show: boolean) => void;
-  updateResume: (resume: any) => void;
+  updateResume: (resume: Resume) => void;
   setShowAIEnhance: (show: boolean) => void;
-  resume: any;
+  resume: Resume;
   isDirty: boolean;
   isSaving: boolean;
   lastSavedAt: Date | null;
@@ -34,7 +35,7 @@ export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
   displayName: initialDisplayName,
   isPublic: initialIsPublic,
   publicSlug: initialPublicSlug,
-  onDisplayNameChange,
+  onDisplayNameChange: _onDisplayNameChange,
   onTogglePublic,
 }, ref) => {
   const { resume, save, isDirty, isSaving, lastSavedAt, updateResume } = useEditor();
@@ -68,7 +69,7 @@ export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
   // Derive display values from props (parent is source of truth)
   const displayName = initialDisplayName || "";
   const isPublic = initialIsPublic || false;
-  const publicSlug = initialPublicSlug || "";
+  const _publicSlug = initialPublicSlug || "";
 
   return (
     <div className="flex-1 min-h-0 flex flex-col md:flex-row bg-transparent gap-4 p-4">

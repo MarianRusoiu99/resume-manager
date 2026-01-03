@@ -18,11 +18,11 @@ export function useCoverLetterDetail(coverLetterId: string) {
 
       const result = await getCoverLetter(coverLetterId);
 
-      if (!result.success || !result.data) {
-        throw new Error((result as any).error || 'Failed to fetch cover letter');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch cover letter');
       }
 
-      setCoverLetter(result.data as any);
+      setCoverLetter(result.data as CoverLetterWithResume);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load cover letter';
       setError(message);
@@ -42,11 +42,11 @@ export function useCoverLetterDetail(coverLetterId: string) {
         },
       });
 
-      if (!result.success || !result.data) {
-        throw new Error((result as any).error || 'Failed to save cover letter');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save cover letter');
       }
 
-      setCoverLetter(result.data as any);
+      setCoverLetter(result.data as CoverLetterWithResume);
       return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save cover letter';

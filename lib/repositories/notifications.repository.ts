@@ -1,6 +1,6 @@
 import { PrismaClient, NotificationType, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/index';
-import { GenericUserOwnedRepository } from './generic.repository';
+import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
 import type { INotificationRepository, NotificationData, CreateNotificationInput, FindNotificationsOptions } from './interfaces/notifications.repository.interface';
 
 /**
@@ -9,7 +9,8 @@ import type { INotificationRepository, NotificationData, CreateNotificationInput
  * Implements INotificationRepository for data access abstraction.
  */
 export class NotificationRepository 
-  extends GenericUserOwnedRepository<NotificationData, CreateNotificationInput, any, any>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TPrismaDelegate requires dynamic Prisma types
+  extends GenericUserOwnedRepository<NotificationData, CreateNotificationInput, Partial<NotificationData>, any>
   implements INotificationRepository 
 {
   constructor(dbClient: PrismaClient = prisma) {
@@ -41,7 +42,7 @@ export class NotificationRepository
    */
   override async findAllForUser(
     userId: string,
-    args?: any
+    args?: Omit<PrismaArgs, 'data'>
   ): Promise<NotificationData[]> {
     return this.db.notification.findMany({
       ...args,

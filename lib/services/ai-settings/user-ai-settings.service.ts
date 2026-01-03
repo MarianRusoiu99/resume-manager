@@ -26,6 +26,7 @@ export class UserAISettingsService extends GenericUserOwnedCrudService<
   UserAISettingsData,
   UpsertAISettingsInput,
   UpsertAISettingsInput,
+  Record<string, unknown>,
   UserAISettingsRepository
 > {
   constructor(repository: UserAISettingsRepository = userAISettingsRepository) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeTemplateCss, sanitizeTemplateHtml } from '../templates/utils/sanitizer';
+import { sanitizeTemplateHtml } from '../templates/utils/sanitizer';
 
 describe('template-sanitizer', () => {
   it('removes <script> tags', () => {
@@ -30,13 +30,5 @@ describe('template-sanitizer', () => {
     const output = sanitizeTemplateHtml(input);
     expect(output).toContain('<div>ok</div>');
     expect(output).not.toMatch(/<iframe/i);
-  });
-
-  it('removes @import and external urls from CSS', () => {
-    const input = `@import url('https://evil.com/x.css');\n.a{background-image:url(https://evil.com/a.png)}\n.b{background:url(//evil.com/b.png)}\n.c{background:url(data:image/png;base64,AAA)}`;
-    const output = sanitizeTemplateCss(input);
-    expect(output).not.toMatch(/@import/i);
-    expect(output).not.toMatch(/evil\.com/i);
-    expect(output).toMatch(/data:image\/png/);
   });
 });

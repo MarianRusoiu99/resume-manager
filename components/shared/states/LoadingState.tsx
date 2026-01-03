@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
 
 interface LoadingStateProps {
   /** Loading message to display */
@@ -13,12 +12,6 @@ interface LoadingStateProps {
   /** Additional class names */
   className?: string;
 }
-
-const sizeClasses = {
-  sm: "h-6 w-6",
-  md: "h-12 w-12",
-  lg: "h-16 w-16",
-};
 
 import { Spinner } from "@/components/shared/Spinner";
 

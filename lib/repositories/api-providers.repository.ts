@@ -21,6 +21,7 @@ function toProviderType(provider: string): ProviderType {
 }
 
 export class ApiProviderRepository 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TPrismaDelegate requires dynamic Prisma types
   extends GenericUserOwnedRepository<ApiProviderWithModels, CreateApiProviderInput, UpdateApiProviderInput, any>
   implements IApiProviderRepository 
 {

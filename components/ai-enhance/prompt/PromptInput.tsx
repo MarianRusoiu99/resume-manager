@@ -25,10 +25,16 @@ import { FileAttachmentList } from './FileAttachment';
 import { PromptPresets } from './PromptPresets';
 import type { InstructionPreset } from '../types';
 
+interface FileAttachment {
+  type: string;
+  content: string;
+  name: string;
+}
+
 interface PromptInputProps {
   value: string;
   onChange: (value: string) => void;
-  onSubmit: (attachments?: any[]) => void;
+  onSubmit: (attachments?: FileAttachment[]) => void;
   placeholder?: string;
   presets?: InstructionPreset[];
   isLoading?: boolean;
@@ -61,7 +67,6 @@ export function PromptInput({
     error: fileError,
     addFiles,
     removeFile,
-    getAttachmentsAsContext,
   } = useFileAttachments();
 
   const handleFileSelect = useCallback(() => {

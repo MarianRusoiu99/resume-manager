@@ -1,23 +1,35 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useTemplateGeneration } from '@/components/ai-enhance/hooks/useTemplateEnhancement';
-import type { ExtractedTemplate } from '@/lib/ai/template-parser';
 
 interface UseTemplateImportOptions {
-  onImportComplete: (template: ExtractedTemplate) => void;
+  onImportComplete: (template: { htmlTemplate: string; name?: string; description?: string }) => void;
   onClose: () => void;
 }
 
 export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImportOptions) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [loadingStep, setLoadingStep] = useState<string>('');
+  const [manualProgress, setManualProgress] = useState(0);
+  const [manualLoadingStep, setManualLoadingStep] = useState<string>('');
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const { generate, template, isLoading, error, reset } = useTemplateGeneration();
+
+  // Compute progress based on state - avoid setState in effects
+  const progress = useMemo(() => {
+    if (template) return 100;
+    if (error) return 0;
+    return manualProgress;
+  }, [template, error, manualProgress]);
+
+  const loadingStep = useMemo(() => {
+    if (template) return 'Template extracted!';
+    if (error) return '';
+    return manualLoadingStep;
+  }, [template, error, manualLoadingStep]);
 
   // Clear interval helper
   const clearProgressInterval = useCallback(() => {
@@ -27,42 +39,44 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
     }
   }, []);
 
+  // Define resetStates BEFORE it's used in effects
+  const resetStates = useCallback(() => {
+    reset();
+    setSelectedFile(null);
+    setPreview(null);
+    setManualProgress(0);
+    setManualLoadingStep('');
+    clearProgressInterval();
+  }, [reset, clearProgressInterval]);
+
   // Handle completion
   useEffect(() => {
     if (template) {
-      setLoadingStep('Template extracted!');
-      setProgress(100);
       clearProgressInterval();
       
       toast.success('Template extracted successfully!');
       
       const timer = setTimeout(() => {
-        onImportComplete(template);
+        // Convert string template to ExtractedTemplate structure
+        const extractedTemplate = {
+          htmlTemplate: template,
+          name: selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'Imported Template',
+        };
+        onImportComplete(extractedTemplate);
         resetStates();
         onClose();
       }, 800);
       
       return () => clearTimeout(timer);
     }
-  }, [template, onImportComplete, clearProgressInterval, onClose]);
+  }, [template, onImportComplete, clearProgressInterval, onClose, resetStates, selectedFile]);
 
-  // Handle errors
+  // Handle errors - just clear the interval, state is computed
   useEffect(() => {
     if (error) {
       clearProgressInterval();
-      setProgress(0);
-      setLoadingStep('');
     }
   }, [error, clearProgressInterval]);
-
-  const resetStates = useCallback(() => {
-    reset();
-    setSelectedFile(null);
-    setPreview(null);
-    setProgress(0);
-    setLoadingStep('');
-    clearProgressInterval();
-  }, [reset, clearProgressInterval]);
 
   const handleFileSelect = useCallback((file: File) => {
     setSelectedFile(file);
@@ -81,16 +95,16 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
   const handleImport = async () => {
     if (!selectedFile) return;
 
-    setProgress(10);
-    setLoadingStep('Uploading image...');
+    setManualProgress(10);
+    setManualLoadingStep('Uploading image...');
     
     progressIntervalRef.current = setInterval(() => {
-      setProgress((prev) => {
+      setManualProgress((prev) => {
         if (prev >= 90) return 90;
         
-        if (prev > 20 && prev <= 50) setLoadingStep('AI is analyzing layout...');
-        if (prev > 50 && prev <= 80) setLoadingStep('Extracting CSS styles...');
-        if (prev > 80) setLoadingStep('Finalizing template...');
+        if (prev > 20 && prev <= 50) setManualLoadingStep('AI is analyzing layout...');
+        if (prev > 50 && prev <= 80) setManualLoadingStep('Extracting CSS styles...');
+        if (prev > 80) setManualLoadingStep('Finalizing template...');
         
         return prev + 5;
       });
@@ -104,6 +118,12 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
     setPreview(null);
   }, []);
 
+  // Create extracted template object from raw template string
+  const extractedTemplate = template ? {
+    htmlTemplate: template,
+    name: selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'Imported Template',
+  } : null;
+
   return {
     selectedFile,
     preview,
@@ -111,7 +131,7 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
     loadingStep,
     isLoading,
     error,
-    template,
+    template: extractedTemplate,
     handleFileSelect,
     handleImport,
     handleRemoveFile,

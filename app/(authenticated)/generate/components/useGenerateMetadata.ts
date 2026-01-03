@@ -7,10 +7,16 @@ import { toast } from 'sonner';
 import { useComponentLogger } from '@/hooks';
 import type { ProfileListItem } from '@/lib/actions/types';
 
+interface AIProvider {
+  name: string;
+  isActive: boolean;
+  models?: string[];
+}
+
 export function useGenerateMetadata() {
   const log = useComponentLogger('useGenerateMetadata');
   const [profiles, setProfiles] = useState<ProfileListItem[]>([]);
-  const [providers, setProviders] = useState<any[]>([]);
+  const [providers, setProviders] = useState<AIProvider[]>([]);
   const [hasAIProviders, setHasAIProviders] = useState(false);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
   const [defaultModelId, setDefaultModelId] = useState<string>('');
@@ -35,7 +41,7 @@ export function useGenerateMetadata() {
         }
 
         if (providersResult.success && providersResult.data) {
-          const providerData = providersResult.data as any[];
+          const providerData = providersResult.data as AIProvider[];
           setProviders(providerData);
           const activeProviders = providerData.filter((p) => p.isActive);
           setHasAIProviders(activeProviders.length > 0);

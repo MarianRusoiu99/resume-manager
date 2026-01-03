@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useForm, UseFormProps, FieldValues, Path } from 'react-hook-form';
+import { useForm, UseFormProps, FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ZodType } from 'zod';
+import { createComponentLogger } from '@/lib/utils/client-logger';
+
+const logger = createComponentLogger('useAutoSaveForm');
 
 interface UseAutoSaveFormProps<T extends FieldValues> extends UseFormProps<T> {
   schema: ZodType<T>;
@@ -19,6 +22,7 @@ export function useAutoSaveForm<T extends FieldValues>({
 }: UseAutoSaveFormProps<T>) {
   const form = useForm<T>({
     ...formProps,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(schema as any),
   });
 
@@ -37,7 +41,7 @@ export function useAutoSaveForm<T extends FieldValues>({
           // Optional: mark as clean after save if needed
           // reset(values, { keepValues: true }); 
         } catch (error) {
-          console.error('Auto-save failed:', error);
+          logger.error('Auto-save failed', error);
         }
       }, debounceMs);
 

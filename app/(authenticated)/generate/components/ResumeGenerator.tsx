@@ -5,8 +5,7 @@ import { toast } from 'sonner';
 import { Sparkles, FileText, Save } from 'lucide-react';
 import { Button, Card, Textarea } from '@/components/ui';
 import { Callout, Spinner } from '@/components/shared';
-import { ModelSelector } from '@/components/shared/ModelSelector';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { AIModelSelector } from '@/components/shared/AIModelSelector';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { useResumeGeneration } from '@/components/ai-enhance/hooks';
 import { saveGeneratedResume } from '@/app/actions/resume';
@@ -16,7 +15,6 @@ import { ROUTES } from '@/lib/constants';
 
 interface ResumeGeneratorProps {
   profiles: ProfileListItem[];
-  activeProviders: any[];
   hasAIProviders: boolean;
   isLoadingMetadata: boolean;
   defaultProfileId: string;
@@ -25,21 +23,19 @@ interface ResumeGeneratorProps {
 
 export function ResumeGenerator({
   profiles,
-  activeProviders,
   hasAIProviders,
   isLoadingMetadata,
   defaultProfileId,
   defaultModelId,
 }: ResumeGeneratorProps) {
-  const [selectedProfileId, setSelectedProfileId] = useState(defaultProfileId);
-  const [selectedModelId, setSelectedModelId] = useState(defaultModelId);
+  const [selectedProfileId, setSelectedProfileId] = useState(() => defaultProfileId);
+  const [selectedModelId, setSelectedModelId] = useState(() => defaultModelId);
   const [jobDescription, setJobDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (defaultProfileId) setSelectedProfileId(defaultProfileId);
-    if (defaultModelId) setSelectedModelId(defaultModelId);
-  }, [defaultProfileId, defaultModelId]);
+  const handleModelChange = useCallback((modelId: string, _providerId: string) => {
+    setSelectedModelId(modelId);
+  }, []);
 
   const {
     generate,
@@ -68,10 +64,11 @@ export function ResumeGenerator({
 
     setIsSaving(true);
     try {
+      const resumeBasics = generatedResume as { basics?: { label?: string } };
       const result = await saveGeneratedResume({
         resume: generatedResume,
         jobDescription,
-        jobTitle: (generatedResume as any)?.basics?.label || 'Optimized Resume',
+        jobTitle: resumeBasics?.basics?.label || 'Optimized Resume',
         companyName: '',
         metadata: {
           matchScore,
@@ -84,7 +81,7 @@ export function ResumeGenerator({
       } else {
         toast.error(result.error || 'Failed to save resume');
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to save resume');
     } finally {
       setIsSaving(false);
@@ -102,7 +99,11 @@ export function ResumeGenerator({
             <h3 className="text-sm font-bold uppercase tracking-widest text-primary">Target Job Details</h3>
           </div>
           <div className="sm:hidden">
-            <ModelSelector value={selectedModelId} onValueChange={setSelectedModelId} />
+            <AIModelSelector 
+              value={selectedModelId} 
+              onValueChange={handleModelChange}
+              size="sm"
+            />
           </div>
         </div>
         
@@ -138,17 +139,11 @@ export function ResumeGenerator({
             </div>
             <div className="space-y-2.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model Preference</label>
-              <SearchableSelect
+              <AIModelSelector
                 value={selectedModelId}
-                onValueChange={setSelectedModelId}
-                options={activeProviders.flatMap(p =>
-                  (p.models || []).map((m: any) => ({
-                    value: typeof m === 'string' ? m : m.id,
-                    label: `${p.name}: ${typeof m === 'string' ? m : (m.name || m.id)}`
-                  }))
-                )}
-                placeholder="Select AI model"
-                className="rounded-xl border-primary/5 bg-background/50"
+                onValueChange={handleModelChange}
+                size="md"
+                className="w-full"
               />
             </div>
           </div>
@@ -229,5 +224,3 @@ export function ResumeGenerator({
     </div>
   );
 }
-
-import { useEffect } from 'react';

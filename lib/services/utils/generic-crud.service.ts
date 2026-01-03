@@ -7,9 +7,16 @@ export abstract class GenericCrudService<
   T,
   TCreateInput,
   TUpdateInput,
+  TFindAllArgs = Record<string, unknown>,
   TRepository extends {
     findById(id: string, userId?: string): Promise<T | null>;
-    findAll(args?: any): Promise<T[]>;
+    findAll(args?: TFindAllArgs): Promise<T[]>;
+    create(data: TCreateInput): Promise<T>;
+    update(id: string, data: TUpdateInput, userId?: string): Promise<T>;
+    delete(id: string, userId?: string): Promise<T>;
+  } = {
+    findById(id: string, userId?: string): Promise<T | null>;
+    findAll(args?: TFindAllArgs): Promise<T[]>;
     create(data: TCreateInput): Promise<T>;
     update(id: string, data: TUpdateInput, userId?: string): Promise<T>;
     delete(id: string, userId?: string): Promise<T>;
@@ -47,7 +54,7 @@ export abstract class GenericCrudService<
     });
   }
 
-  async getAll(args?: any): Promise<ServiceResult<T[]>> {
+  async getAll(args?: TFindAllArgs): Promise<ServiceResult<T[]>> {
     return withServiceError(`fetch all ${this.resourceName}s`, async () => {
       return this.repository.findAll(args);
     });
@@ -91,14 +98,25 @@ export abstract class GenericUserOwnedCrudService<
   T,
   TCreateInput,
   TUpdateInput,
+  TFindAllArgs = Record<string, unknown>,
   TRepository extends {
     findById(id: string, userId?: string): Promise<T | null>;
-    findAll(args?: any): Promise<T[]>;
+    findAll(args?: TFindAllArgs): Promise<T[]>;
     create(data: TCreateInput): Promise<T>;
     update(id: string, data: TUpdateInput, userId?: string): Promise<T>;
     delete(id: string, userId?: string): Promise<T>;
     findByIdForUser(id: string, userId: string): Promise<T | null>;
-    findAllForUser(userId: string, args?: any): Promise<T[]>;
+    findAllForUser(userId: string, args?: TFindAllArgs): Promise<T[]>;
+    updateForUser(id: string, userId: string, data: TUpdateInput): Promise<T>;
+    deleteForUser(id: string, userId: string): Promise<T>;
+  } = {
+    findById(id: string, userId?: string): Promise<T | null>;
+    findAll(args?: TFindAllArgs): Promise<T[]>;
+    create(data: TCreateInput): Promise<T>;
+    update(id: string, data: TUpdateInput, userId?: string): Promise<T>;
+    delete(id: string, userId?: string): Promise<T>;
+    findByIdForUser(id: string, userId: string): Promise<T | null>;
+    findAllForUser(userId: string, args?: TFindAllArgs): Promise<T[]>;
     updateForUser(id: string, userId: string, data: TUpdateInput): Promise<T>;
     deleteForUser(id: string, userId: string): Promise<T>;
   }
@@ -139,7 +157,7 @@ export abstract class GenericUserOwnedCrudService<
     });
   }
 
-  async getAllForUser(userId: string, args?: any): Promise<ServiceResult<T[]>> {
+  async getAllForUser(userId: string, args?: TFindAllArgs): Promise<ServiceResult<T[]>> {
     return withServiceError(`fetch all ${this.resourceName}s`, async () => {
       if (this.cache) {
         const cached = this.cache.get(this.getUserListCacheKey(userId));

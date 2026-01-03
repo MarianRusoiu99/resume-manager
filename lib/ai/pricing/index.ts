@@ -38,11 +38,21 @@ export const DEFAULT_PRICING: ModelPricing = {
 /**
  * Calculate the cost of an AI operation
  */
-export function calculateAICost(modelId: string, usage: { promptTokens: number; completionTokens: number } | any): number {
+export function calculateAICost(
+  modelId: string,
+  usage: { 
+    promptTokens?: number; 
+    completionTokens?: number;
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    inputTokens?: number;
+    outputTokens?: number;
+  }
+): number {
   const pricing = MODEL_PRICING[modelId] || DEFAULT_PRICING;
   
-  const promptTokens = usage.promptTokens ?? usage.prompt_tokens ?? 0;
-  const completionTokens = usage.completionTokens ?? usage.completion_tokens ?? 0;
+  const promptTokens = usage.promptTokens ?? usage.prompt_tokens ?? usage.inputTokens ?? 0;
+  const completionTokens = usage.completionTokens ?? usage.completion_tokens ?? usage.outputTokens ?? 0;
 
   const inputCost = (promptTokens / 1000) * pricing.input;
   const outputCost = (completionTokens / 1000) * pricing.output;

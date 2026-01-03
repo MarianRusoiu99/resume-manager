@@ -8,18 +8,6 @@
  */
 
 import { ReactNode } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogClose,
-} from '@/components/ui/dialog';
-import { Sparkles, X } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 
 interface AIEnhanceBaseModalProps {
   open: boolean;
@@ -33,12 +21,6 @@ interface AIEnhanceBaseModalProps {
   size?: 'default' | 'large' | 'fullscreen';
   className?: string;
 }
-
-const sizeClasses = {
-  default: 'max-w-4xl h-[80vh]',
-  large: 'max-w-6xl h-[85vh]',
-  fullscreen: 'max-w-[98vw] h-[98vh]',
-};
 
 import { BaseDialog } from '@/components/shared/dialogs/BaseDialog';
 

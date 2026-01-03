@@ -26,10 +26,10 @@ function buildStrictCsp(isDev: boolean): string {
   return [
     "default-src 'self'",
     // Next.js dev builds rely on eval (source maps/fast refresh).
-    // Keep production stricter.
+    // Production needs blob: for PDF.js and preview workers.
     isDev
       ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:"
-      : "script-src 'self' 'unsafe-inline'",
+      : "script-src 'self' 'unsafe-inline' blob:",
     // Tailwind/shadcn/Next commonly rely on inline styles.
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
@@ -38,6 +38,8 @@ function buildStrictCsp(isDev: boolean): string {
     isDev
       ? "connect-src 'self' ws: wss: https://fonts.googleapis.com"
       : "connect-src 'self' https://fonts.googleapis.com",
+    // PDF.js and other workers need blob: URLs.
+    "worker-src 'self' blob:",
     // Previews render HTML in iframes via srcDoc/blob URLs.
     "frame-src 'self' blob: data: about:",
     // Deprecated but still used by some browsers as a fallback.

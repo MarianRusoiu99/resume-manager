@@ -11,17 +11,27 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { Edit, Copy, Trash2 } from 'lucide-react';
-import { getResume, deleteResume, duplicateResume, updateResumeContent } from '@/app/actions/resume';
+import { getResume, deleteResume, duplicateResume } from '@/app/actions/resume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 const logger = createComponentLogger('ResumeDetailPage');
+
+interface ResumeData {
+  id: string;
+  jobTitle?: string;
+  companyName?: string;
+  jobDescription?: string;
+  content: Resume;
+  coverLetter?: string;
+}
 
 export default function ResumeDetailPage() {
   const router = useRouter();
   const params = useParams();
   const resumeId = params?.id as string;
 
-  const [resume, setResume] = useState<any>(null);
+  const [resume, setResume] = useState<ResumeData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -37,10 +47,11 @@ export default function ResumeDetailPage() {
       const result = await getResume(resumeId);
 
       if (!result.success || !result.data) {
-        throw new Error((result as any).error || 'Failed to fetch resume');
+        const errorResult = result as { error?: string };
+        throw new Error(errorResult.error || 'Failed to fetch resume');
       }
 
-      setResume(result.data);
+      setResume(result.data as ResumeData);
     } catch (err) {
       logger.error('Failed to fetch resume', err);
       setError(err instanceof Error ? err.message : 'Failed to load resume');
@@ -67,7 +78,8 @@ export default function ResumeDetailPage() {
       const result = await deleteResume(resumeId);
 
       if (!result.success) {
-        throw new Error((result as any).error || 'Failed to delete resume');
+        const errorResult = result as { error?: string };
+        throw new Error(errorResult.error || 'Failed to delete resume');
       }
 
       toast.success('Resume deleted successfully');
@@ -90,11 +102,13 @@ export default function ResumeDetailPage() {
       const result = await duplicateResume(resumeId);
 
       if (!result.success || !result.data) {
-        throw new Error((result as any).error || 'Failed to duplicate resume');
+        const errorResult = result as { error?: string };
+        throw new Error(errorResult.error || 'Failed to duplicate resume');
       }
 
       toast.success('Resume duplicated successfully');
-      router.push(`/resumes/${(result.data as any).id}`);
+      const duplicatedResume = result.data as { id: string };
+      router.push(`/resumes/${duplicatedResume.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to duplicate resume');
     } finally {
@@ -102,7 +116,7 @@ export default function ResumeDetailPage() {
     }
   };
 
-  const handleSaveCoverLetter = async (markdown: string) => {
+  const handleSaveCoverLetter = async () => {
     try {
       setError(null);
 

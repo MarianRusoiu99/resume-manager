@@ -20,7 +20,6 @@ export default function GeneratePage() {
 
   const {
     profiles,
-    activeProviders,
     hasAIProviders,
     isLoadingMetadata,
     defaultModelId,
@@ -50,7 +49,6 @@ export default function GeneratePage() {
           <TabsContent value="resume" className="m-0">
             <ResumeGenerator 
               profiles={profiles}
-              activeProviders={activeProviders}
               hasAIProviders={hasAIProviders}
               isLoadingMetadata={isLoadingMetadata}
               defaultProfileId={defaultProfileId}
@@ -61,7 +59,6 @@ export default function GeneratePage() {
           <TabsContent value="cover-letter" className="m-0">
             <CoverLetterGenerator 
               profiles={profiles}
-              activeProviders={activeProviders}
               hasAIProviders={hasAIProviders}
               defaultProfileId={defaultProfileId}
               defaultModelId={defaultModelId}

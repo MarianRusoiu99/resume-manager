@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface FormData {
   name: string;
@@ -10,25 +10,37 @@ interface FormData {
 }
 
 export function useTemplatePersistence(isNew: boolean, initialData: FormData) {
-  const [formData, setFormData] = useState<FormData>(initialData);
-
-  // Auto-save draft to localStorage
-  useEffect(() => {
-    if (!isNew) return;
+  // Initialize state with draft from localStorage if available
+  const getInitialData = (): FormData => {
+    if (!isNew) return initialData;
+    
+    if (typeof window === 'undefined') return initialData;
+    
     const draftKey = 'template-editor-draft';
     const draft = localStorage.getItem(draftKey);
     if (draft) {
       try {
-        const parsed = JSON.parse(draft);
-        setFormData(parsed);
+        return JSON.parse(draft);
       } catch {
         // Ignore invalid draft
       }
     }
-  }, [isNew]);
+    return initialData;
+  };
 
+  const [formData, setFormData] = useState<FormData>(getInitialData);
+  const isInitialized = useRef(false);
+
+  // Save draft to localStorage on changes (but not on initial load)
   useEffect(() => {
     if (!isNew) return;
+    
+    // Skip the first render
+    if (!isInitialized.current) {
+      isInitialized.current = true;
+      return;
+    }
+    
     const draftKey = 'template-editor-draft';
     localStorage.setItem(draftKey, JSON.stringify(formData));
   }, [formData, isNew]);

@@ -14,11 +14,33 @@ export type SanitizedTemplate = {
 
 const MAX_TEMPLATE_LENGTH = 200_000;
 
+// Patterns to detect dangerous URL protocols
+const DANGEROUS_PROTOCOL_PATTERN = /^\s*javascript\s*:/i;
+
 function assertReasonableLength(value: string, label: string) {
   if (value.length > MAX_TEMPLATE_LENGTH) {
     throw new Error(`${label} is too large`);
   }
 }
+
+// Configure DOMPurify hook to neutralize javascript: URLs
+// This runs after DOMPurify processes each attribute
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  // Check href attribute
+  if (node.hasAttribute('href')) {
+    const href = node.getAttribute('href') || '';
+    if (DANGEROUS_PROTOCOL_PATTERN.test(href)) {
+      node.setAttribute('href', '#');
+    }
+  }
+  // Check src attribute
+  if (node.hasAttribute('src')) {
+    const src = node.getAttribute('src') || '';
+    if (DANGEROUS_PROTOCOL_PATTERN.test(src)) {
+      node.setAttribute('src', '#');
+    }
+  }
+});
 
 /**
  * Sanitize user-provided HTML template using DOMPurify.

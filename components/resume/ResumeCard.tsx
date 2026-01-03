@@ -10,7 +10,6 @@ import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import type { GalleryCardAction } from "@/components/shared/GalleryCard";
 import type { Resume } from '@/lib/validations/jsonresume';
 import { useCardPreview, useExportPdf } from '@/hooks/useCardPreview';
-import { formatDate } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
 import { useResumeOperations } from '@/hooks/features/useResumeOperations';
 
@@ -21,7 +20,7 @@ interface ResumeCardProps {
   jobDescription: string | null;
   content: Resume;
   templateId: string | null;
-  createdAt: string;
+  createdAt?: string;
   onView: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
@@ -34,7 +33,6 @@ export function ResumeCard({
   jobDescription,
   content,
   templateId,
-  createdAt,
   onView,
   onEdit,
   onDelete,

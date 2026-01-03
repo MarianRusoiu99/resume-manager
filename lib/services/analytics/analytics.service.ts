@@ -150,7 +150,7 @@ export class AnalyticsService {
       });
 
       const totalTokens = aiLogs.reduce((sum, log) => {
-        const meta = log.metadata as any;
+        const meta = log.metadata as { usage?: { totalTokens?: number } } | null;
         return sum + (meta?.usage?.totalTokens || 0);
       }, 0);
 

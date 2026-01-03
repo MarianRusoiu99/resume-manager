@@ -2,7 +2,7 @@
 
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import { LoadingState, EmptyState, SearchEmptyState } from "@/components/shared/states";
+import { EmptyState, SearchEmptyState } from "@/components/shared/states";
 import { GallerySkeleton } from "@/components/shared/skeletons/GallerySkeleton";
 import { GalleryHeader } from "./gallery/GalleryHeader";
 import { GalleryGrid, DEFAULT_GRID_COLS } from "./gallery/GalleryGrid";
@@ -61,7 +61,6 @@ export function Gallery<T>({
   renderItem,
   getItemKey,
   isLoading = false,
-  loadingMessage = "Loading...",
   emptyState,
   searchTerm,
   onClearSearch,

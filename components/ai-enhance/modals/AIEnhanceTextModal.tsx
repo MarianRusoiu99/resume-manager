@@ -7,9 +7,8 @@
  * and side-by-side comparison.
  */
 
-import { useEffect, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Check, X } from 'lucide-react';
 import { AIEnhanceBaseModal } from './AIEnhanceBaseModal';
@@ -18,8 +17,16 @@ import { ComparisonTabs } from '../preview/ComparisonTabs';
 import { TEXT_PRESETS } from '../types';
 import type { AIEnhanceTextModalProps } from '../types';
 import { useAITask } from '../hooks/useAITask';
-import { useFileAttachments } from '../hooks/useFileAttachments';
-import { ModelSelector } from '@/components/shared/ModelSelector';
+import { ModelSelector } from '@/components/ai/ModelSelector';
+
+import type { ConversationAttachment } from '../hooks/useConversation';
+
+/** Simple attachment interface matching PromptInput's onSubmit callback */
+interface AttachmentInput {
+  type: string;
+  content: string;
+  name: string;
+}
 
 export function AIEnhanceTextModal({
   open,
@@ -32,8 +39,12 @@ export function AIEnhanceTextModal({
   description = 'Use AI to improve, rephrase, or modify your content.',
   showModelSelector = true,
 }: Readonly<AIEnhanceTextModalProps>) {
-  const [selectedModel, setSelectedModel] = useState<string>('gpt-4o');
+  const [selectedModel, setSelectedModel] = useState<string>('');
   const [instructions, setInstructions] = useState('');
+
+  const handleModelChange = useCallback((modelId: string, _providerId: string) => {
+    setSelectedModel(modelId);
+  }, []);
 
   const {
     runTask,
@@ -48,40 +59,40 @@ export function AIEnhanceTextModal({
 
   const enhancedContent = (output as string) || partialOutput;
 
-  const {
-    attachments,
-    addFiles,
-    removeFile,
-    isProcessing: attachmentsLoading,
-  } = useFileAttachments();
+  // Handle open change with reset logic
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    if (nextOpen) {
+      // Transitioning from closed to open - reset state
+      reset();
+      setInstructions('');
+    }
+    onOpenChange(nextOpen);
+  }, [onOpenChange, reset]);
 
-  const handleEnhance = useCallback(() => {
+  // Handle enhance with attachments from PromptInput
+  const handleEnhance = useCallback((inputAttachments?: AttachmentInput[]) => {
     const message = `${instructions}
 
 --- CONTENT TO ENHANCE ---
 ${originalContent}`;
 
+    // Map attachments from PromptInput to ConversationAttachment format
+    const mappedAttachments: ConversationAttachment[] | undefined = inputAttachments?.map((a) => ({
+      type: a.type.startsWith('image/') ? 'image' as const : 'document' as const,
+      content: a.content,
+      name: a.name,
+      mimeType: a.type,
+    }));
+
     runTask({
       message,
-      attachments: attachments?.map((a) => ({
-        type: a.type.startsWith('image/') ? 'image' : 'document',
-        content: a.content,
-        name: a.name,
-        mimeType: a.type,
-      })) as any,
+      attachments: mappedAttachments,
       modelId: selectedModel,
       context: {
         personalInstructions: context,
       }
     });
-  }, [instructions, originalContent, runTask, attachments, selectedModel, context]);
-
-  // Initialize enhancement options when modal opens
-  useEffect(() => {
-    if (!open) return;
-    reset();
-    setInstructions('');
-  }, [open, reset]);
+  }, [instructions, originalContent, runTask, selectedModel, context]);
 
   const handleAccept = useCallback(() => {
     if (!enhancedContent) return;
@@ -123,14 +134,15 @@ ${originalContent}`;
   const rightAction = showModelSelector && (
     <ModelSelector
       value={selectedModel}
-      onValueChange={setSelectedModel}
+      onValueChange={handleModelChange}
+      className="h-9"
     />
   );
 
   return (
     <AIEnhanceBaseModal
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       title={title}
       description={description}
       footer={footer}
@@ -144,7 +156,7 @@ ${originalContent}`;
           onChange={setInstructions}
           onSubmit={handleEnhance}
           presets={TEXT_PRESETS}
-          isLoading={isLoading || attachmentsLoading}
+          isLoading={isLoading}
           hasExistingContent={hasOutput}
           className="flex-shrink-0"
           placeholder="Describe what you want the AI to do... (e.g., 'Make this more professional', 'Fix grammar')"

@@ -24,7 +24,7 @@ interface GenericFormProps<T> {
  * 
  * Similar to GenericFormList but for single objects.
  */
-export function GenericForm<T extends Record<string, any>>({
+export function GenericForm<T extends Record<string, unknown>>({
   fields,
   data,
   onChange,
@@ -33,7 +33,7 @@ export function GenericForm<T extends Record<string, any>>({
   disabled = false,
 }: GenericFormProps<T>) {
   
-  const updateField = (key: keyof T, value: any) => {
+  const updateField = (key: keyof T, value: T[keyof T]) => {
     onChange({
       ...data,
       [key]: value,
@@ -51,7 +51,7 @@ export function GenericForm<T extends Record<string, any>>({
             <FieldRenderer
               field={field}
               value={data[field.key]}
-              onUpdate={(value) => updateField(field.key, value)}
+              onUpdate={(value) => updateField(field.key, value as T[keyof T])}
               disabled={disabled}
             />
           </div>
@@ -63,12 +63,12 @@ export function GenericForm<T extends Record<string, any>>({
 
 interface FieldRendererProps<T> {
   field: FieldConfig<T>;
-  value: any;
-  onUpdate: (value: any) => void;
+  value: unknown;
+  onUpdate: (value: unknown) => void;
   disabled?: boolean;
 }
 
-function FieldRenderer<T extends Record<string, any>>({
+function FieldRenderer<T extends Record<string, unknown>>({
   field,
   value,
   onUpdate,
@@ -132,7 +132,7 @@ function FieldRenderer<T extends Record<string, any>>({
           label={field.label}
           value={stringValue}
           onChange={onUpdate}
-          type={field.type as any}
+          type={field.type as "text" | "email" | "tel" | "url" | "password"}
           placeholder={field.placeholder}
           description={field.description}
           required={field.required}

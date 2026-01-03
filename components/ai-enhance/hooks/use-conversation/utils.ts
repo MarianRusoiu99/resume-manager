@@ -1,5 +1,3 @@
-import { type ConversationMessage } from "./types";
-
 /**
  * Generate a unique ID
  */
@@ -42,7 +40,7 @@ export async function processStreamResponse(
           } else if (parsed.type === 'error') {
             throw new Error(parsed.error);
           }
-        } catch (parseError) {
+        } catch {
           // Ignore parse errors for malformed chunks
         }
       }

@@ -77,6 +77,8 @@ export interface SendMessageOptions {
   modelId?: string;
   /** Use streaming (default: true) */
   stream?: boolean;
+  /** Context override for this message (merged with existing context) */
+  contextOverride?: Partial<ConversationContext>;
 }
 
 /**

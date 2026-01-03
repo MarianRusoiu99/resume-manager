@@ -87,7 +87,12 @@ export interface ICoverLetterRepository {
   /**
    * Find all cover letters for a user
    */
-  findAllForUser(userId: string, args?: any): Promise<CoverLetterData[]>;
+  findAllForUser(userId: string, args?: {
+    where?: Record<string, unknown>;
+    orderBy?: Record<string, unknown>;
+    take?: number;
+    skip?: number;
+  }): Promise<CoverLetterData[]>;
 
   /**
    * Find all cover letters for a user with count

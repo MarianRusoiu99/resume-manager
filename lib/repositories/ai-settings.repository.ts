@@ -5,7 +5,7 @@
 
 import { prisma } from '@/lib/db/index';
 import { PrismaClient, Prisma, type AiFeatureKey } from '@prisma/client';
-import { GenericUserOwnedRepository } from './generic.repository';
+import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
 import type { 
   IUserAISettingsRepository, 
   UserAISettingsData, 
@@ -69,6 +69,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
   UserAISettingsData,
   UpsertAISettingsInput,
   UpsertAISettingsInput,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Custom repository pattern doesn't use standard Prisma delegate
   any
 > implements IUserAISettingsRepository {
   
@@ -233,8 +234,10 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
   /**
    * Delete AI settings for a user
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Override returns void instead of entity for this delete-all operation
   override async delete(userId: string): Promise<any> {
     await this.db.userAiPreference.deleteMany({ where: { userId } });
+    return null;
   }
 
   /**
@@ -252,7 +255,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
     return this.findByUserId(userId || id);
   }
 
-  async findAll(args?: any): Promise<UserAISettingsData[]> {
+  async findAll(_args?: PrismaArgs): Promise<UserAISettingsData[]> {
     // This is not really used for this repository as it's user-centric
     return [];
   }

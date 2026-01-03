@@ -14,14 +14,12 @@
 
 import { useState, useRef, useImperativeHandle, forwardRef } from 'react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import type { BlockNoteEditorMethods } from '@/components/editor/BlockNoteEditorWrapper.client';
 import { MarkdownPreview } from '@/components/editor/MarkdownPreview';
-import { Copy, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { AIEnhanceButton, AIEnhanceTextModal } from '@/components/ai-enhance';
+import { AIEnhanceTextModal } from '@/components/ai-enhance';
 import { CoverLetterEditorToolbar } from './editor/CoverLetterEditorToolbar';
 
 
@@ -77,10 +75,8 @@ interface CoverLetterEditorProps {
 export const CoverLetterEditor = forwardRef<CoverLetterEditorRef, CoverLetterEditorProps>(({
   content,
   contentJson,
-  editable = false,
   onSave,
   className,
-  title = 'Generated Cover Letter',
 }, ref) => {
   const log = createComponentLogger('CoverLetterEditor');
   const [isEditing, setIsEditing] = useState(false);

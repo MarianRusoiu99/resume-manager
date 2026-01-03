@@ -1,14 +1,20 @@
 'use client';
 
 import { useAITask } from './useAITask';
+import { ConversationAttachment } from './useConversation';
 import { useCallback, useState } from 'react';
+
+interface TemplateOutput {
+  template?: string;
+  html?: string;
+}
 
 /**
  * useTemplateEnhancement - Hook for generating or enhancing resume templates.
  */
 export function useTemplateEnhancement() {
   const { runTask, isLoading, error, output, partialOutput, reset, hasOutput } = useAITask({
-    mode: 'template' as any,
+    mode: 'template-enhancement',
   });
 
   const [instructions, setInstructions] = useState('');
@@ -33,7 +39,7 @@ export function useTemplateEnhancement() {
     });
   }, [runTask]);
 
-  const enhance = useCallback(async (attachments?: any[], overrideModelId?: string) => {
+  const enhance = useCallback(async (attachments?: ConversationAttachment[], overrideModelId?: string) => {
     return runTask({
       message: instructions,
       attachments,
@@ -42,12 +48,14 @@ export function useTemplateEnhancement() {
     });
   }, [runTask, instructions, template]);
 
+  const typedOutput = output as TemplateOutput | null;
+
   return {
     enhance,
     generate,
     reset,
-    template: (output as any)?.template || partialOutput,
-    enhancedContent: output as { html: string } | null,
+    template: typedOutput?.template || partialOutput,
+    enhancedContent: typedOutput?.html ? { html: typedOutput.html } : null,
     isLoading,
     error,
     hasEnhancement: hasOutput,

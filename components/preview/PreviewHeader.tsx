@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { PreviewTemplateSelector } from '@/components/templates/PreviewTemplateSelector';
 import { Download, Loader2, LayoutGrid, Maximize2, Minimize2, X } from 'lucide-react';
 import type { Template } from '@/lib/types/template';
-import { cn } from '@/lib/utils';
 import {
   Tooltip,
   TooltipContent,

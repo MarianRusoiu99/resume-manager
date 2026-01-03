@@ -9,7 +9,7 @@ import { mapGeneratedResumeToDetails, mapGeneratedResumeToListItem } from './map
 import type { ResumeDetails, ResumeListItem, UpdatedResumeData } from './types';
 
 import { GenericUserOwnedCrudService } from '../../utils/generic-crud.service';
-import type { CreateResumeInput, GeneratedResumeData } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
+import type { CreateResumeInput, GeneratedResumeData, UpdateResumeInput } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
 import { resumeImportService } from './resume-import.service';
 
 /**
@@ -17,7 +17,7 @@ import { resumeImportService } from './resume-import.service';
  * Single Responsibility: Handles database operations for resumes
  */
 export class ResumeCrudService 
-  extends GenericUserOwnedCrudService<GeneratedResumeData, CreateResumeInput, any, GeneratedResumeRepository>
+  extends GenericUserOwnedCrudService<GeneratedResumeData, CreateResumeInput, UpdateResumeInput, Record<string, unknown>, GeneratedResumeRepository>
   implements IResumeCrudService 
 {
   constructor(
@@ -188,11 +188,12 @@ export class ResumeCrudService
 
       const duplicatedResume = await this.repository.create({
         userId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Resume type from DB may be null, needs cast
         resume: existingResume.resume as any,
         jobDescription: existingResume.jobDescription || '',
         jobMetadata: {
           ...(existingResume.jobMetadata as Record<string, unknown>),
-          jobTitle: `${(existingResume.jobMetadata as any)?.jobTitle || 'Resume'} (Copy)`,
+          jobTitle: `${(existingResume.jobMetadata as Record<string, unknown>)?.jobTitle || 'Resume'} (Copy)`,
         },
         templateId: existingResume.templateId || undefined,
         metadata: (existingResume.metadata as Record<string, unknown>) || {},

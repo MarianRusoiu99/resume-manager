@@ -5,7 +5,7 @@ interface ProfileEditorContentProps {
     readonly parserComponent?: React.ReactNode;
 }
 
-export function ProfileEditorContent({ showParser, parserComponent }: ProfileEditorContentProps) {
+export function ProfileEditorContent({ showParser: _showParser, parserComponent: _parserComponent }: ProfileEditorContentProps) {
     return (
         <EditorContent />
     );

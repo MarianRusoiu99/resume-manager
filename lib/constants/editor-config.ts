@@ -59,8 +59,8 @@ export const EDITOR_CONFIG: EditorSection[] = [
     schema: schemas.summaryFormSchema,
     fields: schemas.summaryFields,
     // Custom to/from to handle summary within basics
-    toForm: (basics: any) => ({ summary: basics?.summary || "" }),
-    fromForm: (data: any) => ({ summary: data.summary }),
+    toForm: (basics: Resume['basics']) => ({ summary: basics?.summary || "" }),
+    fromForm: (data: { summary: string }) => ({ summary: data.summary }),
   },
   {
     id: "experience",

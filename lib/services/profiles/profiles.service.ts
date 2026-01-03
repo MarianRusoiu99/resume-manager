@@ -17,6 +17,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
   ProfileData,
   CreateProfileInput,
   UpdateProfileInput,
+  Record<string, unknown>,
   ProfileRepository
 > implements IProfileService {
   
@@ -30,6 +31,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
   private mapToServiceData(data: ProfileData): ProfileServiceData {
     return {
       ...data,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma Json type needs cast to domain type
       resume: data.resume as any,
       templateId: data.selectedTemplateId ?? null,
       selectedTemplateId: data.selectedTemplateId ?? null,
@@ -119,7 +121,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
 
       if (profile.isDefault) {
         const allProfiles = await this.repository.findAllByUserId(userId);
-        const otherProfile = allProfiles.find((p: any) => p.id !== profileId);
+        const otherProfile = allProfiles.find((p: ProfileData) => p.id !== profileId);
         if (otherProfile) {
           await this.repository.update(otherProfile.id, { isDefault: true }, userId);
         }

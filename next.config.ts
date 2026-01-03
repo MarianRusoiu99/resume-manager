@@ -58,7 +58,7 @@ const nextConfig: NextConfig = {
 
   // Avoid bundling large server-only dependencies into route chunks.
   // These are only needed at runtime in Node.js.
-  serverExternalPackages: ['puppeteer', 'swagger-jsdoc'],
+  serverExternalPackages: ['puppeteer'],
 
   experimental: {
     // Reduce import cost for packages with large export surfaces.

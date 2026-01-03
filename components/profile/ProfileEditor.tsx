@@ -17,13 +17,22 @@ import { Label } from "@/components/ui/label";
 
 const logger = createComponentLogger('ProfileEditor');
 
+/** Local profile type for editor state */
+interface ProfileEditorData {
+  id: string;
+  name: string;
+  resume: Resume | null;
+  isPublic: boolean;
+  publicSlug: string | null;
+}
+
 interface ProfileEditorProps {
   profileId: string;
 }
 
 export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const router = useRouter();
-  const [profile, setProfile] = useState<any | null>(null);
+  const [profile, setProfile] = useState<ProfileEditorData | null>(null);
   const editorRef = useRef<ResumeEditorRef>(null);
 
   // State for title rename
@@ -34,7 +43,13 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
     try {
       const result = await getProfile(profileId);
       if (!result.success || !result.data) throw new Error(!result.success ? result.error : 'Failed to load profile');
-      setProfile(result.data);
+      setProfile({
+        id: result.data.id,
+        name: result.data.name,
+        resume: result.data.resume as Resume | null,
+        isPublic: result.data.isPublic,
+        publicSlug: result.data.publicSlug,
+      });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load profile");
       router.push("/profile");
@@ -58,7 +73,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
     try {
       const result = await updateProfile(profileId, { resume });
       if (!result.success) throw new Error(result.error);
-      setProfile((prev: any) => (prev ? { ...prev, resume } : prev));
+      setProfile((prev) => (prev ? { ...prev, resume } : prev));
       return true;
     } catch (error) {
       logger.error('Error saving profile', error);
@@ -74,7 +89,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
     try {
       const result = await updateProfile(profileId, { name: newName });
       if (!result.success) throw new Error(result.error);
-      setProfile((prev: any) => prev ? { ...prev, name: newName } : null);
+      setProfile((prev) => prev ? { ...prev, name: newName } : null);
       setIsRenameModalOpen(false);
       toast.success("Profile renamed");
     } catch (error) {
@@ -83,7 +98,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   };
 
   const onDisplayNameChange = async (name: string) => {
-    setProfile((prev: any) => prev ? { ...prev, name } : null);
+    setProfile((prev) => prev ? { ...prev, name } : null);
   };
 
   if (!profile) return null;

@@ -27,9 +27,9 @@ export function TemplateThumbnail({
         try {
             return renderTemplateClientSide({
                 htmlTemplate: templateHtml,
-                resumeData: sampleResume as any,
+                resumeData: sampleResume as Record<string, unknown>,
             });
-        } catch (err) {
+        } catch {
             return `<div style="padding: 20px; text-align: center; color: #666;">Preview Error</div>`;
         }
     }, [templateHtml]);

@@ -4,9 +4,13 @@ import { useAITask } from './useAITask';
 import { useCallback } from 'react';
 import { Resume } from '@/lib/validations/jsonresume';
 
+interface ResumeEnhancementOutput {
+  resume?: Resume;
+}
+
 export function useResumeEnhancement() {
-  const { runTask, isLoading, error, output, partialOutput, reset } = useAITask({
-    mode: 'resume-enhancement' as any,
+  const { runTask, isLoading, error, output, reset } = useAITask({
+    mode: 'resume-enhancement',
   });
 
   const enhance = useCallback(async (resume: Resume, instructions: string) => {
@@ -16,9 +20,11 @@ export function useResumeEnhancement() {
     });
   }, [runTask]);
 
+  const typedOutput = output as ResumeEnhancementOutput | null;
+
   return {
     enhance,
-    enhancedResume: (output as any)?.resume || (partialOutput ? null : null),
+    enhancedResume: typedOutput?.resume ?? null,
     isLoading,
     error,
     reset,

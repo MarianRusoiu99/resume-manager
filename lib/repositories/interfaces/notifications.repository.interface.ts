@@ -66,12 +66,17 @@ export interface INotificationRepository {
   /**
    * Find all notifications for a user
    */
-  findAllForUser(userId: string, args?: any): Promise<NotificationData[]>;
+  findAllForUser(userId: string, args?: {
+    where?: Record<string, unknown>;
+    orderBy?: Record<string, unknown>;
+    take?: number;
+    skip?: number;
+  }): Promise<NotificationData[]>;
 
   /**
    * Update a notification
    */
-  update(id: string, data: any, userId?: string): Promise<NotificationData>;
+  update(id: string, data: Partial<Omit<NotificationData, 'id' | 'userId' | 'createdAt'>>, userId?: string): Promise<NotificationData>;
 
   /**
    * Delete a notification

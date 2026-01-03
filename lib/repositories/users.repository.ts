@@ -35,6 +35,7 @@ export type SafeUser = Omit<User, 'passwordHash'>;
 /**
  * Repository for managing users in the database
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- GenericRepository requires a Prisma delegate type, but we use direct delegate access
 export class UserRepository extends GenericRepository<User, CreateUserInput, UpdateUserInput, any> {
   constructor(dbClient: PrismaClient = prisma) {
     super('user', dbClient);

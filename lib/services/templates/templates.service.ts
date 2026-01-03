@@ -16,7 +16,7 @@ import { GenericCrudService } from '../utils/generic-crud.service';
  * Implements ITemplateService with constructor injection.
  */
 export class TemplateService 
-  extends GenericCrudService<ResumeTemplate, CreateTemplateInput, UpdateTemplateInput, TemplateRepository>
+  extends GenericCrudService<ResumeTemplate, CreateTemplateInput, UpdateTemplateInput, Record<string, unknown>, TemplateRepository>
   implements ITemplateService 
 {
   constructor(

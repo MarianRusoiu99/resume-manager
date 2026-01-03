@@ -1,6 +1,6 @@
 "use client";
 
-import { FormProvider, useForm, UseFormReturn, FieldValues } from "react-hook-form";
+import { FormProvider, useForm, UseFormReturn, FieldValues, Path, PathValue } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZodType } from "zod";
 import { GenericForm } from "./GenericForm";
@@ -10,6 +10,7 @@ import { ReactNode, useEffect, useRef } from "react";
 
 interface ManagedFormProps<T extends FieldValues> {
   /** Zod validation schema */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ZodType requires any for proper inference with react-hook-form
   schema: ZodType<any, any, any>;
   /** Initial form data */
   defaultValues: T;
@@ -51,6 +52,7 @@ export function ManagedForm<T extends FieldValues>({
 }: ManagedFormProps<T>) {
   const form = useForm<T>({
     resolver: zodResolver(schema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form DefaultValues type requires cast
     defaultValues: defaultValues as any,
     mode: "onBlur",
   });
@@ -79,7 +81,7 @@ export function ManagedForm<T extends FieldValues>({
 
   const handleFieldChange = (newData: T) => {
     Object.entries(newData).forEach(([key, value]) => {
-      form.setValue(key as any, value, {
+      form.setValue(key as Path<T>, value as PathValue<T, Path<T>>, {
         shouldDirty: true,
         shouldTouch: true,
         shouldValidate: true,

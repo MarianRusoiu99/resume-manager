@@ -15,7 +15,7 @@ export function logUsage(
 
   auditLogService.logAsync({
     userId: options.userId,
-    action: 'AI_GENERATE' as any,
+    action: 'AI_GENERATE',
     resourceType: 'AI_MODEL',
     resourceId: options.modelId,
     metadata: {

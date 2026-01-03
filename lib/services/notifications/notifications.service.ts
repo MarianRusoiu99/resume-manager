@@ -19,7 +19,7 @@ import { toNotificationData, toNotificationPayload, type DbNotification } from '
  * stable facade and avoid mixing transform + emit + CRUD details.
  */
 export class NotificationService 
-  extends GenericUserOwnedCrudService<NotificationData, CreateNotificationInput, any, NotificationRepository>
+  extends GenericUserOwnedCrudService<NotificationData, CreateNotificationInput, Partial<NotificationData>, Record<string, unknown>, NotificationRepository>
   implements INotificationService 
 {
   constructor(repository: NotificationRepository = notificationRepository) {
@@ -30,7 +30,7 @@ export class NotificationService
   async createNotification(
     input: CreateNotificationInput
   ): Promise<ServiceResult<NotificationServiceData>> {
-    const result = await this.create(input as any);
+    const result = await this.create(input as CreateNotificationInput & { userId: string });
     if (result.success) {
       const notification = result.data as unknown as DbNotification;
       await emitNotification(input.userId, toNotificationPayload(notification));

@@ -2,7 +2,6 @@ import { Suspense } from 'react';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui/button';
 import { ResumeListClient } from '@/components/resume/ResumeListClient';
-import { SearchInput } from '@/components/shared/SearchInput';
 import { ErrorState } from '@/components/shared/states';
 import { ROUTES } from '@/lib/constants';
 import { getResumes } from '@/app/actions/resume';

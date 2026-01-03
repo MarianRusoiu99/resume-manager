@@ -1,46 +1,22 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Page } from '@/components/layout/Page';
 import {
   Card,
   Button,
   Input,
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-  Badge,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-  Alert,
-  AlertDescription,
-  AlertTitle,
 } from '@/components/ui';
 import { SectionHeader } from '@/components/shared/SectionHeader';
-import { GlassCard } from '@/components/shared/GlassCard';
 import {
-  Key,
-  Plus,
   Trash2,
-  ExternalLink,
-  Eye,
-  EyeOff,
-  AlertCircle,
   Loader2,
-  Lock,
   Cpu,
-  Save,
-  RotateCcw,
-  Sparkles,
-  FileText,
-  Mail,
-  Search,
   UserCircle,
-  AlertTriangle,
 } from 'lucide-react';
 import { useSettings } from '@/lib/contexts/SettingsContext';
 import { addApiProvider, deleteApiProvider } from '@/app/actions/api-provider';
@@ -102,9 +78,10 @@ export default function SettingsPage() {
         setNewApiKey('');
         await refreshProviders();
       } else {
-        toast.error((result as any).error);
+        const errorResult = result as { error?: string };
+        toast.error(errorResult.error || 'Failed to add key');
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred');
     } finally {
       setLoadingKeys(false);
@@ -120,9 +97,10 @@ export default function SettingsPage() {
         toast.success(`${name} key removed`);
         await refreshProviders();
       } else {
-        toast.error((result as any).error);
+        const errorResult = result as { error?: string };
+        toast.error(errorResult.error || 'Failed to remove key');
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred');
     } finally {
       setLoadingKeys(false);
@@ -140,7 +118,7 @@ export default function SettingsPage() {
       } else {
         toast.error(result?.message || 'Failed to delete account');
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred');
     } finally {
       setIsDeletingAccount(false);

@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useOptimistic, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ProfileCard } from "./ProfileCard";
 import { ResumeImportButton } from "./ResumeImportButton";
 import { Button } from "@/components/ui";
-import { Gallery } from "@/components/shared/Gallery";
 import { Plus, User, Key } from "lucide-react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
@@ -13,7 +12,7 @@ import { createProfile, deleteProfile, setDefaultProfile } from "@/app/actions/p
 import { type ProfileDto } from "@/lib/actions/types";
 import { OnboardingModal } from "./OnboardingModal";
 import { useCanUseAI } from "@/lib/contexts";
-import { Callout, SearchInput } from "@/components/shared";
+import { Callout } from "@/components/shared";
 import Link from "next/link";
 import { ROUTES } from "@/lib/constants";
 
@@ -120,7 +119,7 @@ export function ProfileGalleryClient({
       <ResourceGallery
         initialItems={initialProfiles}
         resourceName="Profile"
-        onDelete={deleteProfile as any}
+        onDelete={(id: string) => deleteProfile(id)}
         searchTerm={searchTerm}
         getItemKey={(profile) => profile.id}
         emptyState={{

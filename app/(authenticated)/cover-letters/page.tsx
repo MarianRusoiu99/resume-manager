@@ -3,13 +3,11 @@ import Link from 'next/link';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui';
 import { CoverLetterListClient } from '@/components/cover-letter/CoverLetterListClient';
-import { SearchInput } from '@/components/shared/SearchInput';
 import { ErrorState } from '@/components/shared/states';
 import { ROUTES } from '@/lib/constants';
-import { getCoverLetters, deleteCoverLetter } from '@/app/actions/cover-letter';
+import { getCoverLetters } from '@/app/actions/cover-letter';
 import { GallerySkeleton } from '@/components/shared/skeletons/GallerySkeleton';
 import { FileText } from 'lucide-react';
-import { revalidatePath } from 'next/cache';
 
 interface Props {
   searchParams: Promise<{ q?: string }>;

@@ -2,7 +2,13 @@
 
 import { userAISettingsService } from '@/lib/services';
 import { withServerAction } from '@/lib/actions/with-server-action';
-import { z } from 'zod';
+import type { AIFeatureType, UpsertAISettingsInput } from '@/lib/repositories/interfaces';
+
+interface FeaturePreferenceData {
+  feature: AIFeatureType;
+  providerId: string | null;
+  modelId: string | null;
+}
 
 /**
  * Get AI settings for the current user
@@ -18,11 +24,11 @@ export const getAISettings = withServerAction(
  */
 export const updateFeaturePreference = withServerAction(
     'updateFeaturePreference',
-    async (session, data: { feature: string; providerId: string | null; modelId: string | null }) => {
+    async (session, data: FeaturePreferenceData) => {
         return userAISettingsService.updateFeaturePreference({
             userId: session.user.id,
             ...data
-        } as any);
+        });
     },
     {
         auditAction: 'SETTINGS_UPDATE',
@@ -36,8 +42,11 @@ export const updateFeaturePreference = withServerAction(
  */
 export const updateAllPreferences = withServerAction(
     'updateAllPreferences',
-    async (session, preferences: any) => {
-        return userAISettingsService.updateAllPreferences(session.user.id, preferences);
+    async (session, preferences: Omit<UpsertAISettingsInput, 'userId'>) => {
+        return userAISettingsService.updateAllPreferences(session.user.id, {
+            ...preferences,
+            userId: session.user.id
+        });
     },
     {
         auditAction: 'SETTINGS_UPDATE',

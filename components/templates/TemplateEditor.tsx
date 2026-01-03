@@ -30,6 +30,8 @@ import { TemplateEditorToolbar } from './editor/TemplateEditorToolbar';
 import { useTemplatePreview } from './editor/hooks/useTemplatePreview';
 import { useTemplatePersistence } from './editor/hooks/useTemplatePersistence';
 
+import type { OnMount } from '@monaco-editor/react';
+
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
@@ -120,9 +122,9 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
 
       let result;
       if (isNew) {
-        result = await createTemplate(payload as any);
+        result = await createTemplate(payload);
       } else if (template?.id) {
-        result = await updateTemplate(template.id, payload as any);
+        result = await updateTemplate(template.id, payload);
       }
 
       if (result && !result.success) {
@@ -135,7 +137,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
           router.refresh();
         }
       }
-    } catch (err) {
+    } catch {
       toast.error('An unexpected error occurred');
     } finally {
       setSaving(false);
@@ -148,7 +150,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     setMounted(true);
   }, []);
 
-  const handleEditorDidMount = (editor: any) => {
+  const handleEditorDidMount: OnMount = (editor) => {
     // Force a layout refresh after a short delay to ensure container is ready
     setTimeout(() => {
       editor.layout();

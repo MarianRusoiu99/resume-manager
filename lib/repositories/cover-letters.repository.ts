@@ -8,13 +8,14 @@
 import { prisma } from '@/lib/db/index';
 import { Prisma, PrismaClient } from '@prisma/client';
 
-import { GenericUserOwnedRepository } from './generic.repository';
+import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
 import type { CreateCoverLetterInput, ICoverLetterRepository, UpdateCoverLetterInput, CoverLetterData, FindCoverLettersOptions } from './interfaces/cover-letters.repository.interface';
 
 /**
  * Cover Letter Repository Implementation
  */
 export class CoverLetterRepository
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GenericUserOwnedRepository requires a Prisma delegate type, but we use direct db access
   extends GenericUserOwnedRepository<CoverLetterData, CreateCoverLetterInput, UpdateCoverLetterInput, any>
   implements ICoverLetterRepository
 {
@@ -77,11 +78,16 @@ export class CoverLetterRepository
    */
   override async findAllForUser(
     userId: string,
-    args?: any
+    args?: PrismaArgs
   ): Promise<CoverLetterData[]> {
+    const { where, orderBy, take, skip, include, select } = args || {};
     return this.db.coverLetter.findMany({
-      ...args,
-      where: { ...args?.where, userId },
+      where: { ...where, userId },
+      ...(orderBy && { orderBy }),
+      ...(take !== undefined && { take }),
+      ...(skip !== undefined && { skip }),
+      ...(include && { include }),
+      ...(select && { select }),
     }) as Promise<CoverLetterData[]>;
   }
 

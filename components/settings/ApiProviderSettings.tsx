@@ -21,6 +21,7 @@ import {
 } from '@/components/ui';
 import { SectionHeader } from '@/components/shared/SectionHeader';
 import { GlassCard } from '@/components/shared/GlassCard';
+import type { ApiProvider } from '@/lib/actions/types';
 
 const PROVIDERS = [
   { id: 'openai', name: 'OpenAI', url: 'https://platform.openai.com/api-keys' },
@@ -29,7 +30,7 @@ const PROVIDERS = [
 ];
 
 interface ApiProviderSettingsProps {
-  providers: any[];
+  providers: ApiProvider[];
   loadingKeys: boolean;
   newProvider: string;
   setNewProvider: (value: string) => void;

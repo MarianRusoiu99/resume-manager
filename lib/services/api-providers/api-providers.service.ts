@@ -33,7 +33,7 @@ import { getFirstActiveProvider } from './operations/get-active';
 import { updateProvider, toggleProvider } from './operations/update-provider';
 
 export class ApiProviderService 
-  extends GenericUserOwnedCrudService<ApiProviderWithModels, CreateApiProviderInput, RepoUpdateInput, ApiProviderRepository>
+  extends GenericUserOwnedCrudService<ApiProviderWithModels, CreateApiProviderInput, RepoUpdateInput, Record<string, unknown>, ApiProviderRepository>
 {
   constructor(repository: ApiProviderRepository = apiProviderRepository) {
     super(repository, 'ApiProvider');

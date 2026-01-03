@@ -1,21 +1,18 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { Sparkles, Send } from 'lucide-react';
 import { Button, Card, Textarea } from '@/components/ui';
 import { Callout, Spinner } from '@/components/shared';
-import { ModelSelector } from '@/components/shared/ModelSelector';
-import { SearchableSelect } from '@/components/ui/searchable-select';
+import { AIModelSelector } from '@/components/shared/AIModelSelector';
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { useCoverLetterGeneration } from '@/components/ai-enhance/hooks';
 import { createCoverLetter } from '@/app/actions/cover-letter';
 import type { ProfileListItem } from '@/lib/actions/types';
-import { useComponentLogger } from '@/hooks';
 
 interface CoverLetterGeneratorProps {
   profiles: ProfileListItem[];
-  activeProviders: any[];
   hasAIProviders: boolean;
   defaultProfileId: string;
   defaultModelId: string;
@@ -23,21 +20,19 @@ interface CoverLetterGeneratorProps {
 
 export function CoverLetterGenerator({
   profiles,
-  activeProviders,
   hasAIProviders,
   defaultProfileId,
   defaultModelId,
 }: CoverLetterGeneratorProps) {
-  const log = useComponentLogger('CoverLetterGenerator');
-  const [selectedProfileId, setSelectedProfileId] = useState(defaultProfileId);
-  const [selectedModelId, setSelectedModelId] = useState(defaultModelId);
+  // Initialize with defaults - use key pattern or controlled component for reset
+  const [selectedProfileId, setSelectedProfileId] = useState(() => defaultProfileId);
+  const [selectedModelId, setSelectedModelId] = useState(() => defaultModelId);
   const [jobDescription, setJobDescription] = useState('');
   const [personalInstructions, setPersonalInstructions] = useState('');
 
-  useEffect(() => {
-    if (defaultProfileId) setSelectedProfileId(defaultProfileId);
-    if (defaultModelId) setSelectedModelId(defaultModelId);
-  }, [defaultProfileId, defaultModelId]);
+  const handleModelChange = useCallback((modelId: string, _providerId: string) => {
+    setSelectedModelId(modelId);
+  }, []);
 
   const {
     generate,
@@ -59,7 +54,7 @@ export function CoverLetterGenerator({
       personalInstructions,
       overrideModelId: selectedModelId,
     });
-  }, [generate, jobDescription, personalInstructions, selectedModelId]);
+  }, [generate, jobDescription, personalInstructions, selectedModelId, selectedProfileId]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -109,17 +104,11 @@ export function CoverLetterGenerator({
             </div>
             <div className="space-y-2.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model</label>
-              <SearchableSelect
+              <AIModelSelector
                 value={selectedModelId}
-                onValueChange={setSelectedModelId}
-                options={activeProviders.flatMap(p =>
-                  (p.models || []).map((m: any) => ({
-                    value: typeof m === 'string' ? m : m.id,
-                    label: `${p.name}: ${typeof m === 'string' ? m : (m.name || m.id)}`
-                  }))
-                )}
-                placeholder="Select model"
-                className="rounded-xl border-primary/5 bg-background/50"
+                onValueChange={handleModelChange}
+                size="md"
+                className="w-full"
               />
             </div>
           </div>

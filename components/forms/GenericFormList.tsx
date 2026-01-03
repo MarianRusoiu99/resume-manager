@@ -1,10 +1,8 @@
 "use client";
 
-import { SimpleFormField, SimpleFormFieldList } from "@/components/ui/simple-form-field";
 import { useListForm } from "@/hooks/useListForm";
 import { FormList } from "@/components/ui/form-list";
-import type { FieldConfig, FormSchema } from "@/lib/forms/form-schema";
-import { isFullWidth } from "@/lib/forms/form-schema";
+import type { FormSchema } from "@/lib/forms/form-schema";
 
 import { useAutoSave } from "@/hooks/useAutoSave";
 
@@ -24,7 +22,7 @@ interface GenericFormListProps<T> {
 /**
  * GenericFormList - Renders a dynamic list form from a schema
  */
-export function GenericFormList<T extends Record<string, any>>({
+export function GenericFormList<T extends Record<string, unknown>>({
   schema,
   items,
   onChange,
@@ -39,7 +37,7 @@ export function GenericFormList<T extends Record<string, any>>({
   // Use the new auto-save hook to ensure consistent debouncing across all lists
   useAutoSave({
     data: items,
-    onSave: async (data) => {
+    onSave: async (_data) => {
       // Logic for saving is usually handled by the parent EditorContext
     },
     enabled: autoSave,

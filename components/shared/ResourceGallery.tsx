@@ -66,13 +66,18 @@ export function ResourceGallery<T extends Resource>({
     if (filterFn) return filterFn(item, searchTerm);
     
     // Default fallback filter (tries to match title/name if they exist)
-    const anyItem = item as any;
     const searchLower = searchTerm.toLowerCase();
+    const itemRecord = item as Record<string, unknown>;
+    const title = typeof itemRecord.title === 'string' ? itemRecord.title : '';
+    const name = typeof itemRecord.name === 'string' ? itemRecord.name : '';
+    const jobTitle = typeof itemRecord.jobTitle === 'string' ? itemRecord.jobTitle : '';
+    const companyName = typeof itemRecord.companyName === 'string' ? itemRecord.companyName : '';
+    
     return (
-      anyItem.title?.toLowerCase().includes(searchLower) ||
-      anyItem.name?.toLowerCase().includes(searchLower) ||
-      anyItem.jobTitle?.toLowerCase().includes(searchLower) ||
-      anyItem.companyName?.toLowerCase().includes(searchLower)
+      title.toLowerCase().includes(searchLower) ||
+      name.toLowerCase().includes(searchLower) ||
+      jobTitle.toLowerCase().includes(searchLower) ||
+      companyName.toLowerCase().includes(searchLower)
     );
   });
 

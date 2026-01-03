@@ -8,7 +8,7 @@ import { withServiceError, GenericUserOwnedCrudService } from '@/lib/services/ut
 import type { ICoverLetterService } from '../interfaces';
 
 export class CoverLetterService 
-  extends GenericUserOwnedCrudService<CoverLetterData, CreateCoverLetterInput, UpdateCoverLetterInput, CoverLetterRepository>
+  extends GenericUserOwnedCrudService<CoverLetterData, CreateCoverLetterInput, UpdateCoverLetterInput, Record<string, unknown>, CoverLetterRepository>
   implements ICoverLetterService 
 {
   constructor(repository: CoverLetterRepository = coverLetterRepository) {

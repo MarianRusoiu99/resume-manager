@@ -40,7 +40,7 @@ export class AIService implements IAIService {
     const modelsResult = await apiProviderService.getAvailableModels(userId);
     if (!modelsResult.success) return failure('No AI providers available');
 
-    const fallbacks = modelsResult.data.allModels.filter((m: any) => m.id !== primaryModel?.modelId);
+    const fallbacks = modelsResult.data.allModels.filter((m) => m.id !== primaryModel?.modelId);
     
     for (const fallback of fallbacks) {
       try {
