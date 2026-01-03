@@ -183,7 +183,7 @@ export function ResumeGenerator({
             </div>
             {suggestions.length > 0 && (
               <ul className="text-xs space-y-2.5 ml-1">
-                {suggestions.slice(0, 3).map((s, i) => (
+                {suggestions.slice(0, 3).map((s: string, i: number) => (
                   <li key={i} className="flex gap-2.5 items-start text-muted-foreground">
                     <span className="text-primary font-bold">/</span>{s}
                   </li>

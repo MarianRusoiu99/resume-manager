@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { toast } from 'sonner';
-import { useTemplateGeneration } from '@/components/ai-enhance/hooks/useTemplateGeneration';
+import { useTemplateGeneration } from '@/components/ai-enhance/hooks/useTemplateEnhancement';
 import type { ExtractedTemplate } from '@/lib/ai/template-parser';
 
 interface UseTemplateImportOptions {

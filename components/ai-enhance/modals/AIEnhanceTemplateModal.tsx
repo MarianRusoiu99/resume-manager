@@ -19,7 +19,7 @@ import { AIEnhanceBaseModal } from './AIEnhanceBaseModal';
 import { PromptInput } from '../prompt/PromptInput';
 import { TemplateVisualComparison } from '../preview/TemplateVisualComparison';
 import { TemplateCodeComparison } from '../preview/TemplateCodeComparison';
-import { useTemplateEnhancement } from '../hooks/useAIEnhancement';
+import { useTemplateEnhancement } from '../hooks/useTemplateEnhancement';
 import { ModelSelector } from '@/components/shared/ModelSelector';
 
 export interface AIEnhanceTemplateModalProps {

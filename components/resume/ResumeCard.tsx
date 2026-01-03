@@ -62,7 +62,10 @@ export function ResumeCard({
   };
 
   const handleDelete = async () => {
-    const success = await handleDeleteOp(id, onDelete);
+    const success = await handleDeleteOp(id, title);
+    if (success) {
+      onDelete(id);
+    }
   };
 
   const actions: GalleryCardAction[] = [

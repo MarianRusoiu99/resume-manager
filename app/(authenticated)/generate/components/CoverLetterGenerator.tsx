@@ -55,6 +55,7 @@ export function CoverLetterGenerator({
 
     await generate({
       jobDescription,
+      profileId: selectedProfileId,
       personalInstructions,
       overrideModelId: selectedModelId,
     });
