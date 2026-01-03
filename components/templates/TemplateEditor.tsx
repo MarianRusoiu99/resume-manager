@@ -31,7 +31,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { type ProfileListItem, type ProfileDto } from '@/lib/client';
+import { type ProfileListItem } from '@/lib/actions/types';
 import {
   createTemplate,
   updateTemplate,

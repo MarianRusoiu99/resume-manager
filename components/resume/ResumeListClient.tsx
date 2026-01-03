@@ -5,19 +5,20 @@ import { ResumeCard } from '@/components/resume/ResumeCard';
 import { Gallery } from '@/components/shared/Gallery';
 import { useResumeOperations } from '@/hooks/features/useResumeOperations';
 import { FileText } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ROUTES } from '@/lib/constants';
 import type { ResumeListItem } from './ResumeList';
 
 interface ResumeListClientProps {
     resumes: ResumeListItem[];
-    onGenerate: () => void;
     searchTerm?: string;
 }
 
 export function ResumeListClient({
     resumes,
-    onGenerate,
     searchTerm
 }: ResumeListClientProps) {
+    const router = useRouter();
     const { handleView, handleEdit, handleDelete } = useResumeOperations();
     const [isPending, startTransition] = useTransition();
     
@@ -33,6 +34,10 @@ export function ResumeListClient({
         });
     };
 
+    const handleGenerate = () => {
+        router.push(ROUTES.GENERATE);
+    };
+
     return (
         <Gallery
             items={optimisticResumes}
@@ -45,7 +50,7 @@ export function ResumeListClient({
                 description: "Generate your first AI-optimized resume to start your job application",
                 action: {
                     label: "Generate Resume",
-                    onClick: onGenerate,
+                    onClick: handleGenerate,
                     icon: <FileText className="w-4 h-4" />,
                 },
             }}

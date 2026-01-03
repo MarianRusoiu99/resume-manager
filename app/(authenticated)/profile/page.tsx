@@ -8,7 +8,7 @@ import { ProfileGalleryClient } from "@/components/profile/ProfileGalleryClient"
 import { profileService } from "@/lib/services";
 import { verifySession } from "@/lib/auth/dal";
 import type { Resume } from "@/lib/validations/jsonresume";
-import type { ProfileDto } from "@/lib/client";
+import type { ProfileDto } from "@/lib/actions/types";
 import { Suspense } from "react";
 import { GallerySkeleton } from "@/components/shared/skeletons/GallerySkeleton";
 

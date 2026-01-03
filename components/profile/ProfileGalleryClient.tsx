@@ -10,7 +10,7 @@ import { Plus, User, Key } from "lucide-react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createProfile, deleteProfile, setDefaultProfile } from "@/app/actions/profile";
-import { type ProfileDto } from "@/lib/client";
+import { type ProfileDto } from "@/lib/actions/types";
 import { OnboardingModal } from "./OnboardingModal";
 import { useCanUseAI } from "@/lib/contexts";
 import { Callout, SearchInput } from "@/components/shared";

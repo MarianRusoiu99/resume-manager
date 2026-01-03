@@ -17,7 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { TemplateThumbnail } from './TemplateThumbnail';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { useComponentLogger } from '@/hooks';
-import { apiV1, type TemplateListResponseDto } from '@/lib/client';
+import { getTemplates } from '@/app/actions/template';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
@@ -54,12 +54,12 @@ export function PreviewTemplateSelector({
       try {
         setIsLoading(true);
         // We'll cast to ResumeTemplate[] since the API returns full objects
-        const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<ResumeTemplate>>();
-        if (result.error) {
+        const result = await getTemplates();
+        if (!result.success) {
           throw new Error(result.error);
         }
 
-        setTemplates(result.data?.templates ?? []);
+        setTemplates((result.data as unknown as ResumeTemplate[]) ?? []);
       } catch (error) {
         log.error('Error fetching templates', error);
         toast.error('Failed to load templates');

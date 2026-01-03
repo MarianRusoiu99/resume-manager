@@ -11,7 +11,7 @@ import React, {
 } from 'react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
-import { apiV1 } from '@/lib/client';
+import { API_V1 } from '@/lib/constants';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import {
   getNotifications,
@@ -279,7 +279,7 @@ export function NotificationProvider({ children }: Readonly<NotificationProvider
     let isClosing = false;
 
     // Set up SSE connection for real-time updates
-    const eventSource = new EventSource(apiV1.NOTIFICATIONS.STREAM.url);
+    const eventSource = new EventSource(API_V1.NOTIFICATIONS.STREAM);
 
     const sseLog = log.withContext({ action: 'notifications-sse' });
 

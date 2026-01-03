@@ -108,6 +108,16 @@ export interface IResumeCrudService {
       jobDescription?: string;
     }
   ): Promise<ServiceResult<UpdatedResumeData>>;
+
+  /**
+   * Duplicate a resume
+   */
+  duplicateResume(resumeId: string, userId: string): Promise<ServiceResult<ResumeDetails>>;
+
+  /**
+   * Import a resume from a file
+   */
+  importResume(userId: string, formData: FormData): Promise<ServiceResult<{ resume: unknown }>>;
 }
 
 /**

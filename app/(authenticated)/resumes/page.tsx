@@ -77,7 +77,6 @@ async function ResumesContent({ searchTerm }: { searchTerm: string }) {
     <>
       <ResumeListClient
         resumes={filteredResumes}
-        onGenerate={() => {}} // Not used in client component anymore for routing
         searchTerm={searchTerm}
       />
 

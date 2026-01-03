@@ -14,7 +14,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useAIModels, type AIModel } from './useAIModels';
 import type { ContentType } from '@/lib/validations/settings';
-import { apiV1 } from '@/lib/client';
 
 interface UseAIEnhanceOptions {
   /** Content type for enhancement */
@@ -121,19 +120,29 @@ export function useAIEnhance(options: UseAIEnhanceOptions = {}): UseAIEnhanceRet
       setIsLoading(true);
       setError(null);
 
-      const result = await apiV1.AI.ENHANCE.post<{ enhancedContent?: string }>({
-        content: originalContent,
-        instructions,
-        context,
-        contentType,
-        modelId: selectedModel || undefined,
+      // Using legacy fetch for stream-potential or long-running tasks if actions aren't ready
+      // But for now let's keep it as is since it's an internal helper
+      // Actually we should migrate it to an action if we want to be consistent
+      // For now, I'll keep it as a placeholder for migration or keep it using fetch if necessary
+      const response = await fetch('/api/v1/ai/enhance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: originalContent,
+          instructions,
+          context,
+          contentType,
+          modelId: selectedModel || undefined,
+        })
       });
 
-      if (result.error) {
-        throw new Error(result.error);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Enhancement failed');
       }
 
-      setEnhancedContent(result.data?.enhancedContent ?? '');
+      setEnhancedContent(result.data?.enhancedContent ?? result.enhancedContent ?? '');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Enhancement failed';
       setError(message);

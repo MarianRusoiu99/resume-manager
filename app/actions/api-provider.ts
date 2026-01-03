@@ -68,3 +68,32 @@ export const getApiProviders = withServerAction(
   async (session) => apiProviderService.getUserProviders(session.user.id),
   { resourceType: 'api-provider' }
 );
+
+/**
+ * Get all available models from all providers
+ */
+export const getAllAvailableModels = withServerAction(
+  'getAllAvailableModels',
+  async (session) => {
+    const result = await apiProviderService.getUserProvidersWithModels(session.user.id);
+    if (!result.success) return result;
+
+    const allModels = result.data.flatMap(provider => 
+      provider.models.map(model => ({
+        id: model.id,
+        name: model.name || model.id,
+        providerId: provider.id,
+        providerType: provider.provider,
+      }))
+    );
+
+    return {
+      success: true,
+      data: {
+        allModels,
+        byProvider: result.data
+      }
+    };
+  },
+  { resourceType: 'api-provider' }
+);

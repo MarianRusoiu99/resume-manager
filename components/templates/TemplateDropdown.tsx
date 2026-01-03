@@ -12,9 +12,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { getTemplates } from '@/app/actions/template';
+import { updateResumeMetadata } from '@/app/actions/resume';
 import type { TemplateBase } from '@/lib/types/template';
 import { useComponentLogger } from '@/hooks';
-import { apiV1, type TemplateListResponseDto, type UpdateResumeTemplateResponseDto } from '@/lib/client';
 
 interface TemplateDropdownProps {
   currentTemplateId: string | null;
@@ -37,12 +38,12 @@ export function TemplateDropdown({
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<TemplateBase>>();
-        if (result.error) {
-          throw new Error(result.error);
+        const result = await getTemplates();
+        if (!result.success) {
+          throw new Error(result.error ?? 'Failed to load templates');
         }
 
-        setTemplates(result.data?.templates ?? []);
+        setTemplates((result.data as unknown as TemplateBase[]) ?? []);
       } catch (error) {
         log.error('Error fetching templates', error);
         toast.error('Failed to load templates');
@@ -64,15 +65,15 @@ export function TemplateDropdown({
 
     try {
       setIsUpdating(true);
-      const result = await apiV1.RESUME.TEMPLATE(resumeId).patch<UpdateResumeTemplateResponseDto>({
+      const result = await updateResumeMetadata(resumeId, {
         templateId,
       });
 
-      if (result.error) {
-        throw new Error(result.error);
+      if (!result.success) {
+        throw new Error(result.error ?? 'Failed to update template');
       }
 
-      toast.success(result.data?.message ?? 'Template updated successfully');
+      toast.success('Template updated successfully');
       setIsOpen(false);
       onTemplateChange();
     } catch (error) {

@@ -27,7 +27,7 @@ import type { TemplateBase } from '@/lib/types/template';
 import { useResumeGeneration, useCoverLetterGeneration } from '@/components/ai-enhance/hooks';
 
 import { ModelSelector } from '@/components/shared/ModelSelector';
-import type { ApiProvider, ProfileListItem } from '@/lib/client';
+import type { ApiProvider, ProfileListItem } from '@/lib/actions/types';
 
 export default function GeneratePage() {
   const log = useComponentLogger('GeneratePage');

@@ -5,7 +5,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { apiV1, type ResumeDetailsDto, type TemplateListResponseDto } from '@/lib/client';
+import { getTemplates } from '@/app/actions/template';
+import { getProfile, updateProfile } from '@/app/actions/profile';
+import { getResume, updateResumeMetadata } from '@/app/actions/resume';
 
 const logger = createComponentLogger('useTemplateSelection');
 
@@ -28,23 +30,22 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
     if (!entityId) return null;
 
     if (isProfile) {
-      // API client unwraps the `{ data: ... }` envelope automatically
-      const profileResult = await apiV1.PROFILE.GET(entityId).get<{ selectedTemplateId: string | null }>();
-      if (profileResult.error) return null;
+      const profileResult = await getProfile(entityId);
+      if (!profileResult.success) return null;
       return profileResult.data?.selectedTemplateId ?? null;
     }
 
-    const resumeResult = await apiV1.RESUME.GET(entityId).get<Pick<ResumeDetailsDto, 'templateId'>>();
-    if (resumeResult.error) return null;
+    const resumeResult = await getResume(entityId);
+    if (!resumeResult.success) return null;
     return resumeResult.data?.templateId ?? null;
   }, [entityId, isProfile]);
 
   // Helper: Load default template
   const loadDefaultTemplate = useCallback(async (): Promise<string | null> => {
-    const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto>();
-    if (result.error || !result.data?.templates?.length) return null;
+    const result = await getTemplates();
+    if (!result.success || !result.data?.length) return null;
 
-    return result.data.templates[0].id;
+    return result.data[0].id;
   }, []);
 
 
@@ -105,10 +106,10 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
     if (entityId && templateId) {
       try {
         const result = isProfile
-          ? await apiV1.PROFILE.GET(entityId).patch<unknown>({ selectedTemplateId: templateId })
-          : await apiV1.RESUME.TEMPLATE(entityId).patch<unknown>({ templateId });
+          ? await updateProfile(entityId, { selectedTemplateId: templateId })
+          : await updateResumeMetadata(entityId, { templateId });
 
-        if (result.error) {
+        if (!result.success) {
           logger.error('Failed to save template selection', new Error(result.error));
         }
       } catch (error) {

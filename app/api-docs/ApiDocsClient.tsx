@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { apiV1 } from '@/lib/client';
+import { API_V1 } from '@/lib/constants';
 import { Spinner } from '@/components/shared';
 import { apiFetch } from '@/lib/utils/api-client';
 import 'swagger-ui-react/swagger-ui.css';
@@ -18,7 +18,7 @@ export default function ApiDocsClient() {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await apiFetch(apiV1.DOCS.url);
+        const response = await apiFetch(API_V1.DOCS);
         if (!response.ok) {
           throw new Error((await response.text()) || 'Failed to load documentation');
         }

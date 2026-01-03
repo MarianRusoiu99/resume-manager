@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { type ApiProvider } from '@/lib/client';
+import { type ApiProvider } from '@/lib/actions/types';
 import { getApiProviders } from '@/app/actions/api-provider';
 
 interface ModelOption {

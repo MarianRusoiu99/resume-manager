@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { clientJson } from "@/lib/client";
 
 /**
  * Options for data fetching hooks
@@ -72,9 +71,15 @@ export function useFetch<T>(
       setIsLoading(true);
       setError(null);
 
-      const result = await clientJson<unknown>(url, {
+      const response = await fetch(url, {
         signal: abortControllerRef.current.signal,
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = (await response.json()) as { data: any; error: string | null };
 
       if (result.error) {
         throw new Error(result.error);

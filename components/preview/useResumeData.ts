@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { apiV1, type ResumeDetailsDto } from '@/lib/client';
+import { getResume } from '@/app/actions/resume';
 
 const logger = createComponentLogger('useResumeData');
 
@@ -29,10 +29,10 @@ export function useResumeData({
     if (resumeId) {
       const fetchResume = async () => {
         try {
-          const result = await apiV1.RESUME.GET(resumeId).get<ResumeDetailsDto>();
+          const result = await getResume(resumeId);
 
-          if (!result.error && result.data?.content) {
-            setResume(result.data.content as Resume);
+          if (result.success && result.data?.content) {
+            setResume(result.data.content as unknown as Resume);
           }
         } catch (error) {
           logger.error('Error fetching resume', error);

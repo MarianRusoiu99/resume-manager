@@ -118,6 +118,10 @@ export class ResumeService implements IResumeService {
   duplicateResume(resumeId: string, userId: string): Promise<ServiceResult<ResumeDetails>> {
     return this.crudService.duplicateResume(resumeId, userId);
   }
+
+  importResume(userId: string, formData: FormData): Promise<ServiceResult<{ resume: unknown }>> {
+    return this.crudService.importResume(userId, formData);
+  }
 }
 
 // Export singleton instance for backward compatibility

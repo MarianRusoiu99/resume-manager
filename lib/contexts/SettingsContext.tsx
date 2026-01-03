@@ -28,7 +28,7 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-import { type AISettings as SettingsAISettings, type ApiProvider as SettingsApiProvider } from '@/lib/client';
+import { type AISettings as SettingsAISettings, type ApiProvider as SettingsApiProvider } from '@/lib/actions/types';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { getApiProviders } from '@/app/actions/api-provider';
 import { getAISettings } from '@/app/actions/ai-settings';

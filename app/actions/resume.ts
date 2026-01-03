@@ -6,6 +6,21 @@ import type { GenerateResumeServiceInput } from '@/lib/services/resumes';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
+ * Import a resume from a file
+ */
+export const importResume = withServerAction(
+    'importResume',
+    async (session, formData: FormData) => {
+        return resumeService.importResume(session.user.id, formData);
+    },
+    {
+        auditAction: 'RESUME_CREATE',
+        resourceType: 'resume',
+        revalidatePaths: ['/resumes', '/dashboard'],
+    }
+);
+
+/**
  * Get all resumes for the current user
  */
 export const getResumes = withServerAction(

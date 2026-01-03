@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiV1, type ProfileDto } from "@/lib/client";
 import { createComponentLogger } from "@/lib/utils/client-logger";
+import { updateProfile } from "@/app/actions/profile";
+import { type ProfileDto } from "@/lib/actions/types";
 
 type ResumeSection = keyof Omit<Resume, "$schema" | "meta">;
 
@@ -40,13 +41,13 @@ export function useProfileSave() {
 
     try {
       const updatedResume = { ...profile.resume, [section]: data };
-      const result = await apiV1.PROFILE.GET(profile.id).patch<Pick<ProfileDto, 'id' | 'resume'>>({ resume: updatedResume });
+      const result = await updateProfile(profile.id, { resume: updatedResume as unknown as Resume });
 
-      if (result.error || !result.data) {
-        throw new Error(result.error ?? `Failed to save ${sectionLabels[section]}`);
+      if (!result.success || !result.data) {
+        throw new Error(result.success ? `Failed to save ${sectionLabels[section]}` : result.error);
       }
 
-      const updatedProfile = result.data;
+      const updatedProfile = result.data as unknown as Pick<ProfileDto, 'id' | 'resume'>;
       onSuccess(updatedProfile);
       toast.success(`${sectionLabels[section]} saved successfully!`);
       return true;

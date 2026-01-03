@@ -5,7 +5,8 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Template } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { apiV1, type TemplateListResponseDto } from '@/lib/client';
+import { getTemplate, getTemplates } from '@/app/actions/template';
+import type { ResumeTemplate } from '@/lib/templates/template';
 
 const logger = createComponentLogger('useTemplatePreview');
 
@@ -44,16 +45,16 @@ interface UseTemplatePreviewReturn {
  */
 async function fetchTemplate(templateId?: string | null, useFallback = true): Promise<Template | null> {
   if (templateId) {
-    const result = await apiV1.TEMPLATE.GET(templateId).get<Template>();
-    if (!result.error && result.data) {
-      return result.data;
+    const result = await getTemplate(templateId);
+    if (result.success && result.data) {
+      return result.data as unknown as Template;
     }
   }
 
   if (useFallback) {
-    const listResult = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<Template>>();
-    if (!listResult.error && listResult.data?.templates?.length) {
-      return listResult.data.templates[0];
+    const listResult = await getTemplates();
+    if (listResult.success && listResult.data?.length) {
+      return listResult.data[0] as unknown as Template;
     }
   }
 
