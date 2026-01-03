@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, RefObject } from 'react';
-import { setupIframePagination, scrollToPage } from '@/lib/utils/pagination';
+import { setupIframeContinuousScroll } from '@/lib/utils/pagination';
 
 interface UsePaginationProps {
   iframeRef: RefObject<HTMLIFrameElement | null>;
@@ -13,39 +13,16 @@ interface UsePaginationProps {
 
 export function usePagination({ iframeRef, htmlContent }: UsePaginationProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
-    const iframe = iframeRef.current;
-    if (iframe) {
-      const doc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (doc) {
-        scrollToPage(doc, page);
-      }
-    }
-  }, [iframeRef]);
-
   const initPagination = useCallback(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
-    const pages = setupIframePagination(iframe);
-    if (pages) {
-      setTotalPages(pages);
-      // Reset to first page when content changes drastically
-      setCurrentPage(1);
-
-      const doc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (doc) {
-        scrollToPage(doc, 1);
-      }
-    }
+    setupIframeContinuousScroll(iframe);
   }, [iframeRef]);
 
   // Re-initialize when HTML content changes
@@ -73,9 +50,10 @@ export function usePagination({ iframeRef, htmlContent }: UsePaginationProps) {
   return {
     isFullscreen,
     toggleFullscreen,
-    currentPage,
-    totalPages,
-    handlePageChange,
+    currentPage: 1,
+    totalPages: 1,
+    handlePageChange: () => {},
     initPagination,
   };
 }
+

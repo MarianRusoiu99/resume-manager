@@ -8,12 +8,17 @@ import { cn } from '@/lib/utils';
 import { ModelSelectionModal } from './ModelSelectionModal';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { getAllAvailableModels } from '@/app/actions/api-provider';
+import { updateFeaturePreference, getAISettings } from '@/app/actions/ai-settings';
+import type { AIFeatureType } from '@/lib/repositories/interfaces';
 
 const logger = createComponentLogger('ModelSelector');
 
 interface ModelSelectorProps {
     value: string;
     onValueChange: (modelId: string, providerId: string) => void;
+    feature?: AIFeatureType;
+    requiresVision?: boolean;
+    requiresStructuredOutput?: boolean;
     className?: string;
     showProvider?: boolean;
 }
@@ -27,6 +32,9 @@ const PROVIDER_ICONS: Record<string, any> = {
 export function ModelSelector({
     value,
     onValueChange,
+    feature,
+    requiresVision = false,
+    requiresStructuredOutput = false,
     className,
     showProvider = true,
 }: Readonly<ModelSelectorProps>) {
@@ -36,44 +44,139 @@ export function ModelSelector({
     const [providerId, setProviderId] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
 
-    // Fetch model details if we only have the ID
+    // Initial load: fetch preferences and set defaults if needed
     useEffect(() => {
         let cancelled = false;
 
-        const fetchDetails = async () => {
-            // If we don't have a value, just stop loading
-            if (!value) {
-                setIsLoading(false);
-                return;
-            }
-
+        const initModel = async () => {
             setIsLoading(true);
             try {
-                const result = await getAllAvailableModels();
-                if (cancelled) return;
+                const modelsResult = await getAllAvailableModels();
+                if (cancelled || !modelsResult.success || !modelsResult.data) return;
 
-                if (result.success && result.data?.byProvider) {
-                    // Find the model
-                    for (const p of result.data.byProvider) {
-                        const found = p.models?.find((m: any) => m.id === value);
+                const { byProvider } = modelsResult.data;
+                let activeModelId = value;
+                let activeProviderId = '';
+
+                // If no value provided and we have a feature, load from preferences
+                if (!activeModelId && feature) {
+                    const settingsResult = await getAISettings();
+                    if (settingsResult.success && settingsResult.data) {
+                        const feat = settingsResult.data.features.find(f => f.feature.id === feature);
+                        if (feat?.modelId && feat?.providerId) {
+                            activeModelId = feat.modelId;
+                            activeProviderId = feat.providerId;
+                        }
+                    }
+                }
+
+                // If still no model, find a smart default
+                if (!activeModelId) {
+                    const allModels = byProvider.flatMap(p => p.models.map((m: any) => ({ ...m, providerId: p.id, providerName: p.name, providerType: p.provider })));
+                    
+                    const filtered = allModels.filter((m: any) => {
+                        // Only apply capability filters for OpenAI as requested
+                        if (m.providerType === 'openai') {
+                            const caps = m.capabilities || {};
+                            if (requiresVision && caps.vision === false) return false;
+                            if (requiresStructuredOutput && caps.structuredOutput === false) return false;
+                        }
+                        return true;
+                    });
+
+                    // Priority 1: GPT-4o
+                    let defaultModel = filtered.find((m: any) => m.modelKey === 'gpt-4o' || m.id === 'gpt-4o');
+                    // Priority 2: GPT-4o-mini
+                    if (!defaultModel) defaultModel = filtered.find((m: any) => m.modelKey === 'gpt-4o-mini' || m.id === 'gpt-4o-mini');
+                    // Priority 3: Any GPT-4
+                    if (!defaultModel) defaultModel = filtered.find((m: any) => m.id.includes('gpt-4'));
+                    // Priority 4: Claude 3.5 Sonnet
+                    if (!defaultModel) defaultModel = filtered.find((m: any) => m.id.includes('claude-3-5-sonnet'));
+                    // Priority 5: Gemini 1.5 Pro
+                    if (!defaultModel) defaultModel = filtered.find((m: any) => m.id.includes('gemini-1.5-pro'));
+                    // Fallback: First available
+                    if (!defaultModel) defaultModel = filtered[0];
+
+                    if (defaultModel) {
+                        activeModelId = defaultModel.id;
+                        activeProviderId = defaultModel.providerId;
+                    }
+                }
+
+                // Resolve display names
+                if (activeModelId) {
+                    for (const p of byProvider) {
+                        const found = p.models.find((m: any) => m.id === activeModelId || m.modelKey === activeModelId);
                         if (found) {
                             setModelName(found.name);
                             setProviderName(p.name);
                             setProviderId(p.provider);
+                            if (!activeProviderId) activeProviderId = p.id;
                             break;
                         }
                     }
                 }
+
+                // Notify parent if we chose a default
+                if (activeModelId && activeModelId !== value) {
+                    onValueChange(activeModelId, activeProviderId);
+                }
             } catch (error) {
-                logger.error('Failed to resolve model details', error);
+                logger.error('Failed to initialize model', error);
             } finally {
                 if (!cancelled) setIsLoading(false);
+            }
+        };
+
+        initModel();
+        return () => { cancelled = true; };
+    }, [feature, requiresVision, requiresStructuredOutput]);
+
+    // Update details when value changes externally
+    useEffect(() => {
+        if (!value) return;
+        let cancelled = false;
+
+        const fetchDetails = async () => {
+            try {
+                const result = await getAllAvailableModels();
+                if (cancelled || !result.success || !result.data) return;
+
+                for (const p of result.data.byProvider) {
+                    const found = p.models?.find((m: any) => m.id === value);
+                    if (found) {
+                        setModelName(found.name);
+                        setProviderName(p.name);
+                        setProviderId(p.provider);
+                        break;
+                    }
+                }
+            } catch (error) {
+                logger.error('Failed to resolve model details', error);
             }
         };
 
         fetchDetails();
         return () => { cancelled = true; };
     }, [value]);
+
+    const handleModelSelect = async (mid: string, pid: string) => {
+        onValueChange(mid, pid);
+        setOpen(false);
+
+        // Persist preference if feature is provided
+        if (feature) {
+            try {
+                await updateFeaturePreference({
+                    feature,
+                    providerId: pid,
+                    modelId: mid
+                });
+            } catch (error) {
+                logger.error('Failed to persist model preference', error);
+            }
+        }
+    };
 
     const ProviderIcon = PROVIDER_ICONS[providerId] || Cpu;
 
@@ -118,10 +221,9 @@ export function ModelSelector({
                 open={open}
                 onOpenChange={setOpen}
                 selectedModelId={value}
-                onModelSelect={(mid, pid) => {
-                    onValueChange(mid, pid);
-                    setOpen(false);
-                }}
+                onModelSelect={handleModelSelect}
+                requiresVision={requiresVision}
+                requiresStructuredOutput={requiresStructuredOutput}
             />
         </>
     );

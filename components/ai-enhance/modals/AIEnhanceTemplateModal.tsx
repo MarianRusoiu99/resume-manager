@@ -149,6 +149,8 @@ export function AIEnhanceTemplateModal({
     <ModelSelector
       value={selectedModel}
       onValueChange={handleModelChange}
+      feature="template"
+      requiresStructuredOutput={true}
       className="h-9"
     />
   );

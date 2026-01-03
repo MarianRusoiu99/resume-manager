@@ -15,6 +15,7 @@ export const resumeEnhancementMode = defineMode({
   description: 'Enhance and refine an existing resume through conversational iteration',
 
   outputSchema: resumeEnhancementOutputSchema,
+  primaryResultKey: 'resume',
 
   useStructuredOutput: true,
   maxTokens: 8000,

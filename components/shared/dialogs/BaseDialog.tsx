@@ -5,6 +5,8 @@ import {
   Dialog,
   DialogContent,
   DialogClose,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -75,14 +77,18 @@ export function BaseDialog({
               </div>
             )}
             <div>
-              {title && <h2 className="text-sm font-bold tracking-tight">{title}</h2>}
+              <DialogTitle className="text-sm font-bold tracking-tight">
+                {title || 'Dialog'}
+              </DialogTitle>
               {isPremium && (
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest leading-none mt-0.5">
+                <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest leading-none mt-0.5">
                   AI Assistant
-                </p>
+                </div>
               )}
               {description && !isPremium && (
-                <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+                <DialogDescription className="text-xs text-muted-foreground mt-0.5">
+                  {description}
+                </DialogDescription>
               )}
             </div>
           </div>

@@ -14,10 +14,10 @@ import { generateId, processStreamResponse } from './utils';
 /**
  * Hook for managing AI conversations
  */
-export function useConversation(options: UseConversationOptions): UseConversationReturn {
+export function useConversation<T = unknown>(options: UseConversationOptions<T>): UseConversationReturn<T> {
   const { mode, initialContext = {}, onStreamUpdate, onComplete, onError } = options;
 
-  const [state, setState] = useState<ConversationState>({
+  const [state, setState] = useState<ConversationState<T>>({
     id: null,
     mode,
     messages: [],
@@ -73,7 +73,7 @@ export function useConversation(options: UseConversationOptions): UseConversatio
    * Send a message
    */
   const sendMessage = useCallback(
-    async ({ message, attachments, modelId, stream = true, contextOverride }: SendMessageOptions) => {
+    async ({ message, attachments, modelId, stream = true, contextOverride }: SendMessageOptions): Promise<T | null> => {
       // Abort any existing request
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
@@ -107,8 +107,7 @@ export function useConversation(options: UseConversationOptions): UseConversatio
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            // Only include conversationId if it exists (avoid sending null)
-            ...(state.id && { conversationId: state.id }),
+            conversationId: state.id || undefined,
             mode: state.mode,
             message,
             attachments,
@@ -157,11 +156,12 @@ export function useConversation(options: UseConversationOptions): UseConversatio
             ...prev,
             id: conversationId || prev.id,
             messages: [...prev.messages, assistantMessage],
-            output,
+            output: output as T,
             isLoading: false,
           }));
 
-          onComplete?.(output);
+          onComplete?.(output as T);
+          return output as T;
         } else {
           // Handle non-streaming response
           const result = await response.json();
@@ -182,15 +182,16 @@ export function useConversation(options: UseConversationOptions): UseConversatio
             ...prev,
             id: result.data.conversationId,
             messages: [...prev.messages, assistantMessage],
-            output: result.data.output,
+            output: result.data.output as T,
             isLoading: false,
           }));
 
-          onComplete?.(result.data.output);
+          onComplete?.(result.data.output as T);
+          return result.data.output as T;
         }
       } catch (error) {
         if ((error as Error).name === 'AbortError') {
-          return; // Ignore abort errors
+          return null; // Ignore abort errors
         }
 
         const errorMessage = error instanceof Error ? error.message : 'An error occurred';
@@ -200,6 +201,7 @@ export function useConversation(options: UseConversationOptions): UseConversatio
           error: errorMessage,
         }));
         onError?.(errorMessage);
+        return null;
       }
     },
     [state.id, state.mode, state.context, onError, onComplete, onStreamUpdate]

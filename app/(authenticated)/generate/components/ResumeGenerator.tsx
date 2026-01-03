@@ -135,6 +135,8 @@ export function ResumeGenerator({
               <ModelSelector
                 value={selectedModelId}
                 onValueChange={handleModelChange}
+                feature="resume"
+                requiresStructuredOutput={true}
                 className="w-full"
               />
             </div>

@@ -43,19 +43,34 @@ export class AIOrchestrator {
     const mode = getModeOrThrow(conversation.mode);
     const model = options.provider.createLanguageModel(options.modelKey);
 
+    // Check if we need vision API for streaming
+    const needsVision = requiresVision(conversation);
+
     // Build messages
-    const messages = buildMessages(conversation, mode);
+    const messages = needsVision 
+      ? buildMessagesWithVision(conversation, mode)
+      : buildMessages(conversation, mode);
 
     // Build system prompt
     const systemPrompt = mode.buildSystemPrompt(conversation.context);
 
-    // Use structured output streaming for modes that require it
-    if (mode.useStructuredOutput !== false && mode.outputSchema) {
-      yield* this.streamStructuredResponse(conversation, mode, model, messages, systemPrompt, options);
-    } else {
-      yield* this.streamTextResponse(conversation, mode, model, messages, systemPrompt, options);
+    try {
+      // Use structured output streaming for modes that require it
+      if (mode.useStructuredOutput !== false && mode.outputSchema) {
+        yield* this.streamStructuredResponse(conversation, mode, model, messages, systemPrompt, options);
+      } else {
+        yield* this.streamTextResponse(conversation, mode, model, messages, systemPrompt, options);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Stream response failed', { error: errorMessage });
+      yield {
+        type: 'error',
+        error: errorMessage,
+      };
     }
   }
+
 
   /**
    * Stream with structured JSON output (uses streamObject for guaranteed JSON)
@@ -278,29 +293,8 @@ export class AIOrchestrator {
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        const errorName = error instanceof Error ? error.name : '';
-
-        // Check if this is a model compatibility error or schema validation error
-        // These errors should fall back to generateText with manual parsing
-        const shouldFallback = 
-          errorMessage.includes('json_schema') || 
-          errorMessage.includes('not supported') ||
-          errorMessage.includes('No object generated') ||
-          errorMessage.includes('did not match schema') ||
-          errorName === 'AI_NoObjectGeneratedError' ||
-          errorName === 'AI_APICallError';
-
-        if (shouldFallback) {
-          logger.warn('Structured output failed, falling back to generateText', {
-            conversationId: conversation.id,
-            errorName,
-            error: errorMessage,
-          });
-          // Continue to generateText fallback below
-        } else {
-          // Re-throw if it's some other error
-          throw error;
-        }
+        logger.error('Structured generation failed', { error: errorMessage });
+        throw error;
       }
     }
 

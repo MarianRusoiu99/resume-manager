@@ -15,6 +15,7 @@ export const resumeGenerationMode = defineMode({
   description: 'Generate a tailored resume from profile data and job description',
 
   outputSchema: resumeGenerationOutputSchema,
+  primaryResultKey: 'resume',
 
   useStructuredOutput: true,
   maxTokens: 8000,

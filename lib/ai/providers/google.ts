@@ -99,6 +99,7 @@ export class GoogleProvider extends BaseAIProvider {
   private mapGoogleModel(model: GoogleModelResponse['models'][0]): AIModel {
     // Extract model ID from full name (e.g., "models/gemini-pro" -> "gemini-pro")
     const modelId = model.name.replace('models/', '');
+    const isGemini = modelId.includes('gemini');
 
     return {
       id: modelId,
@@ -106,6 +107,10 @@ export class GoogleProvider extends BaseAIProvider {
       description: model.description,
       contextWindow: model.inputTokenLimit,
       maxOutputTokens: model.outputTokenLimit,
+      capabilities: {
+        vision: isGemini, // All Gemini models support vision
+        structuredOutput: isGemini,
+      },
     };
   }
 

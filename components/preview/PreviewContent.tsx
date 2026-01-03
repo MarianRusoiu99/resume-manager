@@ -10,7 +10,6 @@ import { RefObject } from 'react';
 // UI Components
 import { PreviewHeader } from './PreviewHeader';
 import { PreviewState } from './PreviewState';
-import { PaginationControls } from '@/components/ui/pagination-controls';
 import type { Template } from '@/lib/types/template';
 
 interface PreviewContentProps {
@@ -33,9 +32,6 @@ interface PreviewContentProps {
   containerRef: RefObject<HTMLDivElement | null>;
   headerActions?: React.ReactNode;
   headerTitle?: React.ReactNode;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
 }
 
 export function PreviewContent(props: Readonly<PreviewContentProps>) {
@@ -57,10 +53,8 @@ export function PreviewContent(props: Readonly<PreviewContentProps>) {
     containerRef,
     headerActions,
     headerTitle,
-    currentPage,
-    totalPages,
-    onPageChange,
   } = props;
+
   return (
     <div className="flex flex-col h-full relative group">
       <PreviewHeader
@@ -94,16 +88,6 @@ export function PreviewContent(props: Readonly<PreviewContentProps>) {
             containerRef={containerRef}
           />
         </div>
-
-        {totalPages > 1 && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-            <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={onPageChange}
-            />
-          </div>
-        )}
       </div>
     </div>
   );

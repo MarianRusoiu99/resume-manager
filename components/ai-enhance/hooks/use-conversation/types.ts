@@ -57,12 +57,12 @@ export interface ConversationContext {
 /**
  * Conversation state
  */
-export interface ConversationState {
+export interface ConversationState<T = unknown> {
   id: string | null;
   mode: ConversationMode;
   messages: ConversationMessage[];
   context: ConversationContext;
-  output: unknown | null;
+  output: T | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -84,13 +84,13 @@ export interface SendMessageOptions {
 /**
  * Hook options
  */
-export interface UseConversationOptions {
+export interface UseConversationOptions<T = unknown> {
   mode: ConversationMode;
   initialContext?: ConversationContext;
   /** Called when streaming output updates */
   onStreamUpdate?: (content: string) => void;
   /** Called when generation completes */
-  onComplete?: (output: unknown) => void;
+  onComplete?: (output: T) => void;
   /** Called on error */
   onError?: (error: string) => void;
 }
@@ -98,11 +98,11 @@ export interface UseConversationOptions {
 /**
  * Hook return type
  */
-export interface UseConversationReturn {
+export interface UseConversationReturn<T = unknown> {
   /** Current conversation state */
-  state: ConversationState;
+  state: ConversationState<T>;
   /** Send a message to the AI */
-  sendMessage: (options: SendMessageOptions) => Promise<void>;
+  sendMessage: (options: SendMessageOptions) => Promise<T | null>;
   /** Update context */
   updateContext: (context: Partial<ConversationContext>) => void;
   /** Clear conversation and start fresh */

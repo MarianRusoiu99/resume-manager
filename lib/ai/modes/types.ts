@@ -81,6 +81,12 @@ export interface AIMode<TOutput = unknown> {
    * Maximum tokens for response (if different from default)
    */
   maxTokens?: number;
+
+  /**
+   * Primary key in the output JSON that contains the main result.
+   * Useful for UI hooks to automatically extract the relevant data.
+   */
+  primaryResultKey?: string;
 }
 
 /**

@@ -31,6 +31,10 @@ interface ModelInfo {
     description?: string;
     contextWindow?: number;
     maxOutputTokens?: number;
+    capabilities?: {
+        vision?: boolean;
+        structuredOutput?: boolean;
+    };
 }
 
 interface ProviderWithModels {
@@ -46,6 +50,8 @@ export interface ModelSelectionModalProps {
     onOpenChange: (open: boolean) => void;
     selectedModelId: string;
     onModelSelect: (modelId: string, providerId: string) => void;
+    requiresVision?: boolean;
+    requiresStructuredOutput?: boolean;
 }
 
 // --- Constants ---
@@ -61,6 +67,8 @@ export function ModelSelectionModal({
     onOpenChange,
     selectedModelId,
     onModelSelect,
+    requiresVision = false,
+    requiresStructuredOutput = false,
 }: Readonly<ModelSelectionModalProps>) {
     const [providers, setProviders] = useState<ProviderWithModels[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -104,6 +112,14 @@ export function ModelSelectionModal({
 
             return provider.models
                 .filter(model => {
+                    // Only apply capability filters for OpenAI as requested
+                    if (provider.provider === 'openai') {
+                        // Ensure we have capabilities defined before filtering
+                        const caps = model.capabilities || {};
+                        if (requiresVision && caps.vision === false) return false;
+                        if (requiresStructuredOutput && caps.structuredOutput === false) return false;
+                    }
+
                     if (!searchQuery) return true;
                     const q = searchQuery.toLowerCase();
                     return (
@@ -113,7 +129,7 @@ export function ModelSelectionModal({
                 })
                 .map(model => ({ ...model, provider }));
         });
-    }, [providers, searchQuery, selectedProviderFilter]);
+    }, [providers, searchQuery, selectedProviderFilter, requiresVision, requiresStructuredOutput]);
 
     // Group by provider for display if showing all
     const groupedModels = useMemo(() => {
@@ -281,6 +297,16 @@ export function ModelSelectionModal({
                                                                     {item.contextWindow && (
                                                                         <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal bg-background/50">
                                                                             CTX: {Math.round(item.contextWindow / 1000)}k
+                                                                        </Badge>
+                                                                    )}
+                                                                    {item.capabilities?.vision && (
+                                                                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal bg-blue-500/10 text-blue-500 border-blue-500/20">
+                                                                            Vision
+                                                                        </Badge>
+                                                                    )}
+                                                                    {item.capabilities?.structuredOutput && (
+                                                                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal bg-green-500/10 text-green-500 border-green-500/20">
+                                                                            JSON
                                                                         </Badge>
                                                                     )}
                                                                 </div>

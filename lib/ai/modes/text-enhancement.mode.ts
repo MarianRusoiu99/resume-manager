@@ -15,6 +15,7 @@ export const textEnhancementMode = defineMode({
   description: 'Enhance individual text fields like summaries and descriptions',
 
   outputSchema: textEnhancementOutputSchema,
+  primaryResultKey: 'content',
 
   useStructuredOutput: true,
   maxTokens: 2000,

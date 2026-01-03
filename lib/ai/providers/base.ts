@@ -14,6 +14,10 @@ export interface AIModel {
   description?: string;
   contextWindow?: number;
   maxOutputTokens?: number;
+  capabilities?: {
+    vision?: boolean;
+    structuredOutput?: boolean;
+  };
 }
 
 /**

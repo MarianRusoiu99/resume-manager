@@ -63,133 +63,13 @@ function attemptJSONRepair(jsonString: string): string {
 }
 
 /**
- * Creates a minimal valid output for the mode when parsing completely fails
- */
-function createFallbackOutput(mode: AIMode, rawText: string): unknown {
-  // Try to extract any useful information from the raw text
-  const cleanText = rawText.replace(/[\x00-\x1F\x7F]/g, ' ').trim();
-  const textPreview = cleanText.slice(0, 500);
-  
-  switch (mode.id) {
-    case 'resume-generation':
-      return {
-        resume: {
-          basics: {
-            name: 'Candidate',
-            label: 'Professional',
-            summary: textPreview 
-              ? `Note: The AI response could not be fully parsed. Here is the raw response: ${textPreview}`
-              : 'Unable to generate resume. Please provide your profile information and a clear job description.',
-          },
-          work: [],
-          education: [],
-          skills: [],
-        },
-        jobTitle: 'Position',
-        companyName: 'Company',
-        matchScore: 0,
-        suggestions: [
-          'The AI response could not be parsed into a valid resume format.',
-          'Please try again with clearer input.',
-          'Make sure your profile includes: name, work experience, skills, and education.',
-          'Ensure the job description is a real job posting with clear requirements.',
-        ],
-      };
-
-    case 'resume-enhancement':
-      return {
-        resume: {
-          basics: {
-            name: 'Candidate',
-            summary: textPreview || 'Unable to enhance resume. Please try again.',
-          },
-          work: [],
-          education: [],
-          skills: [],
-        },
-        changes: [
-          'Failed to parse AI response',
-          'Please try again with a valid resume',
-        ],
-      };
-
-    case 'cover-letter-generation':
-      return {
-        content: textPreview || 'Unable to generate cover letter. Please provide your resume and a job description, then try again.',
-        subject: 'Job Application',
-        recipientName: 'Hiring Manager',
-        companyName: 'Company',
-        jobTitle: 'Position',
-      };
-
-    case 'template-generation':
-      return {
-        htmlTemplate: `<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
-    .error { background: #fef2f2; border: 1px solid #fecaca; padding: 20px; border-radius: 8px; }
-    .error h2 { color: #dc2626; margin-top: 0; }
-    .error p { color: #7f1d1d; }
-  </style>
-</head>
-<body>
-  <div class="error">
-    <h2>Template Generation Failed</h2>
-    <p>Unable to generate a valid template from the AI response.</p>
-    <p>Please try again with clearer instructions about the template design you want.</p>
-  </div>
-</body>
-</html>`,
-        name: 'Error Template',
-        description: 'Placeholder template - generation failed',
-      };
-
-    case 'template-enhancement':
-      return {
-        htmlTemplate: `<!DOCTYPE html>
-<html>
-<head>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 40px; }
-    .notice { background: #fffbeb; border: 1px solid #fcd34d; padding: 20px; border-radius: 8px; }
-  </style>
-</head>
-<body>
-  <div class="notice">
-    <h2>Enhancement Failed</h2>
-    <p>Unable to enhance the template. Please try again.</p>
-  </div>
-</body>
-</html>`,
-        changes: ['Failed to parse AI response - please try again'],
-      };
-
-    case 'text-enhancement':
-      return {
-        content: textPreview || 'Unable to enhance text. Please try again.',
-      };
-
-    default:
-      // For unknown modes, return a generic structure
-      return { 
-        error: 'Unable to parse AI response',
-        message: 'Please try again with clearer input.',
-        rawText: textPreview,
-      };
-  }
-}
-
-/**
- * Parses AI output using mode configuration with multiple fallback strategies
+ * Parses AI output using mode configuration
  */
 export function parseOutput<T>(text: string, mode: AIMode): T {
   const trimmed = text.trim();
 
-  // For text enhancement, we can return the raw text
+  // For text enhancement, we can return the raw text if it's not JSON
   if (mode.id === 'text-enhancement') {
-    // Still try to parse as JSON first
     try {
       const jsonString = extractJSON(trimmed);
       const parsed = JSON.parse(jsonString);
@@ -197,55 +77,25 @@ export function parseOutput<T>(text: string, mode: AIMode): T {
         return (mode.postprocessOutput ? mode.postprocessOutput(parsed) : parsed) as T;
       }
     } catch {
-      // Not JSON, return as content object
       return { content: trimmed } as unknown as T;
     }
   }
 
   // Try to extract and parse JSON
-  let jsonString = extractJSON(trimmed);
-  let parsed: unknown;
-
-  // Attempt 1: Direct parse
+  const jsonString = extractJSON(trimmed);
+  
   try {
-    parsed = JSON.parse(jsonString);
-  } catch (firstError) {
-    // Attempt 2: Try to repair common JSON issues
-    try {
-      const repaired = attemptJSONRepair(jsonString);
-      parsed = JSON.parse(repaired);
-      logger.debug('JSON repaired successfully');
-    } catch (secondError) {
-      // Attempt 3: Use fallback output
-      logger.warn('Failed to parse AI output, using fallback', {
-        mode: mode.id,
-        firstError: firstError instanceof Error ? firstError.message : String(firstError),
-        textPreview: trimmed.slice(0, 200),
-      });
-
-      const fallback = createFallbackOutput(mode, trimmed);
-      return (mode.postprocessOutput ? mode.postprocessOutput(fallback) : fallback) as T;
-    }
-  }
-
-  // Validate against schema
-  try {
+    const parsed = JSON.parse(jsonString);
     const validated = mode.outputSchema.parse(parsed);
     return (mode.postprocessOutput ? mode.postprocessOutput(validated) : validated) as T;
-  } catch (validationError) {
-    logger.warn('AI output failed schema validation, attempting partial recovery', {
+  } catch (error) {
+    logger.error('Failed to parse AI output', {
       mode: mode.id,
-      error: validationError instanceof Error ? validationError.message : String(validationError),
+      error: error instanceof Error ? error.message : String(error),
+      textPreview: trimmed.slice(0, 200),
     });
-
-    // Try to use safeParse for partial data
-    const safeResult = mode.outputSchema.safeParse(parsed);
-    if (safeResult.success) {
-      return (mode.postprocessOutput ? mode.postprocessOutput(safeResult.data) : safeResult.data) as T;
-    }
-
-    // If validation completely fails, use fallback
-    const fallback = createFallbackOutput(mode, trimmed);
-    return (mode.postprocessOutput ? mode.postprocessOutput(fallback) : fallback) as T;
+    
+    throw new Error(`AI service returned an invalid structure for mode ${mode.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
+

@@ -57,11 +57,9 @@ export function PreviewState({
       <div
         style={{
           width: A4_WIDTH,
-          height: A4_HEIGHT,
+          minHeight: A4_HEIGHT,
           transform: `scale(${scale})`,
           transformOrigin: 'top center',
-          overflowY: 'auto',
-          overflowX: 'hidden',
           boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
         }}
         className="relative bg-white"
@@ -75,10 +73,12 @@ export function PreviewState({
           style={{
             width: `${A4_WIDTH}px`,
             minHeight: `${A4_HEIGHT}px`,
-            overflow: 'hidden',
+            height: '100%',
+            overflow: 'auto',
           }}
         />
       </div>
+
     </div>
   );
 }

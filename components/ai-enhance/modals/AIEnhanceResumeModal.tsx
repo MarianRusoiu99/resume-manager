@@ -23,6 +23,7 @@ import { useAITask } from '../hooks/useAITask';
 import { RESUME_PRESETS } from '../types';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { ModelSelector } from '@/components/ai/ModelSelector';
+import type { ResumeEnhancementOutput } from '@/lib/ai/modes/types';
 
 import type { ConversationAttachment } from '../hooks/useConversation';
 
@@ -69,20 +70,19 @@ export function AIEnhanceResumeModal({
     runTask,
     reset,
     isLoading,
-    output: enhancedResume,
-    hasOutput: hasEnhancement,
-  } = useAITask({
+    output,
+    hasOutput,
+  } = useAITask<ResumeEnhancementOutput>({
     mode: 'resume-enhancement',
   });
 
+  // Extract resume from structured output
+  const enhancedResume = output?.resume || null;
+  const hasEnhancement = !!enhancedResume;
+
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     onOpenChange(nextOpen);
-    if (nextOpen) {
-      reset();
-      setInstructions('');
-      setViewMode('visual');
-    }
-  }, [onOpenChange, reset]);
+  }, [onOpenChange]);
 
   const handleAccept = useCallback(() => {
     if (enhancedResume) {
@@ -158,6 +158,8 @@ export function AIEnhanceResumeModal({
     <ModelSelector
       value={selectedModel}
       onValueChange={handleModelChange}
+      feature="enhance"
+      requiresStructuredOutput={true}
       className="h-9"
     />
   );

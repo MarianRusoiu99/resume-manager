@@ -17,9 +17,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Image as ImageIcon, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { useTemplateImport } from '@/hooks/useTemplateImport';
 import type { ExtractedTemplate } from '@/lib/ai/template-parser';
+import { ModelSelector } from '@/components/ai/ModelSelector';
+import { ResumePreview } from '../resume/ResumePreview';
+import { sampleResume } from '@/lib/templates/constants/sample-resume';
 
 interface TemplateImportModalProps {
   open: boolean;
@@ -32,6 +35,8 @@ export function TemplateImportModal({
   onOpenChange,
   onImportComplete,
 }: Readonly<TemplateImportModalProps>) {
+  const [selectedModelId, setSelectedModelId] = React.useState<string>('');
+
   const {
     selectedFile,
     preview,
@@ -76,6 +81,10 @@ export function TemplateImportModal({
     maxSize: 10 * 1024 * 1024, // 10MB
     disabled: isLoading,
   });
+
+  const onExtract = useCallback(() => {
+    handleImport(selectedModelId);
+  }, [handleImport, selectedModelId]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -163,18 +172,40 @@ export function TemplateImportModal({
           {isLoading && (
             <div className="space-y-3">
               <Progress value={progress} className="h-2" />
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground h-6">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {loadingStep || 'AI is analyzing the template...'}
+              <div className="flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 h-6">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {loadingStep || 'AI is analyzing the template...'}
+                </div>
+                <p className="text-[10px] text-muted-foreground/60 animate-pulse">
+                  This multi-step process can take up to 60 seconds...
+                </p>
               </div>
             </div>
           )}
 
           {/* Success */}
           {template && (
-            <div className="flex items-center justify-center gap-2 text-sm text-green-600">
-              <CheckCircle className="h-5 w-5" />
-              Template extracted successfully!
+            <div className="space-y-4">
+              <div className="flex items-center justify-center gap-2 text-sm text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                Template extracted and refined successfully!
+              </div>
+              
+              <div className="border rounded-lg overflow-hidden bg-white shadow-sm h-[300px] relative">
+                <div className="absolute inset-0 overflow-auto p-4 origin-top scale-[0.6] w-[166.6%] h-[166.6%]">
+                   <ResumePreview 
+                    resumeData={sampleResume as any} 
+                    templateHtml={template.htmlTemplate}
+                    showTemplateSelector={false}
+                    showCard={false}
+                    disableScaling={true}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center italic">
+                Preview rendering with sample data
+              </p>
             </div>
           )}
 
@@ -187,25 +218,44 @@ export function TemplateImportModal({
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
+          <div className="flex flex-col gap-4 pt-2">
             {!isLoading && selectedFile && !template && (
-              <Button onClick={handleImport}>
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Extract Template
-              </Button>
+              <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/10">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Model Selection</span>
+                  <span className="text-xs text-muted-foreground">Select a vision-capable model</span>
+                </div>
+                <ModelSelector 
+                  feature="template"
+                  requiresVision
+                  requiresStructuredOutput
+                  value={selectedModelId}
+                  onValueChange={(mid) => setSelectedModelId(mid)}
+                  className="w-[200px]"
+                />
+              </div>
             )}
-            {error && !isLoading && (
-              <Button onClick={handleImport}>
-                Try Again
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                Cancel
               </Button>
-            )}
+              {!isLoading && selectedFile && !template && (
+                <Button onClick={onExtract}>
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  Extract Template
+                </Button>
+              )}
+              {error && !isLoading && (
+                <Button onClick={onExtract}>
+                  Try Again
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>

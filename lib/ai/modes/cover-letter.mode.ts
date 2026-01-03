@@ -15,6 +15,7 @@ export const coverLetterMode = defineMode({
   description: 'Generate personalized cover letters based on resume and job description',
 
   outputSchema: coverLetterOutputSchema,
+  primaryResultKey: 'content',
 
   useStructuredOutput: true,
   maxTokens: 4000,

@@ -45,9 +45,12 @@ You are an expert cover letter writer who creates compelling, personalized cover
 
 export const COVER_LETTER_OUTPUT_INSTRUCTIONS = `
 ## OUTPUT FORMAT
-Return a JSON object with:
-- content: The full cover letter text (properly formatted with paragraphs)
-- subject: Suggested email subject line
-- recipientName: Hiring manager name if known, or "Hiring Manager"
-- companyName: The company name
-- jobTitle: The position being applied for`;
+Return a valid JSON object with EXACTLY this structure:
+{
+  "content": "string - The full cover letter text (properly formatted with paragraphs)",
+  "subject": "string - Suggested email subject line",
+  "recipientName": "string - Hiring manager name if known, or 'Hiring Manager'",
+  "companyName": "string - The company name",
+  "jobTitle": "string - The position being applied for"
+}`;
+

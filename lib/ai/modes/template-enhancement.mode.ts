@@ -15,6 +15,7 @@ export const templateEnhancementMode = defineMode({
   description: 'Enhance and modify existing resume templates through conversation',
 
   outputSchema: templateEnhancementOutputSchema,
+  primaryResultKey: 'htmlTemplate',
 
   useStructuredOutput: true,
   maxTokens: 12000,

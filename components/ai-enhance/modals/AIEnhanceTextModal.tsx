@@ -18,6 +18,7 @@ import { TEXT_PRESETS } from '../types';
 import type { AIEnhanceTextModalProps } from '../types';
 import { useAITask } from '../hooks/useAITask';
 import { ModelSelector } from '@/components/ai/ModelSelector';
+import type { TextEnhancementOutput } from '@/lib/ai/modes/types';
 
 import type { ConversationAttachment } from '../hooks/useConversation';
 
@@ -53,11 +54,11 @@ export function AIEnhanceTextModal({
     isLoading,
     output,
     hasOutput,
-  } = useAITask({
+  } = useAITask<TextEnhancementOutput>({
     mode: 'text-enhancement',
   });
 
-  const enhancedContent = (output as string) || partialOutput;
+  const enhancedContent = output?.content || partialOutput;
 
   // Handle open change with reset logic
   const handleOpenChange = useCallback((nextOpen: boolean) => {
@@ -135,6 +136,7 @@ ${originalContent}`;
     <ModelSelector
       value={selectedModel}
       onValueChange={handleModelChange}
+      feature="enhance"
       className="h-9"
     />
   );

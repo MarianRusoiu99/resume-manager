@@ -89,40 +89,64 @@ export class OpenAIProvider extends BaseAIProvider {
    */
   private mapOpenAIModel(modelId: string): AIModel {
     // Known model metadata
-    const modelMetadata: Record<string, Partial<AIModel>> = {
-      'gpt-4o': {
-        name: 'GPT-4o',
-        description: 'Most advanced multimodal model',
-        contextWindow: 128000,
-        maxOutputTokens: 4096,
+    const modelMetadata: Array<{ pattern: string | RegExp, metadata: Partial<AIModel> }> = [
+      {
+        pattern: /^gpt-4o(-\d{4}-\d{2}-\d{2})?$/,
+        metadata: {
+          name: 'GPT-4o',
+          description: 'Most advanced multimodal model',
+          contextWindow: 128000,
+          maxOutputTokens: 4096,
+          capabilities: { vision: true, structuredOutput: true },
+        },
       },
-      'gpt-4o-mini': {
-        name: 'GPT-4o Mini',
-        description: 'Affordable and intelligent small model',
-        contextWindow: 128000,
-        maxOutputTokens: 16384,
+      {
+        pattern: /^gpt-4o-mini(-\d{4}-\d{2}-\d{2})?$/,
+        metadata: {
+          name: 'GPT-4o Mini',
+          description: 'Affordable and intelligent small model',
+          contextWindow: 128000,
+          maxOutputTokens: 16384,
+          capabilities: { vision: true, structuredOutput: true },
+        },
       },
-      'gpt-4-turbo': {
-        name: 'GPT-4 Turbo',
-        description: 'High-performance GPT-4 variant',
-        contextWindow: 128000,
-        maxOutputTokens: 4096,
+      {
+        pattern: /^gpt-4-turbo(-\d{4}-\d{2}-\d{2})?$/,
+        metadata: {
+          name: 'GPT-4 Turbo',
+          description: 'High-performance GPT-4 variant',
+          contextWindow: 128000,
+          maxOutputTokens: 4096,
+          capabilities: { vision: true, structuredOutput: true },
+        },
       },
-      'gpt-4': {
-        name: 'GPT-4',
-        description: 'Most capable GPT-4 model',
-        contextWindow: 8192,
-        maxOutputTokens: 4096,
+      {
+        pattern: /^gpt-4(-\d{4})?$/,
+        metadata: {
+          name: 'GPT-4',
+          description: 'Most capable GPT-4 model',
+          contextWindow: 8192,
+          maxOutputTokens: 4096,
+          capabilities: { vision: false, structuredOutput: true },
+        },
       },
-      'gpt-3.5-turbo': {
-        name: 'GPT-3.5 Turbo',
-        description: 'Fast and cost-effective',
-        contextWindow: 16385,
-        maxOutputTokens: 4096,
+      {
+        pattern: /^gpt-3\.5-turbo(-\d{4})?$/,
+        metadata: {
+          name: 'GPT-3.5 Turbo',
+          description: 'Fast and cost-effective',
+          contextWindow: 16385,
+          maxOutputTokens: 4096,
+          capabilities: { vision: false, structuredOutput: true },
+        },
       },
-    };
+    ];
 
-    const metadata = modelMetadata[modelId] || {};
+    const match = modelMetadata.find(m => 
+      typeof m.pattern === 'string' ? m.pattern === modelId : m.pattern.test(modelId)
+    );
+    
+    const metadata = match?.metadata || {};
 
     return {
       id: modelId,
@@ -130,6 +154,7 @@ export class OpenAIProvider extends BaseAIProvider {
       description: metadata.description,
       contextWindow: metadata.contextWindow,
       maxOutputTokens: metadata.maxOutputTokens,
+      capabilities: metadata.capabilities,
     };
   }
 

@@ -46,8 +46,8 @@ export function calculateTotalPages(
 }
 
 /**
- * Configure iframe document for hidden scrolling
- * Sets up the document element to be scrollable without showing scrollbars
+ * Configure iframe document for continuous scrolling
+ * Sets up the document element to be naturally scrollable
  * @param iframeDocument - The iframe's document object
  */
 export function configureIframeScrolling(iframeDocument: Document): void {
@@ -58,66 +58,22 @@ export function configureIframeScrolling(iframeDocument: Document): void {
 
   const { documentElement, body } = iframeDocument;
 
-  // Debug: Configuring iframe for page-based rendering
-  // console.log('📄 Configuring iframe for page-based rendering...');
-
-  // Reset default styles
-  documentElement.style.overflow = 'hidden';
-  documentElement.style.height = '100vh';
+  // Reset default styles for continuous scroll
+  documentElement.style.overflow = 'auto';
+  documentElement.style.height = 'auto';
   documentElement.style.margin = '0';
   documentElement.style.padding = '0';
 
   if (body) {
-    body.style.overflow = 'hidden';
-    body.style.height = '100vh';
+    body.style.overflow = 'visible';
+    body.style.height = 'auto';
     body.style.margin = '0';
     body.style.padding = '0';
     body.style.position = 'relative';
+    body.style.background = 'white';
   }
 
-  // Check if page container already exists to avoid double-wrapping
-  let pageContainer = iframeDocument.getElementById('page-container');
-
-  if (pageContainer) {
-    // Debug: Page container already exists
-    // console.log('📄 Page container already exists, reusing...');
-  } else {
-    // Create page container wrapper only if it doesn't exist
-    pageContainer = iframeDocument.createElement('div');
-    pageContainer.id = 'page-container';
-    pageContainer.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      min-height: ${A4_HEIGHT}px;
-      padding: 0;
-      box-sizing: border-box;
-      overflow: visible;
-      transition: transform 0.3s ease-in-out;
-      transform: translateY(0px);
-      background: white;
-    `;
-
-    // Move all body content into the page container
-    if (body) {
-      // Store original content
-      const originalContent = Array.from(body.children);
-
-      // Clear body
-      body.innerHTML = '';
-
-      // Add page container
-      body.appendChild(pageContainer);
-
-      // Move original content to page container
-      for (const child of originalContent) {
-        pageContainer.appendChild(child);
-      }
-    }
-  }
-
-  // Inject CSS for page-based layout
+  // Inject CSS for natural layout
   const style = iframeDocument.createElement('style');
   style.textContent = `
     * {
@@ -127,213 +83,78 @@ export function configureIframeScrolling(iframeDocument: Document): void {
     body {
       font-family: inherit;
       line-height: 1.6;
-      background: #f5f5f5;
+      background: white;
       margin: 0;
       padding: 0;
     }
     
-    #page-container {
-      background: white;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      position: relative;
-    }
-    
-    /* Add page break indicators */
-    #page-container::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(0,0,0,0.1) 20%, 
-        rgba(0,0,0,0.1) 80%, 
-        transparent 100%
-      );
-    }
-    
-    /* Ensure content flows naturally with proper spacing */
-    #page-container > * {
+    /* Ensure content flows naturally */
+    body > * {
       max-width: 100%;
       word-wrap: break-word;
     }
     
     /* Handle headings and paragraphs */
-    #page-container h1, 
-    #page-container h2, 
-    #page-container h3 {
+    h1, h2, h3 {
       margin-top: 1rem;
       margin-bottom: 0.5rem;
       line-height: 1.2;
     }
     
-    #page-container p {
+    p {
       margin-bottom: 0.75rem;
       line-height: 1.5;
     }
     
-    /* Hide scrollbars */
+    /* Hide scrollbars but allow scrolling */
     ::-webkit-scrollbar {
       display: none;
     }
     
-    html, body {
+    html {
       scrollbar-width: none;
       -ms-overflow-style: none;
     }
+
+    /* Print styles to preserve page breaks for PDF export */
+    @media print {
+      body {
+        background: white;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
   `;
   iframeDocument.head?.appendChild(style);
-
-  // Debug: Iframe configured
-  // console.log('📄 Iframe configured for page-based rendering');
 }
 
 /**
- * Scroll iframe to a specific page with smooth animation
- * @param iframeDocument - The iframe's document object
- * @param pageNumber - The target page number (1-indexed)
- * @param pageHeight - Height of each page in pixels
- */
-export function scrollToPage(
-  iframeDocument: Document,
-  pageNumber: number
-): void {
-  if (!iframeDocument?.documentElement) {
-    log.error('scrollToPage: Invalid iframe document');
-    throw new Error('Invalid iframe document');
-  }
-
-  // Debug: Moving to page
-  // console.log(`📄 Moving to page ${pageNumber}`);
-
-
-
-  // Calculate the translation needed to show the desired page
-  // No padding offset needed - content handles its own margins via @page CSS
-
-
-  // Debug: Translation details
-  // console.log(`📄 Translating page container by ${translateY}px (page ${pageNumber}, page height: ${pageHeight}px)`);
-
-  // Use CSS transform to "scroll" to the page
-
-
-  // Add page break visualization
-  addPageBreakVisualization(iframeDocument, pageNumber);
-}
-
-/**
- * Add visual page break indicators
- */
-function addPageBreakVisualization(
-  iframeDocument: Document,
-  currentPage: number
-): void {
-  // Remove existing page break indicators
-  const existingIndicators = iframeDocument.querySelectorAll('.page-break-indicator');
-  for (const indicator of existingIndicators) {
-    indicator.remove();
-  }
-
-  // Add page break line at the bottom of current visible area
-  if (currentPage > 1) {
-    const pageBreak = iframeDocument.createElement('div');
-    pageBreak.className = 'page-break-indicator';
-    pageBreak.style.cssText = `
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, 
-        transparent 0%, 
-        rgba(74, 144, 226, 0.6) 10%, 
-        rgba(74, 144, 226, 0.8) 50%, 
-        rgba(74, 144, 226, 0.6) 90%, 
-        transparent 100%
-      );
-      z-index: 1000;
-      pointer-events: none;
-      animation: fadeIn 0.3s ease-in-out;
-    `;
-
-    // Add fade-in animation
-    const style = iframeDocument.createElement('style');
-    style.textContent = `
-      @keyframes fadeIn {
-        from { opacity: 0; transform: scaleX(0); }
-        to { opacity: 1; transform: scaleX(1); }
-      }
-    `;
-    if (!iframeDocument.querySelector('style[data-page-breaks]')) {
-      style.dataset.pageBreaks = 'true';
-      iframeDocument.head?.appendChild(style);
-    }
-
-    iframeDocument.body?.appendChild(pageBreak);
-
-    // Remove the indicator after animation
-    setTimeout(() => {
-      pageBreak.remove();
-    }, 1000);
-  }
-}
-
-/**
- * Complete pagination setup for an iframe
- * Configures scrolling and returns the total number of pages
+ * Complete setup for an iframe in continuous scroll mode
  * @param iframe - The iframe element
- * @param pageHeight - Height of each page in pixels
- * @returns Total number of pages, or null if iframe is not ready
+ * @returns true if successful, false otherwise
  */
-export function setupIframePagination(
-  iframe: HTMLIFrameElement | null,
-  pageHeight: number = A4_HEIGHT
-): number | null {
+export function setupIframeContinuousScroll(
+  iframe: HTMLIFrameElement | null
+): boolean {
   if (!iframe) {
-    return null;
+    return false;
   }
 
   const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
   if (!iframeDoc?.body) {
-    return null;
+    return false;
   }
 
   try {
-    // Configure page-based rendering
     configureIframeScrolling(iframeDoc);
-    
-    // Calculate total pages based on page container content
-    const pageContainer = iframeDoc.getElementById('page-container');
-    if (!pageContainer) {
-      log.error('Page container not found after configuration');
-      return null;
-    }
-
-    // Use scrollHeight for the most accurate content measurement
-    const contentHeight = pageContainer.scrollHeight;
-
-    // No padding offset needed - content handles its own margins via @page CSS
-    // Calculate pages based on A4 page height
-    const totalPages = Math.max(1, Math.ceil(contentHeight / pageHeight));
-
-    // Debug: Setup pagination details
-    // console.log(`📄 Setup pagination:`, {
-    //   contentHeight,
-    //   pageHeight,
-    //   totalPages,
-    //   containerScrollHeight: pageContainer.scrollHeight,
-    //   containerOffsetHeight: pageContainer.offsetHeight,
-    // });
-
-    return totalPages;
+    return true;
   } catch (error) {
-    log.error('Error setting up iframe pagination', error);
-    return null;
+    log.error('Error setting up iframe continuous scroll', error);
+    return false;
   }
 }
+
 
 /**
  * Validate page navigation boundaries

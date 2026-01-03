@@ -2,13 +2,10 @@
 
 import { useAITask } from './useAITask';
 import { useCallback } from 'react';
-
-interface TextEnhancementOutput {
-  text?: string;
-}
+import type { TextEnhancementOutput } from '@/lib/ai/modes/types';
 
 export function useTextEnhancement() {
-  const { runTask, isLoading, error, output, partialOutput, reset } = useAITask({
+  const { runTask, isLoading, error, output, partialOutput, reset } = useAITask<TextEnhancementOutput>({
     mode: 'text-enhancement',
   });
 
@@ -19,11 +16,9 @@ export function useTextEnhancement() {
     });
   }, [runTask]);
 
-  const typedOutput = output as TextEnhancementOutput | null;
-
   return {
     enhance,
-    enhancedText: typedOutput?.text || partialOutput,
+    enhancedText: output?.content || partialOutput,
     isLoading,
     error,
     reset,

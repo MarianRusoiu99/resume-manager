@@ -82,12 +82,17 @@ export class AnthropicProvider extends BaseAIProvider {
    * Map Anthropic model to AIModel format
    */
   private mapAnthropicModel(model: AnthropicModelResponse['data'][0]): AIModel {
+    const isClaude3 = model.id.includes('claude-3');
     return {
       id: model.id,
       name: model.display_name,
       description: `Claude model from Anthropic`,
       contextWindow: 200000, // Most Claude models support 200k context
       maxOutputTokens: 8192,
+      capabilities: {
+        vision: isClaude3, // Claude 3 family supports vision
+        structuredOutput: true,
+      },
     };
   }
 

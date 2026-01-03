@@ -117,26 +117,21 @@ export function ResumePreview({
 
   const htmlContent = customHtmlContent || fetchedHtmlContent;
 
-  // Pagination hooks
   const {
     isFullscreen,
-    toggleFullscreen,
-    currentPage,
-    totalPages,
-    handlePageChange
+    toggleFullscreen
   } = usePagination({
     iframeRef,
     htmlContent,
   });
 
   const {
-    currentPage: fullscreenCurrentPage,
-    totalPages: fullscreenTotalPages,
-    handlePageChange: handleFullscreenPageChange
+    isFullscreen: isFullscreenNested, // unused
   } = usePagination({
     iframeRef: fullscreenIframeRef,
     htmlContent,
   });
+
 
   // Scaling hooks
   const { scale } = usePreviewScale({
@@ -183,9 +178,6 @@ export function ResumePreview({
               containerRef={containerRef}
               headerActions={headerActions}
               headerTitle={headerTitle}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
             />
           </CardContent>
         </Card>
@@ -210,9 +202,6 @@ export function ResumePreview({
           containerRef={containerRef}
           headerActions={headerActions}
           headerTitle={headerTitle}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
         />
       )}
 
@@ -240,13 +229,12 @@ export function ResumePreview({
               containerRef={fullscreenContainerRef}
               headerActions={headerActions}
               headerTitle={headerTitle}
-              currentPage={fullscreenCurrentPage}
-              totalPages={fullscreenTotalPages}
-              onPageChange={handleFullscreenPageChange}
             />
           </div>
         </DialogContent>
       </Dialog>
+
+
     </>
   );
 }

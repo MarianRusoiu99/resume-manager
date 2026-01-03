@@ -15,45 +15,40 @@ export class ResumeImportService {
   async importResume(userId: string, formData: FormData): Promise<ServiceResult<{ resume: unknown }>> {
     return withServiceError('import resume', async () => {
       const fileValue = formData.get("file");
-      const fileTypeValue = formData.get("fileType");
+      const requestedModelId = formData.get("modelId");
 
       if (!(fileValue instanceof File)) {
         throw new Error("No file provided");
       }
 
-      if (typeof fileTypeValue !== "string" || !fileTypeValue.trim()) {
-        throw new Error("No file type provided");
-      }
-
       const file = fileValue;
-      const fileType = fileTypeValue;
+      const fileType = file.type;
 
       const resolvedModel = await resolveAIModelOrThrow({
         userId,
         feature: 'resume',
+        modelId: typeof requestedModelId === 'string' ? requestedModelId : undefined,
       });
+
 
       let resumeData: unknown;
 
-      if (fileType === "pdf") {
+      // Check if it's an image or PDF (which can be handled by vision models)
+      if (fileType.startsWith("image/") || fileType === "application/pdf") {
         const arrayBuffer = await file.arrayBuffer();
         const base64 = Buffer.from(arrayBuffer).toString("base64");
         resumeData = await parseResumeFromImage({
           imageBase64: base64,
-          mimeType: "application/pdf",
+          mimeType: fileType,
           provider: resolvedModel.provider,
           modelKey: resolveVisionModelKey(resolvedModel),
         });
-      } else if (fileType === "image") {
-        const arrayBuffer = await file.arrayBuffer();
-        const base64 = Buffer.from(arrayBuffer).toString("base64");
-        resumeData = await parseResumeFromImage({
-          imageBase64: base64,
-          mimeType: file.type,
-          provider: resolvedModel.provider,
-          modelKey: resolveVisionModelKey(resolvedModel),
-        });
-      } else if (fileType === "word") {
+      } else if (
+        fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        fileType === "application/msword" ||
+        file.name.endsWith(".docx") ||
+        file.name.endsWith(".doc")
+      ) {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) });
         resumeData = await parseResumeFromText({
@@ -61,13 +56,32 @@ export class ResumeImportService {
           provider: resolvedModel.provider,
           modelKey: resolvedModel.modelKey,
         });
+      } else if (fileType === "text/plain" || file.name.endsWith(".txt")) {
+        const text = await file.text();
+        resumeData = await parseResumeFromText({
+          text,
+          provider: resolvedModel.provider,
+          modelKey: resolvedModel.modelKey,
+        });
       } else {
-        throw new Error("Unsupported file type");
+        // Fallback: try to parse as text if unknown but looks like text, 
+        // or throw if it's definitely something else
+        try {
+          const text = await file.text();
+          resumeData = await parseResumeFromText({
+            text,
+            provider: resolvedModel.provider,
+            modelKey: resolvedModel.modelKey,
+          });
+        } catch (e) {
+          throw new Error(`Unsupported file type: ${fileType}`);
+        }
       }
 
       return { resume: resumeData };
     });
   }
+
 }
 
 export const resumeImportService = new ResumeImportService();

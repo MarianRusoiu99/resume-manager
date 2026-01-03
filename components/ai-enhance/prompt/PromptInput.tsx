@@ -87,7 +87,8 @@ export function PromptInput({
   const handleSubmit = useCallback(() => {
     if (!value.trim() && attachments.length === 0) return;
     onSubmit(attachments);
-  }, [onSubmit, attachments, value]);
+    onChange(''); // Clear input after submission to keep it "session aware" like ChatGPT
+  }, [onSubmit, attachments, value, onChange]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {

@@ -16,7 +16,7 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
   const [manualLoadingStep, setManualLoadingStep] = useState<string>('');
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { generate, template, isLoading, error, reset } = useTemplateGeneration();
+  const { generate, refine, template, isLoading, error, reset } = useTemplateGeneration();
 
   // Compute progress based on state - avoid setState in effects
   const progress = useMemo(() => {
@@ -54,7 +54,7 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
     if (template) {
       clearProgressInterval();
       
-      toast.success('Template extracted successfully!');
+      toast.success('Template extracted and refined successfully!');
       
       const timer = setTimeout(() => {
         // Convert string template to ExtractedTemplate structure
@@ -92,7 +92,7 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
     }
   }, []);
 
-  const handleImport = async () => {
+  const handleImport = async (modelId?: string) => {
     if (!selectedFile) return;
 
     setManualProgress(10);
@@ -100,18 +100,29 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
     
     progressIntervalRef.current = setInterval(() => {
       setManualProgress((prev) => {
-        if (prev >= 90) return 90;
+        if (prev >= 95) return 95;
         
-        if (prev > 20 && prev <= 50) setManualLoadingStep('AI is analyzing layout...');
-        if (prev > 50 && prev <= 80) setManualLoadingStep('Extracting CSS styles...');
-        if (prev > 80) setManualLoadingStep('Finalizing template...');
+        if (prev > 15 && prev <= 40) setManualLoadingStep('AI is analyzing layout...');
+        if (prev > 40 && prev <= 60) setManualLoadingStep('Extracting CSS styles...');
+        if (prev > 60 && prev <= 80) setManualLoadingStep('Generating initial template...');
+        if (prev > 80) setManualLoadingStep('Refining with dummy data...');
         
         return prev + 5;
       });
-    }, 1200);
+    }, 1500);
 
-    await generate(selectedFile);
+    // Step 1: Generate initial template
+    const initialResult = await generate(selectedFile, modelId);
+    
+    if (initialResult && typeof initialResult === 'object' && 'htmlTemplate' in initialResult) {
+      setManualProgress(85);
+      setManualLoadingStep('Refining with dummy data...');
+      
+      // Step 2: Refine template with dummy data
+      await refine(selectedFile, (initialResult as { htmlTemplate: string }).htmlTemplate, modelId);
+    }
   };
+
 
   const handleRemoveFile = useCallback(() => {
     setSelectedFile(null);

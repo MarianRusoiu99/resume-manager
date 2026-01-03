@@ -107,6 +107,8 @@ export function CoverLetterGenerator({
               <ModelSelector
                 value={selectedModelId}
                 onValueChange={handleModelChange}
+                feature="coverLetter"
+                requiresStructuredOutput={true}
                 className="w-full"
               />
             </div>
