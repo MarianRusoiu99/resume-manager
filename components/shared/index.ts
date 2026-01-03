@@ -13,4 +13,3 @@ export * from "./states";
 export * from "./Callout";
 export * from "./Spinner";
 export * from "./SearchInput";
-export * from "./AIModelSelector";

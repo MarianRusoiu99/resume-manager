@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Sparkles, Send } from 'lucide-react';
 import { Button, Card, Textarea } from '@/components/ui';
 import { Callout, Spinner } from '@/components/shared';
-import { AIModelSelector } from '@/components/shared/AIModelSelector';
+import { ModelSelector } from '@/components/ai/ModelSelector';
 import { CoverLetterEditor } from '@/components/cover-letter';
 import { useCoverLetterGeneration } from '@/components/ai-enhance/hooks';
 import { createCoverLetter } from '@/app/actions/cover-letter';
@@ -65,7 +65,7 @@ export function CoverLetterGenerator({
           </div>
           <h3 className="text-sm font-bold uppercase tracking-widest text-primary">Letter Specifications</h3>
         </div>
-        
+
         <div className="space-y-6">
           <div>
             <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Job Description</label>
@@ -104,10 +104,9 @@ export function CoverLetterGenerator({
             </div>
             <div className="space-y-2.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model</label>
-              <AIModelSelector
+              <ModelSelector
                 value={selectedModelId}
                 onValueChange={handleModelChange}
-                size="md"
                 className="w-full"
               />
             </div>
@@ -142,8 +141,8 @@ export function CoverLetterGenerator({
               const result = await createCoverLetter(
                 content,
                 jobDescription,
-                '', 
-                '', 
+                '',
+                '',
                 {
                   personalInstructions: personalInstructions,
                   jobDescription: jobDescription,

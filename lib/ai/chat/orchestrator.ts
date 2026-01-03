@@ -13,18 +13,18 @@ import { getMode, getModeOrThrow } from './orchestrator/registry';
 import { buildMessages, buildMessagesWithVision } from './orchestrator/message-builder';
 import { parseOutput } from './orchestrator/output-parser';
 import { logUsage, normalizeUsage } from './orchestrator/usage';
-import type { 
-  AIStreamChunk, 
-  OrchestratorOptions, 
-  GenerationResult 
+import type {
+  AIStreamChunk,
+  OrchestratorOptions,
+  GenerationResult
 } from './orchestrator/types';
 
 export { registerMode, getMode, getModeOrThrow } from './orchestrator/registry';
-export type { 
-  AIStreamChunk, 
-  AIStreamChunkType, 
-  OrchestratorOptions, 
-  GenerationResult 
+export type {
+  AIStreamChunk,
+  AIStreamChunkType,
+  OrchestratorOptions,
+  GenerationResult
 } from './orchestrator/types';
 
 /**
@@ -42,13 +42,13 @@ export class AIOrchestrator {
   ): AsyncGenerator<AIStreamChunk> {
     const mode = getModeOrThrow(conversation.mode);
     const model = options.provider.createLanguageModel(options.modelKey);
-    
+
     // Build messages
     const messages = buildMessages(conversation, mode);
-    
+
     // Build system prompt
     const systemPrompt = mode.buildSystemPrompt(conversation.context);
-    
+
     // Use structured output streaming for modes that require it
     if (mode.useStructuredOutput !== false && mode.outputSchema) {
       yield* this.streamStructuredResponse(conversation, mode, model, messages, systemPrompt, options);
@@ -105,13 +105,13 @@ export class AIOrchestrator {
       logUsage(options, usage, finishReason, mode.id);
 
       // Post-process if mode has it
-      const output = mode.postprocessOutput 
+      const output = mode.postprocessOutput
         ? mode.postprocessOutput(finalResult)
         : finalResult;
 
       // Store output
       ConversationManager.setOutput(conversation.id, output);
-      
+
       const fullText = JSON.stringify(output, null, 2);
       ConversationManager.addAssistantMessage(conversation.id, fullText, output);
 
@@ -123,7 +123,7 @@ export class AIOrchestrator {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      
+
       // Check if this is a model compatibility error (json_schema not supported)
       // Fall back to streamText with manual parsing for older models
       if (errorMessage.includes('json_schema') || errorMessage.includes('not supported')) {
@@ -131,14 +131,14 @@ export class AIOrchestrator {
           conversationId: conversation.id,
           error: errorMessage,
         });
-        
+
         // Fall back to text streaming with parsing
         yield* this.streamTextWithParsing(conversation, mode, model, messages, systemPrompt, options);
         return;
       }
-      
+
       logger.error('Structured stream response failed', error);
-      
+
       yield {
         type: 'error',
         error: errorMessage,
@@ -208,7 +208,7 @@ export class AIOrchestrator {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Text stream with parsing failed', error);
-      
+
       yield {
         type: 'error',
         error: errorMessage,
@@ -228,7 +228,7 @@ export class AIOrchestrator {
     options: OrchestratorOptions
   ): AsyncGenerator<AIStreamChunk> {
     const tools = this.buildTools(mode.getTools());
-    
+
     try {
       const result = streamText({
         model,
@@ -302,7 +302,7 @@ export class AIOrchestrator {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Stream response failed', error);
-      
+
       yield {
         type: 'error',
         error: errorMessage,
@@ -319,41 +319,57 @@ export class AIOrchestrator {
   ): Promise<GenerationResult<T>> {
     const mode = getModeOrThrow(conversation.mode);
     const model = options.provider.createLanguageModel(options.modelKey);
-    
+
     const messages = buildMessages(conversation, mode);
     const systemPrompt = mode.buildSystemPrompt(conversation.context);
     const tools = this.buildTools(mode.getTools());
 
     // Use generateObject for structured output if schema is available
     if (mode.useStructuredOutput !== false && mode.outputSchema) {
-      const result = await generateObject({
-        model,
-        system: systemPrompt,
-        messages,
-        schema: mode.outputSchema,
-        abortSignal: options.abortSignal,
-      });
+      try {
+        const result = await generateObject({
+          model,
+          system: systemPrompt,
+          messages,
+          schema: mode.outputSchema,
+          abortSignal: options.abortSignal,
+        });
 
-      const usage = normalizeUsage(result.usage);
+        const usage = normalizeUsage(result.usage);
 
-      // Log usage
-      logUsage(options, usage, result.finishReason, mode.id);
+        // Log usage
+        logUsage(options, usage, result.finishReason, mode.id);
 
-      // Post-process if mode has it
-      const output = mode.postprocessOutput 
-        ? mode.postprocessOutput(result.object)
-        : result.object;
+        // Post-process if mode has it
+        const output = mode.postprocessOutput
+          ? mode.postprocessOutput(result.object)
+          : result.object;
 
-      // Store output
-      ConversationManager.setOutput(conversation.id, output);
-      ConversationManager.addAssistantMessage(conversation.id, JSON.stringify(output, null, 2), output);
+        // Store output
+        ConversationManager.setOutput(conversation.id, output);
+        ConversationManager.addAssistantMessage(conversation.id, JSON.stringify(output, null, 2), output);
 
-      return {
-        output: output as T,
-        text: JSON.stringify(output, null, 2),
-        usage,
-        finishReason: result.finishReason,
-      };
+        return {
+          output: output as T,
+          text: JSON.stringify(output, null, 2),
+          usage,
+          finishReason: result.finishReason,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        // Fall back to generateText with manual parsing if model doesn't support structured output
+        if (errorMessage.includes('json_schema') || errorMessage.includes('not supported')) {
+          logger.warn('Model does not support generateObject, falling back to generateText', {
+            conversationId: conversation.id,
+            error: errorMessage,
+          });
+          // Continue to generateText fallback below
+        } else {
+          // Re-throw if it's some other error
+          throw error;
+        }
+      }
     }
 
     // Fall back to generateText for text-based output
@@ -392,7 +408,7 @@ export class AIOrchestrator {
   ): Promise<GenerationResult<T>> {
     const mode = getModeOrThrow(conversation.mode);
     const model = options.provider.createLanguageModel(options.modelKey);
-    
+
     const messages = buildMessagesWithVision(conversation, mode);
     const systemPrompt = mode.buildSystemPrompt(conversation.context);
 
@@ -455,7 +471,7 @@ export function requiresVision(conversation: Conversation): boolean {
       return true;
     }
   }
-  
+
   // Check context attachments
   if (hasImageAttachments(conversation.context.attachments)) {
     return true;

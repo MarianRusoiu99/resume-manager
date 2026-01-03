@@ -22,6 +22,7 @@ interface BaseDialogProps {
   variant?: 'default' | 'premium' | 'sidebar';
   size?: 'sm' | 'default' | 'lg' | 'xl' | 'fullscreen';
   className?: string;
+  contentClassName?: string;
   showCloseButton?: boolean;
 }
 
@@ -45,10 +46,11 @@ export function BaseDialog({
   variant = 'default',
   size = 'default',
   className,
+  contentClassName,
   showCloseButton = true,
 }: Readonly<BaseDialogProps>) {
   const isPremium = variant === 'premium';
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -115,7 +117,8 @@ export function BaseDialog({
         {/* Content Area */}
         <div className={cn(
           "flex-1 overflow-y-auto flex flex-col p-6 min-h-0",
-          isPremium ? "bg-background/40" : "bg-background"
+          isPremium ? "bg-background/40" : "bg-background",
+          contentClassName
         )}>
           {children}
         </div>

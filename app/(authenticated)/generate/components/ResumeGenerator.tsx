@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Sparkles, FileText, Save } from 'lucide-react';
 import { Button, Card, Textarea } from '@/components/ui';
 import { Callout, Spinner } from '@/components/shared';
-import { AIModelSelector } from '@/components/shared/AIModelSelector';
+import { ModelSelector } from '@/components/ai/ModelSelector';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import { useResumeGeneration } from '@/components/ai-enhance/hooks';
 import { saveGeneratedResume } from '@/app/actions/resume';
@@ -98,15 +98,8 @@ export function ResumeGenerator({
             </div>
             <h3 className="text-sm font-bold uppercase tracking-widest text-primary">Target Job Details</h3>
           </div>
-          <div className="sm:hidden">
-            <AIModelSelector 
-              value={selectedModelId} 
-              onValueChange={handleModelChange}
-              size="sm"
-            />
-          </div>
         </div>
-        
+
         <div className="space-y-6">
           <div>
             <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Job Description</label>
@@ -139,10 +132,9 @@ export function ResumeGenerator({
             </div>
             <div className="space-y-2.5">
               <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model Preference</label>
-              <AIModelSelector
+              <ModelSelector
                 value={selectedModelId}
                 onValueChange={handleModelChange}
-                size="md"
                 className="w-full"
               />
             </div>
