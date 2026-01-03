@@ -26,7 +26,6 @@ export default async function ProfilesPage({ searchParams }: Props) {
     <Page
       title="Professional Profiles"
       description="Manage your professional profiles for targeted resume generation"
-      breadcrumbs={[{ label: "Profiles" }]}
     >
       <Suspense fallback={<GallerySkeleton columns={{ sm: 1, md: 2, lg: 4, xl: 4 }} />}>
         <ProfilesContent userId={session.userId} searchTerm={searchTerm} />

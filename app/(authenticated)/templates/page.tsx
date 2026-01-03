@@ -20,7 +20,6 @@ export default async function TemplatesPage() {
     <Page
       title="Resume Templates"
       description="Choose from professionally designed templates optimized for ATS systems"
-      breadcrumbs={[{ label: "Templates" }]}
     >
       <div className="pb-8">
         <TemplateGallery templates={templates} showAdminActions={showAdminActions} />

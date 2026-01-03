@@ -22,7 +22,6 @@ export default async function CoverLettersPage({ searchParams }: Props) {
     <Page
       title="My Cover Letters"
       description="Manage all your generated cover letters"
-      breadcrumbs={[{ label: "Cover Letters" }]}
       actions={
         <Link href={ROUTES.GENERATE_COVER_LETTER}>
           <Button>

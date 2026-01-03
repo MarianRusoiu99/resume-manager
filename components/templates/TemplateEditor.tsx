@@ -20,16 +20,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { Save, Code, ImagePlus, Check, Maximize2, Minimize2, Settings2, Download, Loader2 } from 'lucide-react';
+import { Save, ImagePlus, Settings2, Loader2 } from 'lucide-react';
 import { useExportPDF } from '@/components/preview/useExportPDF';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { type ProfileListItem } from '@/lib/actions/types';
 import {
@@ -42,10 +34,12 @@ import {
 } from '@/app/actions/profile';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { ResumePreview } from '../resume/ResumePreview';
 import { TemplateImportModal } from './TemplateImportModal';
-import { AIEnhanceButton, AIEnhanceTemplateModal } from '@/components/ai-enhance';
+import { AIEnhanceTemplateModal } from '@/components/ai-enhance';
 import { Page } from '@/components/layout/Page';
+import { TemplateSettingsDialog } from './editor/TemplateSettingsDialog';
+import { TemplatePreviewFrame } from './editor/TemplatePreviewFrame';
+import { TemplateEditorToolbar } from './editor/TemplateEditorToolbar';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -278,37 +272,14 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
         <div className={`flex flex-col min-h-0 w-full md:w-1/2 bg-card rounded-2xl overflow-hidden shadow-sm ${isFullscreen ? 'md:w-full rounded-none' : ''}`}>
           {/* Code Editors */}
           <Tabs defaultValue="html" className="flex-1 flex flex-col min-h-0">
-            <div className="flex items-center justify-end bg-muted/40 px-4 py-1.5 shrink-0">
-              <TabsList className="bg-transparent gap-1 mr-auto">
-                <TabsTrigger value="html" className="text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm px-3 py-1 font-bold rounded-lg transition-all">
-                  <Code className="mr-1.5 h-3.5 w-3.5" />
-                  HTML
-                </TabsTrigger>
-              </TabsList>
-              <div className="flex items-center gap-1">
-                <AIEnhanceButton
-                  onClick={() => setTemplateEnhanceModalOpen(true)}
-                  disabled={!formData.htmlTemplate.trim()}
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-auto px-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-all"
-                />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-muted rounded-lg"
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                >
-                  {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </Button>
-                {isFullscreen && (
-                  <Button onClick={handleSave} disabled={saving} size="sm" className="h-8 px-4 ml-2 font-bold uppercase tracking-widest text-[10px] rounded-lg">
-                    <Save className="mr-2 h-3.5 w-3.5" />
-                    {saving ? 'Saving...' : 'Save'}
-                  </Button>
-                )}
-              </div>
-            </div>
+            <TemplateEditorToolbar
+              htmlTemplate={formData.htmlTemplate}
+              isFullscreen={isFullscreen}
+              setIsFullscreen={setIsFullscreen}
+              setTemplateEnhanceModalOpen={setTemplateEnhanceModalOpen}
+              handleSave={handleSave}
+              saving={saving}
+            />
 
             <TabsContent value="html" className="flex-1 mt-0 relative min-h-0 overflow-hidden">
               {mounted && (
@@ -331,101 +302,24 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
 
         {/* Right Panel - Live Preview */}
         {!isFullscreen && (
-          <div className="bg-card rounded-2xl overflow-hidden shadow-sm w-full md:w-1/2 flex flex-col min-h-0">
-            <div className="flex-1 relative bg-muted/5 overflow-auto p-0 flex flex-col min-h-0">
-              {isLoadingProfile && (
-                <div className="absolute inset-0 z-50 bg-background/50 flex items-center justify-center pointer-events-none">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                </div>
-              )}
-              <ResumePreview
-                resumeData={previewResume}
-                templateHtml={formData.htmlTemplate}
-                showTemplateSelector={false}
-                showCard={false}
-                disableScaling={false}
-                className="h-full"
-                headerTitle={
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Live Preview</span>
-                  </div>
-                }
-                headerActions={
-                  <div className="flex items-center gap-2">
-                    <div className="w-px h-4 bg-muted-foreground/10 mr-1" />
-                    <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-black opacity-50">Context</span>
-                    <select
-                      className="text-[11px] border-none bg-background/50 rounded-lg px-3 py-1 shadow-sm font-bold uppercase tracking-wider focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer hover:bg-background/80"
-                      value={selectedProfileId}
-                      onChange={(e) => setSelectedProfileId(e.target.value)}
-                    >
-                      <option value="sample">Sample Data</option>
-                      {profiles.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                }
-              />
-            </div>
-          </div>
+          <TemplatePreviewFrame
+            isLoadingProfile={isLoadingProfile}
+            previewResume={previewResume}
+            htmlTemplate={formData.htmlTemplate}
+            selectedProfileId={selectedProfileId}
+            setSelectedProfileId={setSelectedProfileId}
+            profiles={profiles}
+          />
         )}
       </div>
 
       {/* Settings Modal */}
-      <Dialog open={settingsModalOpen} onOpenChange={setSettingsModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Template Settings</DialogTitle>
-            <DialogDescription>
-              Configure your template's basic information and visibility.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="modal-name">Name</Label>
-              <Input
-                id="modal-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Modern Professional"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="modal-description">Description</Label>
-              <Textarea
-                id="modal-description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Describe your template..."
-                rows={3}
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <div
-                className="flex items-center justify-center w-5 h-5 border rounded cursor-pointer"
-                style={{
-                  backgroundColor: formData.isPublic ? 'var(--primary)' : 'transparent',
-                  borderColor: formData.isPublic ? 'var(--primary)' : 'var(--input)'
-                }}
-                onClick={() => setFormData({ ...formData, isPublic: !formData.isPublic })}
-              >
-                {formData.isPublic && <Check className="w-3.5 h-3.5 text-primary-foreground" />}
-              </div>
-              <Label
-                className="cursor-pointer select-none"
-                onClick={() => setFormData({ ...formData, isPublic: !formData.isPublic })}
-              >
-                Make template public
-              </Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setSettingsModalOpen(false)}>Done</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TemplateSettingsDialog
+        open={settingsModalOpen}
+        onOpenChange={setSettingsModalOpen}
+        formData={formData}
+        setFormData={(data) => setFormData({ ...formData, ...data })}
+      />
 
       {/* Import Modal */}
       <TemplateImportModal

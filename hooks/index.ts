@@ -27,7 +27,6 @@ export { useKeyboardShortcut } from './useKeyboardShortcut';
 // ============================================================================
 
 export { useAutoSave } from './useAutoSave';
-export { useAction } from './useDataFetching';
 export { useComponentLogger } from './useComponentLogger';
 
 // ============================================================================
@@ -39,7 +38,6 @@ export { useProfileSave } from './useProfileSave';
 export { useCardPreview } from './useCardPreview';
 export { useListForm } from './use-list-form';
 export { useToastAction } from './useToastAction';
-export { useAIEnhance } from './useAIEnhance';
 export { useAIModels } from './useAIModels';
 export type { AIModel } from './useAIModels';
 

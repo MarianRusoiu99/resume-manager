@@ -20,7 +20,6 @@ export default async function ResumesPage({ searchParams }: Props) {
     <Page
       title="My Resumes"
       description="Manage your AI-generated resumes"
-      breadcrumbs={[{ label: "Resumes" }]}
       actions={
         <Button asChild>
           <Link href={ROUTES.GENERATE}>

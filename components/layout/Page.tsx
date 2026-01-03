@@ -4,11 +4,7 @@ import { PageHeader } from "./PageHeader";
 import { PageContainer } from "./PageContainer";
 import { PageSkeleton } from "@/components/shared/skeletons/PageSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface BreadcrumbItem {
-  label: string;
-  href?: string;
-}
+import { useAutoBreadcrumbs, type BreadcrumbItem } from "@/hooks/useAutoBreadcrumbs";
 
 interface PageProps {
   /** Page title displayed in header */
@@ -54,12 +50,14 @@ export function Page({
   isLoading = false,
   loadingType = 'default',
 }: PageProps) {
+  const autoBreadcrumbs = useAutoBreadcrumbs(breadcrumbs);
+
   return (
     <div className="flex flex-col h-full bg-muted/20 overflow-hidden">
       <PageHeader
         title={isLoading ? <Skeleton className="h-8 w-48" /> : title}
         description={isLoading ? undefined : description}
-        breadcrumbs={breadcrumbs}
+        breadcrumbs={autoBreadcrumbs}
         actions={isLoading ? undefined : actions}
       />
       <div className={cn(
@@ -128,12 +126,14 @@ export function PageWithSidebar({
     </aside>
   );
 
+  const autoBreadcrumbs = useAutoBreadcrumbs(breadcrumbs);
+
   return (
     <>
       <PageHeader
         title={title}
         description={description}
-        breadcrumbs={breadcrumbs}
+        breadcrumbs={autoBreadcrumbs}
         actions={actions}
       />
       <PageContainer maxWidth={maxWidth} className={className}>

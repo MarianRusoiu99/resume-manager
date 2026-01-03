@@ -1,0 +1,10 @@
+components/templates/TemplateDropdown.tsx
+components/ui/breadcrumb.tsx
+components/theme-provider.tsx
+components/editor/EditorHeader.tsx
+components/shared/skeletons/FormSkeleton.tsx
+components/mode-toggle.tsx
+components/error-boundary.tsx
+components/nav-main.tsx
+components/nav-projects.tsx
+components/nav-user.tsx

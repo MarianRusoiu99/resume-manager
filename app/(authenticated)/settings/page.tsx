@@ -152,7 +152,6 @@ export default function SettingsPage() {
     <Page
       title="Settings"
       description="Manage your AI configurations and account preferences"
-      breadcrumbs={[{ label: 'Settings' }]}
     >
       <Tabs defaultValue="ai" className="space-y-8">
         <TabsList className="bg-muted/40 p-1.5 rounded-xl h-auto self-start border border-primary/5">

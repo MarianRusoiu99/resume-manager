@@ -18,7 +18,6 @@ export function AnalyticsContent({ data, isLoading }: AnalyticsContentProps) {
     <Page
       title="Analytics"
       description="Insights into your resume optimization and job search activity"
-      breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Analytics" }]}
       isLoading={isLoading}
       loadingType="dashboard"
     >

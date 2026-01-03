@@ -1,6 +1,7 @@
 'use client';
 
-import { useActionState, useEffect, useState } from 'react';
+import { useAutoSaveForm } from '@/hooks/useAutoSaveForm';
+import { addApiProviderSchema, type AddApiProviderInput } from '@/lib/validations/api-schemas';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,15 +19,10 @@ interface ApiKeyFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   submitLabel?: string;
+  initialData?: Partial<AddApiProviderInput>;
 }
 
-interface ApiKeyFormData {
-  name: string;
-  provider: string;
-  apiKey: string;
-}
-
-const API_KEY_FIELDS: FieldConfig<ApiKeyFormData>[] = [
+const API_KEY_FIELDS: FieldConfig<AddApiProviderInput>[] = [
   {
     key: 'name',
     label: 'Provider Name',
@@ -52,36 +48,49 @@ const API_KEY_FIELDS: FieldConfig<ApiKeyFormData>[] = [
   },
 ];
 
-export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider' }: ApiKeyFormProps) {
-  const [formData, setFormData] = useState<ApiKeyFormData>({
-    name: '',
-    provider: 'openai',
-    apiKey: '',
+export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider', initialData }: ApiKeyFormProps) {
+  const form = useAutoSaveForm<AddApiProviderInput>({
+    schema: addApiProviderSchema,
+    defaultValues: {
+      name: initialData?.name || '',
+      provider: initialData?.provider || 'openai',
+      apiKey: initialData?.apiKey || '',
+    },
+    onSave: async (data) => {
+      // Logic for background auto-save if editing
+      // For now, we mainly use it for state management
+    }
   });
 
-  const [state, action, isPending] = useActionState(async (prevState: any, fd: FormData) => {
-    // Ensure all fields from the state are in FormData if they aren't already
-    // GenericForm with SimpleFormField uses native inputs with names
-    const result = await addApiProvider(fd);
-    return result;
-  }, null);
+  const { handleSubmit, formState: { isSubmitting }, watch, setValue } = form;
+  const formData = watch();
 
-  useEffect(() => {
-    if (state?.success) {
+  const onSubmit = async (data: AddApiProviderInput) => {
+    const fd = new FormData();
+    fd.append('name', data.name);
+    fd.append('provider', data.provider);
+    fd.append('apiKey', data.apiKey);
+
+    const result = await addApiProvider(fd);
+    if (result.success) {
       toast.success('API provider added successfully');
       onSuccess?.();
-    } else if (state?.error) {
-      toast.error(state.error);
+    } else {
+      toast.error(result.error || 'Failed to add provider');
     }
-  }, [state, onSuccess]);
+  };
 
   return (
-    <form action={action} className="space-y-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <GenericForm
         fields={API_KEY_FIELDS}
         data={formData}
-        onChange={setFormData}
-        disabled={isPending}
+        onChange={(newData) => {
+          Object.entries(newData).forEach(([key, value]) => {
+            setValue(key as any, value, { shouldDirty: true });
+          });
+        }}
+        disabled={isSubmitting}
       />
 
       <div className="flex justify-end gap-2 pt-4">
@@ -90,13 +99,13 @@ export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider' }
             type="button"
             variant="outline"
             onClick={onCancel}
-            disabled={isPending}
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={isPending} className="w-full sm:w-auto">
-          {isPending ? (
+        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+          {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Adding...

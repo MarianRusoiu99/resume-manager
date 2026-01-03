@@ -22,6 +22,7 @@ import { Copy, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { AIEnhanceButton, AIEnhanceTextModal } from '@/components/ai-enhance';
+import { CoverLetterEditorToolbar } from './editor/CoverLetterEditorToolbar';
 
 
 export interface CoverLetterEditorRef {
@@ -173,32 +174,11 @@ export const CoverLetterEditor = forwardRef<CoverLetterEditorRef, CoverLetterEdi
     <>
       <div className={cn('bg-background', className)}>
         {isEditing && (
-          <div className="flex items-center justify-between p-4 border-b bg-muted/20">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Editing Mode
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(false)}
-                disabled={isSaving}
-                className="h-8 rounded-none border-px"
-              >
-                <X className="w-3.5 h-3.5 mr-2" />
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => handleSaveEdit(editedContent)}
-                disabled={isSaving}
-                className="h-8 rounded-none border-px"
-              >
-                <Check className="w-3.5 h-3.5 mr-2" />
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </div>
+          <CoverLetterEditorToolbar
+            isSaving={isSaving}
+            onCancel={() => setIsEditing(false)}
+            onSave={() => handleSaveEdit(editedContent)}
+          />
         )}
         <div className="p-0">
           {renderContent()}
