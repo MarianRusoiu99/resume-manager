@@ -5,10 +5,12 @@ import { PageContainer } from "./PageContainer";
 import { PageSkeleton } from "@/components/shared/skeletons/PageSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoBreadcrumbs, type BreadcrumbItem } from "@/hooks/useAutoBreadcrumbs";
+import { usePathname } from "next/navigation";
+import { getRouteConfig } from "@/lib/constants/nav-config";
 
 interface PageProps {
   /** Page title displayed in header */
-  title: React.ReactNode;
+  title?: React.ReactNode;
   /** Optional description below title */
   description?: string;
   /** Breadcrumb navigation items */
@@ -38,8 +40,8 @@ interface PageProps {
  * Use this component for all authenticated pages.
  */
 export function Page({
-  title,
-  description,
+  title: propTitle,
+  description: propDescription,
   breadcrumbs,
   actions,
   toolbar,
@@ -50,6 +52,12 @@ export function Page({
   isLoading = false,
   loadingType = 'default',
 }: PageProps) {
+  const pathname = usePathname();
+  const routeConfig = getRouteConfig(pathname);
+  
+  const title = propTitle ?? routeConfig?.title;
+  const description = propDescription ?? routeConfig?.description;
+
   const autoBreadcrumbs = useAutoBreadcrumbs(breadcrumbs);
 
   return (

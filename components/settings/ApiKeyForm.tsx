@@ -1,19 +1,14 @@
-'use client';
+"use client";
 
-import { useAutoSaveForm } from '@/hooks/useAutoSaveForm';
+import { useState } from "react";
+import { z } from "zod";
+import { ManagedForm } from "@/components/forms/ManagedForm";
+import { FieldConfig } from "@/lib/forms/form-schema";
 import { addApiProviderSchema, type AddApiProviderInput } from '@/lib/validations/api-schemas';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { addApiProvider } from '@/app/actions/api-provider';
-import { GenericForm } from '@/components/forms/GenericForm';
-import { FieldConfig } from '@/lib/forms/form-schema';
-
-const PROVIDER_OPTIONS = [
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'anthropic', label: 'Anthropic' },
-  { value: 'google', label: 'Google AI' },
-];
 
 interface ApiKeyFormProps {
   onSuccess?: () => void;
@@ -21,6 +16,12 @@ interface ApiKeyFormProps {
   submitLabel?: string;
   initialData?: Partial<AddApiProviderInput>;
 }
+
+const PROVIDER_OPTIONS = [
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'anthropic', label: 'Anthropic' },
+  { value: 'google', label: 'Google AI' },
+];
 
 const API_KEY_FIELDS: FieldConfig<AddApiProviderInput>[] = [
   {
@@ -49,22 +50,6 @@ const API_KEY_FIELDS: FieldConfig<AddApiProviderInput>[] = [
 ];
 
 export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider', initialData }: ApiKeyFormProps) {
-  const form = useAutoSaveForm<AddApiProviderInput>({
-    schema: addApiProviderSchema,
-    defaultValues: {
-      name: initialData?.name || '',
-      provider: initialData?.provider || 'openai',
-      apiKey: initialData?.apiKey || '',
-    },
-    onSave: async (data) => {
-      // Logic for background auto-save if editing
-      // For now, we mainly use it for state management
-    }
-  });
-
-  const { handleSubmit, formState: { isSubmitting }, watch, setValue } = form;
-  const formData = watch();
-
   const onSubmit = async (data: AddApiProviderInput) => {
     const fd = new FormData();
     fd.append('name', data.name);
@@ -81,40 +66,40 @@ export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider', 
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <GenericForm
-        fields={API_KEY_FIELDS}
-        data={formData}
-        onChange={(newData) => {
-          Object.entries(newData).forEach(([key, value]) => {
-            setValue(key as any, value, { shouldDirty: true });
-          });
-        }}
-        disabled={isSubmitting}
-      />
-
-      <div className="flex justify-end gap-2 pt-4">
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-        )}
-        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Adding...
-            </>
-          ) : (
-            submitLabel
+    <ManagedForm
+      schema={addApiProviderSchema as any}
+      defaultValues={{
+        name: initialData?.name || '',
+        provider: initialData?.provider || 'openai',
+        apiKey: initialData?.apiKey || '',
+      }}
+      fields={API_KEY_FIELDS}
+      onSubmit={onSubmit}
+    >
+      {(form) => (
+        <div className="flex justify-end gap-2 pt-4">
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={form.formState.isSubmitting}
+            >
+              Cancel
+            </Button>
           )}
-        </Button>
-      </div>
-    </form>
+          <Button type="submit" disabled={form.formState.isSubmitting} className="w-full sm:w-auto">
+            {form.formState.isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              submitLabel
+            )}
+          </Button>
+        </div>
+      )}
+    </ManagedForm>
   );
 }

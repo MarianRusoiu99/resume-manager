@@ -19,7 +19,7 @@ import { AIEnhanceBaseModal } from './AIEnhanceBaseModal';
 import { PromptInput } from '../prompt/PromptInput';
 import { ResumeVisualComparison } from '../preview/ResumeVisualComparison';
 import { ResumeTextComparison } from '../preview/ResumeTextComparison';
-import { useResumeEnhancement } from '../hooks/useAIEnhancement';
+import { useAITask } from '../hooks/useAITask';
 import { RESUME_PRESETS } from '../types';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { ModelSelector } from '@/components/shared/ModelSelector';
@@ -50,37 +50,31 @@ export function AIEnhanceResumeModal({
 }: Readonly<AIEnhanceResumeModalProps>) {
   const [viewMode, setViewMode] = useState<ViewMode>('visual');
   const [selectedModel, setSelectedModel] = useState<string>('gpt-4o');
+  const [instructions, setInstructions] = useState('');
 
   // Use centralized enhancement hook
   const {
-    enhancedContent: enhancedResume,
-    isLoading,
-    enhance,
+    runTask,
     reset,
-    hasEnhancement,
-    setResume,
-    setInstructions,
-    instructions,
-  } = useResumeEnhancement<Resume>();
+    isLoading,
+    output: enhancedResume,
+    hasOutput: hasEnhancement,
+  } = useAITask({
+    mode: 'resume-enhancement',
+  });
 
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     onOpenChange(nextOpen);
     if (nextOpen) {
-      setResume(resume);
       reset();
+      setInstructions('');
       setViewMode('visual');
     }
-  }, [onOpenChange, resume, setResume, reset]);
-
-  // Keep the resume in sync if the prop changes while open.
-  useEffect(() => {
-    if (!open) return;
-    setResume(resume);
-  }, [open, resume, setResume]);
+  }, [onOpenChange, reset]);
 
   const handleAccept = useCallback(() => {
     if (enhancedResume) {
-      onAccept(enhancedResume);
+      onAccept(enhancedResume as Resume);
       onOpenChange(false);
       toast.success('Resume enhanced successfully!');
     }
@@ -90,9 +84,21 @@ export function AIEnhanceResumeModal({
     onOpenChange(false);
   }, [onOpenChange]);
 
-  const handleEnhance = useCallback(() => {
-    enhance([], selectedModel);
-  }, [enhance, selectedModel]);
+  const handleEnhance = useCallback((attachments?: any[]) => {
+    runTask({
+      message: instructions,
+      attachments: attachments?.map((a) => ({
+        type: a.type.startsWith('image/') ? 'image' : 'document',
+        content: a.content,
+        name: a.name,
+        mimeType: a.type,
+      })) as any,
+      modelId: selectedModel,
+      context: {
+        currentResume: resume,
+      }
+    });
+  }, [instructions, runTask, resume, selectedModel]);
 
   const footer = (
     <>
@@ -157,7 +163,7 @@ export function AIEnhanceResumeModal({
         <PromptInput
           value={instructions}
           onChange={setInstructions}
-          onSubmit={(attachments) => enhance(attachments, selectedModel)}
+          onSubmit={handleEnhance}
           presets={RESUME_PRESETS}
           isLoading={isLoading}
           hasExistingContent={hasEnhancement}
@@ -171,7 +177,7 @@ export function AIEnhanceResumeModal({
           {viewMode === 'visual' ? (
             <ResumeVisualComparison
               originalResume={resume}
-              enhancedResume={enhancedResume}
+              enhancedResume={enhancedResume as Resume}
               templateId={templateId}
               isEnhancing={isLoading}
               className="h-full"
@@ -179,7 +185,7 @@ export function AIEnhanceResumeModal({
           ) : (
             <ResumeTextComparison
               originalResume={resume}
-              enhancedResume={enhancedResume}
+              enhancedResume={enhancedResume as Resume}
               isEnhancing={isLoading}
               className="h-full"
             />

@@ -7,7 +7,6 @@
 
 import { Download, FileText, Briefcase } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
-import { useCoverLetterOperations } from '@/hooks/features/useCoverLetterOperations';
 import { useExportPDF } from '@/hooks';
 import { ROUTES } from '@/lib/constants';
 
@@ -33,7 +32,6 @@ export function CoverLetterCard({
   onDelete,
 }: Readonly<CoverLetterCardProps>) {
   const { isExportingPDF, handleExportCoverLetter } = useExportPDF();
-  const { handleDelete: handleDeleteOp } = useCoverLetterOperations();
 
   const getDisplayTitle = (): string => {
     if (jobTitle && companyName) {
@@ -50,10 +48,6 @@ export function CoverLetterCard({
 
   const handleExport = async () => {
     await handleExportCoverLetter(id, jobTitle || companyName || 'download');
-  };
-
-  const handleDelete = async () => {
-    await handleDeleteOp(id, onDelete);
   };
 
   // Preview fallback for cover letters (no HTML template)
@@ -88,7 +82,7 @@ export function CoverLetterCard({
           disabled: isExportingPDF,
         },
       ]}
-      onDelete={handleDelete}
+      onDelete={() => onDelete(id)}
       deleteDialog={{
         title: 'Delete Cover Letter',
         message: `Are you sure you want to delete the cover letter "${getDisplayTitle()}"? This action cannot be undone.`,

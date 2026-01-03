@@ -118,35 +118,35 @@ export function EntityCard({
 /**
  * Helper to create common card action configurations
  */
-export const createCardAction = {
-  edit: (onClick: () => void, icon?: ReactNode): GalleryCardAction => ({
-    label: "Edit",
+  export const createCardAction = {
+  edit: (onClick: () => void, icon?: ReactNode, label: string = "Edit"): GalleryCardAction => ({
+    label,
     icon,
     onClick,
   }),
   
-  view: (onClick: () => void, icon?: ReactNode): GalleryCardAction => ({
-    label: "View",
+  view: (onClick: () => void, icon?: ReactNode, label: string = "View"): GalleryCardAction => ({
+    label,
     icon,
     onClick,
   }),
   
-  duplicate: (onClick: () => void, icon?: ReactNode, disabled?: boolean): GalleryCardAction => ({
-    label: "Duplicate",
-    icon,
-    onClick,
-    disabled,
-  }),
-  
-  export: (onClick: () => void, icon?: ReactNode, disabled?: boolean): GalleryCardAction => ({
-    label: "Export PDF",
+  duplicate: (onClick: () => void, icon?: ReactNode, disabled?: boolean, label: string = "Duplicate"): GalleryCardAction => ({
+    label,
     icon,
     onClick,
     disabled,
   }),
   
-  setDefault: (onClick: () => void, icon?: ReactNode, disabled?: boolean): GalleryCardAction => ({
-    label: "Set as Default",
+  export: (onClick: () => void, icon?: ReactNode, disabled?: boolean, label: string = "Export PDF"): GalleryCardAction => ({
+    label,
+    icon,
+    onClick,
+    disabled,
+  }),
+  
+  setDefault: (onClick: () => void, icon?: ReactNode, disabled?: boolean, label: string = "Set as Default"): GalleryCardAction => ({
+    label,
     icon,
     onClick,
     disabled,

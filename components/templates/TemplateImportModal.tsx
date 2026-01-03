@@ -5,7 +5,7 @@
  * Uses the new useTemplateGeneration hook for AI extraction.
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import NextImage from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import {
@@ -18,8 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Upload, Image as ImageIcon, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { useTemplateGeneration } from '../ai-enhance/hooks/useTemplateGeneration';
+import { useTemplateImport } from '@/hooks/useTemplateImport';
 import type { ExtractedTemplate } from '@/lib/ai/template-parser';
 
 interface TemplateImportModalProps {
@@ -33,78 +32,36 @@ export function TemplateImportModal({
   onOpenChange,
   onImportComplete,
 }: Readonly<TemplateImportModalProps>) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const [loadingStep, setLoadingStep] = useState<string>('');
-
-  const { generate, template, isLoading, error, reset } = useTemplateGeneration();
-
-  // Handle completion
-  useEffect(() => {
-    if (template) {
-      setLoadingStep('Template extracted!');
-      setProgress(100);
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-      
-      toast.success('Template extracted successfully!');
-      
-      const timer = setTimeout(() => {
-        onImportComplete(template);
-        handleClose();
-      }, 800);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [template, onImportComplete]);
-
-  // Handle errors
-  useEffect(() => {
-    if (error) {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-      setProgress(0);
-      setLoadingStep('');
-    }
-  }, [error]);
+  const {
+    selectedFile,
+    preview,
+    progress,
+    loadingStep,
+    isLoading,
+    error,
+    template,
+    handleFileSelect,
+    handleImport,
+    handleRemoveFile,
+    resetStates,
+  } = useTemplateImport({
+    onImportComplete,
+    onClose: () => onOpenChange(false),
+  });
 
   const handleClose = useCallback(() => {
     if (!isLoading) {
-      reset();
-      setSelectedFile(null);
-      setPreview(null);
-      setProgress(0);
-      setLoadingStep('');
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
+      resetStates();
       onOpenChange(false);
     }
-  }, [isLoading, onOpenChange, reset]);
+  }, [isLoading, onOpenChange, resetStates]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
-      setSelectedFile(file);
-      
-      // Create preview
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          setPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type === 'application/pdf') {
-        // Use a placeholder for PDF preview for now
-        setPreview('pdf-placeholder');
-      }
+      handleFileSelect(file);
     }
-  }, []);
+  }, [handleFileSelect]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -119,29 +76,6 @@ export function TemplateImportModal({
     maxSize: 10 * 1024 * 1024, // 10MB
     disabled: isLoading,
   });
-
-  const handleImport = async () => {
-    if (!selectedFile) return;
-
-    setProgress(10);
-    setLoadingStep('Uploading image...');
-    
-    // Start progress simulation
-    progressIntervalRef.current = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return 90;
-        
-        // Update loading steps based on progress
-        if (prev > 20 && prev <= 50) setLoadingStep('AI is analyzing layout...');
-        if (prev > 50 && prev <= 80) setLoadingStep('Extracting CSS styles...');
-        if (prev > 80) setLoadingStep('Finalizing template...');
-        
-        return prev + 5;
-      });
-    }, 1200);
-
-    await generate(selectedFile);
-  };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -207,8 +141,7 @@ export function TemplateImportModal({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedFile(null);
-                      setPreview(null);
+                      handleRemoveFile();
                     }}
                     className="absolute top-2 right-2 p-1 bg-background/80 rounded-full hover:bg-background"
                     title="Clear selected file"

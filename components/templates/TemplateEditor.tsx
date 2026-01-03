@@ -7,39 +7,28 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Tabs,
   TabsContent,
-  TabsList,
-  TabsTrigger,
 } from '@/components/ui/tabs';
-import { Save, ImagePlus, Settings2, Loader2 } from 'lucide-react';
-import { useExportPDF } from '@/components/preview/useExportPDF';
+import { Save, ImagePlus, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { type ProfileListItem } from '@/lib/actions/types';
 import {
   createTemplate,
   updateTemplate,
 } from '@/app/actions/template';
-import {
-  getProfiles,
-  getProfile,
-} from '@/app/actions/profile';
-import { sampleResume } from '@/lib/templates/constants/sample-resume';
-import type { Resume } from '@/lib/validations/jsonresume';
 import { TemplateImportModal } from './TemplateImportModal';
 import { AIEnhanceTemplateModal } from '@/components/ai-enhance';
 import { Page } from '@/components/layout/Page';
 import { TemplateSettingsDialog } from './editor/TemplateSettingsDialog';
 import { TemplatePreviewFrame } from './editor/TemplatePreviewFrame';
 import { TemplateEditorToolbar } from './editor/TemplateEditorToolbar';
+import { useTemplatePreview } from './editor/hooks/useTemplatePreview';
+import { useTemplatePersistence } from './editor/hooks/useTemplatePersistence';
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -79,59 +68,30 @@ interface TemplateEditorProps {
 
 export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEditorProps>) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [saving, setSaving] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [templateEnhanceModalOpen, setTemplateEnhanceModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { isExportingPDF, handleExportPDF } = useExportPDF();
+  const {
+    profiles,
+    selectedProfileId,
+    setSelectedProfileId,
+    previewResume,
+    isLoadingProfile,
+  } = useTemplatePreview();
 
-  const [formData, setFormData] = useState({
+  const {
+    formData,
+    setFormData,
+    clearDraft,
+  } = useTemplatePersistence(isNew, {
     name: template?.name || '',
     description: template?.description || '',
     htmlTemplate: template?.htmlTemplate || '',
     isPublic: template?.isPublic ?? true,
   });
-
-  // Profile selection for preview
-  const [profiles, setProfiles] = useState<ProfileListItem[]>([]);
-  const [selectedProfileId, setSelectedProfileId] = useState<string>('sample');
-  const [previewResume, setPreviewResume] = useState<Resume>(sampleResume as Resume);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
-
-  useEffect(() => {
-    const loadProfiles = async () => {
-      const result = await getProfiles();
-      if (result.success && result.data) {
-        setProfiles(result.data as unknown as ProfileListItem[]);
-      }
-    };
-    loadProfiles();
-  }, []);
-
-  useEffect(() => {
-    if (selectedProfileId === 'sample') {
-      setPreviewResume(sampleResume as Resume);
-      return;
-    }
-
-    const loadProfileData = async () => {
-      setIsLoadingProfile(true);
-      try {
-        const result = await getProfile(selectedProfileId);
-        if (result.success && result.data?.resume) {
-          setPreviewResume(result.data.resume as unknown as Resume);
-        }
-      } catch (err) {
-        toast.error('Failed to load profile for preview');
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    };
-    loadProfileData();
-  }, [selectedProfileId]);
 
   // Handle imported template data
   const handleImportComplete = (importedTemplate: {
@@ -147,27 +107,6 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     }));
     setImportModalOpen(false);
   };
-
-  // Auto-save draft to localStorage
-  useEffect(() => {
-    if (!isNew) return;
-    const draftKey = 'template-editor-draft';
-    const draft = localStorage.getItem(draftKey);
-    if (draft) {
-      try {
-        const parsed = JSON.parse(draft);
-        setFormData(parsed);
-      } catch {
-        // Ignore invalid draft
-      }
-    }
-  }, [isNew]);
-
-  useEffect(() => {
-    if (!isNew) return;
-    const draftKey = 'template-editor-draft';
-    localStorage.setItem(draftKey, JSON.stringify(formData));
-  }, [formData, isNew]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -191,7 +130,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       } else {
         toast.success(`Template ${isNew ? 'created' : 'updated'} successfully`);
         if (isNew) {
-          localStorage.removeItem('template-editor-draft');
+          clearDraft();
           router.push('/templates');
           router.refresh();
         }

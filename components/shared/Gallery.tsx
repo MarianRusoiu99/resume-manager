@@ -3,68 +3,14 @@
 import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { LoadingState, EmptyState, SearchEmptyState } from "@/components/shared/states";
-import type { LucideIcon } from "lucide-react";
-
-/**
- * Grid column configuration for responsive layouts
- */
-interface GridConfig {
-  sm?: number;
-  md?: number;
-  lg?: number;
-  xl?: number;
-}
-
-/**
- * Filter/category option for gallery filtering
- */
-export interface GalleryFilterOption {
-  value: string;
-  label: string;
-}
-
-/**
- * Count label configuration
- */
-interface CountLabelConfig {
-  singular: string;
-  plural: string;
-}
-
-/**
- * Gallery Header configuration
- */
-interface GalleryHeaderConfig {
-  /** Show item count (e.g., "5 profiles") */
-  showCount?: boolean;
-  /** Label for count (e.g., "5 profiles") */
-  countLabel?: CountLabelConfig;
-  /** Action buttons to show in header */
-  actions?: ReactNode;
-  /** Filter options for category filtering */
-  filters?: GalleryFilterOption[];
-  /** Current selected filter value */
-  selectedFilter?: string;
-  /** Filter change handler */
-  onFilterChange?: (value: string) => void;
-}
-
-/**
- * Empty state configuration
- */
-interface GalleryEmptyConfig {
-  icon?: LucideIcon;
-  title: string;
-  description?: string;
-  action?: {
-    label: string;
-    onClick: () => void;
-    icon?: ReactNode;
-    disabled?: boolean;
-  };
-  /** Secondary action (e.g., import button alongside create) */
-  secondaryAction?: ReactNode;
-}
+import { GallerySkeleton } from "@/components/shared/skeletons/GallerySkeleton";
+import { GalleryHeader } from "./gallery/GalleryHeader";
+import { GalleryGrid, DEFAULT_GRID_COLS } from "./gallery/GalleryGrid";
+import type { 
+  GridConfig, 
+  GalleryHeaderConfig, 
+  GalleryEmptyConfig 
+} from "./gallery/types";
 
 /**
  * Gallery Props
@@ -103,27 +49,6 @@ export interface GalleryProps<T> {
   /** Additional className */
   className?: string;
 }
-
-const DEFAULT_GRID_COLS: GridConfig = {
-  sm: 1,
-  md: 2,
-  lg: 4, // Updated from 3 to 4
-  xl: 4,
-};
-
-// This constant is introduced as per the diff, but its structure
-// and placement suggest it might be intended for a different context
-// (e.g., a maxWidth utility or a Page component's default props).
-// However, to faithfully apply the diff, it's placed here.
-const MAX_WIDTH_MAPPING = {
-  sm: 1, // This 'sm: 1' is from the diff, but seems to be a mix-up with GridConfig
-  "5xl": "max-w-7xl",
-  "6xl": "max-w-screen-2xl",
-  "7xl": "max-w-[1920px]",
-  full: "w-full",
-};
-
-import { GallerySkeleton } from "@/components/shared/skeletons/GallerySkeleton";
 
 /**
  * Gallery - Unified gallery/list component with loading, empty, and search states
@@ -175,11 +100,6 @@ export function Gallery<T>({
   // Build grid class based on configuration
   const gridClass = cn(
     "grid gap-6",
-    // The 'maxWidth = "7xl",' line from the diff is syntactically incorrect here.
-    // It seems to be a misplaced instruction for a default prop value.
-    // To maintain syntactic correctness, it's omitted from this `cn` call.
-    // If it was meant to be a class, it would be `MAX_WIDTH_MAPPING["7xl"]`.
-    // Assuming it's a default prop instruction for a different component.
     gridCols.sm === 1 && "grid-cols-1",
     gridCols.sm === 2 && "grid-cols-2",
     gridCols.md === 2 && "md:grid-cols-2",
@@ -214,113 +134,5 @@ export function Gallery<T>({
   );
 }
 
-/**
- * Gallery Header Component
- */
-interface GalleryHeaderProps extends GalleryHeaderConfig {
-  itemCount: number;
-}
-
-function GalleryHeader({
-  itemCount,
-  showCount = false,
-  countLabel,
-  actions,
-  filters,
-  selectedFilter,
-  onFilterChange,
-}: GalleryHeaderProps) {
-  let countText: string | null = null;
-
-  if (showCount) {
-    const singular = countLabel?.singular ?? "item";
-    const plural = countLabel?.plural ?? "items";
-
-    countText = `${itemCount} ${itemCount === 1 ? singular : plural}`;
-  }
-
-  return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
-      <div className="flex items-center gap-4">
-        {countText && (
-          <p className="text-muted-foreground text-xs font-bold uppercase tracking-widest">{countText}</p>
-        )}
-
-        {/* Filters */}
-        {filters && filters.length > 0 && onFilterChange && (
-          <div className="flex flex-wrap gap-px bg-border border">
-            {filters.map((filter) => (
-              <button
-                key={filter.value}
-                onClick={() => onFilterChange(filter.value)}
-                className={cn(
-                  "px-4 py-2 text-xs font-bold uppercase tracking-widest transition-colors",
-                  selectedFilter === filter.value
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background text-muted-foreground hover:bg-muted"
-                )}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Actions */}
-      {actions && (
-        <div className="flex gap-2">
-          {actions}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// This type definition is introduced as per the diff, but its placement
-// within the `GalleryHeader` component's `actions` div is syntactically incorrect.
-// To maintain syntactic correctness, it's placed as a standalone type.
-// It seems intended for a `Page` component's props, as mentioned in the instruction.
-type MaxWidthType = "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "5xl" | "6xl" | "7xl" | "full";
-
-/**
- * GalleryGrid - Standalone grid component for cases where Gallery is overkill
- */
-interface GalleryGridProps<T> {
-  items: T[];
-  renderItem: (item: T, index: number) => ReactNode;
-  getItemKey: (item: T) => string;
-  gridCols?: GridConfig;
-  className?: string;
-}
-
-export function GalleryGrid<T>({
-  items,
-  renderItem,
-  getItemKey,
-  gridCols = DEFAULT_GRID_COLS,
-  className,
-}: GalleryGridProps<T>) {
-  const gridClass = cn(
-    "grid gap-px bg-border border",
-    gridCols.sm === 1 && "grid-cols-1",
-    gridCols.sm === 2 && "grid-cols-2",
-    gridCols.md === 2 && "md:grid-cols-2",
-    gridCols.md === 3 && "md:grid-cols-3",
-    gridCols.lg === 3 && "lg:grid-cols-3",
-    gridCols.lg === 4 && "lg:grid-cols-4",
-    gridCols.xl === 4 && "xl:grid-cols-4",
-    gridCols.xl === 5 && "xl:grid-cols-5",
-    className,
-  );
-
-  return (
-    <div className={gridClass}>
-      {items.map((item, index) => (
-        <div key={getItemKey(item)} className="bg-background">
-          {renderItem(item, index)}
-        </div>
-      ))}
-    </div>
-  );
-}
+export { GalleryGrid, DEFAULT_GRID_COLS };
+export type { GridConfig, GalleryHeaderConfig, GalleryEmptyConfig };

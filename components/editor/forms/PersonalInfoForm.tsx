@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useAutoSave } from "@/hooks/useAutoSave";
+import { z } from "zod";
 import { Basics } from "@/lib/validations/jsonresume";
-import { GenericForm } from "@/components/forms/GenericForm";
+import { ManagedForm } from "@/components/forms/ManagedForm";
 import { FieldConfig } from "@/lib/forms/form-schema";
 
 interface PersonalInfoFormProps {
@@ -11,21 +11,23 @@ interface PersonalInfoFormProps {
   onChange?: (data: Basics) => void;
 }
 
-interface PersonalInfoFormData {
-  name: string;
-  label: string;
-  email: string;
-  phone: string;
-  url: string;
-  image: string;
-  address: string;
-  city: string;
-  region: string;
-  postalCode: string;
-  countryCode: string;
-  linkedin: string;
-  github: string;
-}
+const personalInfoFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  label: z.string().optional(),
+  email: z.string().email("Invalid email address").or(z.literal("")),
+  phone: z.string().optional(),
+  url: z.string().optional(),
+  image: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  region: z.string().optional(),
+  postalCode: z.string().optional(),
+  countryCode: z.string().optional(),
+  linkedin: z.string().optional(),
+  github: z.string().optional(),
+});
+
+type PersonalInfoFormData = z.infer<typeof personalInfoFormSchema>;
 
 const PERSONAL_INFO_FIELDS: FieldConfig<PersonalInfoFormData>[] = [
   { key: 'name', label: 'Full Name', type: 'text', required: true },
@@ -88,20 +90,15 @@ function formDataToBasics(formData: PersonalInfoFormData): Basics {
 }
 
 export function PersonalInfoForm({ initialData, onChange }: PersonalInfoFormProps) {
-  const [data, setData] = useState<PersonalInfoFormData>(basicsToFormData(initialData));
-
-  useAutoSave({
-    data,
-    onSave: async (currentData) => {
-      onChange?.(formDataToBasics(currentData));
-    },
-  });
-
   return (
-    <GenericForm
+    <ManagedForm
+      schema={personalInfoFormSchema}
+      defaultValues={basicsToFormData(initialData)}
       fields={PERSONAL_INFO_FIELDS}
-      data={data}
-      onChange={setData}
+      onSubmit={() => {}} // Auto-save via onUpdate
+      onUpdate={(data) => {
+        onChange?.(formDataToBasics(data));
+      }}
     />
   );
 }

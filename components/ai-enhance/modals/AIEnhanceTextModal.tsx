@@ -17,7 +17,7 @@ import { PromptInput } from '../prompt/PromptInput';
 import { ComparisonTabs } from '../preview/ComparisonTabs';
 import { TEXT_PRESETS } from '../types';
 import type { AIEnhanceTextModalProps } from '../types';
-import { useTextEnhancement } from '../hooks/useAIEnhancement';
+import { useAITask } from '../hooks/useAITask';
 import { useFileAttachments } from '../hooks/useFileAttachments';
 import { ModelSelector } from '@/components/shared/ModelSelector';
 
@@ -33,17 +33,20 @@ export function AIEnhanceTextModal({
   showModelSelector = true,
 }: Readonly<AIEnhanceTextModalProps>) {
   const [selectedModel, setSelectedModel] = useState<string>('gpt-4o');
+  const [instructions, setInstructions] = useState('');
 
   const {
-    enhancedContent,
-    isLoading,
-    enhance,
+    runTask,
     reset,
-    hasEnhancement,
-    setOptions,
-    setInstructions,
-    instructions,
-  } = useTextEnhancement();
+    partialOutput,
+    isLoading,
+    output,
+    hasOutput,
+  } = useAITask({
+    mode: 'text-enhancement',
+  });
+
+  const enhancedContent = (output as string) || partialOutput;
 
   const {
     attachments,
@@ -53,33 +56,32 @@ export function AIEnhanceTextModal({
   } = useFileAttachments();
 
   const handleEnhance = useCallback(() => {
-    enhance(attachments);
-  }, [enhance, attachments]);
+    const message = `${instructions}
+
+--- CONTENT TO ENHANCE ---
+${originalContent}`;
+
+    runTask({
+      message,
+      attachments: attachments?.map((a) => ({
+        type: a.type.startsWith('image/') ? 'image' : 'document',
+        content: a.content,
+        name: a.name,
+        mimeType: a.type,
+      })) as any,
+      modelId: selectedModel,
+      context: {
+        personalInstructions: context,
+      }
+    });
+  }, [instructions, originalContent, runTask, attachments, selectedModel, context]);
 
   // Initialize enhancement options when modal opens
   useEffect(() => {
     if (!open) return;
-
     reset();
-    setOptions({
-      content: originalContent,
-      context,
-      contentType,
-      ...(showModelSelector ? { modelId: selectedModel } : {}),
-    });
-  }, [open, originalContent, context, contentType, showModelSelector, selectedModel, setOptions, reset]);
-
-  // Keep options in sync if inputs change while open
-  useEffect(() => {
-    if (!open) return;
-
-    setOptions({
-      content: originalContent,
-      context,
-      contentType,
-      ...(showModelSelector ? { modelId: selectedModel } : {}),
-    });
-  }, [open, originalContent, context, contentType, showModelSelector, selectedModel, setOptions]);
+    setInstructions('');
+  }, [open, reset]);
 
   const handleAccept = useCallback(() => {
     if (!enhancedContent) return;
@@ -109,7 +111,7 @@ export function AIEnhanceTextModal({
       <Button
         type="button"
         onClick={handleAccept}
-        disabled={!hasEnhancement || isLoading}
+        disabled={!hasOutput || isLoading}
         className="h-9 px-6 bg-primary shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
       >
         <Check className="h-4 w-4 mr-2" />
@@ -143,7 +145,7 @@ export function AIEnhanceTextModal({
           onSubmit={handleEnhance}
           presets={TEXT_PRESETS}
           isLoading={isLoading || attachmentsLoading}
-          hasExistingContent={hasEnhancement}
+          hasExistingContent={hasOutput}
           className="flex-shrink-0"
           placeholder="Describe what you want the AI to do... (e.g., 'Make this more professional', 'Fix grammar')"
         />

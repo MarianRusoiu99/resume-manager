@@ -22,6 +22,8 @@ interface ProfileGalleryClientProps {
   searchTerm?: string;
 }
 
+import { ResourceGallery } from "@/components/shared/ResourceGallery";
+
 export function ProfileGalleryClient({ 
   initialProfiles,
   searchTerm = ""
@@ -31,28 +33,12 @@ export function ProfileGalleryClient({
   const canUseAI = useCanUseAI();
   const router = useRouter();
 
-  const [optimisticProfiles, updateOptimisticProfiles] = useOptimistic(
-    initialProfiles,
-    (state, action: { type: 'delete' | 'default', id: string }) => {
-      if (action.type === 'delete') {
-        return state.filter(p => p.id !== action.id);
-      }
-      if (action.type === 'default') {
-        return state.map(p => ({
-          ...p,
-          isDefault: p.id === action.id
-        }));
-      }
-      return state;
-    }
-  );
-
   const handleCreateProfile = () => {
     startTransition(async () => {
       const result = await createProfile(
-        `Profile ${optimisticProfiles.length + 1}`,
+        `Profile ${initialProfiles.length + 1}`,
         { basics: { name: "" } } as Resume,
-        optimisticProfiles.length === 0 // First profile is default
+        initialProfiles.length === 0 // First profile is default
       );
 
       if (result.success) {
@@ -68,30 +54,23 @@ export function ProfileGalleryClient({
     router.push(`/profile/${id}`);
   };
 
-  const handleDelete = (id: string) => {
-    startTransition(async () => {
-      updateOptimisticProfiles({ type: 'delete', id });
-      await deleteProfile(id);
-    });
-  };
-
   const handleDuplicate = () => {
     router.refresh();
   };
 
   const handleSetDefault = (id: string) => {
     startTransition(async () => {
-      updateOptimisticProfiles({ type: 'default', id });
       await setDefaultProfile(id);
+      router.refresh();
     });
   };
 
   const handleImportSuccess = (resume: Resume) => {
     startTransition(async () => {
       const result = await createProfile(
-        `Imported Profile ${optimisticProfiles.length + 1}`,
+        `Imported Profile ${initialProfiles.length + 1}`,
         resume,
-        optimisticProfiles.length === 0
+        initialProfiles.length === 0
       );
 
       if (result.success) {
@@ -102,11 +81,6 @@ export function ProfileGalleryClient({
       }
     });
   };
-
-  const filteredProfiles = optimisticProfiles.filter(p => {
-    if (!searchTerm) return true;
-    return p.name.toLowerCase().includes(searchTerm.toLowerCase());
-  });
 
   const headerActions = (
     <div className="flex gap-2">
@@ -120,14 +94,7 @@ export function ProfileGalleryClient({
 
   return (
     <>
-      <div className="mb-6">
-        <SearchInput 
-          placeholder="Search profiles..." 
-          defaultValue={searchTerm}
-        />
-      </div>
-
-      {!canUseAI && optimisticProfiles.length > 0 && (
+      {!canUseAI && initialProfiles.length > 0 && (
         <div className="mb-6">
           <Callout variant="warning">
             <div className="flex items-center justify-between gap-4">
@@ -150,10 +117,12 @@ export function ProfileGalleryClient({
         </div>
       )}
 
-      <Gallery
-        items={filteredProfiles}
-        getItemKey={(profile) => profile.id}
+      <ResourceGallery
+        initialItems={initialProfiles}
+        resourceName="Profile"
+        onDelete={deleteProfile as any}
         searchTerm={searchTerm}
+        getItemKey={(profile) => profile.id}
         emptyState={{
           icon: User,
           title: "No Profiles Yet",
@@ -170,12 +139,8 @@ export function ProfileGalleryClient({
             <ResumeImportButton onImportSuccess={handleImportSuccess} />
           ),
         }}
-        header={{
-          showCount: true,
-          countLabel: { singular: "profile", plural: "profiles" },
-          actions: headerActions,
-        }}
-        renderItem={(profile) => (
+        headerActions={headerActions}
+        renderItem={(profile, { onDelete }) => (
           <ProfileCard
             key={profile.id}
             id={profile.id}
@@ -183,7 +148,7 @@ export function ProfileGalleryClient({
             isDefault={profile.isDefault}
             resumeData={profile.resume}
             onEdit={handleEdit}
-            onDelete={handleDelete}
+            onDelete={onDelete}
             onDuplicate={handleDuplicate}
             onSetDefault={handleSetDefault}
           />

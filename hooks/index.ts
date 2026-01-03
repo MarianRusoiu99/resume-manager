@@ -40,6 +40,9 @@ export { useListForm } from './use-list-form';
 export { useToastAction } from './useToastAction';
 export { useAIModels } from './useAIModels';
 export type { AIModel } from './useAIModels';
+export { useSettingsManager } from './useSettingsManager';
+export { useCoverLetterOperations } from './features/useCoverLetterOperations';
+export { useResumeOperations } from './features/useResumeOperations';
 
 // ============================================================================
 // Preview Hooks - Resume preview-specific (re-exported from components/preview)

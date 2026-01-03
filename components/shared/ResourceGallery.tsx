@@ -1,0 +1,110 @@
+"use client";
+
+import { type ReactNode } from "react";
+import { Gallery, type GalleryEmptyConfig, type GridConfig } from "@/components/shared/Gallery";
+import { SearchInput } from "@/components/shared/SearchInput";
+import { useResourceCollection } from "@/hooks/useResourceCollection";
+
+interface Resource {
+  id: string;
+}
+
+interface ResourceGalleryProps<T extends Resource> {
+  /** Initial items from server */
+  initialItems: T[];
+  /** Render function for each item */
+  renderItem: (item: T, actions: { onDelete: (id: string) => void }) => ReactNode;
+  /** Unique key extractor */
+  getItemKey: (item: T) => string;
+  /** Delete action handler */
+  onDelete?: (id: string) => Promise<{ success: boolean; error?: string }>;
+  /** Search term for filtering */
+  searchTerm?: string;
+  /** Resource name for notifications (e.g., "Resume") */
+  resourceName?: string;
+  /** Empty state configuration */
+  emptyState?: GalleryEmptyConfig;
+  /** Grid configuration */
+  gridCols?: GridConfig;
+  /** Header actions or info */
+  headerActions?: ReactNode;
+  /** Additional filters or controls */
+  toolbar?: ReactNode;
+  /** Filter function for search */
+  filterFn?: (item: T, searchTerm: string) => boolean;
+}
+
+/**
+ * ResourceGallery - Managed gallery component for resources
+ * 
+ * Automatically handles:
+ * - Search filtering
+ * - Optimistic deletions
+ * - Consistency in search bar placement and empty states
+ */
+export function ResourceGallery<T extends Resource>({
+  initialItems,
+  renderItem,
+  getItemKey,
+  onDelete,
+  searchTerm = "",
+  resourceName = "Item",
+  emptyState,
+  gridCols,
+  headerActions,
+  toolbar,
+  filterFn,
+}: ResourceGalleryProps<T>) {
+  const { items: optimisticItems, handleDelete } = useResourceCollection({
+    initialItems,
+    onDelete,
+    resourceName,
+  });
+
+  const filteredItems = optimisticItems.filter((item) => {
+    if (!searchTerm) return true;
+    if (filterFn) return filterFn(item, searchTerm);
+    
+    // Default fallback filter (tries to match title/name if they exist)
+    const anyItem = item as any;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      anyItem.title?.toLowerCase().includes(searchLower) ||
+      anyItem.name?.toLowerCase().includes(searchLower) ||
+      anyItem.jobTitle?.toLowerCase().includes(searchLower) ||
+      anyItem.companyName?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+        <div className="w-full max-w-sm">
+          <SearchInput 
+            placeholder={`Search ${resourceName.toLowerCase()}s...`} 
+            defaultValue={searchTerm}
+          />
+        </div>
+        {headerActions}
+      </div>
+
+      {toolbar}
+
+      <Gallery
+        items={filteredItems}
+        renderItem={(item) => renderItem(item, { onDelete: handleDelete })}
+        getItemKey={getItemKey}
+        searchTerm={searchTerm}
+        emptyState={emptyState}
+        gridCols={gridCols}
+        header={{
+          showCount: true,
+          countLabel: { 
+            singular: resourceName.toLowerCase(), 
+            plural: `${resourceName.toLowerCase()}s` 
+          }
+        }}
+      />
+    </div>
+  );
+}

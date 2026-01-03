@@ -31,13 +31,6 @@ export default async function CoverLettersPage({ searchParams }: Props) {
         </Link>
       }
     >
-      <div className="mb-6">
-        <SearchInput 
-          placeholder="Search cover letters..." 
-          defaultValue={searchTerm}
-        />
-      </div>
-
       <Suspense fallback={<GallerySkeleton columns={{ sm: 1, md: 2, lg: 4, xl: 4 }} />}>
         <CoverLettersContent searchTerm={searchTerm} />
       </Suspense>
@@ -63,26 +56,9 @@ async function CoverLettersContent({ searchTerm }: { searchTerm: string }) {
     createdAt: cl.createdAt.toISOString()
   }));
 
-  const filteredLetters = coverLetters.filter(cl => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (cl.jobPosting?.title?.toLowerCase().includes(searchLower)) ||
-      (cl.jobPosting?.company?.name?.toLowerCase().includes(searchLower)) ||
-      (cl.content?.toLowerCase().includes(searchLower))
-    );
-  });
-
-  const handleDelete = async (id: string) => {
-    'use server';
-    await deleteCoverLetter(id);
-  };
-
   return (
     <CoverLetterListClient
-      coverLetters={filteredLetters}
-      onDelete={handleDelete}
-      onGenerate={() => {}} // Handled via link in Page actions
+      coverLetters={coverLetters}
       searchTerm={searchTerm}
     />
   );

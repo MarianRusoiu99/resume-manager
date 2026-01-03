@@ -1,14 +1,13 @@
 import { useState, useImperativeHandle, forwardRef } from "react";
 import { Tabs } from "@/components/ui/tabs";
-import { Button, Input } from "@/components/ui";
-import { Copy, Sparkles } from "lucide-react";
 import { useEditor } from "@/lib/contexts";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ResumePreview } from "../resume/ResumePreview";
 import { EditorSidebar } from "./EditorSidebar";
 import { EditorContent } from "./EditorContent";
 import { AIEnhanceResumeModal } from "@/components/ai-enhance/modals/AIEnhanceResumeModal";
+import { ShareDialog } from "./modals/ShareDialog";
+import { useShareState } from "@/hooks/editor/useShareState";
 
 export interface ResumeEditorRef {
   save: () => Promise<void>;
@@ -40,9 +39,19 @@ export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
 }, ref) => {
   const { resume, save, isDirty, isSaving, lastSavedAt, updateResume } = useEditor();
   const [activeTab, setActiveTab] = useState("basics");
-  const [showShareDialog, setShowShareDialog] = useState(false);
   const [showAIEnhance, setShowAIEnhance] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+
+  const {
+    showShareDialog,
+    setShowShareDialog,
+    handleTogglePublic,
+    handleCopyPublicLink,
+    publicLink,
+  } = useShareState({
+    publicSlug: initialPublicSlug || undefined,
+    onTogglePublic,
+  });
 
   // Expose methods and state to parent via ref
   useImperativeHandle(ref, () => ({
@@ -60,18 +69,6 @@ export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
   const displayName = initialDisplayName || "";
   const isPublic = initialIsPublic || false;
   const publicSlug = initialPublicSlug || "";
-
-  const handleTogglePublic = async () => {
-    if (onTogglePublic) {
-      await onTogglePublic();
-    }
-  };
-
-  const handleCopyPublicLink = () => {
-    const link = `${globalThis.location.origin}/public/${publicSlug}`;
-    navigator.clipboard.writeText(link);
-    toast.success("Link copied to clipboard");
-  };
 
   return (
     <div className="flex-1 min-h-0 flex flex-col md:flex-row bg-transparent gap-4 p-4">
@@ -98,57 +95,16 @@ export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
       </div>
 
       {/* Share Dialog */}
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Share Your {displayName || "Resume"}</DialogTitle>
-            <DialogDescription>
-              Make your resume public and share it with a custom link
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Public Access</p>
-                <p className="text-sm text-muted-foreground">
-                  {isPublic ? "Your resume is publicly accessible" : "Your resume is private"}
-                </p>
-              </div>
-              <Button
-                variant={isPublic ? "destructive" : "default"}
-                onClick={handleTogglePublic}
-                disabled={!onTogglePublic}
-              >
-                {isPublic ? "Make Private" : "Make Public"}
-              </Button>
-            </div>
-
-            {isPublic && publicSlug && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Public Link:</p>
-                <div className="flex gap-2">
-                  <Input
-                    value={`${globalThis.location.origin}/public/${publicSlug}`}
-                    readOnly
-                    className="flex-1"
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleCopyPublicLink}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Anyone with this link can view your resume
-                </p>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ShareDialog
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        displayName={displayName}
+        isPublic={isPublic}
+        publicLink={publicLink}
+        onTogglePublic={handleTogglePublic}
+        onCopyLink={handleCopyPublicLink}
+        canTogglePublic={!!onTogglePublic}
+      />
 
       {/* AI Enhance Modal */}
       <AIEnhanceResumeModal

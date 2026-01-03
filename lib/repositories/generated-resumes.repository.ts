@@ -3,15 +3,10 @@ import { prisma } from '@/lib/db/index';
 import type { Resume as JsonResume } from '@/lib/validations/jsonresume';
 import { GenericUserOwnedRepository } from './generic.repository';
 import type { IGeneratedResumeRepository, GeneratedResumeData, CreateResumeInput } from './interfaces/generated-resumes.repository.interface';
+import { mapResumeToGeneratedData } from './generated-resumes/mappers/resume.mapper';
 
 /**
  * Repository for managing generated resumes in the database.
- *
- * NOTE: The underlying schema migrated from `GeneratedResume` to a hybrid model:
- * - `Resume` (entity) + `ResumeDocument` (JSON Resume content)
- * - `JobPosting`/`Company` for job targeting
- *
- * This repository is kept as a compatibility layer for existing services.
  */
 export class GeneratedResumeRepository 
   extends GenericUserOwnedRepository<GeneratedResumeData, CreateResumeInput, any, any>
@@ -19,41 +14,6 @@ export class GeneratedResumeRepository
 {
   constructor(dbClient: PrismaClient = prisma) {
     super('resume', dbClient);
-  }
-
-
-  private mapResumeToGeneratedData(resume: Prisma.ResumeGetPayload<{
-    include: {
-      document: { select: { document: true } };
-      jobPosting: { include: { company: true } };
-      coverLetter: { select: { id: true } };
-    };
-  }>) {
-    const metadata = resume.metadata as unknown;
-    const metadataRecord =
-      metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : undefined;
-
-    const jobMetadataFromMetadata = metadataRecord?.jobMetadata;
-
-    const jobMetadata =
-      jobMetadataFromMetadata ??
-      ({
-        jobTitle: resume.jobPosting?.title ?? null,
-        companyName: resume.jobPosting?.company?.name ?? null,
-      } satisfies Record<string, unknown>);
-
-    return {
-      id: resume.id,
-      userId: resume.userId,
-      jobDescription: resume.jobPosting?.description ?? '',
-      jobMetadata,
-      resume: resume.document?.document ?? null,
-      templateId: resume.templateId ?? null,
-      coverLetterId: resume.coverLetter?.id ?? null,
-      metadata: resume.metadata as unknown,
-      createdAt: resume.createdAt,
-      updatedAt: resume.updatedAt,
-    };
   }
 
   private async findOrCreateCompanyId(companyName?: string) {
@@ -122,7 +82,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return this.mapResumeToGeneratedData(created);
+    return mapResumeToGeneratedData(created as any);
   }
 
   /**
@@ -140,7 +100,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return resumes.map((resume) => this.mapResumeToGeneratedData(resume as any));
+    return resumes.map((resume) => mapResumeToGeneratedData(resume as any));
   }
 
   /**
@@ -163,7 +123,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return resume ? this.mapResumeToGeneratedData(resume as any) : null;
+    return resume ? mapResumeToGeneratedData(resume as any) : null;
   }
 
   /**
@@ -203,7 +163,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return this.mapResumeToGeneratedData(updated as any);
+    return mapResumeToGeneratedData(updated as any);
   }
 
   /**
@@ -237,7 +197,7 @@ export class GeneratedResumeRepository
         coverLetter: { select: { id: true } },
       },
     });
-    return this.mapResumeToGeneratedData(updated as any);
+    return mapResumeToGeneratedData(updated as any);
   }
 
   /**
@@ -277,7 +237,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return this.mapResumeToGeneratedData(updated as any);
+    return mapResumeToGeneratedData(updated as any);
   }
 
   /**
@@ -297,7 +257,7 @@ export class GeneratedResumeRepository
         coverLetter: { select: { id: true } },
       },
     });
-    return this.mapResumeToGeneratedData(updated as any);
+    return mapResumeToGeneratedData(updated as any);
   }
 }
 

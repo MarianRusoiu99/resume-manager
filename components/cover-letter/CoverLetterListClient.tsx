@@ -1,49 +1,46 @@
 'use client';
 
-import { useOptimistic, useTransition } from 'react';
-import { CoverLetterCard } from '@/components/cover-letter/CoverLetterCard';
-import { Gallery } from '@/components/shared/Gallery';
-import { FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { FileText } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
-import type { CoverLetterListItem } from './CoverLetterList';
-
 import { deleteCoverLetter } from '@/app/actions/cover-letter';
+import { ResourceGallery } from '@/components/shared/ResourceGallery';
+import { CoverLetterCard } from '@/components/cover-letter/CoverLetterCard';
+import type { CoverLetterListItem } from './CoverLetterList';
 
 interface CoverLetterListClientProps {
     coverLetters: CoverLetterListItem[];
     searchTerm?: string;
+    onDelete?: (id: string) => Promise<{ success: boolean; error?: string }>;
+    onGenerate?: () => void;
 }
 
 export function CoverLetterListClient({
     coverLetters,
-    searchTerm
+    searchTerm,
+    onDelete
 }: CoverLetterListClientProps) {
     const router = useRouter();
-    const [isPending, startTransition] = useTransition();
-
-    const [optimisticLetters, removeLetterOptimistically] = useOptimistic(
-        coverLetters,
-        (state, id: string) => state.filter(cl => cl.id !== id)
-    );
-
-    const handleDelete = async (id: string) => {
-        startTransition(async () => {
-            removeLetterOptimistically(id);
-            await deleteCoverLetter(id);
-        });
-    };
 
     const handleGenerate = () => {
         router.push(ROUTES.GENERATE_COVER_LETTER);
     };
 
     return (
-        <Gallery
-            items={optimisticLetters}
-            getItemKey={(coverLetter) => coverLetter.id}
-            loadingMessage="Loading your cover letters..."
+        <ResourceGallery
+            initialItems={coverLetters}
+            resourceName="Cover Letter"
+            onDelete={onDelete || (deleteCoverLetter as any)}
             searchTerm={searchTerm}
+            getItemKey={(cl: CoverLetterListItem) => cl.id}
+            filterFn={(cl: CoverLetterListItem, term: string) => {
+                const searchLower = term.toLowerCase();
+                return (
+                    (cl.jobPosting?.title?.toLowerCase().includes(searchLower)) ||
+                    (cl.jobPosting?.company?.name?.toLowerCase().includes(searchLower)) ||
+                    (cl.content?.toLowerCase().includes(searchLower))
+                );
+            }}
             emptyState={{
                 icon: FileText,
                 title: "No Cover Letters Yet",
@@ -56,7 +53,7 @@ export function CoverLetterListClient({
                     icon: <FileText className="w-4 h-4" />,
                 },
             }}
-            renderItem={(coverLetter) => (
+            renderItem={(coverLetter: CoverLetterListItem, { onDelete: handleDelete }: { onDelete: (id: string) => void }) => (
                 <CoverLetterCard
                     key={coverLetter.id}
                     id={coverLetter.id}

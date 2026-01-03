@@ -5,20 +5,17 @@
  * View and edit a specific cover letter
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui';
-import { Callout } from '@/components/shared';
 import { ErrorState, LoadingState } from '@/components/shared/states';
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { CoverLetterEditor, type CoverLetterEditorRef } from '@/components/cover-letter';
-import { Trash2, ExternalLink, Download, Copy, Sparkles, Edit, Save } from 'lucide-react';
-import { getCoverLetter, updateCoverLetter, deleteCoverLetter } from '@/app/actions/cover-letter';
-import { useExportPDF } from '@/hooks';
-import type { CoverLetterWithResume } from '@/lib/types/cover-letter';
+import { Trash2, Download, Copy, Sparkles, Edit, Save } from 'lucide-react';
+import { useExportPDF, useCoverLetterOperations } from '@/hooks';
+import { useCoverLetterDetail } from '@/hooks/features/useCoverLetterDetail';
 import { CoverLetterSidebar } from '@/components/cover-letter/detail/CoverLetterSidebar';
 
 type CoverLetterMetadata = {
@@ -35,90 +32,37 @@ export default function CoverLetterDetailPage() {
   const coverLetterId = params?.id as string;
   const editorRef = useRef<CoverLetterEditorRef>(null);
 
-  const [coverLetter, setCoverLetter] = useState<CoverLetterWithResume | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const {
+    coverLetter,
+    isLoading,
+    error,
+    isSaving,
+    saveCoverLetter
+  } = useCoverLetterDetail(coverLetterId);
+
+  const { handleDelete: deleteAction } = useCoverLetterOperations();
   const { isExportingPDF, handleExportCoverLetter } = useExportPDF();
 
-  const fetchCoverLetter = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const result = await getCoverLetter(coverLetterId);
-
-      if (!result.success || !result.data) {
-        throw new Error((result as any).error || 'Failed to fetch cover letter');
-      }
-
-      setCoverLetter(result.data as any);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load cover letter');
-      toast.error(err instanceof Error ? err.message : 'Failed to load cover letter');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (coverLetterId) {
-      fetchCoverLetter();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coverLetterId]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleSaveCoverLetter = async (content: string, contentJson: string) => {
-    try {
-      setIsSaving(true);
-      const result = await updateCoverLetter(coverLetterId, {
-        content,
-        metadata: {
-          contentJson,
-        },
-      });
-
-      if (!result.success || !result.data) {
-        throw new Error((result as any).error || 'Failed to save cover letter');
-      }
-
-      setCoverLetter(result.data as any);
+    const success = await saveCoverLetter(content, contentJson);
+    if (success) {
       setIsEditing(false);
-    } catch (err) {
-      throw new Error(err instanceof Error ? err.message : 'Failed to save cover letter');
-    } finally {
-      setIsSaving(false);
     }
-  };
-
-  const handleDelete = () => {
-    setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
-    try {
-      setIsDeleting(true);
-
-      const result = await deleteCoverLetter(coverLetterId);
-
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to delete cover letter');
-      }
-
-      toast.success('Cover letter deleted successfully');
+    setIsDeleting(true);
+    const success = await deleteAction(coverLetterId);
+    if (success) {
       router.push('/cover-letters');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete cover letter');
+    } else {
       setIsDeleting(false);
       setDeleteDialogOpen(false);
     }
-  };
-
-  const cancelDelete = () => {
-    setDeleteDialogOpen(false);
   };
 
   const handleExport = async () => {
@@ -246,7 +190,7 @@ export default function CoverLetterDetailPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleDelete}
+                onClick={() => setDeleteDialogOpen(true)}
                 disabled={isDeleting}
                 className="h-8 rounded-none border-px text-red-600 hover:text-red-700"
               >
@@ -316,7 +260,7 @@ export default function CoverLetterDetailPage() {
       <ConfirmDialog
         isOpen={deleteDialogOpen}
         onConfirm={confirmDelete}
-        onCancel={cancelDelete}
+        onCancel={() => setDeleteDialogOpen(false)}
         title="Delete Cover Letter"
         message={`Are you sure you want to delete this cover letter? This action cannot be undone.`}
         confirmText="Delete"

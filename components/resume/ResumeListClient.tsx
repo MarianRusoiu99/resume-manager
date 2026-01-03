@@ -14,24 +14,21 @@ interface ResumeListClientProps {
     searchTerm?: string;
 }
 
+import { ResourceGallery } from '@/components/shared/ResourceGallery';
+import { deleteResume } from '@/app/actions/resume';
+
 export function ResumeListClient({
     resumes,
     searchTerm
 }: ResumeListClientProps) {
     const router = useRouter();
-    const { handleView, handleEdit, handleDelete } = useResumeOperations();
-    const [isPending, startTransition] = useTransition();
-    
-    const [optimisticResumes, removeResumeOptimistically] = useOptimistic(
-        resumes,
-        (state, id: string) => state.filter(r => r.id !== id)
-    );
 
-    const onDelete = async (id: string) => {
-        startTransition(async () => {
-            removeResumeOptimistically(id);
-            await handleDelete(id);
-        });
+    const handleView = (id: string) => {
+        router.push(`/resumes/${id}`);
+    };
+
+    const handleEdit = (id: string) => {
+        router.push(`/resumes/${id}/edit`);
     };
 
     const handleGenerate = () => {
@@ -39,11 +36,12 @@ export function ResumeListClient({
     };
 
     return (
-        <Gallery
-            items={optimisticResumes}
-            getItemKey={(resume) => resume.id}
-            loadingMessage="Loading your resumes..."
+        <ResourceGallery
+            initialItems={resumes}
+            resourceName="Resume"
+            onDelete={deleteResume}
             searchTerm={searchTerm}
+            getItemKey={(resume) => resume.id}
             emptyState={{
                 icon: FileText,
                 title: "No Resumes Yet",
@@ -54,7 +52,7 @@ export function ResumeListClient({
                     icon: <FileText className="w-4 h-4" />,
                 },
             }}
-            renderItem={(resume) => (
+            renderItem={(resume, { onDelete }) => (
                 <ResumeCard
                     key={resume.id}
                     id={resume.id}

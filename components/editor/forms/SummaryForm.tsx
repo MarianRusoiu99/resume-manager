@@ -1,17 +1,8 @@
 "use client";
 
-import { useAutoSaveForm } from "@/hooks/useAutoSaveForm";
-import * as z from "zod";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { z } from "zod";
+import { ManagedForm } from "@/components/forms/ManagedForm";
+import { FieldConfig } from "@/lib/forms/form-schema";
 
 const summarySchema = z.object({
   summary: z.string().max(1000, "Summary must be 1000 characters or less"),
@@ -24,45 +15,36 @@ interface SummaryFormProps {
   onChange: (summary: string) => void;
 }
 
+const SUMMARY_FIELDS: FieldConfig<SummaryFormData>[] = [
+  { 
+    key: 'summary', 
+    label: 'Professional Summary', 
+    type: 'textarea', 
+    rows: 6, 
+    placeholder: 'Write a brief overview of your professional experience, skills, and career goals...',
+    description: '2-4 sentences highlighting your key qualifications',
+    colSpan: 2
+  },
+];
+
 export function SummaryForm({ summary, onChange }: SummaryFormProps) {
-  const form = useAutoSaveForm<SummaryFormData>({
-    schema: summarySchema,
-    onSave: (data) => onChange(data.summary),
-    defaultValues: {
-      summary: summary || "",
-    },
-    debounceMs: 300,
-  });
-
-  const currentSummary = form.watch("summary") || "";
-
   return (
-    <Form {...form}>
-      <div className="space-y-2">
-        <FormField
-          control={form.control}
-          name="summary"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Professional Summary</FormLabel>
-              <FormControl>
-                <Textarea
-                  {...field}
-                  rows={6}
-                  placeholder="Write a brief overview of your professional experience, skills, and career goals..."
-                />
-              </FormControl>
-              <FormDescription>
-                2-4 sentences highlighting your key qualifications
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <p className="text-xs text-muted-foreground">
-          {currentSummary.length} / 1000 characters
-        </p>
-      </div>
-    </Form>
+    <div className="space-y-2">
+      <ManagedForm
+        schema={summarySchema}
+        defaultValues={{ summary: summary || "" }}
+        fields={SUMMARY_FIELDS}
+        onSubmit={() => {}}
+        onUpdate={(data) => onChange(data.summary)}
+        autoSave={true}
+        debounceMs={300}
+      >
+        {(form) => (
+          <p className="text-xs text-muted-foreground">
+            {(form.watch("summary") || "").length} / 1000 characters
+          </p>
+        )}
+      </ManagedForm>
+    </div>
   );
 }

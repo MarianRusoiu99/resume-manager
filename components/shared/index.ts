@@ -8,6 +8,7 @@ export * from "./ScaledIframePreview";
 export * from "./ThemeToggle";
 export * from "./EntityCard";
 export * from "./Gallery";
+export * from "./ResourceGallery";
 export * from "./states";
 export * from "./Callout";
 export * from "./Spinner";
