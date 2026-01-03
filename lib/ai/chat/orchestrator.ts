@@ -59,7 +59,6 @@ export class AIOrchestrator {
 
   /**
    * Stream with structured JSON output (uses streamObject for guaranteed JSON)
-   * Falls back to streamText + parsing for models that don't support json_schema
    */
   private static async *streamStructuredResponse(
     conversation: Conversation,
@@ -119,95 +118,12 @@ export class AIOrchestrator {
         type: 'finish',
         finishReason,
         usage,
+        output,
       };
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-      // Check if this is a model compatibility error (json_schema not supported)
-      // Fall back to streamText with manual parsing for older models
-      if (errorMessage.includes('json_schema') || errorMessage.includes('not supported')) {
-        logger.warn('Model does not support streamObject, falling back to streamText', {
-          conversationId: conversation.id,
-          error: errorMessage,
-        });
-
-        // Fall back to text streaming with parsing
-        yield* this.streamTextWithParsing(conversation, mode, model, messages, systemPrompt, options);
-        return;
-      }
-
-      logger.error('Structured stream response failed', error);
-
-      yield {
-        type: 'error',
-        error: errorMessage,
-      };
-    }
-  }
-
-  /**
-   * Stream text and parse JSON at the end (fallback for older models)
-   */
-  private static async *streamTextWithParsing(
-    conversation: Conversation,
-    mode: ReturnType<typeof getModeOrThrow>,
-    model: ReturnType<OrchestratorOptions['provider']['createLanguageModel']>,
-    messages: ReturnType<typeof buildMessages>,
-    systemPrompt: string,
-    options: OrchestratorOptions
-  ): AsyncGenerator<AIStreamChunk> {
-    try {
-      const result = streamText({
-        model,
-        system: systemPrompt,
-        messages,
-        abortSignal: options.abortSignal,
-      });
-
-      let fullText = '';
-
-      for await (const part of result.fullStream) {
-        if (part.type === 'text-delta') {
-          const streamPart = part as { textDelta?: string; text?: string };
-          const text = streamPart.textDelta ?? streamPart.text ?? '';
-          fullText += text;
-          yield {
-            type: 'text-delta',
-            content: text,
-          };
-        } else if (part.type === 'finish') {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const finishPart = part as any;
-          const usage = normalizeUsage(finishPart.usage ?? finishPart.totalUsage);
-
-          // Log usage
-          logUsage(options, usage, part.finishReason, mode.id);
-
-          // Try to parse the output
-          try {
-            const output = parseOutput(fullText, mode);
-            ConversationManager.setOutput(conversation.id, output);
-            ConversationManager.addAssistantMessage(conversation.id, fullText, output);
-          } catch (parseError) {
-            logger.warn('Failed to parse structured output from text stream', {
-              error: parseError instanceof Error ? parseError.message : String(parseError),
-              conversationId: conversation.id,
-            });
-            // Still save the raw text
-            ConversationManager.addAssistantMessage(conversation.id, fullText);
-          }
-
-          yield {
-            type: 'finish',
-            finishReason: part.finishReason,
-            usage,
-          };
-        }
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      logger.error('Text stream with parsing failed', error);
+      logger.error('Structured stream response failed', { error: errorMessage });
 
       yield {
         type: 'error',
@@ -282,10 +198,19 @@ export class AIOrchestrator {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI SDK finish event usage structure varies
             const finishPart = part as any;
             const usage = normalizeUsage(finishPart.usage ?? finishPart.totalUsage);
+            
+            // Parse the output using mode's schema
+            const output = parseOutput(fullText, mode);
+            
+            // Store output
+            ConversationManager.setOutput(conversation.id, output);
+            ConversationManager.addAssistantMessage(conversation.id, fullText, output);
+
             yield {
               type: 'finish',
               finishReason: part.finishReason,
               usage,
+              output,
             };
 
             // Log usage
@@ -294,10 +219,6 @@ export class AIOrchestrator {
           }
         }
       }
-
-      // Store the output as plain text for text modes
-      ConversationManager.setOutput(conversation.id, fullText);
-      ConversationManager.addAssistantMessage(conversation.id, fullText);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -357,11 +278,22 @@ export class AIOrchestrator {
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorName = error instanceof Error ? error.name : '';
 
-        // Fall back to generateText with manual parsing if model doesn't support structured output
-        if (errorMessage.includes('json_schema') || errorMessage.includes('not supported')) {
-          logger.warn('Model does not support generateObject, falling back to generateText', {
+        // Check if this is a model compatibility error or schema validation error
+        // These errors should fall back to generateText with manual parsing
+        const shouldFallback = 
+          errorMessage.includes('json_schema') || 
+          errorMessage.includes('not supported') ||
+          errorMessage.includes('No object generated') ||
+          errorMessage.includes('did not match schema') ||
+          errorName === 'AI_NoObjectGeneratedError' ||
+          errorName === 'AI_APICallError';
+
+        if (shouldFallback) {
+          logger.warn('Structured output failed, falling back to generateText', {
             conversationId: conversation.id,
+            errorName,
             error: errorMessage,
           });
           // Continue to generateText fallback below

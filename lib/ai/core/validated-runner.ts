@@ -91,8 +91,26 @@ export class ValidatedAIRunner {
         }
 
         // Attempt to extract JSON if the model wrapped it in markdown blocks
-        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/) || text.match(/{[\s\S]*}/);
-        const jsonString = jsonMatch ? jsonMatch[0] : text;
+        const markdownMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+        
+        let jsonString: string;
+        if (markdownMatch) {
+          // Use capture group [1] for markdown code blocks
+          jsonString = markdownMatch[1].trim();
+        } else if (text.trimStart().startsWith('[')) {
+          // Prefer array match when text starts with [
+          const arrayMatch = text.match(/\[[\s\S]*\]/);
+          jsonString = arrayMatch?.[0] ?? text;
+        } else if (text.trimStart().startsWith('{')) {
+          // Prefer object match when text starts with {
+          const objectMatch = text.match(/\{[\s\S]*\}/);
+          jsonString = objectMatch?.[0] ?? text;
+        } else {
+          // Try to find embedded JSON (object or array)
+          const objectMatch = text.match(/\{[\s\S]*\}/);
+          const arrayMatch = text.match(/\[[\s\S]*\]/);
+          jsonString = objectMatch?.[0] ?? arrayMatch?.[0] ?? text;
+        }
 
         try {
           const parsed = JSON.parse(jsonString) as unknown;

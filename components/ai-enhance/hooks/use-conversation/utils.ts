@@ -37,23 +37,22 @@ export async function processStreamResponse(
           if (parsed.type === 'text-delta' && parsed.content) {
             fullContent += parsed.content;
             onUpdate(fullContent);
+          } else if (parsed.type === 'finish') {
+            // Server sends parsed output in the finish event
+            if (parsed.output !== undefined) {
+              output = parsed.output;
+            }
           } else if (parsed.type === 'error') {
             throw new Error(parsed.error);
           }
-        } catch {
-          // Ignore parse errors for malformed chunks
+        } catch (e) {
+          // Only re-throw if it's an error from the stream, not a parse error
+          if (e instanceof Error && e.message && !e.message.includes('JSON')) {
+            throw e;
+          }
+          // Ignore JSON parse errors for malformed chunks
         }
       }
-    }
-
-    // Try to parse structured output from content
-    try {
-      if (fullContent.includes('{')) {
-        const jsonMatch = fullContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, fullContent];
-        output = JSON.parse(jsonMatch[1] || fullContent);
-      }
-    } catch {
-      // Not JSON, that's okay
     }
 
     return { fullContent, output };

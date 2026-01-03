@@ -33,6 +33,8 @@ export interface AIStreamChunk {
     completionTokens: number;
     totalTokens: number;
   };
+  /** Parsed structured output from the AI response */
+  output?: unknown;
 }
 
 /**
