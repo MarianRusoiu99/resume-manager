@@ -73,14 +73,23 @@ export interface ServerActionOptions {
  */
 type MaybeServiceResult<T> = T | import('@/lib/types/service-result').ServiceResult<T>;
 
-export function wononithServerAction<TArgs extends unknown[], TResult>(
-  actionName: string,
-  handler: (session: ActionSession, ...args: TArgs) => Promise<MaybeServiceResult<TResult>>,
-  options: ServerActionOptions = {}
-): (...args: TArgs) => Promise<ActionResult<TResult>> {
-  return createServerAction(actionName, handler, options);
-}
-
+/**
+ * Wraps a server action handler with authentication, error handling, and audit logging.
+ * 
+ * @param actionName - Unique name for the action (used in logging)
+ * @param handler - The action handler function receiving session and args
+ * @param options - Optional configuration for rate limiting, audit logging, etc.
+ * @returns Wrapped action function that handles auth, errors, and logging
+ * 
+ * @example
+ * ```typescript
+ * export const getProfile = withServerAction(
+ *   'getProfile',
+ *   async (session, profileId: string) => profileService.getProfile(session.user.id, profileId),
+ *   { resourceType: 'profile' }
+ * );
+ * ```
+ */
 export function withServerAction<TArgs extends unknown[], TResult>(
   actionName: string,
   handler: (session: ActionSession, ...args: TArgs) => Promise<MaybeServiceResult<TResult>>,
@@ -96,10 +105,12 @@ function createServerAction<TArgs extends unknown[], TResult>(
 ): (...args: TArgs) => Promise<ActionResult<TResult>> {
   return async (...args: TArgs): Promise<ActionResult<TResult>> => {
     const startTime = Date.now();
+    // Declare session at function scope so it's accessible in catch block
+    let session: Awaited<ReturnType<typeof getSession>> | null = null;
 
     try {
       // Authentication check via DAL
-      const session = await getSession();
+      session = await getSession();
       
       if (!options.isPublic && !session?.userId) {
         logger.warn(`Unauthorized ${actionName} attempt`);
@@ -200,8 +211,8 @@ function createServerAction<TArgs extends unknown[], TResult>(
       const wrapped = isAppError(error) ? error : wrapError(error, errorMessage);
 
       // Audit log failure if configured
+      // Use session from outer scope (may be null if error occurred before getSession)
       if (options.auditAction) {
-        const session = await getSession().catch(() => null);
         auditLog.failure(
           options.auditAction,
           session?.userId,

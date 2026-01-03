@@ -1,10 +1,23 @@
-components/templates/TemplateDropdown.tsx
-components/ui/breadcrumb.tsx
-components/theme-provider.tsx
-components/editor/EditorHeader.tsx
-components/shared/skeletons/FormSkeleton.tsx
-components/mode-toggle.tsx
-components/error-boundary.tsx
-components/nav-main.tsx
-components/nav-projects.tsx
-components/nav-user.tsx
+# Potential Unused Files - Updated after refactoring
+# This file tracks files that may be unused and could potentially be removed
+
+# Files that were deleted during the Jan 2026 refactoring:
+# - components/templates/TemplateDropdown.tsx (previously deleted)
+# - components/ui/breadcrumb.tsx (deleted)
+# - components/theme-provider.tsx (deleted - duplicate of lib/contexts/ThemeContext.tsx)
+# - components/editor/EditorHeader.tsx (previously deleted)
+# - components/shared/skeletons/FormSkeleton.tsx (previously deleted)
+# - components/mode-toggle.tsx (previously deleted)
+# - components/error-boundary.tsx (deleted - unused duplicate)
+# - components/nav-main.tsx (deleted)
+# - components/nav-projects.tsx (deleted)
+# - components/nav-user.tsx (deleted)
+# - lib/utils/retry.ts (deleted - unused, replaced by lib/resilience/retry.ts)
+# - lib/cache/models-cache.ts (deleted - never imported)
+# - lib/services/utils/base-crud.service.ts (deleted - never extended)
+# - components/ai-enhance/hooks/useConversation.ts (deleted - duplicate of use-conversation/ folder)
+
+# Files that need further investigation:
+hooks/useKeyboardShortcut.ts
+hooks/useProfileSave.ts
+lib/resilience/ # Entire module - never imported externally

@@ -10,7 +10,7 @@
  */
 
 import { signIn, signOut } from '@/lib/auth/config';
-import { prisma } from '@/lib/db/index';
+import { userRepository } from '@/lib/repositories/users.repository';
 import { hashPassword } from '@/lib/auth/password';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import {
@@ -93,9 +93,7 @@ export async function registerAction(
 
   try {
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await userRepository.findByEmail(email);
 
     if (existingUser) {
       return {
@@ -107,11 +105,9 @@ export async function registerAction(
     // Hash password and create user
     const passwordHash = await hashPassword(password);
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-      },
+    const user = await userRepository.create({
+      email,
+      passwordHash,
     });
 
     // Send onboarding notifications
@@ -154,9 +150,7 @@ export async function deleteAccountAction(): Promise<AuthFormState> {
     const userId = session.userId;
 
     // Delete user from database (cascades will handle related data)
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    await userRepository.delete(userId);
 
     logger.info('User deleted account', { userId });
 

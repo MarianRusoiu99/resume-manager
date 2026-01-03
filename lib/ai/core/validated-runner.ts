@@ -1,9 +1,10 @@
-import { generateText, streamText, type LanguageModel, type CoreMessage } from 'ai';
+import { generateText, streamText, type LanguageModel, type CoreMessage, type GenerateTextResult, type StreamTextResult } from 'ai';
 import { z } from 'zod';
 import { logger } from '@/lib/utils/logger';
 import { ServiceErrors } from '@/lib/services/utils/service-wrapper';
 import { auditLogService } from '@/lib/services';
 import { calculateAICost } from '../pricing';
+import type { AuditAction } from '@prisma/client';
 
 interface ValidatedAIRunnerOptions<T> {
   model: LanguageModel;
@@ -15,6 +16,22 @@ interface ValidatedAIRunnerOptions<T> {
   abortSignal?: AbortSignal;
   userId?: string;
   feature?: string;
+}
+
+interface StreamOptions {
+  model: LanguageModel;
+  prompt?: string;
+  messages?: CoreMessage[];
+  system?: string;
+  abortSignal?: AbortSignal;
+  userId?: string;
+  feature?: string;
+}
+
+/** Extract model ID from LanguageModel */
+function getModelId(model: LanguageModel): string {
+  // LanguageModel has modelId property in Vercel AI SDK
+  return (model as LanguageModel & { modelId?: string }).modelId ?? 'unknown';
 }
 
 /**
@@ -34,28 +51,22 @@ export class ValidatedAIRunner {
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        const params: any = {
-          model,
-          system: system ? `${system}\n\nIMPORTANT: You MUST return a valid JSON object that matches the required schema.` : undefined,
-          abortSignal,
-        };
+        const enhancedSystem = system 
+          ? `${system}\n\nIMPORTANT: You MUST return a valid JSON object that matches the required schema.` 
+          : undefined;
 
-        if (messages) {
-          params.messages = messages;
-        } else {
-          params.prompt = prompt;
-        }
-
-        const result = await generateText(params);
+        const result = messages
+          ? await generateText({ model, messages, system: enhancedSystem, abortSignal })
+          : await generateText({ model, prompt: prompt ?? '', system: enhancedSystem, abortSignal });
 
         // Log token usage
         if (userId) {
-          const modelId = (model as any).modelId || 'unknown';
+          const modelId = getModelId(model);
           const cost = calculateAICost(modelId, result.usage);
 
           auditLogService.logAsync({
             userId,
-            action: 'AI_GENERATE' as any,
+            action: 'AI_GENERATE' as AuditAction,
             resourceType: 'AI_MODEL',
             resourceId: modelId,
             metadata: {
@@ -74,7 +85,7 @@ export class ValidatedAIRunner {
         if (schema instanceof z.ZodString && !text.startsWith('{') && !text.startsWith('[')) {
           try {
             return schema.parse(text) as unknown as T;
-          } catch (e) {
+          } catch {
             // Fall through to JSON parsing if string validation fails for some reason
           }
         }
@@ -84,7 +95,7 @@ export class ValidatedAIRunner {
         const jsonString = jsonMatch ? jsonMatch[0] : text;
 
         try {
-          const parsed = JSON.parse(jsonString);
+          const parsed = JSON.parse(jsonString) as unknown;
           const validated = schema.parse(parsed);
           return validated as T;
         } catch (parseError) {
@@ -101,9 +112,9 @@ export class ValidatedAIRunner {
           if (userId) {
             auditLogService.logAsync({
               userId,
-              action: 'AI_VALIDATION_FAILED' as any,
+              action: 'AI_VALIDATION_FAILED' as AuditAction,
               resourceType: 'AI_MODEL',
-              resourceId: (model as any).modelId || 'unknown',
+              resourceId: getModelId(model),
               success: false,
               errorMessage: parseError instanceof Error ? parseError.message : 'Validation failed',
               metadata: {
@@ -132,41 +143,45 @@ export class ValidatedAIRunner {
    * Streams the AI model output.
    * Note: Validation is harder with streaming, so this is primarily for text enhancement.
    */
-  static async stream(options: Omit<ValidatedAIRunnerOptions<any>, 'schema'>) {
+  static async stream(options: StreamOptions) {
     const { model, prompt, messages, system, abortSignal, userId, feature } = options;
 
-    const params: any = {
-      model,
-      system,
-      abortSignal,
-      onFinish: (event: any) => {
-        if (userId) {
-          const modelId = (model as any).modelId || 'unknown';
-          const cost = calculateAICost(modelId, event.usage);
+    // Use streamText and handle logging after the stream completes
+    const result = messages
+      ? await streamText({ model, messages, system, abortSignal })
+      : await streamText({ model, prompt: prompt ?? '', system, abortSignal });
 
-          auditLogService.logAsync({
-            userId,
-            action: 'AI_GENERATE' as any,
-            resourceType: 'AI_MODEL',
-            resourceId: modelId,
-            metadata: {
-              feature,
-              usage: event.usage,
-              cost,
-              finishReason: event.finishReason,
-            },
-          });
-        }
-      },
-    };
+    // Log usage after stream is consumed (caller should handle this via onFinish callback or consuming the stream)
+    if (userId) {
+      // We'll log when the stream is consumed - the caller should handle this
+      // The usage is available on result.usage after the stream completes
+      const originalTextStream = result.textStream;
+      
+      // Note: Logging happens asynchronously when result.usage is accessed
+      // The caller can await result.usage to get the final token counts
+      result.usage.then((usage) => {
+        const modelId = getModelId(model);
+        const usageData = {
+          promptTokens: usage.inputTokens ?? 0,
+          completionTokens: usage.outputTokens ?? 0,
+        };
+        const cost = calculateAICost(modelId, usageData);
 
-    if (messages) {
-      params.messages = messages;
-    } else {
-      params.prompt = prompt;
+        auditLogService.logAsync({
+          userId,
+          action: 'AI_GENERATE' as AuditAction,
+          resourceType: 'AI_MODEL',
+          resourceId: modelId,
+          metadata: {
+            feature,
+            usage: usageData,
+            cost,
+          },
+        });
+      }).catch(() => {
+        // Ignore logging errors
+      });
     }
-
-    const result = await streamText(params);
 
     return result;
   }

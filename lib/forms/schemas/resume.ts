@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 import { createFormSchema } from './utils';
+import type { FieldConfig } from './types';
 import type { 
   Basics, Work, Education, Skill, Project, Certificate, Award, 
   Volunteer, Language, Publication, Interest, Reference 
@@ -29,7 +30,7 @@ export const personalInfoFormSchema = z.object({
 
 export type PersonalInfoFormData = z.infer<typeof personalInfoFormSchema>;
 
-export const personalInfoFields: any[] = [ // Using any[] temporarily to avoid circular dependencies if any, but will be FieldConfig<PersonalInfoFormData>[]
+export const personalInfoFields: FieldConfig<PersonalInfoFormData>[] = [
   { key: 'name', label: 'Full Name', type: 'text', required: true },
   { key: 'label', label: 'Professional Label', type: 'text', placeholder: 'e.g. Full Stack Developer' },
   { key: 'email', label: 'Email Address', type: 'email', required: true },
@@ -97,7 +98,7 @@ export const summaryFormSchema = z.object({
 
 export type SummaryFormData = z.infer<typeof summaryFormSchema>;
 
-export const summaryFields: any[] = [
+export const summaryFields: FieldConfig<SummaryFormData>[] = [
   { key: 'summary', label: 'Professional Summary', type: 'textarea', rows: 10, colSpan: 2, description: 'Briefly describe your professional background and key strengths.' },
 ];
 

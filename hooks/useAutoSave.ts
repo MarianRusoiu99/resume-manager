@@ -47,7 +47,8 @@ export function useAutoSave<T>({
       return;
     }
 
-    // Check if data has actually changed
+    // Check if data has actually changed using deep comparison
+    // JSON.stringify is acceptable here as resume data is modest in size
     const hasChanged = JSON.stringify(data) !== JSON.stringify(previousDataRef.current);
 
     if (!hasChanged) {

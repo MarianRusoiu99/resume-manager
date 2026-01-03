@@ -66,7 +66,18 @@ export function EditorProvider({
       isDirty: persistence.isDirty,
       setDirty: persistence.setIsDirty,
     }),
-    [persistence]
+    [
+      persistence.resume,
+      persistence.loading,
+      persistence.isSaving,
+      persistence.lastSavedAt,
+      persistence.updateResume,
+      persistence.updateField,
+      persistence.save,
+      persistence.reload,
+      persistence.isDirty,
+      persistence.setIsDirty,
+    ]
   );
 
   return (

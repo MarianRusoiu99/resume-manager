@@ -1,5 +1,6 @@
 import puppeteer, { type PDFOptions, type Browser } from 'puppeteer';
 import { ServiceErrors } from '../utils/service-wrapper';
+import { logger } from '@/lib/utils/logger';
 
 export interface PdfServiceConfig {
   puppeteerArgs?: string[];
@@ -63,7 +64,7 @@ export class PdfService {
       const pdfBuffer = await page.pdf(options);
       return Buffer.from(pdfBuffer);
     } catch (error) {
-      console.error('PDF Generation Error:', error);
+      logger.error('PDF generation failed', error);
       throw ServiceErrors.externalService('Failed to generate PDF', error);
     } finally {
       if (browser) {

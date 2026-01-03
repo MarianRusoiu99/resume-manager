@@ -71,6 +71,7 @@ export function useListForm<T>({
 
   const addItem = useCallback(() => {
     // Deep clone the template to avoid shared references
+    // JSON.parse/stringify is acceptable here as form items are simple objects
     const newItem = JSON.parse(JSON.stringify(newItemTemplate)) as T;
     onChange([...items, newItem]);
   }, [items, newItemTemplate, onChange]);
@@ -128,6 +129,7 @@ export function useListForm<T>({
     (index: number) => {
       if (index < 0 || index >= items.length) return;
       // Deep clone to avoid shared references
+      // JSON.parse/stringify is acceptable here as form items are simple objects
       const duplicated = JSON.parse(JSON.stringify(items[index])) as T;
       const updated = [...items];
       updated.splice(index + 1, 0, duplicated);

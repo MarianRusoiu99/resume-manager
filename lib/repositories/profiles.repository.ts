@@ -1,18 +1,28 @@
 import { prisma } from '@/lib/db/index';
 import { PrismaClient, Prisma } from '@prisma/client';
-import { GenericUserOwnedRepository, UserOwnedEntity } from './generic.repository';
+import { GenericUserOwnedRepository, UserOwnedEntity, PrismaArgs } from './generic.repository';
 import type { IProfileRepository, ProfileData, CreateProfileInput, UpdateProfileInput, ProfileWithTemplate } from './interfaces/profiles.repository.interface';
+import type { Resume } from '@/lib/validations/jsonresume';
 
-export interface ProfileEntity extends UserOwnedEntity {
-  name: string;
-  isDefault: boolean;
-  isPublic: boolean;
-  publicSlug: string | null;
-  selectedTemplateId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  document?: { document: any } | null;
-}
+/**
+ * Profile with document relation from Prisma
+ */
+type ProfileWithDocument = Prisma.ProfileGetPayload<{
+  include: { document: { select: { document: true } } };
+}>;
+
+/**
+ * Prisma delegate type for Profile model
+ */
+type ProfilePrismaDelegate = {
+  findUnique(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
+  findFirst(args: { where: Record<string, unknown>; include?: unknown; select?: unknown; orderBy?: unknown }): Promise<unknown>;
+  findMany(args?: PrismaArgs): Promise<unknown[]>;
+  create(args: { data: CreateProfileInput; include?: unknown; select?: unknown }): Promise<unknown>;
+  update(args: { where: Record<string, unknown>; data: UpdateProfileInput; include?: unknown; select?: unknown }): Promise<unknown>;
+  delete(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
+  count(args?: { where?: Record<string, unknown> }): Promise<number>;
+};
 
 /**
  * Profile Repository
@@ -23,19 +33,19 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   ProfileData,
   CreateProfileInput,
   UpdateProfileInput,
-  any
+  ProfilePrismaDelegate
 > implements IProfileRepository {
   
   constructor(dbClient: PrismaClient = prisma) {
     super('profile', dbClient);
   }
 
-  private mapProfile(profile: any): ProfileData {
+  private mapProfile(profile: ProfileWithDocument): ProfileData {
     return {
       id: profile.id,
       userId: profile.userId,
       name: profile.name,
-      resume: profile.document?.document ?? null,
+      resume: (profile.document?.document as Resume) ?? null,
       isDefault: profile.isDefault,
       isPublic: profile.isPublic,
       publicSlug: profile.publicSlug,
@@ -46,14 +56,15 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   }
 
   async findAllByUserId(userId: string): Promise<ProfileData[]> {
-    const profiles = await this.findAllForUser(userId, {
+    const profiles = await this.db.profile.findMany({
+      where: { userId },
       include: { document: { select: { document: true } } },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
     });
     return profiles.map(p => this.mapProfile(p));
   }
 
-  async findById(profileId: string, userId?: string): Promise<any | null> {
+  override async findById(profileId: string, userId?: string): Promise<ProfileData | null> {
     const profile = await this.db.profile.findFirst({
       where: { id: profileId, ...(userId ? { userId } : {}) },
       include: { document: { select: { document: true } } }
@@ -75,7 +86,7 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   }
 
   // Custom create to handle document relation
-  override async create(data: CreateProfileInput): Promise<any> {
+  override async create(data: CreateProfileInput): Promise<ProfileData> {
     const created = await this.db.profile.create({
       data: {
         userId: data.userId,
@@ -93,7 +104,7 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   }
 
   // Custom update to handle document relation
-  override async update(profileId: string, data: UpdateProfileInput, userId?: string): Promise<any> {
+  override async update(profileId: string, data: UpdateProfileInput, userId?: string): Promise<ProfileData> {
     const updateData: Prisma.ProfileUpdateInput = {
       ...(data.name !== undefined ? { name: data.name } : {}),
       ...(data.isDefault !== undefined ? { isDefault: data.isDefault } : {}),
@@ -123,7 +134,7 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   }
 
   // Custom delete to include document
-  override async delete(profileId: string, userId?: string): Promise<any> {
+  override async delete(profileId: string, userId?: string): Promise<ProfileData> {
     const deleted = await this.db.profile.delete({
       where: { id: profileId, ...(userId ? { userId } : {}) },
       include: { document: { select: { document: true } } },
@@ -153,9 +164,9 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   }
 
   // Note: This matches IProfileRepository.count(userId: string)
-  // but conflicts with GenericRepository.count(where?: Record<string, any>)
+  // but conflicts with GenericRepository.count(where?: Record<string, unknown>)
   // We need to use a different name in the class or cast
-  override async count(whereOrUserId?: Record<string, any> | string): Promise<number> {
+  override async count(whereOrUserId?: Record<string, unknown> | string): Promise<number> {
     if (typeof whereOrUserId === 'string') {
       return this.db.profile.count({ where: { userId: whereOrUserId } });
     }

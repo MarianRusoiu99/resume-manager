@@ -14,7 +14,7 @@ export interface ProfileData {
   id: string;
   userId: string;
   name: string;
-  resume: unknown; // JSON stored as unknown, cast by service layer
+  resume: Resume | null;
   isDefault: boolean;
   isPublic: boolean;
   publicSlug: string | null;

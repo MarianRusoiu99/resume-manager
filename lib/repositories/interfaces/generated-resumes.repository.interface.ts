@@ -5,6 +5,7 @@
  */
 
 import type { Resume } from '@/lib/validations/jsonresume';
+import type { PrismaArgs } from '../generic.repository';
 
 /**
  * Generated resume data structure
@@ -13,11 +14,11 @@ export interface GeneratedResumeData {
   id: string;
   userId: string;
   jobDescription: string;
-  jobMetadata: unknown;
-  resume: unknown;
+  jobMetadata: Record<string, unknown>;
+  resume: Resume | null;
   templateId: string | null;
   coverLetterId: string | null;
-  metadata: unknown;
+  metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +33,15 @@ export interface CreateResumeInput {
   resume: Resume;
   templateId?: string;
   metadata: Record<string, unknown>;
+}
+
+/**
+ * Input for updating a generated resume
+ */
+export interface UpdateResumeInput {
+  resume?: Resume;
+  templateId?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -56,12 +66,12 @@ export interface IGeneratedResumeRepository {
   /**
    * Find all resumes for a user
    */
-  findAllForUser(userId: string, args?: any): Promise<GeneratedResumeData[]>;
+  findAllForUser(userId: string, args?: PrismaArgs): Promise<GeneratedResumeData[]>;
 
   /**
    * Update a resume
    */
-  update(id: string, data: any, userId?: string): Promise<GeneratedResumeData>;
+  update(id: string, data: UpdateResumeInput, userId?: string): Promise<GeneratedResumeData>;
 
   /**
    * Delete a resume

@@ -114,6 +114,7 @@ export function useEditorPersistence({
           toast.error('Failed to auto-save changes');
         }
       } catch (error) {
+        logger.error('Auto-save failed', error);
         toast.error('Failed to auto-save changes');
       } finally {
         setIsSaving(false);

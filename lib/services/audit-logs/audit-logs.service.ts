@@ -51,10 +51,11 @@ export class AuditLogService {
 
   /**
    * Log an audit event asynchronously (fire-and-forget).
+   * Errors are logged but don't propagate to caller.
    */
   logAsync(entry: AuditLogEntry): void {
-    this.log(entry).catch(() => {
-      // ignore
+    this.log(entry).catch((error) => {
+      logger.error('Async audit log failed', error, { action: entry.action });
     });
   }
 

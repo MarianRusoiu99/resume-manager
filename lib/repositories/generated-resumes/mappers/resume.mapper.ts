@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { GeneratedResumeData } from '../../interfaces/generated-resumes.repository.interface';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 export type ResumeWithIncludes = Prisma.ResumeGetPayload<{
   include: {
@@ -12,11 +13,11 @@ export type ResumeWithIncludes = Prisma.ResumeGetPayload<{
 export function mapResumeToGeneratedData(resume: ResumeWithIncludes): GeneratedResumeData {
   const metadata = resume.metadata as unknown;
   const metadataRecord =
-    metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : undefined;
+    metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : {};
 
   const jobMetadataFromMetadata = metadataRecord?.jobMetadata;
 
-  const jobMetadata =
+  const jobMetadata: Record<string, unknown> =
     (jobMetadataFromMetadata as Record<string, unknown>) ??
     ({
       jobTitle: resume.jobPosting?.title ?? null,
@@ -28,10 +29,10 @@ export function mapResumeToGeneratedData(resume: ResumeWithIncludes): GeneratedR
     userId: resume.userId,
     jobDescription: resume.jobPosting?.description ?? '',
     jobMetadata,
-    resume: (resume.document?.document as any) ?? null,
+    resume: (resume.document?.document as Resume) ?? null,
     templateId: resume.templateId ?? null,
     coverLetterId: resume.coverLetter?.id ?? null,
-    metadata: resume.metadata as unknown,
+    metadata: metadataRecord,
     createdAt: resume.createdAt,
     updatedAt: resume.updatedAt,
   };

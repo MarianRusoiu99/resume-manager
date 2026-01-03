@@ -22,5 +22,4 @@ export {
   ExternalServiceError,
 } from './service-wrapper';
 
-export { BaseCrudService } from './base-crud.service';
 export { GenericCrudService, GenericUserOwnedCrudService } from './generic-crud.service';

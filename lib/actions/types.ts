@@ -2,15 +2,15 @@
  * Shared types for Server Actions (application boundary).
  */
 
-/**
- * Standard result type for all Server Actions.
- */
-import type { ServiceErrorCode } from '@/lib/types/service-result';
+import type { ServiceResult } from '@/lib/types/service-result';
 import type { Resume } from '@/lib/validations/jsonresume';
 
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string; code?: ServiceErrorCode };
+/**
+ * Standard result type for all Server Actions.
+ * This is an alias for ServiceResult to maintain semantic clarity
+ * while avoiding type duplication.
+ */
+export type ActionResult<T> = ServiceResult<T>;
 
 export type ProfileDto = {
   id: string;

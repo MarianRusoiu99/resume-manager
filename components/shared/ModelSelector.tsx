@@ -38,10 +38,14 @@ export function ModelSelector({
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    
     const loadModels = async () => {
       setIsLoading(true);
       try {
         const result = await getApiProviders();
+        if (cancelled) return;
+        
         if (result.success && result.data) {
           const allModels: ModelOption[] = [];
           (result.data as unknown as ApiProvider[]).filter(p => p.isActive).forEach(provider => {
@@ -56,12 +60,20 @@ export function ModelSelector({
           setOptions(allModels);
         }
       } catch (err) {
-        console.error('Failed to load models for selector', err);
+        if (!cancelled) {
+          console.error('Failed to load models for selector', err);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
     loadModels();
+    
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const selectedModel = options.find(o => o.id === value);

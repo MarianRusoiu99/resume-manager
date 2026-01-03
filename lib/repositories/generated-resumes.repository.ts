@@ -1,15 +1,26 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/index';
 import type { Resume as JsonResume } from '@/lib/validations/jsonresume';
-import { GenericUserOwnedRepository } from './generic.repository';
-import type { IGeneratedResumeRepository, GeneratedResumeData, CreateResumeInput } from './interfaces/generated-resumes.repository.interface';
-import { mapResumeToGeneratedData } from './generated-resumes/mappers/resume.mapper';
+import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
+import type { IGeneratedResumeRepository, GeneratedResumeData, CreateResumeInput, UpdateResumeInput } from './interfaces/generated-resumes.repository.interface';
+import { mapResumeToGeneratedData, ResumeWithIncludes } from './generated-resumes/mappers/resume.mapper';
+
+// Prisma delegate type for Resume model - simplified for generic repository compatibility
+type ResumePrismaDelegate = {
+  findUnique(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
+  findFirst(args: { where: Record<string, unknown>; include?: unknown; select?: unknown; orderBy?: unknown }): Promise<unknown>;
+  findMany(args?: PrismaArgs): Promise<unknown[]>;
+  create(args: { data: CreateResumeInput; include?: unknown; select?: unknown }): Promise<unknown>;
+  update(args: { where: Record<string, unknown>; data: UpdateResumeInput; include?: unknown; select?: unknown }): Promise<unknown>;
+  delete(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
+  count(args?: { where?: Record<string, unknown> }): Promise<number>;
+};
 
 /**
  * Repository for managing generated resumes in the database.
  */
 export class GeneratedResumeRepository 
-  extends GenericUserOwnedRepository<GeneratedResumeData, CreateResumeInput, any, any>
+  extends GenericUserOwnedRepository<GeneratedResumeData, CreateResumeInput, UpdateResumeInput, ResumePrismaDelegate>
   implements IGeneratedResumeRepository 
 {
   constructor(dbClient: PrismaClient = prisma) {
@@ -82,7 +93,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return mapResumeToGeneratedData(created as any);
+    return mapResumeToGeneratedData(created as ResumeWithIncludes);
   }
 
   /**
@@ -100,7 +111,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return resumes.map((resume) => mapResumeToGeneratedData(resume as any));
+    return resumes.map((resume) => mapResumeToGeneratedData(resume as ResumeWithIncludes));
   }
 
   /**
@@ -123,7 +134,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return resume ? mapResumeToGeneratedData(resume as any) : null;
+    return resume ? mapResumeToGeneratedData(resume as ResumeWithIncludes) : null;
   }
 
   /**
@@ -136,9 +147,9 @@ export class GeneratedResumeRepository
   /**
    * Update resume content
    */
-  override async update(id: string, data: any, userId?: string): Promise<GeneratedResumeData> {
+  override async update(id: string, data: UpdateResumeInput, userId?: string): Promise<GeneratedResumeData> {
     // If data is just a resume (compat)
-    const resume = data.resume || data;
+    const resume = data.resume;
     
     const updated = await this.db.resume.update({
       where: { id, ...(userId ? { userId } : {}) },
@@ -163,7 +174,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return mapResumeToGeneratedData(updated as any);
+    return mapResumeToGeneratedData(updated as ResumeWithIncludes);
   }
 
   /**
@@ -197,7 +208,7 @@ export class GeneratedResumeRepository
         coverLetter: { select: { id: true } },
       },
     });
-    return mapResumeToGeneratedData(updated as any);
+    return mapResumeToGeneratedData(updated as ResumeWithIncludes);
   }
 
   /**
@@ -237,7 +248,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return mapResumeToGeneratedData(updated as any);
+    return mapResumeToGeneratedData(updated as ResumeWithIncludes);
   }
 
   /**
@@ -257,7 +268,7 @@ export class GeneratedResumeRepository
         coverLetter: { select: { id: true } },
       },
     });
-    return mapResumeToGeneratedData(updated as any);
+    return mapResumeToGeneratedData(updated as ResumeWithIncludes);
   }
 }
 

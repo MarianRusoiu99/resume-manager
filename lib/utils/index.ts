@@ -12,12 +12,6 @@ export {
 export { clientLogger, createComponentLogger, ClientLogger } from './client-logger';
 export { cn } from './cn';
 export {
-    retryWithBackoff,
-    isRetryableError,
-    AI_RETRY_CONFIG,
-    type RetryOptions
-} from './retry';
-export {
     renderTemplateClientSide,
     generatePreviewDataUrl,
     revokePreviewDataUrl

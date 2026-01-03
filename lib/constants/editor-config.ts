@@ -1,23 +1,38 @@
-import { User, Briefcase, GraduationCap, Code, FolderOpen, Award, Languages, Heart, BookOpen, Quote, ShieldCheck, Star } from "lucide-react";
+import { User, Briefcase, GraduationCap, Code, FolderOpen, Award, Languages, Heart, BookOpen, Quote, ShieldCheck, Star, LucideIcon } from "lucide-react";
 import * as schemas from "@/lib/forms/form-schema";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { ReactNode } from "react";
+import type { FormSchema, FieldConfig } from "@/lib/forms/schemas/types";
+import type { ZodType } from "zod";
 
 export type EditorSectionType = 'object' | 'list';
 
+/**
+ * Editor section configuration
+ * 
+ * Note: This config uses flexible typing because each section has different
+ * data shapes. The consuming components should validate/cast as needed.
+ */
 export interface EditorSection {
   id: string;
   label: string;
-  icon: any;
+  icon: LucideIcon;
   description?: string;
   isPrimary: boolean;
   type: EditorSectionType;
   field: keyof Resume;
-  schema?: any; // FormSchema or Zod schema
-  fields?: any[]; // For object types
-  config?: any; // For list types
-  // Custom helpers for mapping if needed
+  /** Zod schema for validation (object sections) */
+  schema?: ZodType;
+  /** Field configurations for object sections */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fields?: FieldConfig<any>[];
+  /** Form schema for list sections */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  config?: FormSchema<any>;
+  /** Transform data to form format */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   toForm?: (data: any) => any;
+  /** Transform form data back to resume format */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fromForm?: (data: any) => any;
 }
 

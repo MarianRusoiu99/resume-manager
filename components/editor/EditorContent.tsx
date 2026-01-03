@@ -18,6 +18,10 @@ export function EditorContent() {
 
     const renderSection = (section: EditorSection) => {
         if (section.type === 'object') {
+            if (!section.schema) {
+                return <div className="text-muted-foreground">No schema defined for this section</div>;
+            }
+            
             const data = resume[section.field as keyof Resume];
             const formData = section.toForm ? section.toForm(data) : data;
 
@@ -45,7 +49,11 @@ export function EditorContent() {
         }
 
         if (section.type === 'list') {
-            const items = (resume[section.field as keyof Resume] || []) as any[];
+            if (!section.config) {
+                return <div className="text-muted-foreground">No config defined for this section</div>;
+            }
+            
+            const items = (resume[section.field as keyof Resume] || []) as Record<string, unknown>[];
             return (
                 <GenericFormList
                     schema={section.config}

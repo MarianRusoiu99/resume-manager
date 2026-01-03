@@ -85,7 +85,7 @@ export class ResumeCrudService
     resumeData: Resume
   ): Promise<ServiceResult<UpdatedResumeData>> {
     return withServiceError('update resume content', async () => {
-      const updatedResume = await this.repository.update(resumeId, resumeData, userId);
+      const updatedResume = await this.repository.update(resumeId, { resume: resumeData }, userId);
 
       // Invalidate cache after successful update
       invalidateUserResumesCache(userId);

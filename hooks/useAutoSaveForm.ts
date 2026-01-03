@@ -31,10 +31,14 @@ export function useAutoSaveForm<T extends FieldValues>({
     // Only save if dirty and values changed
     if (isDirty && JSON.stringify(values) !== JSON.stringify(prevValuesRef.current)) {
       const timeoutId = setTimeout(async () => {
-        await onSave(values);
-        prevValuesRef.current = values;
-        // Optional: mark as clean after save if needed
-        // reset(values, { keepValues: true }); 
+        try {
+          await onSave(values);
+          prevValuesRef.current = values;
+          // Optional: mark as clean after save if needed
+          // reset(values, { keepValues: true }); 
+        } catch (error) {
+          console.error('Auto-save failed:', error);
+        }
       }, debounceMs);
 
       return () => clearTimeout(timeoutId);

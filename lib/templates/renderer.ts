@@ -98,11 +98,21 @@ registerHelpers();
  * @param htmlTemplate - HTML template string with {{placeholders}}
  * @param resumeData - JSON Resume format data
  * @returns Rendered HTML string
+ * 
+ * Security: Sanitizes BOTH the template AND the final output to prevent XSS.
+ * The template is sanitized first to remove malicious scripts in the template itself,
+ * then the final output is sanitized to prevent XSS from user-provided resume data
+ * (e.g., name, summary, etc.) that gets inserted via Handlebars placeholders.
  */
 export function renderTemplate(htmlTemplate: string, resumeData: Resume): string {
+  // First, sanitize the template to remove malicious scripts
   const safeHtmlTemplate = sanitizeTemplateHtml(htmlTemplate);
   const template = Handlebars.compile(safeHtmlTemplate);
-  return template(resumeData);
+  const renderedHtml = template(resumeData);
+  
+  // Sanitize the final output to prevent XSS from user-provided data
+  // This is critical because Handlebars inserts user data AFTER template sanitization
+  return sanitizeTemplateHtml(renderedHtml);
 }
 
 /**

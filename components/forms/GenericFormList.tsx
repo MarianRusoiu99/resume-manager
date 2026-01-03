@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleFormField, SimpleFormFieldList } from "@/components/ui/simple-form-field";
-import { useListForm } from "@/hooks/use-list-form";
+import { useListForm } from "@/hooks/useListForm";
 import { FormList } from "@/components/ui/form-list";
 import type { FieldConfig, FormSchema } from "@/lib/forms/form-schema";
 import { isFullWidth } from "@/lib/forms/form-schema";

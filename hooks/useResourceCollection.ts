@@ -2,6 +2,9 @@
 
 import { useOptimistic, useTransition, useCallback } from "react";
 import { toast } from "sonner";
+import { createComponentLogger } from "@/lib/utils/client-logger";
+
+const logger = createComponentLogger("useResourceCollection");
 
 interface Resource {
   id: string;
@@ -55,7 +58,7 @@ export function useResourceCollection<T extends Resource>({
           }
         } catch (error) {
           toast.error(`An unexpected error occurred while deleting the ${resourceName.toLowerCase()}`);
-          console.error(`Delete error [${resourceName}]:`, error);
+          logger.error(`Delete error [${resourceName}]`, error);
         }
       });
     },

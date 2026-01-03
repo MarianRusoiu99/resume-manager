@@ -2,7 +2,7 @@ import { profileRepository, ProfileRepository } from '@/lib/repositories/profile
 import { profileCache } from '@/lib/cache/simple-cache';
 import { type Resume, resumeSchema } from '@/lib/validations/jsonresume';
 import { type ServiceResult } from '@/lib/types/service-result';
-import { withServiceError, ConflictError, GenericUserOwnedCrudService } from '@/lib/services/utils';
+import { withServiceError, NotFoundError, ConflictError, GenericUserOwnedCrudService } from '@/lib/services/utils';
 import type { IProfileService, ProfileServiceData, UpdateProfileServiceInput } from '../interfaces';
 import { invalidateProfileCache } from './cache';
 
@@ -46,7 +46,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
   async getProfileById(profileId: string, userId: string): Promise<ServiceResult<ProfileServiceData>> {
     return withServiceError('fetch profile by id', async () => {
       const profile = await this.repository.findById(profileId, userId);
-      if (!profile) throw new ConflictError('Profile not found');
+      if (!profile) throw new NotFoundError('Profile not found');
       return this.mapToServiceData(profile);
     });
   }
@@ -110,7 +110,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
   async deleteProfile(profileId: string, userId: string): Promise<ServiceResult<void>> {
     return withServiceError('delete profile', async () => {
       const profile = await this.repository.findById(profileId, userId);
-      if (!profile) throw new ConflictError('Profile not found');
+      if (!profile) throw new NotFoundError('Profile not found');
 
       const count = await this.repository.count(userId);
       if (count <= 1) {
@@ -134,7 +134,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
   async setDefaultProfile(profileId: string, userId: string): Promise<ServiceResult<void>> {
     return withServiceError('set default profile', async () => {
       const profile = await this.repository.findById(profileId, userId);
-      if (!profile) throw new ConflictError('Profile not found');
+      if (!profile) throw new NotFoundError('Profile not found');
 
       await this.repository.unsetAllDefaults(userId);
       await this.repository.update(profileId, { isDefault: true }, userId);
@@ -150,7 +150,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
   ): Promise<ServiceResult<ProfileServiceData>> {
     return withServiceError('duplicate profile', async () => {
       const profile = await this.repository.findById(profileId, userId);
-      if (!profile) throw new ConflictError('Profile not found');
+      if (!profile) throw new NotFoundError('Profile not found');
 
       const duplicateName = newName || `${profile.name} (Copy)`;
 

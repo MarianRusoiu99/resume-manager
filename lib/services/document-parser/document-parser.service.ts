@@ -2,6 +2,7 @@ import mammoth from 'mammoth';
 import { IDocumentParserService } from '../interfaces/document-parser.service.interface';
 import { ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, ServiceErrors } from '../utils/service-wrapper';
+import { logger } from '@/lib/utils/logger';
 
 export class DocumentParserService implements IDocumentParserService {
   /**
@@ -56,7 +57,7 @@ export class DocumentParserService implements IDocumentParserService {
 
       return fullText.trim();
     } catch (error) {
-      console.error('PDF JS Parse Error:', error);
+      logger.error('PDF parsing failed', error);
       throw ServiceErrors.externalService('Failed to parse PDF. The file might be encrypted or corrupted.', error);
     }
   }

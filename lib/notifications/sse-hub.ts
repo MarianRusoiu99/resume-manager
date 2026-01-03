@@ -63,6 +63,8 @@ export class SseHub {
         client.controller.enqueue(encoded);
         successCount++;
       } catch {
+        // Client connection is closed/broken - mark for cleanup
+        // This is expected when clients disconnect unexpectedly
         failedClients.push(client);
       }
     }
@@ -96,7 +98,7 @@ export class SseHub {
         try {
           client.controller.close();
         } catch {
-          // ignore
+          // Controller may already be closed - this is expected during cleanup
         }
       }
       clients.clear();

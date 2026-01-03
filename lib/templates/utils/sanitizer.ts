@@ -36,8 +36,9 @@ export function sanitizeTemplateHtml(htmlTemplate: string): string {
       'img', 'section', 'header', 'footer', 'main', 'aside', 'article', 'style'
     ],
     ALLOWED_ATTR: ['href', 'src', 'class', 'id', 'style', 'target', 'rel', 'alt', 'title'],
-    // We allow same-origin to enable Handlebars processing later, but block dangerous protocols
-    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|data):|[^&#\/+.\w]|[\w!$&\-+.,;=@~]|(?:\/(?!\/)))/i,
+    // Restrict URIs to safe protocols only
+    // data: URIs are only allowed for images to prevent data:text/html XSS attacks
+    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|data:image\/(?:png|jpe?g|gif|webp|svg\+xml);|[^&#\/+.\w]|[\w!$&\-+.,;=@~]|(?:\/(?!\/)))/i,
     ADD_TAGS: ['style'], // Allow style tags within HTML if needed
     FORCE_BODY: true,
   });
