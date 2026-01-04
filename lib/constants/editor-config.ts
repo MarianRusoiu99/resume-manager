@@ -12,6 +12,7 @@ export type EditorSectionType = 'object' | 'list';
  * Note: This config uses flexible typing because each section has different
  * data shapes. The consuming components should validate/cast as needed.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- EditorSection requires flexible typing for dynamic form configurations
 export interface EditorSection {
   id: string;
   label: string;
@@ -23,16 +24,12 @@ export interface EditorSection {
   /** Zod schema for validation (object sections) */
   schema?: ZodType;
   /** Field configurations for object sections */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fields?: FieldConfig<any>[];
   /** Form schema for list sections */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   config?: FormSchema<any>;
   /** Transform data to form format */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   toForm?: (data: any) => any;
   /** Transform form data back to resume format */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   fromForm?: (data: any) => any;
 }
 
