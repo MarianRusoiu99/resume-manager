@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Sparkles, Send, Save } from 'lucide-react';
 import { Button, Card, Textarea } from '@/components/ui';
@@ -10,6 +10,7 @@ import { CoverLetterEditor } from '@/components/cover-letter';
 import { useCoverLetterGeneration } from '@/components/ai-enhance/hooks';
 import { createCoverLetter } from '@/app/actions/cover-letter';
 import type { ProfileListItem } from '@/lib/actions/types';
+import { getProfile } from '@/app/actions/profile';
 
 interface CoverLetterGeneratorProps {
   profiles: ProfileListItem[];
@@ -31,6 +32,19 @@ export function CoverLetterGenerator({
   const [personalInstructions, setPersonalInstructions] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Synchronize internal state with defaultProfileId when it changes (e.g. after loading)
+  useEffect(() => {
+    if (defaultProfileId && !selectedProfileId) {
+      setSelectedProfileId(defaultProfileId);
+    }
+  }, [defaultProfileId, selectedProfileId]);
+
+  useEffect(() => {
+    if (defaultModelId && !selectedModelId) {
+      setSelectedModelId(defaultModelId);
+    }
+  }, [defaultModelId, selectedModelId]);
+
   const handleModelChange = useCallback((modelId: string) => {
     setSelectedModelId(modelId);
   }, []);
@@ -38,6 +52,8 @@ export function CoverLetterGenerator({
   const {
     generate,
     coverLetter: generatedCoverLetter,
+    jobTitle: aiJobTitle,
+    companyName: aiCompanyName,
     isLoading: isGenerating,
     error,
     reset,
@@ -49,11 +65,24 @@ export function CoverLetterGenerator({
       return;
     }
 
+    if (!selectedProfileId) {
+      toast.error('Please select a profile first');
+      return;
+    }
+
+    // Fetch the full profile to get the resume data
+    const profileResult = await getProfile(selectedProfileId);
+    if (!profileResult.success || !profileResult.data) {
+      toast.error('Failed to load selected profile data');
+      return;
+    }
+
     await generate({
       jobDescription,
       profileId: selectedProfileId,
       personalInstructions,
       overrideModelId: selectedModelId,
+      profileResume: profileResult.data.resume,
     });
   }, [generate, jobDescription, personalInstructions, selectedModelId, selectedProfileId]);
 
@@ -65,8 +94,8 @@ export function CoverLetterGenerator({
       const result = await createCoverLetter(
         generatedCoverLetter,
         jobDescription,
-        '',
-        '',
+        aiJobTitle || '',
+        aiCompanyName || '',
         {
           personalInstructions: personalInstructions,
           jobDescription: jobDescription,
@@ -97,8 +126,9 @@ export function CoverLetterGenerator({
 
         <div className="space-y-6">
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Job Description</label>
+            <label htmlFor="job-description" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Job Description</label>
             <Textarea
+              id="job-description"
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
               placeholder="Paste the job description here..."
@@ -108,8 +138,9 @@ export function CoverLetterGenerator({
           </div>
 
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Personal Touch</label>
+            <label htmlFor="personal-instructions" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Personal Touch</label>
             <Textarea
+              id="personal-instructions"
               value={personalInstructions}
               onChange={(e) => setPersonalInstructions(e.target.value)}
               placeholder="e.g. Highlight my leadership experience. Use an energetic but professional tone."
@@ -120,8 +151,9 @@ export function CoverLetterGenerator({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Profile Data</label>
+              <label htmlFor="profile-select" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Profile Data</label>
               <select
+                id="profile-select"
                 className="w-full h-10 px-4 rounded-xl border border-primary/5 bg-background/50 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
                 value={selectedProfileId}
                 onChange={(e) => setSelectedProfileId(e.target.value)}
@@ -132,8 +164,9 @@ export function CoverLetterGenerator({
               </select>
             </div>
             <div className="space-y-2.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model</label>
+              <label htmlFor="model-select" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model</label>
               <ModelSelector
+                data-test="model-select"
                 value={selectedModelId}
                 onValueChange={handleModelChange}
                 feature="coverLetter"
@@ -163,14 +196,14 @@ export function CoverLetterGenerator({
         </div>
       </Card>
 
-      <Card className="bg-muted/30 p-8 flex flex-col min-h-[600px] rounded-2xl border-none shadow-inner">
+      <Card className="bg-muted/30 p-8 flex flex-col min-h-[600px] rounded-2xl border-none shadow-inner relative overflow-hidden">
         {generatedCoverLetter ? (
-          <div className="h-full flex flex-col shadow-2xl rounded-xl overflow-hidden border-none bg-background">
-            <div className="flex justify-end border-b bg-muted/10 p-2">
+          <div className="h-full flex flex-col shadow-2xl rounded-xl overflow-hidden border-none bg-background relative">
+            <div className="absolute top-4 right-4 z-10">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 px-4 rounded-lg font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all"
+                className="h-9 px-4 rounded-lg font-bold uppercase tracking-widest text-[10px] bg-background/80 backdrop-blur-sm border-primary/10 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
                 onClick={handleSave}
                 disabled={isSaving}
               >
@@ -186,8 +219,8 @@ export function CoverLetterGenerator({
                   const result = await createCoverLetter(
                     content,
                     jobDescription,
-                    '',
-                    '',
+                    aiJobTitle || '',
+                    aiCompanyName || '',
                     {
                       personalInstructions: personalInstructions,
                       jobDescription: jobDescription,

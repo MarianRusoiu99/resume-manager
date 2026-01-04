@@ -52,33 +52,43 @@ export function PreviewState({
   return (
     <div
       ref={containerRef}
-      className="flex items-center justify-center w-full h-full"
+      className="w-full h-full flex flex-col items-center overflow-hidden"
     >
       <div
         style={{
-          width: A4_WIDTH,
-          minHeight: A4_HEIGHT,
-          transform: `scale(${scale})`,
-          transformOrigin: 'top center',
-          boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+          width: `${A4_WIDTH * scale}px`,
+          height: `${A4_HEIGHT * scale}px`,
+          transition: 'width 0.2s ease-out, height 0.2s ease-out',
         }}
-        className="relative bg-white"
+        className="relative shrink-0"
       >
-        <iframe
-          ref={iframeRef}
-          srcDoc={htmlContent}
-          className="w-full border-0"
-          title="Template Preview"
-          sandbox="allow-same-origin"
+        <div
           style={{
-            width: `${A4_WIDTH}px`,
-            minHeight: `${A4_HEIGHT}px`,
-            height: '100%',
-            overflow: 'auto',
+            width: A4_WIDTH,
+            height: A4_HEIGHT,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+            position: 'absolute',
+            top: 0,
+            left: 0,
           }}
-        />
+          className="bg-white overflow-hidden rounded-sm"
+        >
+          <iframe
+            ref={iframeRef}
+            srcDoc={htmlContent}
+            className="w-full h-full border-0"
+            title="Template Preview"
+            sandbox="allow-same-origin"
+            style={{
+              width: `${A4_WIDTH}px`,
+              height: `${A4_HEIGHT}px`,
+              pointerEvents: 'auto',
+            }}
+          />
+        </div>
       </div>
-
     </div>
   );
 }

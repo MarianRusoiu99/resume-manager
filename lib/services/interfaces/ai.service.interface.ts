@@ -1,7 +1,6 @@
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { ContentType } from '@/lib/validations/settings';
 import type { ServiceResult } from '@/lib/types/service-result';
-import type { OptimizedResume } from '@/lib/ai/agents/resume-optimization/agent';
 
 export interface EnhanceTextInput {
   content: string;
@@ -32,7 +31,7 @@ export interface OptimizeResumeInput {
 }
 
 export interface OptimizeResumeResult {
-  resume: OptimizedResume;
+  resume: Resume;
   jobTitle: string;
   companyName: string;
 }
@@ -45,10 +44,10 @@ export interface GenerateCoverLetterInput {
 
 export interface GenerateCoverLetterResult {
   content: string;
-  subject: string;
-  jobTitle: string;
-  companyName: string;
-  recipientName: string;
+  subject?: string;
+  jobTitle?: string;
+  companyName?: string;
+  recipientName?: string;
 }
 
 export interface IAIService {

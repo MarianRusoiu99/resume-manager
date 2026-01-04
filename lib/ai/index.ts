@@ -11,8 +11,6 @@ export {
   type GenerateResumeResult,
 } from './workflow/resume-generation';
 
-export type { OptimizedResume } from './agents';
-
 // Workflow Engine
 export * from './workflow';
 

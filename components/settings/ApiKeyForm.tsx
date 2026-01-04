@@ -2,7 +2,7 @@
 
 import { ManagedForm } from "@/components/forms/ManagedForm";
 import { FieldConfig } from "@/lib/forms/form-schema";
-import { addApiProviderSchema, type AddApiProviderInput } from '@/lib/validations/api-schemas';
+import { addApiProviderInputSchema, type AddApiProviderInput } from '@/lib/validations/shared-inputs';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -66,7 +66,7 @@ export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider', 
   return (
     <ManagedForm
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ManagedForm schema typing with Zod requires any cast
-      schema={addApiProviderSchema as any}
+      schema={addApiProviderInputSchema as any}
       defaultValues={{
         name: initialData?.name || '',
         provider: initialData?.provider || 'openai',

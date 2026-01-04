@@ -34,9 +34,31 @@ export function ProfileGalleryClient({
 
   const handleCreateProfile = () => {
     startTransition(async () => {
+      const emptyResume: Resume = {
+        basics: {
+          name: "",
+          label: "",
+          email: "",
+          phone: "",
+          summary: "",
+          location: { city: "", region: "", countryCode: "" },
+          profiles: [],
+        },
+        work: [],
+        education: [],
+        skills: [],
+        projects: [],
+        certificates: [],
+        languages: [],
+        volunteer: [],
+        awards: [],
+        publications: [],
+        interests: [],
+        references: [],
+      };
       const result = await createProfile(
         `Profile ${initialProfiles.length + 1}`,
-        { basics: { name: "" } } as Resume,
+        emptyResume,
         initialProfiles.length === 0 // First profile is default
       );
 

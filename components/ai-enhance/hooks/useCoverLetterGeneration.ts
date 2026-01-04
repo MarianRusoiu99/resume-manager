@@ -2,9 +2,12 @@
 
 import { useAITask } from './useAITask';
 import { useCallback } from 'react';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 interface CoverLetterOutput {
   content?: string;
+  jobTitle?: string;
+  companyName?: string;
 }
 
 /**
@@ -20,17 +23,23 @@ export function useCoverLetterGeneration() {
     jobDescription,
     profileId,
     personalInstructions,
-    overrideModelId
+    overrideModelId,
+    profileResume
   }: {
     jobDescription: string;
-    profileId: string;
+    profileId?: string;
     personalInstructions?: string;
     overrideModelId?: string;
+    profileResume?: Resume | null;
   }) => {
     return runTask({
       message: `Job Description: ${jobDescription}\n\nAdditional Instructions: ${personalInstructions || 'None'}`,
       modelId: overrideModelId,
-      context: { profileId, jobDescription, personalInstructions }
+      context: { 
+        job: { description: jobDescription },
+        userProfile: profileResume ? { resume: profileResume } : undefined,
+        personalInstructions 
+      }
     });
   }, [runTask]);
 
@@ -39,6 +48,8 @@ export function useCoverLetterGeneration() {
   return {
     generate,
     coverLetter: typedOutput?.content || '',
+    jobTitle: typedOutput?.jobTitle || '',
+    companyName: typedOutput?.companyName || '',
     isLoading,
     error,
     reset,

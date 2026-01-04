@@ -6,19 +6,15 @@
 
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { ServiceResult } from '@/lib/types/service-result';
-import type { JsonValue } from '@prisma/client/runtime/library';
 
 /**
  * Profile data returned from service operations
- * 
- * Note: The resume field uses JsonValue from Prisma for compatibility
- * with the database layer. Consumers should validate/cast to Resume type.
  */
 export interface ProfileServiceData {
   id: string;
   userId: string;
   name: string;
-  resume: JsonValue;
+  resume: Resume;
   templateId: string | null;
   /**
    * Backward-compatible alias for `templateId`.

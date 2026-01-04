@@ -31,8 +31,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
   private mapToServiceData(data: ProfileData): ProfileServiceData {
     return {
       ...data,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Prisma Json type needs cast to domain type
-      resume: data.resume as any,
+      resume: data.resume as Resume,
       templateId: data.selectedTemplateId ?? null,
       selectedTemplateId: data.selectedTemplateId ?? null,
     };

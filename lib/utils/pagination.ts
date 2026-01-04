@@ -106,14 +106,27 @@ export function configureIframeScrolling(iframeDocument: Document): void {
       line-height: 1.5;
     }
     
-    /* Hide scrollbars but allow scrolling */
+    /* Custom scrollbar for the preview */
     ::-webkit-scrollbar {
-      display: none;
+      width: 4px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.2);
     }
     
     html {
-      scrollbar-width: none;
-      -ms-overflow-style: none;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
     }
 
     /* Print styles to preserve page breaks for PDF export */

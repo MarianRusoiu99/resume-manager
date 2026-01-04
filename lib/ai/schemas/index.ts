@@ -36,12 +36,16 @@ export type ResumeEnhancementOutput = z.infer<typeof resumeEnhancementOutputSche
 export const coverLetterOutputSchema = z.object({
   content: z.string().describe('The full cover letter content'),
   subject: z.string().optional().describe('Email subject line for the cover letter'),
-  recipientName: z.string().optional().describe('Name of the recipient if known'),
+  recipientName: z.string().optional().describe('Name of recipient'),
   companyName: z.string().optional().describe('Company name'),
   jobTitle: z.string().optional().describe('Job title being applied for'),
 });
 
 export type CoverLetterOutput = z.infer<typeof coverLetterOutputSchema>;
+
+export type GenerateCoverLetterResult = CoverLetterOutput & {
+  jobTitle: string;
+};
 
 /**
  * Template generation output schema

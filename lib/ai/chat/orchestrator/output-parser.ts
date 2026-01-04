@@ -96,6 +96,13 @@ export function parseOutput<T>(text: string, mode: AIMode): T {
     const validated = mode.outputSchema.parse(parsed);
     return (mode.postprocessOutput ? mode.postprocessOutput(validated) : validated) as T;
   } catch (error) {
+    if (error instanceof Error && 'issues' in error) {
+      const zodError = error as { issues: Array<{ path: string[]; message: string }> };
+      const details = zodError.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
+      logger.error('Zod Validation failed', { details });
+      throw new Error(`AI response did not match schema: ${details}`);
+    }
+
     logger.error('Failed to parse AI output', {
       mode: mode.id,
       error: error instanceof Error ? error.message : String(error),

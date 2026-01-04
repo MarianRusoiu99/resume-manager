@@ -84,6 +84,15 @@ export const resumeGenerationMode = defineMode({
     }
 
     const profileResume = context.userProfile?.resume || context.currentResume;
+    
+    // DEBUG: Log profile resume context
+    console.log('[ResumeGenerationMode] Profile Resume:', {
+      hasProfile: !!context.userProfile?.resume,
+      hasCurrent: !!context.currentResume,
+      sections: profileResume ? Object.keys(profileResume) : 'none',
+      basics: profileResume?.basics ? 'present' : 'absent'
+    });
+
     if (profileResume) {
       parts.push('## CANDIDATE PROFILE (JSON Resume format)');
       parts.push('```json');

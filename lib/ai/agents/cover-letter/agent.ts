@@ -2,7 +2,7 @@
  * Cover Letter Generation Agent
  * 
  * Generates personalized cover letters for job applications.
- * The user's profile is the SINGLE SOURCE OF TRUTH - nothing is fabricated.
+ * The user's profile is SINGLE SOURCE OF TRUTH - nothing is fabricated.
  */
 
 import { z } from 'zod';
@@ -12,11 +12,15 @@ import { ValidatedAIRunner } from '../../core/validated-runner';
 import { PromptRegistry } from '../../prompts';
 import { logger } from '@/lib/utils/logger';
 
-// ============================================================================
-// Types
-// ============================================================================
+export type GenerateCoverLetterResult = {
+  content: string;
+  subject?: string;
+  companyName?: string;
+  recipientName?: string;
+  jobTitle: string;
+}
 
-export interface GenerateCoverLetterInput {
+export type GenerateCoverLetterInput = {
   model: LanguageModel;
   jobDescription: string;
   userResume: Resume;
@@ -24,24 +28,6 @@ export interface GenerateCoverLetterInput {
   userId?: string;
 }
 
-export interface GenerateCoverLetterResult {
-  content: string;
-  subject: string;
-  jobTitle: string;
-  companyName: string;
-  recipientName: string;
-}
-
-// ============================================================================
-// Agent
-// ============================================================================
-
-/**
- * Generate a cover letter for a specific job
- * 
- * @param input - The generation input
- * @returns The generated cover letter with job metadata
- */
 export async function generateCoverLetter(
   input: GenerateCoverLetterInput
 ): Promise<GenerateCoverLetterResult> {
@@ -55,24 +41,20 @@ export async function generateCoverLetter(
     context: input.context || 'None provided',
   });
 
-  const resultSchema = z.object({
-    subject: z.string(),
-    content: z.string(),
-    recipientName: z.string(),
-    companyName: z.string(),
-  });
-
   const validatedResult = await ValidatedAIRunner.run({
     model,
     system,
     prompt,
-    schema: resultSchema,
+    schema: z.object({
+      content: z.string().describe('The full cover letter content'),
+      subject: z.string().optional().describe('Email subject line for the cover letter'),
+      recipientName: z.string().optional().describe('Name of recipient'),
+      companyName: z.string().optional().describe('Company name'),
+      jobTitle: z.string().optional().describe('Job title being applied for'),
+    }),
     userId: input.userId,
     feature: 'cover-letter-generation',
   });
 
-  return {
-    ...validatedResult,
-    jobTitle: 'Position', // We could add this to the prompt if needed
-  };
+  return validatedResult;
 }

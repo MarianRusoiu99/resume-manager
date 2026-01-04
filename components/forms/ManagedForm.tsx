@@ -57,9 +57,18 @@ export function ManagedForm<T extends FieldValues>({
     mode: "onBlur",
   });
 
-  const { control, formState: { isDirty }, getValues } = form;
+  const { control, formState: { isDirty }, getValues, reset } = form;
   const values = useWatch({ control });
   const prevValuesRef = useRef<T>(defaultValues);
+  const prevDefaultValuesRef = useRef<T>(defaultValues);
+
+  // Sync form with external defaultValues changes (when not dirty)
+  useEffect(() => {
+    if (!isDirty && JSON.stringify(defaultValues) !== JSON.stringify(prevDefaultValuesRef.current)) {
+      reset(defaultValues);
+      prevDefaultValuesRef.current = defaultValues;
+    }
+  }, [defaultValues, isDirty, reset]);
 
   // Auto-save logic
   useEffect(() => {

@@ -72,22 +72,14 @@ export function PreviewContent(props: Readonly<PreviewContentProps>) {
       />
 
       <div className="flex-1 min-h-0 flex flex-col items-center w-full overflow-hidden bg-muted/5 relative">
-        <div
-          className="relative w-full h-full flex items-center justify-center"
-          style={{
-            maxWidth: '100%',
-            maxHeight: '100%',
-          }}
-        >
-          <PreviewState
-            isLoading={isLoading}
-            error={error}
-            htmlContent={htmlContent}
-            scale={scale}
-            iframeRef={iframeRef}
-            containerRef={containerRef}
-          />
-        </div>
+        <PreviewState
+          isLoading={isLoading}
+          error={error}
+          htmlContent={htmlContent}
+          scale={scale}
+          iframeRef={iframeRef}
+          containerRef={containerRef}
+        />
       </div>
     </div>
   );

@@ -45,7 +45,6 @@ export function TemplatePreviewFrame({
           headerActions={
             <div className="flex items-center gap-2">
               <div className="w-px h-4 bg-muted-foreground/10 mr-1" />
-              <span className="text-[9px] text-muted-foreground uppercase tracking-widest font-black opacity-50">Context</span>
               <select
                 className="text-[11px] border-none bg-background/50 rounded-lg px-3 py-1 shadow-sm font-bold uppercase tracking-wider focus:ring-1 focus:ring-primary outline-none transition-all cursor-pointer hover:bg-background/80"
                 value={selectedProfileId}

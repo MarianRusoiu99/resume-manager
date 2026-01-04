@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Sparkles, FileText, Save } from 'lucide-react';
 import { Button, Card, Textarea } from '@/components/ui';
@@ -12,6 +12,9 @@ import { saveGeneratedResume } from '@/app/actions/resume';
 import type { ProfileListItem } from '@/lib/actions/types';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/constants';
+
+import { getProfile } from '@/app/actions/profile';
+import { useTemplateSelection } from '@/components/preview/useTemplateSelection';
 
 interface ResumeGeneratorProps {
   profiles: ProfileListItem[];
@@ -33,6 +36,19 @@ export function ResumeGenerator({
   const [jobDescription, setJobDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Synchronize internal state with defaultProfileId when it changes (e.g. after loading)
+  useEffect(() => {
+    if (defaultProfileId && !selectedProfileId) {
+      setSelectedProfileId(defaultProfileId);
+    }
+  }, [defaultProfileId, selectedProfileId]);
+
+  useEffect(() => {
+    if (defaultModelId && !selectedModelId) {
+      setSelectedModelId(defaultModelId);
+    }
+  }, [defaultModelId, selectedModelId]);
+
   const handleModelChange = useCallback((modelId: string) => {
     setSelectedModelId(modelId);
   }, []);
@@ -40,6 +56,8 @@ export function ResumeGenerator({
   const {
     generate,
     resume: generatedResume,
+    jobTitle: aiJobTitle,
+    companyName: aiCompanyName,
     matchScore,
     suggestions,
     isLoading: isGenerating,
@@ -52,24 +70,41 @@ export function ResumeGenerator({
       return;
     }
 
+    if (!selectedProfileId) {
+      toast.error('Please select a profile first');
+      return;
+    }
+
+    // Fetch the full profile to get the resume data
+    const profileResult = await getProfile(selectedProfileId);
+    if (!profileResult.success || !profileResult.data) {
+      toast.error('Failed to load selected profile data');
+      return;
+    }
+
     await generate({
       jobDescription,
       personalInstructions: '',
       overrideModelId: selectedModelId,
+      profileResume: profileResult.data.resume,
     });
-  }, [generate, jobDescription, selectedModelId]);
+  }, [generate, jobDescription, selectedModelId, selectedProfileId]);
+
+  const { selectedTemplateId } = useTemplateSelection({
+    profileId: selectedProfileId,
+  });
 
   const handleSave = async () => {
     if (!generatedResume) return;
 
     setIsSaving(true);
     try {
-      const resumeBasics = generatedResume as { basics?: { label?: string } };
       const result = await saveGeneratedResume({
         resume: generatedResume,
         jobDescription,
-        jobTitle: resumeBasics?.basics?.label || 'Optimized Resume',
-        companyName: '',
+        jobTitle: aiJobTitle || (generatedResume as { basics?: { label?: string } })?.basics?.label || 'Optimized Resume',
+        companyName: aiCompanyName || '',
+        templateId: selectedTemplateId || undefined,
         metadata: {
           matchScore,
           suggestions,
@@ -102,8 +137,9 @@ export function ResumeGenerator({
 
         <div className="space-y-6">
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Job Description</label>
+            <label htmlFor="job-description" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Job Description</label>
             <Textarea
+              id="job-description"
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
               placeholder="Paste the job description here..."
@@ -119,8 +155,9 @@ export function ResumeGenerator({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Profile Source</label>
+              <label htmlFor="profile-source" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Profile Source</label>
               <select
+                id="profile-source"
                 className="w-full h-10 px-4 rounded-xl border border-primary/5 bg-background/50 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
                 value={selectedProfileId}
                 onChange={(e) => setSelectedProfileId(e.target.value)}
@@ -131,8 +168,9 @@ export function ResumeGenerator({
               </select>
             </div>
             <div className="space-y-2.5">
-              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model Preference</label>
+              <label htmlFor="ai-model-selector" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model Preference</label>
               <ModelSelector
+                data-test="ai-model-selector"
                 value={selectedModelId}
                 onValueChange={handleModelChange}
                 feature="resume"
@@ -172,8 +210,8 @@ export function ResumeGenerator({
             </div>
             {suggestions.length > 0 && (
               <ul className="text-xs space-y-2.5 ml-1">
-                {suggestions.slice(0, 3).map((s: string, i: number) => (
-                  <li key={i} className="flex gap-2.5 items-start text-muted-foreground">
+                {suggestions.slice(0, 3).map((s: string) => (
+                  <li key={s} className="flex gap-2.5 items-start text-muted-foreground">
                     <span className="text-primary font-bold">/</span>{s}
                   </li>
                 ))}
@@ -187,7 +225,7 @@ export function ResumeGenerator({
         {generatedResume ? (
           <ResumePreview
             resumeData={generatedResume}
-            showTemplateSelector={false}
+            showTemplateSelector={true}
             showCard={false}
             className="shadow-2xl rounded-xl overflow-hidden"
             headerActions={

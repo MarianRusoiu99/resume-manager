@@ -17,11 +17,9 @@
  */
 import { z } from 'zod';
 import {
-  aiProviderSchema,
-  addApiProviderInputSchema,
-  type AIProviderType,
-  type AddApiProviderInput,
+  aiProviderSchema
 } from './shared-inputs';
+import { resumeSchema} from './jsonresume';
 
 // ============================================================================
 // PROFILE SCHEMAS
@@ -32,8 +30,7 @@ import {
  */
 export const createProfileSchema = z.object({
   name: z.string().min(1, 'Profile name is required').max(100, 'Name must be less than 100 characters'),
-  // JSON Resume format (arbitrary JSON object)
-  resume: z.record(z.string(), z.unknown()),
+  resume: resumeSchema.passthrough(),
   isDefault: z.boolean().optional().default(false),
 });
 
@@ -42,7 +39,7 @@ export const createProfileSchema = z.object({
  */
 export const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  resume: z.record(z.string(), z.unknown()).optional(),
+  resume: resumeSchema.passthrough().optional(),
   isDefault: z.boolean().optional(),
   isPublic: z.boolean().optional(),
   publicSlug: z.string().nullable().optional(),
@@ -110,7 +107,7 @@ export const generateResumeSchema = z.object({
  * Schema for updating resume content
  */
 export const updateResumeContentSchema = z.object({
-  resume: z.record(z.string(), z.unknown()),
+  resume: resumeSchema.passthrough(),
   jobDescription: z.string().optional(),
   jobTitle: z.string().optional(),
   companyName: z.string().optional(),
@@ -147,64 +144,54 @@ export const generateCoverLetterSchema = z.object({
   { message: 'Either resumeId or profileId is required' }
 );
 
+export type GenerateCoverLetterInput = z.infer<typeof generateCoverLetterSchema>;
+
+// ============================================================================
+// STANDALONE COVER LETTER SCHEMA
+// ============================================================================
+
 /**
  * Schema for generating a standalone cover letter (no resumeId required)
- * Used by POST /api/cover-letter/generate
  */
 export const generateStandaloneCoverLetterSchema = z.object({
-  jobDescription: z.string().min(50, 'Job description must be at least 50 characters'),
+  jobDescription: z.string().min(10, 'Job description must be at least 10 characters'),
+  profileId: z.string().optional(),
   personalInstructions: z.string().max(1000).optional(),
   modelId: z.string().optional(),
-  profileId: z.string().optional(),
 });
+
+export type GenerateStandaloneCoverLetterInput = z.infer<typeof generateStandaloneCoverLetterSchema>;
 
 /**
- * Schema for updating a cover letter
+ * Helper to resolve resumeId or profileId from input
  */
-export const updateCoverLetterSchema = z.object({
-  content: z.string().min(1).optional(),
-  contentJson: z.string().optional(),
-  jobDescription: z.string().optional(),
-  jobTitle: z.string().optional(),
-  companyName: z.string().optional(),
-  resumeId: z.string().nullable().optional(),
-});
-
-export type GenerateCoverLetterInput = z.infer<typeof generateCoverLetterSchema>;
-export type GenerateStandaloneCoverLetterInput = z.infer<typeof generateStandaloneCoverLetterSchema>;
-export type UpdateCoverLetterInput = z.infer<typeof updateCoverLetterSchema>;
+export function resolveResumeIdOrProfileId(
+  data: { resumeId?: string; profileId?: string }
+): string | undefined {
+  return data.resumeId || data.profileId;
+}
 
 // ============================================================================
 // API PROVIDER SCHEMAS
 // ============================================================================
 
 /**
- * Supported AI providers
- *
- * IMPORTANT: This must match the providers in:
- * - lib/ai/providers/factory.ts (SUPPORTED_PROVIDERS)
- * - lib/validations/shared-inputs.ts (aiProviderSchema)
- *
- * Only include providers with working implementations.
- */
-export { aiProviderSchema };
-export type { AIProviderType };
-
-/**
  * Schema for adding an API provider
  */
-export const addApiProviderSchema = addApiProviderInputSchema;
+export const addApiProviderSchema = z.object({
+  name: z.string().min(1).max(100),
+  provider: aiProviderSchema,
+  apiKey: z.string().min(1),
+});
 
 /**
  * Schema for updating an API provider
  */
 export const updateApiProviderSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  apiKey: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
 });
 
-export type { AddApiProviderInput };
 export type UpdateApiProviderInput = z.infer<typeof updateApiProviderSchema>;
 
 // ============================================================================
@@ -212,34 +199,24 @@ export type UpdateApiProviderInput = z.infer<typeof updateApiProviderSchema>;
 // ============================================================================
 
 /**
- * Boolean query param parser that treats 'true'/'false' correctly.
- */
-const queryBooleanSchema = z.preprocess(
-  (value) => {
-    if (typeof value === 'string') {
-      const normalized = value.toLowerCase();
-      if (normalized === 'true') return true;
-      if (normalized === 'false') return false;
-    }
-    return value;
-  },
-  z.boolean()
-);
-
-/**
- * Schema for notification query parameters
+ * Schema for querying notifications
  */
 export const notificationQuerySchema = z.object({
-  limit: z.coerce.number().min(1).max(100).default(50),
-  includeRead: queryBooleanSchema.default(true),
-});
-
-export const notificationActionSchema = z.object({
-  action: z.enum(['markAllRead', 'cleanup']),
-  daysOld: z.number().min(1).max(365).optional(),
+  unreadOnly: z.coerce.boolean().optional(),
+  limit: z.coerce.number().min(1).max(100).optional(),
+  offset: z.coerce.number().min(0).optional(),
 });
 
 export type NotificationQuery = z.infer<typeof notificationQuerySchema>;
+
+/**
+ * Schema for notification actions
+ */
+export const notificationActionSchema = z.object({
+  action: z.enum(['mark-read', 'mark-unread', 'delete']),
+  id: z.string(),
+});
+
 export type NotificationAction = z.infer<typeof notificationActionSchema>;
 
 // ============================================================================
@@ -247,22 +224,20 @@ export type NotificationAction = z.infer<typeof notificationActionSchema>;
 // ============================================================================
 
 /**
- * Pagination query parameters
+ * Schema for pagination
  */
 export const paginationSchema = z.object({
-  page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(20),
-  orderBy: z.string().optional(),
-  orderDir: z.enum(['asc', 'desc']).default('desc'),
+  page: z.coerce.number().min(1).optional().default(1),
+  limit: z.coerce.number().min(1).max(100).optional().default(20),
 });
 
 export type PaginationQuery = z.infer<typeof paginationSchema>;
 
 /**
- * ID parameter schema
+ * Schema for ID parameter
  */
 export const idParamSchema = z.object({
-  id: z.string().min(1, 'ID is required'),
+  id: z.string(),
 });
 
 export type IdParam = z.infer<typeof idParamSchema>;

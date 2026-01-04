@@ -5,6 +5,8 @@
  * These types are used by the ResumeService and its consumers.
  */
 
+import type { Resume } from '@/lib/validations/jsonresume';
+
 /**
  * Input parameters for resume generation
  */
@@ -43,7 +45,7 @@ export interface GenerateResumeWithProgressInput extends GenerateResumeInput {
  */
 export interface ResumeData {
   id: string;
-  content: Record<string, unknown>;
+  content: Resume;
   metadata: Record<string, unknown>;
   createdAt: Date;
 }
@@ -65,7 +67,7 @@ export interface ResumeListItem {
   jobTitle: string | null;
   companyName: string | null;
   jobDescription: string;
-  content: Record<string, unknown>;
+  content: Resume;
   templateId: string | null;
   metadata: ResumeMetadata;
   createdAt: Date;
@@ -91,7 +93,7 @@ export interface ResumeDetails {
   jobMetadata: Record<string, unknown>;
   jobTitle: string;
   companyName: string | null;
-  content: Record<string, unknown>;
+  content: Resume;
   metadata: ResumeMetadata;
   templateId: string | null;
   createdAt: Date;
@@ -103,11 +105,11 @@ export interface ResumeDetails {
  */
 export interface UpdatedResumeData {
   id: string;
-  resume: unknown;
+  resume: Resume;
   jobDescription: string;
-  jobMetadata: unknown;
+  jobMetadata: Record<string, unknown>;
   template: unknown;
-  metadata: unknown;
+  metadata: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -122,13 +124,13 @@ export interface GeneratedResume {
   jobTitle: string | null;
   companyName: string | null;
   jobDescription: string;
-  content: import('@/lib/validations/jsonresume').Resume;
+  content: Resume;
   templateId: string | null;
   customization: Record<string, unknown> | null;
   pdfUrl: string | null;
   coverLetter: string | null;
   isEdited: boolean;
-  aiGeneratedContent?: import('@/lib/validations/jsonresume').Resume;
+  aiGeneratedContent: Resume;
   sectionOrder?: string[] | null;
   metadata: ResumeMetadata;
   createdAt: string;

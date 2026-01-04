@@ -36,16 +36,12 @@ export function usePreviewScale({
       const scaleWidth = availableWidth / A4_WIDTH;
       const scaleHeight = availableHeight / A4_HEIGHT;
 
-      // In fullscreen, we must fit both dimensions
-      // In editor view, we primarily fit width but enforce a minimum scale
-      let newScale = isFullscreen
-        ? Math.min(scaleWidth, scaleHeight)
-        : scaleWidth;
+      // Always fit both dimensions to ensure the preview is fully visible without zoom
+      let newScale = Math.min(scaleWidth, scaleHeight);
 
-      // On mobile/smaller screens, don't let it get ridiculously small
-      if (!isFullscreen && newScale < 0.6) {
-        newScale = 0.6;
-      }
+      // Sanity bounds
+      if (newScale < 0.3) newScale = 0.3;
+      if (newScale > 1.2) newScale = 1.0; // Don't upscale past 100%
 
       return newScale;
     }
