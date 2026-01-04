@@ -190,7 +190,7 @@ class RateLimiter {
   /**
    * Get time until reset for an identifier
    */
-  async getResetTime(identifier: string, config: RateLimitConfig): Promise<number | null> {
+  async getResetTime(identifier: string): Promise<number | null> {
     const ttl = await this.backend.getTTL(identifier);
     if (ttl < 0) return null;
     return Date.now() + (ttl * 1000);
@@ -312,7 +312,7 @@ export async function applyRateLimit(
   const isLimited = await rateLimiter.isRateLimited(identifier, config);
   
   if (isLimited) {
-    const resetTime = await rateLimiter.getResetTime(identifier, config);
+    const resetTime = await rateLimiter.getResetTime(identifier);
     const remaining = await rateLimiter.getRemaining(identifier, config);
     return createRateLimitResponse(
       config.message || 'Too many requests',
@@ -353,7 +353,7 @@ export async function addRateLimitHeaders(
   config: RateLimitConfig
 ): Promise<Response> {
   const remaining = await rateLimiter.getRemaining(identifier, config);
-  const resetTime = await rateLimiter.getResetTime(identifier, config);
+  const resetTime = await rateLimiter.getResetTime(identifier);
 
   const headers = new Headers(response.headers);
   headers.set('X-RateLimit-Limit', config.maxRequests.toString());
