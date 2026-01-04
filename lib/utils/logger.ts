@@ -7,6 +7,7 @@
  * - Pretty console output for development
  * - Context attachment for request tracking
  * - Performance timing utilities
+ * - Automatic sanitization of sensitive fields
  */
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
@@ -17,6 +18,63 @@ interface LogContext {
   endpoint?: string;
   duration?: number;
   [key: string]: unknown;
+}
+
+/**
+ * Sensitive field names that should be redacted in logs
+ */
+const SENSITIVE_FIELDS = [
+  'password',
+  'apikey',
+  'api_key',
+  'encryptedkey',
+  'encrypted_key',
+  'token',
+  'secret',
+  'authorization',
+  'cookie',
+  'session',
+  'credentials',
+  'privatekey',
+  'private_key',
+];
+
+/**
+ * Sanitize sensitive fields from an object
+ * Recursively redacts fields that may contain sensitive information
+ */
+function sanitize(obj: unknown): unknown {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitize(item));
+  }
+
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const lowerKey = key.toLowerCase();
+    
+    // Check if key contains any sensitive field name
+    const isSensitive = SENSITIVE_FIELDS.some(field => 
+      lowerKey.includes(field.toLowerCase())
+    );
+    
+    if (isSensitive) {
+      sanitized[key] = '[REDACTED]';
+    } else if (typeof value === 'object' && value !== null) {
+      sanitized[key] = sanitize(value);
+    } else {
+      sanitized[key] = value;
+    }
+  }
+  
+  return sanitized;
 }
 
 class Logger {
@@ -93,18 +151,21 @@ class Logger {
     const timestamp = new Date().toISOString();
     const mergedContext = { ...this.baseContext, ...context };
     
+    // Sanitize context to remove sensitive fields
+    const sanitizedContext = sanitize(mergedContext) as LogContext;
+    
     const logEntry = {
       timestamp,
       level,
       message,
-      ...mergedContext,
+      ...sanitizedContext,
     };
 
     // In development, use pretty console output
     if (this.isDevelopment) {
       const color = this.getColor(level);
-      const contextStr = Object.keys(mergedContext).length > 0 
-        ? ` ${JSON.stringify(mergedContext)}`
+      const contextStr = Object.keys(sanitizedContext).length > 0 
+        ? ` ${JSON.stringify(sanitizedContext)}`
         : '';
       console.log(
         `${color}[${level.toUpperCase()}]${this.resetColor} ${timestamp} - ${message}${contextStr}`
