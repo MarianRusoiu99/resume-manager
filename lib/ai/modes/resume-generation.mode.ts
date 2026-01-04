@@ -61,7 +61,22 @@ export const resumeGenerationMode = defineMode({
   preprocessUserMessage(message: string, context: ConversationContext): string {
     const parts: string[] = [];
 
-    // If this is the first message, inject full context
+    // Add field enrichment instructions at the top
+    parts.push('## RESUME ENRICHMENT INSTRUCTIONS');
+    parts.push('- Use ALL information from the candidate\'s profile');
+    parts.push('- Synthesize information from different sections to populate relevant fields');
+    parts.push('- All JSON Resume fields are OPTIONAL - include them if you can meaningfully populate them');
+    parts.push('- Move and reorganize information to create the most coherent structure');
+    parts.push('- Example: If volunteer work has impressive achievements, ensure \'volunteer\' section includes them');
+    parts.push('- Example: If publications are mentioned in work, extract them to \'publications\' section');
+    parts.push('- Example: If projects are described in education/work, create \'projects\' entries');
+    parts.push('- Example: Extract certifications mentioned in work into \'certificates\' field');
+    parts.push('- Example: Extract awards from education into \'awards\' field');
+    parts.push('- Split single entries into multiple ones if appropriate (e.g., one work position with 3 major projects)');
+    parts.push('- Merge related information if it makes more sense together');
+    parts.push('');
+
+    // If this is first message, inject full context
     if (context.job?.description) {
       parts.push('## JOB DESCRIPTION');
       parts.push(context.job.description);
@@ -81,7 +96,7 @@ export const resumeGenerationMode = defineMode({
       parts.push('## ADDITIONAL INSTRUCTIONS');
       parts.push(message);
     } else {
-      parts.push('Please generate a tailored resume for this job based on the candidate profile.');
+      parts.push('Please generate a tailored resume for this job based on candidate profile.');
     }
 
     return parts.join('\n');

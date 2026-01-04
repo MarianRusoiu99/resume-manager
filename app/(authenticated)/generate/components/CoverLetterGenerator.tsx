@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import { Sparkles, Send } from 'lucide-react';
+import { Sparkles, Send, Save } from 'lucide-react';
 import { Button, Card, Textarea } from '@/components/ui';
 import { Callout, Spinner } from '@/components/shared';
 import { ModelSelector } from '@/components/ai/ModelSelector';
@@ -29,6 +29,7 @@ export function CoverLetterGenerator({
   const [selectedModelId, setSelectedModelId] = useState(() => defaultModelId);
   const [jobDescription, setJobDescription] = useState('');
   const [personalInstructions, setPersonalInstructions] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleModelChange = useCallback((modelId: string) => {
     setSelectedModelId(modelId);
@@ -55,6 +56,34 @@ export function CoverLetterGenerator({
       overrideModelId: selectedModelId,
     });
   }, [generate, jobDescription, personalInstructions, selectedModelId, selectedProfileId]);
+
+  const handleSave = async () => {
+    if (!generatedCoverLetter) return;
+
+    setIsSaving(true);
+    try {
+      const result = await createCoverLetter(
+        generatedCoverLetter,
+        jobDescription,
+        '',
+        '',
+        {
+          personalInstructions: personalInstructions,
+          jobDescription: jobDescription,
+        }
+      );
+
+      if (result.success) {
+        toast.success('Cover letter saved to library');
+      } else {
+        toast.error(result.error || 'Failed to save cover letter');
+      }
+    } catch {
+      toast.error('Failed to save cover letter');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -136,28 +165,44 @@ export function CoverLetterGenerator({
 
       <Card className="bg-muted/30 p-8 flex flex-col min-h-[600px] rounded-2xl border-none shadow-inner">
         {generatedCoverLetter ? (
-          <CoverLetterEditor
-            content={generatedCoverLetter}
-            editable={true}
-            onSave={async (content) => {
-              const result = await createCoverLetter(
-                content,
-                jobDescription,
-                '',
-                '',
-                {
-                  personalInstructions: personalInstructions,
-                  jobDescription: jobDescription,
-                }
-              );
-              if (result.success) {
-                toast.success('Cover letter saved to library');
-              } else {
-                toast.error(result.error || 'Failed to save cover letter');
-              }
-            }}
-            className="h-full shadow-2xl rounded-xl overflow-hidden border-none"
-          />
+          <div className="h-full flex flex-col shadow-2xl rounded-xl overflow-hidden border-none bg-background">
+            <div className="flex justify-end border-b bg-muted/10 p-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 px-4 rounded-lg font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? <Spinner size="sm" /> : <Save className="w-3.5 h-3.5 mr-2" />}
+                Save to Library
+              </Button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <CoverLetterEditor
+                content={generatedCoverLetter}
+                editable={true}
+                onSave={async (content) => {
+                  const result = await createCoverLetter(
+                    content,
+                    jobDescription,
+                    '',
+                    '',
+                    {
+                      personalInstructions: personalInstructions,
+                      jobDescription: jobDescription,
+                    }
+                  );
+                  if (result.success) {
+                    toast.success('Cover letter saved to library');
+                  } else {
+                    toast.error(result.error || 'Failed to save cover letter');
+                  }
+                }}
+                className="h-full"
+              />
+            </div>
+          </div>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
             <div className="w-20 h-20 bg-background/80 backdrop-blur rounded-[2rem] flex items-center justify-center mb-6 shadow-sm border border-primary/5">
