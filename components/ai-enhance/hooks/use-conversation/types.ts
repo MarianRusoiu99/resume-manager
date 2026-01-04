@@ -75,8 +75,6 @@ export interface SendMessageOptions {
   attachments?: ConversationAttachment[];
   /** Override model for this message */
   modelId?: string;
-  /** Use streaming (default: true) */
-  stream?: boolean;
   /** Context override for this message (merged with existing context) */
   contextOverride?: Partial<ConversationContext>;
 }
@@ -87,8 +85,6 @@ export interface SendMessageOptions {
 export interface UseConversationOptions<T = unknown> {
   mode: ConversationMode;
   initialContext?: ConversationContext;
-  /** Called when streaming output updates */
-  onStreamUpdate?: (content: string) => void;
   /** Called when generation completes */
   onComplete?: (output: T) => void;
   /** Called on error */

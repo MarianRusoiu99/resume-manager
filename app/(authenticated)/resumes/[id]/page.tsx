@@ -1,19 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import { toast } from 'sonner';
 import { Page } from '@/components/layout/Page';
-import { Button, Card } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { ErrorState, LoadingState } from '@/components/shared/states';
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { CoverLetterEditor } from '@/components/cover-letter';
-import { ResumePreview } from '@/components/resume/ResumePreview';
-import { Edit, Copy, Trash2 } from 'lucide-react';
-import { getResume, deleteResume, duplicateResume } from '@/app/actions/resume';
+import { Copy, Trash2, Save, Share2, Edit2, FileText, Info } from 'lucide-react';
+import { getResume, deleteResume, duplicateResume, updateResumeContent, updateResumeMetadata } from '@/app/actions/resume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { ResumeEditor, type ResumeEditorRef } from "@/components/editor/ResumeEditor";
+import { EditorProvider } from "@/lib/contexts";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const logger = createComponentLogger('ResumeDetailPage');
 
@@ -30,6 +32,7 @@ export default function ResumeDetailPage() {
   const router = useRouter();
   const params = useParams();
   const resumeId = params?.id as string;
+  const editorRef = useRef<ResumeEditorRef>(null);
 
   const [resume, setResume] = useState<ResumeData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +40,13 @@ export default function ResumeDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
-  const [pdfPreviewKey] = useState(Date.now());
+  
+  // State for title rename
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+
+  // State for job description modal
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const fetchResume = async () => {
     try {
@@ -52,6 +61,7 @@ export default function ResumeDetailPage() {
       }
 
       setResume(result.data as ResumeData);
+      setNewTitle(result.data.jobTitle || "");
     } catch (err) {
       logger.error('Failed to fetch resume', err);
       setError(err instanceof Error ? err.message : 'Failed to load resume');
@@ -66,6 +76,27 @@ export default function ResumeDetailPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeId]);
+
+  const handleLoad = async (): Promise<Resume | null> => {
+    if (resume?.content) return resume.content;
+    const result = await getResume(resumeId);
+    if (result.success && result.data) {
+      return result.data.content as Resume;
+    }
+    return null;
+  };
+
+  const handleSave = async (content: Resume): Promise<boolean> => {
+    try {
+      const result = await updateResumeContent(resumeId, content);
+      if (!result.success) throw new Error(result.error);
+      toast.success('Resume saved');
+      return true;
+    } catch (error) {
+      toast.error('Failed to save resume');
+      return false;
+    }
+  };
 
   const handleDelete = async () => {
     setDeleteDialogOpen(true);
@@ -91,10 +122,6 @@ export default function ResumeDetailPage() {
     }
   };
 
-  const cancelDelete = () => {
-    setDeleteDialogOpen(false);
-  };
-
   const handleDuplicate = async () => {
     try {
       setIsDuplicating(true);
@@ -116,23 +143,20 @@ export default function ResumeDetailPage() {
     }
   };
 
-  const handleSaveCoverLetter = async () => {
+  const handleSaveMetadata = async () => {
+    if (!newTitle.trim()) {
+      toast.error("Title cannot be empty");
+      return;
+    }
     try {
-      setError(null);
-
-      // In the new architecture, cover letter might be a separate action
-      // For now, let's just use updateResumeContent if it was stored there
-      // or implement a separate updateCoverLetter action if it's linked
+      const result = await updateResumeMetadata(resumeId, { jobTitle: newTitle });
+      if (!result.success) throw new Error(result.error);
       
-      // Based on ResumeDetails type, cover letter is part of the resume object or linked
-      // Let's assume for now we just want to update the resume content if it includes cover letter
-      // Or check if we have a linked cover letter
-      
-      toast.error('Saving cover letter from this page is not yet implemented in Server Actions');
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Failed to save cover letter';
-      setError(errorMsg);
-      toast.error(errorMsg);
+      setResume(prev => prev ? { ...prev, jobTitle: newTitle } : null);
+      setIsRenameModalOpen(false);
+      toast.success("Resume renamed");
+    } catch (error) {
+      toast.error("Failed to rename");
     }
   };
 
@@ -152,77 +176,156 @@ export default function ResumeDetailPage() {
   }
 
   return (
-    <Page
-      title={resume.jobTitle || 'Untitled Resume'}
-      description={resume.companyName || undefined}
-      breadcrumbs={[
-        { label: 'Resumes', href: '/resumes' },
-        { label: resume.jobTitle || 'Resume' },
-      ]}
-      className="resume-content"
-      toolbar={
-        <div className="no-print flex justify-end gap-2">
-          <Link href={`/resumes/${resumeId}/edit`}>
-            <Button variant="outline" size="sm">
-              <Edit className="w-4 h-4 mr-2" />
-              Edit
+    <EditorProvider onLoad={handleLoad} onSave={handleSave}>
+      <Page
+        title={
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold uppercase tracking-tight truncate max-w-[300px]">
+              {resume.jobTitle || 'Untitled Resume'}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              onClick={() => setIsRenameModalOpen(true)}
+            >
+              <Edit2 className="h-4 w-4" />
             </Button>
-          </Link>
-        </div>
-      }
-    >
-        {/* Resume HTML Preview */}
-        <ResumePreview
-          resumeData={resume.content}
-          resumeId={resumeId}
-          showCard={true}
-          showTemplateSelector={true}
-          previewKey={pdfPreviewKey}
-          className="mb-6 no-print"
-          headerActions={
-            <>
-              <Button
-                onClick={handleDuplicate}
-                variant="outline"
-                size="sm"
-                className="h-8"
-                disabled={isDuplicating}
-              >
-                {isDuplicating ? <LoadingState message="" /> : <Copy className="w-3.5 h-3.5 mr-1.5" />}
-                Duplicate
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={handleDelete}
-                disabled={isDeleting}
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                Delete
-              </Button>
-            </>
-          }
-        />
-
-        {/* Job Description */}
-        <Card className="p-6 mb-6 no-print">
-          <h2 className="text-lg font-semibold mb-3">Job Description</h2>
-          <p className=" whitespace-pre-wrap">{resume.jobDescription}</p>
-        </Card>
-
-        {/* Cover Letter (if generated) */}
-        {resume.coverLetter && (
-          <CoverLetterEditor
-            content={resume.coverLetter}
-            editable={true}
-            resumeId={resumeId}
-            onSave={handleSaveCoverLetter}
-            className="mb-6 no-print"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              onClick={() => setIsInfoModalOpen(true)}
+            >
+              <Info className="h-4 w-4" />
+            </Button>
+          </div>
+        }
+        description={resume.companyName || "Tailor your resume for the specific job description"}
+        maxWidth="full"
+        breadcrumbs={[
+          { label: 'Resumes', href: '/resumes' },
+          { label: resume.jobTitle || 'Resume' },
+        ]}
+        scrollable={false}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 font-bold uppercase tracking-widest text-xs hidden sm:flex"
+              onClick={() => editorRef.current?.setShowShareDialog(true)}
+            >
+              <Share2 className="h-3 w-3 mr-2" />
+              Share
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 font-bold uppercase tracking-widest text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-3 w-3 mr-2" />
+              Delete
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 font-bold uppercase tracking-widest text-xs"
+              onClick={handleDuplicate}
+              disabled={isDuplicating}
+            >
+              <Copy className="h-3 w-3 mr-2" />
+              Duplicate
+            </Button>
+            <div className="w-px h-4 bg-muted-foreground/20 mx-1" />
+            <Button
+              size="sm"
+              className="h-8 font-bold uppercase tracking-widest text-xs shadow-lg shadow-primary/20"
+              onClick={() => editorRef.current?.save()}
+            >
+              <Save className="h-3 w-3 mr-2" />
+              Save
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex-1 flex flex-col h-full -mx-4 sm:-mx-8">
+          <ResumeEditor
+            ref={editorRef}
+            id={resumeId}
+            displayName={resume.jobTitle}
+            onDisplayNameChange={async (name) => {
+              setNewTitle(name);
+              setResume(prev => prev ? { ...prev, jobTitle: name } : null);
+            }}
           />
-        )}
+        </div>
 
+        {/* Rename Modal */}
+        <Dialog open={isRenameModalOpen} onOpenChange={setIsRenameModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename Resume</DialogTitle>
+              <DialogDescription>Identify this resume in your library.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-xs font-bold uppercase tracking-widest block">Resume Title</Label>
+                <Input
+                  id="title"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleSaveMetadata}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
+        {/* Info/Job Description Modal */}
+        <Dialog open={isInfoModalOpen} onOpenChange={setIsInfoModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 overflow-hidden border-none rounded-[2rem]">
+            <DialogHeader className="p-8 pb-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <DialogTitle className="text-xl font-bold">Job Details</DialogTitle>
+                  <DialogDescription>Reference information for this optimized resume.</DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-y-auto px-8 pb-8 space-y-6 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20">
+              {resume.companyName && (
+                <div>
+                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Company</h4>
+                  <p className="text-sm font-medium">{resume.companyName}</p>
+                </div>
+              )}
+              
+              <div>
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Job Description</h4>
+                <div className="bg-muted/30 rounded-xl p-4 text-sm leading-relaxed whitespace-pre-wrap border border-primary/5">
+                  {resume.jobDescription || "No job description provided."}
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter className="p-6 bg-muted/20 border-t border-primary/5">
+              <Button onClick={() => setIsInfoModalOpen(false)} className="rounded-xl font-bold uppercase tracking-widest text-[10px] px-6">
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Confirmation Dialog */}
         <ConfirmDialog
@@ -233,8 +336,9 @@ export default function ResumeDetailPage() {
           cancelText="Cancel"
           variant="danger"
           onConfirm={confirmDelete}
-          onCancel={cancelDelete}
+          onCancel={() => setDeleteDialogOpen(false)}
         />
-    </Page>
+      </Page>
+    </EditorProvider>
   );
 }

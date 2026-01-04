@@ -62,7 +62,19 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
           return;
         }
 
-        // Priority 2: Load from localStorage
+        // Priority 2: Load from user preferences (API)
+        try {
+          const res = await fetch('/api/v1/user/preferences');
+          const pref = await res.json();
+          if (pref.success && pref.data?.template?.defaultTemplateId) {
+            setSelectedTemplateId(pref.data.template.defaultTemplateId);
+            return;
+          }
+        } catch (e) {
+          logger.warn('Failed to fetch preferences from API, falling back to localStorage');
+        }
+
+        // Priority 3: Load from localStorage
         const savedTemplateId = localStorage.getItem('preferredTemplateId');
         if (savedTemplateId) {
           setSelectedTemplateId(savedTemplateId);

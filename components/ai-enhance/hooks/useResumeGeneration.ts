@@ -9,7 +9,7 @@ import type { Resume } from '@/lib/validations/jsonresume';
  * useResumeGeneration - Specialized hook for resume generation using the unified AITask orchestrator.
  */
 export function useResumeGeneration() {
-  const { runTask, isLoading, error, output, partialOutput } = useAITask<ResumeGenerationOutput>({
+  const { runTask, isLoading, error, output } = useAITask<ResumeGenerationOutput>({
     mode: 'resume-generation',
   });
 
@@ -44,6 +44,5 @@ export function useResumeGeneration() {
     suggestions: output?.suggestions ?? [],
     isLoading,
     error,
-    partialOutput
   };
 }

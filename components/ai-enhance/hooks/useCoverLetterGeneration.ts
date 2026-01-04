@@ -16,7 +16,6 @@ interface CoverLetterOutput {
 export function useCoverLetterGeneration() {
   const { runTask, isLoading, error, output, reset } = useAITask({
     mode: 'cover-letter-generation',
-    stream: false,
   });
 
   const generate = useCallback(async ({

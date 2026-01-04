@@ -73,12 +73,26 @@ export function ModelSelector({
 
                 // If no value provided and we have a feature, load from preferences
                 if (!activeModelId && feature) {
-                    const settingsResult = await getAISettings();
-                    if (settingsResult.success && settingsResult.data) {
-                        const feat = settingsResult.data.features.find(f => f.feature.id === feature);
-                        if (feat?.modelId && feat?.providerId) {
-                            activeModelId = feat.modelId;
-                            activeProviderId = feat.providerId;
+                    try {
+                        const res = await fetch('/api/v1/user/preferences');
+                        const pref = await res.json();
+                        if (pref.success && pref.data?.ai) {
+                            const featurePref = pref.data.ai.find((p: any) => p.feature === feature);
+                            if (featurePref?.modelId) {
+                                activeModelId = featurePref.modelId;
+                                activeProviderId = featurePref.providerId;
+                            }
+                        }
+                    } catch (e) {
+                        logger.error('Failed to fetch preferences from API', e);
+                        // Fallback to existing server action if API fails
+                        const settingsResult = await getAISettings();
+                        if (settingsResult.success && settingsResult.data) {
+                            const feat = settingsResult.data.features.find(f => f.feature.id === feature);
+                            if (feat?.modelId && feat?.providerId) {
+                                activeModelId = feat.modelId;
+                                activeProviderId = feat.providerId;
+                            }
                         }
                     }
                 }

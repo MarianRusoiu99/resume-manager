@@ -11,7 +11,6 @@ export interface AITaskOptions<T = unknown> {
   mode: ConversationMode;
   onSuccess?: (output: T) => void;
   onError?: (error: string) => void;
-  stream?: boolean;
 }
 
 export interface RunTaskOptions {
@@ -19,7 +18,6 @@ export interface RunTaskOptions {
   attachments?: ConversationAttachment[];
   modelId?: string;
   context?: unknown;
-  stream?: boolean;
 }
 
 /**
@@ -27,14 +25,11 @@ export interface RunTaskOptions {
  * Wraps useConversation and provides a consistent interface for the UI.
  */
 export function useAITask<T = unknown>(options: AITaskOptions<T>) {
-  const { mode, onSuccess, onError, stream: defaultStream = true } = options;
-  const [partialOutput, setPartialOutput] = useState<string>('');
+  const { mode, onSuccess, onError } = options;
+  const [partialOutput] = useState<string>('');
 
   const { sendMessage, state, reset, abort } = useConversation<T>({
     mode,
-    onStreamUpdate: (content: string) => {
-      setPartialOutput(content);
-    },
     onComplete: (output: T) => {
       onSuccess?.(output);
     },
@@ -45,15 +40,12 @@ export function useAITask<T = unknown>(options: AITaskOptions<T>) {
   });
 
   const runTask = useCallback(
-    async ({ message, attachments, modelId, context, stream }: RunTaskOptions): Promise<T | null> => {
-      setPartialOutput('');
-      
+    async ({ message, attachments, modelId, context }: RunTaskOptions): Promise<T | null> => {
       try {
         return await sendMessage({
           message,
           attachments,
           modelId,
-          stream: stream ?? defaultStream,
           // Pass context directly to avoid race condition with setState
           contextOverride: context as Record<string, unknown> | undefined,
         });
@@ -62,7 +54,7 @@ export function useAITask<T = unknown>(options: AITaskOptions<T>) {
         return null;
       }
     },
-    [sendMessage, mode, defaultStream]
+    [sendMessage, mode]
   );
 
 

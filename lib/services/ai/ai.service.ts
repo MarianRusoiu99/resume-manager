@@ -1,5 +1,5 @@
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
-import { enhanceText, streamEnhanceText } from '@/lib/ai/features/enhance';
+import { enhanceText } from '@/lib/ai/features/enhance';
 import { optimizeResume } from '@/lib/ai/agents/resume-optimization/agent';
 import { generateCoverLetter } from '@/lib/ai/agents/cover-letter/agent';
 import { success, failure, type ServiceResult } from '@/lib/types/service-result';
@@ -94,41 +94,6 @@ export class AIService implements IAIService {
         userId
       );
     });
-  }
-
-  async streamEnhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<Response>> {
-    try {
-      const resolvedModel = await resolveAIModelOrThrow({
-        userId,
-        feature: 'enhance',
-        modelId: input.modelId,
-      });
-
-      const hasImages = input.attachments?.some(a => a.type.startsWith('image/'));
-      let modelKey = resolvedModel.modelKey;
-
-      if (hasImages) {
-        const { resolveVisionModelKey } = await import('@/lib/ai/runtime/vision');
-        modelKey = resolveVisionModelKey(resolvedModel);
-      }
-
-      const result = await streamEnhanceText(
-        resolvedModel.provider.createLanguageModel(modelKey),
-        {
-          content: input.content,
-          instructions: input.instructions,
-          context: input.context,
-          contentType: input.contentType,
-          attachments: input.attachments,
-        },
-        userId
-      );
-
-      return success(result.toTextStreamResponse());
-    } catch (error) {
-      logger.error('AI streaming enhancement failed', error);
-      return failure(error instanceof Error ? error.message : 'AI streaming enhancement failed');
-    }
   }
 
   async optimizeResume(userId: string, input: OptimizeResumeInput): Promise<ServiceResult<OptimizeResumeResult>> {

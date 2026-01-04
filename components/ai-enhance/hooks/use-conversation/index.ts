@@ -9,13 +9,13 @@ import {
   type SendMessageOptions, 
   type ConversationMessage 
 } from './types';
-import { generateId, processStreamResponse } from './utils';
+import { generateId } from './utils';
 
 /**
  * Hook for managing AI conversations
  */
 export function useConversation<T = unknown>(options: UseConversationOptions<T>): UseConversationReturn<T> {
-  const { mode, initialContext = {}, onStreamUpdate, onComplete, onError } = options;
+  const { mode, initialContext = {}, onComplete, onError } = options;
 
   const [state, setState] = useState<ConversationState<T>>({
     id: null,
@@ -73,7 +73,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
    * Send a message
    */
   const sendMessage = useCallback(
-    async ({ message, attachments, modelId, stream = true, contextOverride }: SendMessageOptions): Promise<T | null> => {
+    async ({ message, attachments, modelId, contextOverride }: SendMessageOptions): Promise<T | null> => {
       // Abort any existing request
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
@@ -114,7 +114,6 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
             context: mergedContext,
             // Only include modelId if it's a non-empty string
             ...(modelId && { modelId }),
-            stream,
           }),
           signal: abortControllerRef.current.signal,
         });
@@ -132,63 +131,31 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
           throw new Error(errorMessage);
         }
 
-        // Get conversation ID from header
-        const conversationId = response.headers.get('X-Conversation-Id');
-        if (conversationId && !state.id) {
-          setState((prev) => ({ ...prev, id: conversationId }));
+        // Handle non-streaming response only
+        const result = await response.json();
+        
+        if (!result.success || !result.data) {
+          throw new Error(result.error || 'Request failed');
         }
 
-        if (stream && response.body) {
-          // Handle streaming response
-          const { fullContent, output } = await processStreamResponse(response.body, (content) => {
-             onStreamUpdate?.(content);
-          });
+        const assistantMessage: ConversationMessage = {
+          id: generateId(),
+          role: 'assistant',
+          content: result.data.text,
+          timestamp: new Date(),
+          output: result.data.output,
+        };
 
-          const assistantMessage: ConversationMessage = {
-            id: generateId(),
-            role: 'assistant',
-            content: fullContent,
-            timestamp: new Date(),
-            output,
-          };
+        setState((prev) => ({
+          ...prev,
+          id: result.data.conversationId,
+          messages: [...prev.messages, assistantMessage],
+          output: result.data.output as T,
+          isLoading: false,
+        }));
 
-          setState((prev) => ({
-            ...prev,
-            id: conversationId || prev.id,
-            messages: [...prev.messages, assistantMessage],
-            output: output as T,
-            isLoading: false,
-          }));
-
-          onComplete?.(output as T);
-          return output as T;
-        } else {
-          // Handle non-streaming response
-          const result = await response.json();
-          
-          if (!result.success || !result.data) {
-            throw new Error(result.error || 'Request failed');
-          }
-
-          const assistantMessage: ConversationMessage = {
-            id: generateId(),
-            role: 'assistant',
-            content: result.data.text,
-            timestamp: new Date(),
-            output: result.data.output,
-          };
-
-          setState((prev) => ({
-            ...prev,
-            id: result.data.conversationId,
-            messages: [...prev.messages, assistantMessage],
-            output: result.data.output as T,
-            isLoading: false,
-          }));
-
-          onComplete?.(result.data.output as T);
-          return result.data.output as T;
-        }
+        onComplete?.(result.data.output as T);
+        return result.data.output as T;
       } catch (error) {
         if ((error as Error).name === 'AbortError') {
           return null; // Ignore abort errors
@@ -204,7 +171,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
         return null;
       }
     },
-    [state.id, state.mode, state.context, onError, onComplete, onStreamUpdate]
+    [state.id, state.mode, state.context, onError, onComplete]
   );
 
   return {

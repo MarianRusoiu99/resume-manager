@@ -5,7 +5,7 @@ import { useCallback } from 'react';
 import type { TextEnhancementOutput } from '@/lib/ai/modes/types';
 
 export function useTextEnhancement() {
-  const { runTask, isLoading, error, output, partialOutput, reset } = useAITask<TextEnhancementOutput>({
+  const { runTask, isLoading, error, output, reset } = useAITask<TextEnhancementOutput>({
     mode: 'text-enhancement',
   });
 
@@ -18,7 +18,7 @@ export function useTextEnhancement() {
 
   return {
     enhance,
-    enhancedText: output?.content || partialOutput,
+    enhancedText: output?.content || '',
     isLoading,
     error,
     reset,

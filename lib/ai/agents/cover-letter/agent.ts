@@ -17,7 +17,7 @@ export type GenerateCoverLetterResult = {
   subject?: string;
   companyName?: string;
   recipientName?: string;
-  jobTitle: string;
+  jobTitle?: string;
 }
 
 export type GenerateCoverLetterInput = {

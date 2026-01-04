@@ -21,23 +21,34 @@ export function useGenerateMetadata() {
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
   const [defaultModelId, setDefaultModelId] = useState<string>('');
   const [defaultProfileId, setDefaultProfileId] = useState<string>('');
+  const [userPreferences, setUserPreferences] = useState<any>(null);
 
   useEffect(() => {
     const loadMetadata = async () => {
       setIsLoadingMetadata(true);
       try {
-        const [profilesResult, providersResult] = await Promise.all([
+        const [profilesResult, providersResult, preferencesRes] = await Promise.all([
           getProfiles(),
           getApiProviders(),
+          fetch('/api/v1/user/preferences').then(res => res.json())
         ]);
 
         if (profilesResult.success && profilesResult.data) {
           const profileData = profilesResult.data as ProfileListItem[];
           setProfiles(profileData);
-          const defaultProfile = profileData.find((p) => p.isDefault) || profileData[0];
+          
+          const prefDefaultProfileId = preferencesRes?.data?.template?.defaultProfileId;
+          const defaultProfile = profileData.find((p) => p.id === prefDefaultProfileId) || 
+                               profileData.find((p) => p.isDefault) || 
+                               profileData[0];
+          
           if (defaultProfile) {
             setDefaultProfileId(defaultProfile.id);
           }
+        }
+
+        if (preferencesRes?.success) {
+          setUserPreferences(preferencesRes.data);
         }
 
         if (providersResult.success && providersResult.data) {
@@ -47,7 +58,8 @@ export function useGenerateMetadata() {
           setHasAIProviders(activeProviders.length > 0);
 
           if (activeProviders.length > 0) {
-            // In getUserProviders, models is a string array of modelKeys
+             // We'll let the ModelSelector handle its own specific feature default
+             // but we provide a sensible fallback here if needed
             const firstModelId = activeProviders[0].models?.[0] || '';
             setDefaultModelId(firstModelId);
           }
@@ -70,6 +82,7 @@ export function useGenerateMetadata() {
     isLoadingMetadata,
     defaultModelId,
     defaultProfileId,
+    userPreferences,
     activeProviders: providers.filter(p => p.isActive)
   };
 }

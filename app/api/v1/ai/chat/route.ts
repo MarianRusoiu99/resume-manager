@@ -4,7 +4,7 @@
  * Handles conversational AI interactions with support for:
  * - Multiple conversation modes (resume, cover letter, template, text enhancement)
  * - File attachments (PDFs, images, documents)
- * - Streaming responses
+ * - Non-streaming responses
  * - Vision API for image analysis
  */
 
@@ -58,9 +58,6 @@ const chatRequestSchema = z.object({
   
   /** Override model ID */
   modelId: z.string().optional(),
-  
-  /** Enable streaming (default: true) */
-  stream: z.boolean().default(true),
 });
 
 type ChatRequest = z.infer<typeof chatRequestSchema>;
@@ -174,7 +171,7 @@ export const POST = createApiHandler<unknown, ChatRequest>(
       );
     }
 
-    const { conversationId, mode, message, attachments, context, modelId, stream } = body;
+    const { conversationId, mode, message, attachments, context, modelId } = body;
     const userId = session.user.id;
 
     logger.info('AI chat request', {
@@ -182,8 +179,6 @@ export const POST = createApiHandler<unknown, ChatRequest>(
       userId,
       mode,
       hasAttachments: !!attachments?.length,
-      attachmentCount: attachments?.length || 0,
-      stream,
     });
 
     try {
@@ -221,129 +216,38 @@ export const POST = createApiHandler<unknown, ChatRequest>(
         userId,
       };
 
-      if (stream) {
-        // Create streaming response
-        const encoder = new TextEncoder();
-        
-        const readableStream = new ReadableStream({
-          async start(controller) {
-            try {
-              const chunks = AIOrchestrator.streamResponse(conversation, orchestratorOptions);
-
-              for await (const chunk of chunks) {
-                // Format as Server-Sent Events
-                const data = JSON.stringify(chunk);
-                controller.enqueue(encoder.encode(`data: ${data}\n\n`));
-              }
-
-              // Send done signal
-              controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-              controller.close();
-            } catch (error) {
-              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-              logger.error('Streaming error', { error: errorMessage, conversationId: conversation.id });
-              
-              const errorData = JSON.stringify({ type: 'error', error: errorMessage });
-              controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
-              controller.close();
-            }
-          },
-        });
-
-        return new Response(readableStream, {
-          headers: {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'X-Conversation-Id': conversation.id,
-            'X-Request-Id': requestId,
-          },
-        });
-      } else {
-        // Non-streaming response
-        const result = needsVision
-          ? await AIOrchestrator.generateWithVision(conversation, orchestratorOptions)
-          : await AIOrchestrator.generate(conversation, orchestratorOptions);
-
-        return Response.json(
-          {
-            success: true,
-            data: {
-              conversationId: conversation.id,
-              text: result.text,
-              output: result.output,
-              usage: result.usage,
-            },
-            requestId,
-          },
-          {
-            headers: {
-              'X-Conversation-Id': conversation.id,
-            },
-          }
-        );
-      }
-    } catch (error) {
-      logger.error('AI chat error', { error, requestId, userId });
-
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'An error occurred processing your request';
+      // Non-streaming response only
+      const result = needsVision
+        ? await AIOrchestrator.generateWithVision(conversation, orchestratorOptions)
+        : await AIOrchestrator.generate(conversation, orchestratorOptions);
 
       return Response.json(
-        { success: false, error: errorMessage, requestId },
+        {
+          success: true,
+          data: {
+            conversationId: conversation.id,
+            text: result.text,
+            output: result.output,
+            usage: result.usage,
+          },
+          requestId,
+        },
+        {
+          headers: {
+            'X-Conversation-Id': conversation.id,
+          },
+        }
+      );
+    } catch (error) {
+      logger.error('AI chat error', { error, requestId, userId });
+      return Response.json(
+        { success: false, error: error instanceof Error ? error.message : 'An error occurred', requestId },
         { status: 500 }
       );
     }
   },
   {
     bodySchema: chatRequestSchema,
-    rateLimit: 'resumeGeneration', // Use resumeGeneration rate limit for AI chat
-  }
-);
-
-/**
- * GET /api/v1/ai/chat
- * 
- * Get conversation history
- */
-export const GET = createApiHandler(
-  async (request, _context, _session, _body, { requestId }) => {
-    const url = new URL(request.url);
-    const conversationId = url.searchParams.get('conversationId');
-
-    if (!conversationId) {
-      return Response.json(
-        { success: false, error: 'conversationId query parameter required', requestId },
-        { status: 400 }
-      );
-    }
-
-    const conversation = ConversationManager.get(conversationId);
-    
-    if (!conversation) {
-      return Response.json(
-        { success: false, error: 'Conversation not found', requestId },
-        { status: 404 }
-      );
-    }
-
-    return Response.json({
-      success: true,
-      data: {
-        id: conversation.id,
-        mode: conversation.mode,
-        messages: conversation.messages.map(msg => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp,
-          hasAttachments: !!msg.attachments?.length,
-        })),
-        output: conversation.output,
-        metadata: conversation.metadata,
-      },
-      requestId,
-    });
+    rateLimit: 'resumeGeneration',
   }
 );

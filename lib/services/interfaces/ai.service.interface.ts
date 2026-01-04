@@ -52,7 +52,6 @@ export interface GenerateCoverLetterResult {
 
 export interface IAIService {
   enhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<EnhanceTextResult>>;
-  streamEnhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<Response>>;
   optimizeResume(userId: string, input: OptimizeResumeInput): Promise<ServiceResult<OptimizeResumeResult>>;
   generateCoverLetter(userId: string, input: GenerateCoverLetterInput): Promise<ServiceResult<GenerateCoverLetterResult>>;
 }

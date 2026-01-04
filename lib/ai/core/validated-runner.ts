@@ -1,4 +1,4 @@
-import { generateText, streamText, type LanguageModel, type CoreMessage } from 'ai';
+import { generateText, type LanguageModel, type CoreMessage } from 'ai';
 import { z } from 'zod';
 import { logger } from '@/lib/utils/logger';
 import { ServiceErrors } from '@/lib/services/utils/service-wrapper';
@@ -13,16 +13,6 @@ interface ValidatedAIRunnerOptions<T> {
   system?: string;
   schema: z.ZodType<T>;
   maxRetries?: number;
-  abortSignal?: AbortSignal;
-  userId?: string;
-  feature?: string;
-}
-
-interface StreamOptions {
-  model: LanguageModel;
-  prompt?: string;
-  messages?: CoreMessage[];
-  system?: string;
   abortSignal?: AbortSignal;
   userId?: string;
   feature?: string;
@@ -155,50 +145,5 @@ export class ValidatedAIRunner {
       `AI failed to generate valid output after ${maxRetries + 1} attempts. Last error: ${lastError?.message}`,
       lastError
     );
-  }
-
-  /**
-   * Streams the AI model output.
-   * Note: Validation is harder with streaming, so this is primarily for text enhancement.
-   */
-  static async stream(options: StreamOptions) {
-    const { model, prompt, messages, system, abortSignal, userId, feature } = options;
-
-    // Use streamText and handle logging after the stream completes
-    const result = messages
-      ? await streamText({ model, messages, system, abortSignal })
-      : await streamText({ model, prompt: prompt ?? '', system, abortSignal });
-
-    // Log usage after stream is consumed (caller should handle this via onFinish callback or consuming the stream)
-    if (userId) {
-      // We'll log when the stream is consumed - the caller should handle this
-      // The usage is available on result.usage after the stream completes
-      // Note: Logging happens asynchronously when result.usage is accessed
-      // The caller can await result.usage to get the final token counts
-      result.usage.then((usage) => {
-        const modelId = getModelId(model);
-        const usageData = {
-          promptTokens: usage.inputTokens ?? 0,
-          completionTokens: usage.outputTokens ?? 0,
-        };
-        const cost = calculateAICost(modelId, usageData);
-
-        auditLogService.logAsync({
-          userId,
-          action: 'AI_GENERATE' as AuditAction,
-          resourceType: 'AI_MODEL',
-          resourceId: modelId,
-          metadata: {
-            feature,
-            usage: usageData,
-            cost,
-          },
-        });
-      }).catch(() => {
-        // Ignore logging errors
-      });
-    }
-
-    return result;
   }
 }

@@ -116,7 +116,6 @@ export const API_V1 = {
   AI: {
     CHAT: `${API_V1_PREFIX}/ai/chat`,
     ENHANCE: `${API_V1_PREFIX}/ai/enhance`,
-    ENHANCE_STREAM: `${API_V1_PREFIX}/ai/enhance/stream`,
   },
 } as const;
 
