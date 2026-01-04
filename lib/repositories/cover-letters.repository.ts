@@ -77,14 +77,19 @@ export class CoverLetterRepository
    */
   override async findAllForUser(
     userId: string,
-    args?: PrismaArgs
+    args?: PrismaArgs & { limit?: number; offset?: number }
   ): Promise<CoverLetterData[]> {
-    const { where, orderBy, take, skip, include, select } = args || {};
+    const { where, orderBy, take, skip, include, select, limit, offset } = args || {};
+    
+    // Apply default limit if not specified
+    const effectiveLimit = limit ?? take ?? 100;
+    const effectiveOffset = offset ?? skip ?? 0;
+    
     return this.db.coverLetter.findMany({
       where: { ...where, userId },
-      ...(orderBy && { orderBy }),
-      ...(take !== undefined && { take }),
-      ...(skip !== undefined && { skip }),
+      orderBy: orderBy || { createdAt: 'desc' },
+      take: effectiveLimit,
+      skip: effectiveOffset,
       ...(include && { include }),
       ...(select && { select }),
     }) as Promise<CoverLetterData[]>;
