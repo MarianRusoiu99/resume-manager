@@ -1,49 +1,24 @@
-/**
- * Mock for Authentication
- * 
- * Provides mock session and authentication utilities for testing
- */
+import { User } from '@prisma/client';
 
-import { vi } from 'vitest';
-import type { Session } from 'next-auth';
-
-/**
- * Create a mock session for testing
- */
-export function createMockSession(overrides?: {
-  userId?: string;
-  email?: string;
-  name?: string;
-  isAdmin?: boolean;
-}): Session {
+// Mock session for authenticated requests
+export function createMockSession(user: Partial<User> = {}) {
   return {
     user: {
-      id: overrides?.userId || 'test-user-id',
-      email: overrides?.email || 'test@example.com',
-      name: overrides?.name || 'Test User',
-      isAdmin: overrides?.isAdmin || false,
+      id: user.id || 'test-user-id',
+      email: user.email || 'test@example.com',
+      name: user.name || 'Test User',
+      emailVerified: user.emailVerified || new Date(),
     },
-    expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
   };
 }
 
-/**
- * Mock auth() function from next-auth
- */
-export function mockAuth(session: Session | null = null) {
-  return vi.fn().mockResolvedValue(session || createMockSession());
-}
-
-/**
- * Mock getServerSession function
- */
-export function mockGetServerSession(session: Session | null = null) {
-  return vi.fn().mockResolvedValue(session || createMockSession());
-}
-
-/**
- * Create an unauthenticated session (null)
- */
+// Mock unauthenticated session
 export function createUnauthenticatedSession() {
   return null;
+}
+
+// Mock auth function that returns session
+export function mockAuth(session: ReturnType<typeof createMockSession> | null = null) {
+  return async () => session;
 }

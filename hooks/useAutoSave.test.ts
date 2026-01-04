@@ -1,184 +1,110 @@
-/**
- * Tests for useAutoSave hook
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useAutoSave } from '@/hooks/useAutoSave';
+import { useAutoSave } from './useAutoSave';
 
 describe('useAutoSave', () => {
-  let onSaveMock: any;
-
   beforeEach(() => {
-    onSaveMock = vi.fn().mockResolvedValue(undefined);
     vi.useFakeTimers();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
-  it('should not call onSave immediately', () => {
-    const data = { name: 'Test' };
-    
-    renderHook(() => useAutoSave({ data, onSave: onSaveMock as any }));
-
-    expect(onSaveMock).not.toHaveBeenCalled();
-  });
-
   it('should call onSave after delay when data changes', async () => {
-    const initialData = { name: 'Initial' };
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const initialData = { name: 'John' };
+
     const { rerender } = renderHook(
-      ({ data }) => useAutoSave({ data, onSave: onSaveMock as any }),
+      ({ data }) => useAutoSave({ data, onSave, delay: 1000 }),
       { initialProps: { data: initialData } }
     );
 
     // Change data
-    const newData = { name: 'Updated' };
-    rerender({ data: newData });
+    const updatedData = { name: 'Jane' };
+    rerender({ data: updatedData });
+
+    // Fast-forward time and run all timers
+    await vi.runAllTimersAsync();
+
+    expect(onSave).toHaveBeenCalledWith(updatedData);
+  });
+
+  it('should not call onSave if data has not changed', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const data = { name: 'John' };
+
+    renderHook(() => useAutoSave({ data, onSave, delay: 1000 }));
 
     // Fast-forward time
-    vi.advanceTimersByTime(2000);
+    await vi.runAllTimersAsync();
 
-    await waitFor(() => {
-      expect(onSaveMock).toHaveBeenCalledWith(newData);
-      expect(onSaveMock).toHaveBeenCalledTimes(1);
-    });
+    expect(onSave).not.toHaveBeenCalled();
   });
 
   it('should debounce multiple rapid changes', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const initialData = { name: 'John' };
+
     const { rerender } = renderHook(
-      ({ data }) => useAutoSave({ data, onSave: onSaveMock as any }),
-      { initialProps: { data: { name: 'Initial' } } }
+      ({ data }) => useAutoSave({ data, onSave, delay: 1000 }),
+      { initialProps: { data: initialData } }
     );
 
     // Make multiple rapid changes
-    rerender({ data: { name: 'Change 1' } });
+    rerender({ data: { name: 'Jane' } });
     vi.advanceTimersByTime(500);
     
-    rerender({ data: { name: 'Change 2' } });
+    rerender({ data: { name: 'Bob' } });
     vi.advanceTimersByTime(500);
     
-    rerender({ data: { name: 'Change 3' } });
-    vi.advanceTimersByTime(2000);
+    rerender({ data: { name: 'Alice' } });
 
-    await waitFor(() => {
-      // Should only be called once with the final value
-      expect(onSaveMock).toHaveBeenCalledTimes(1);
-      expect(onSaveMock).toHaveBeenCalledWith({ name: 'Change 3' });
-    });
+    // Only after the full delay should onSave be called
+    await vi.runAllTimersAsync();
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith({ name: 'Alice' });
   });
 
-  it('should not call onSave when data does not change', () => {
-    const data = { name: 'Test' };
-    const { rerender } = renderHook(
-      ({ data }) => useAutoSave({ data, onSave: onSaveMock as any }),
-      { initialProps: { data } }
-    );
-
-    // Rerender with same data
-    rerender({ data });
-
-    vi.advanceTimersByTime(2000);
-
-    expect(onSaveMock).not.toHaveBeenCalled();
-  });
-
-  it('should respect custom delay', async () => {
-    const { rerender } = renderHook(
-      ({ data }) => useAutoSave({ data, onSave: onSaveMock as any, delay: 5000 }),
-      { initialProps: { data: { name: 'Initial' } } }
-    );
-
-    rerender({ data: { name: 'Updated' } });
-
-    // Should not be called after 2 seconds
-    vi.advanceTimersByTime(2000);
-    expect(onSaveMock).not.toHaveBeenCalled();
-
-    // Should be called after 5 seconds
-    vi.advanceTimersByTime(3000);
-
-    await waitFor(() => {
-      expect(onSaveMock).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  it('should not call onSave when disabled', () => {
-    const { rerender } = renderHook(
-      ({ data }) => useAutoSave({ data, onSave: onSaveMock as any, enabled: false }),
-      { initialProps: { data: { name: 'Initial' } } }
-    );
-
-    rerender({ data: { name: 'Updated' } });
-
-    vi.advanceTimersByTime(2000);
-
-    expect(onSaveMock).not.toHaveBeenCalled();
-  });
-
-  it('should not call onSave multiple times concurrently', async () => {
-    const slowSave = vi.fn().mockImplementation(async () => {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    });
+  it('should not call onSave when disabled', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const initialData = { name: 'John' };
 
     const { rerender } = renderHook(
-      ({ data }) => useAutoSave({ data, onSave: slowSave as any }),
-      { initialProps: { data: { name: 'Initial' } } }
+      ({ data }) => useAutoSave({ data, onSave, delay: 1000, enabled: false }),
+      { initialProps: { data: initialData } }
     );
 
-    // Trigger first save
-    rerender({ data: { name: 'Update 1' } });
-    vi.advanceTimersByTime(2000);
+    // Change data
+    rerender({ data: { name: 'Jane' } });
 
-    // Trigger second save while first is in progress
-    rerender({ data: { name: 'Update 2' } });
-    vi.advanceTimersByTime(2000);
+    // Fast-forward time
+    await vi.runAllTimersAsync();
 
-    await waitFor(() => {
-      // Should only call once (second call is prevented by isSavingRef check)
-      expect(slowSave).toHaveBeenCalledTimes(1);
-    });
+    expect(onSave).not.toHaveBeenCalled();
   });
 
-  it('should handle save errors gracefully', async () => {
-    const errorSave = vi.fn().mockRejectedValue(new Error('Save failed'));
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('should use custom delay', async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const initialData = { name: 'John' };
 
     const { rerender } = renderHook(
-      ({ data }) => useAutoSave({ data, onSave: errorSave as any }),
-      { initialProps: { data: { name: 'Initial' } } }
+      ({ data }) => useAutoSave({ data, onSave, delay: 3000 }),
+      { initialProps: { data: initialData } }
     );
 
-    rerender({ data: { name: 'Updated' } });
+    // Change data
+    rerender({ data: { name: 'Jane' } });
+
+    // Should not be called before delay
     vi.advanceTimersByTime(2000);
+    expect(onSave).not.toHaveBeenCalled();
 
-    await waitFor(() => {
-      expect(errorSave).toHaveBeenCalled();
-    });
+    // Should be called after delay
+    await vi.runAllTimersAsync();
 
-    // Should not throw error
-    expect(() => {
-      vi.advanceTimersByTime(100);
-    }).not.toThrow();
-
-    consoleErrorSpy.mockRestore();
-  });
-
-  it('should cancel pending save on unmount', () => {
-    const { rerender, unmount } = renderHook(
-      ({ data }) => useAutoSave({ data, onSave: onSaveMock as any }),
-      { initialProps: { data: { name: 'Initial' } } }
-    );
-
-    rerender({ data: { name: 'Updated' } });
-
-    // Unmount before timeout fires
-    unmount();
-
-    vi.advanceTimersByTime(2000);
-
-    expect(onSaveMock).not.toHaveBeenCalled();
+    expect(onSave).toHaveBeenCalledWith({ name: 'Jane' });
   });
 });

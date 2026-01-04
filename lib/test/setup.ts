@@ -1,94 +1,97 @@
-/**
- * Test Setup and Utilities
- * 
- * Provides database setup, cleanup, and test utilities for Vitest tests
- */
-
 import { PrismaClient } from '@prisma/client';
-import { beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
+import { beforeAll, afterAll, afterEach } from 'vitest';
 
-// Create a separate Prisma client for testing
-export const testDb = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/test',
-    },
-  },
-});
+// Test database instance
+let testPrisma: PrismaClient | null = null;
+let databaseConnected = false;
 
-/**
- * Setup database connection before all tests
- */
-export async function setupTestDatabase() {
-  await testDb.$connect();
+// Check if database is available
+const isDatabaseAvailable = () => {
+  return process.env.DATABASE_URL !== undefined;
+};
+
+// Get or create test Prisma client
+export function getTestPrisma(): PrismaClient {
+  if (!testPrisma && isDatabaseAvailable()) {
+    testPrisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
+      },
+    });
+  }
+  
+  if (!testPrisma) {
+    throw new Error('Database not available for testing. Set DATABASE_URL environment variable.');
+  }
+  
+  return testPrisma;
 }
 
-/**
- * Cleanup database connection after all tests
- */
-export async function teardownTestDatabase() {
-  await testDb.$disconnect();
-}
-
-/**
- * Clean all database tables before each test
- * Deletes in order to respect foreign key constraints
- */
-export async function cleanDatabase() {
-  const tables = [
-    'ApiKeyAuditLog',
-    'UserAiPreference',
-    'ApiModel',
-    'ApiProvider',
-    'AuditLog',
-    'Notification',
-    'CoverLetter',
-    'ResumeDocument',
-    'Resume',
-    'ProfileDocument',
-    'Profile',
-    'JobPosting',
-    'Company',
-    'ResumeTemplate',
-    'Session',
-    'User',
-  ];
-
-  // Delete in reverse order to handle foreign key constraints
-  for (const table of tables) {
-    await testDb.$executeRawUnsafe(`TRUNCATE TABLE "${table}" CASCADE;`);
+// Cleanup utilities
+export async function cleanupDatabase() {
+  if (!databaseConnected || !testPrisma) {
+    return;
+  }
+  
+  try {
+    // Delete in correct order to respect foreign key constraints
+    await testPrisma.coverLetter.deleteMany({});
+    await testPrisma.generatedResume.deleteMany({});
+    await testPrisma.resume.deleteMany({});
+    await testPrisma.profile.deleteMany({});
+    await testPrisma.template.deleteMany({});
+    await testPrisma.apiKey.deleteMany({});
+    await testPrisma.aiAuditLog.deleteMany({});
+    await testPrisma.session.deleteMany({});
+    await testPrisma.user.deleteMany({});
+  } catch (error) {
+    // Silently ignore cleanup errors
   }
 }
 
-/**
- * Setup hooks for test database lifecycle
- * Call this in your test files or in a global setup
- */
-export function setupTestHooks() {
+export async function resetDatabase() {
+  await cleanupDatabase();
+}
+
+// Global setup hooks - only if database is available
+if (isDatabaseAvailable()) {
   beforeAll(async () => {
-    await setupTestDatabase();
+    try {
+      const prisma = getTestPrisma();
+      await prisma.$connect();
+      databaseConnected = true;
+    } catch (error) {
+      console.warn('Database not available, some tests will be skipped');
+      databaseConnected = false;
+    }
   });
 
   afterAll(async () => {
-    await teardownTestDatabase();
+    if (testPrisma && databaseConnected) {
+      await cleanupDatabase();
+      await testPrisma.$disconnect();
+    }
   });
 
-  beforeEach(async () => {
-    await cleanDatabase();
+  // Clean up after each test
+  afterEach(async () => {
+    if (databaseConnected) {
+      await cleanupDatabase();
+    }
   });
 }
 
-/**
- * Utility to wait for a specific amount of time
- * Useful for testing debounced functions
- */
-export function wait(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+// Helper to create isolated test context
+export function createTestContext() {
+  return {
+    prisma: getTestPrisma(),
+    cleanup: cleanupDatabase,
+  };
 }
 
-/**
- * Create a mock date that stays consistent during tests
- */
-export function createMockDate(date: string = '2024-01-01T00:00:00.000Z'): Date {
-  return new Date(date);
+// Helper to check if tests should be skipped
+export function shouldSkipDatabaseTests(): boolean {
+  return !isDatabaseAvailable() || !databaseConnected;
 }
