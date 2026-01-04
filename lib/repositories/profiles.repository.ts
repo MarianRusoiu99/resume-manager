@@ -55,11 +55,15 @@ export class ProfileRepository extends GenericUserOwnedRepository<
     };
   }
 
-  async findAllByUserId(userId: string): Promise<ProfileData[]> {
+  async findAllByUserId(userId: string, options?: { limit?: number; offset?: number }): Promise<ProfileData[]> {
+    const { limit = 100, offset = 0 } = options || {};
+    
     const profiles = await this.db.profile.findMany({
       where: { userId },
       include: { document: { select: { document: true } } },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+      take: limit,
+      skip: offset,
     });
     return profiles.map(p => this.mapProfile(p));
   }

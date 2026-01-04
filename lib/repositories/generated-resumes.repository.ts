@@ -99,13 +99,21 @@ export class GeneratedResumeRepository
   /**
    * Find all resumes for a user
    */
-  override async findAllForUser(userId: string, args?: PrismaArgs): Promise<GeneratedResumeData[]> {
-    const { where, orderBy, take, skip } = args || {};
+  override async findAllForUser(
+    userId: string, 
+    args?: PrismaArgs & { limit?: number; offset?: number }
+  ): Promise<GeneratedResumeData[]> {
+    const { where, orderBy, take, skip, limit, offset } = args || {};
+    
+    // Apply default limit if not specified
+    const effectiveLimit = limit ?? take ?? 100;
+    const effectiveOffset = offset ?? skip ?? 0;
+    
     const resumes = await this.db.resume.findMany({
       where: { ...where, userId },
       orderBy: orderBy || { createdAt: 'desc' },
-      ...(take !== undefined && { take }),
-      ...(skip !== undefined && { skip }),
+      take: effectiveLimit,
+      skip: effectiveOffset,
       include: {
         document: { select: { document: true } },
         jobPosting: { include: { company: true } },
