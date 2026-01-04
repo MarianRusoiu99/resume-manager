@@ -129,10 +129,9 @@ export class DocumentParserService implements IDocumentParserService {
     }
 
     try {
-      // Import directly from lib to bypass the test mode in index.js
-      // The index.js has a debug mode check that fails in bundler environments
+      // Dynamic import for pdf-parse
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+      const pdfParse = require('pdf-parse');
       
       const result = await pdfParse(buffer, {
         // Limit to first 50 pages for security

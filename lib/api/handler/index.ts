@@ -89,7 +89,7 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                     : options.rateLimit;
                 
                 const identifier = getClientIdentifier(request, session?.userId);
-                const rateLimitResponse = applyRateLimit(identifier, rateLimitConfig, requestId);
+                const rateLimitResponse = await applyRateLimit(identifier, rateLimitConfig, requestId);
                 
                 if (rateLimitResponse) {
                     reqLogger.warn(`Rate limited: ${method} ${url}`, { userId: session?.userId });
@@ -159,7 +159,7 @@ export function createApiHandler<T = unknown, TBody = unknown>(
                     ? RateLimitConfigs[options.rateLimit]
                     : options.rateLimit;
                 const identifier = getClientIdentifier(request, session?.userId);
-                response = addRateLimitHeaders(response, identifier, rateLimitConfig);
+                response = await addRateLimitHeaders(response, identifier, rateLimitConfig);
             }
 
               // Log success

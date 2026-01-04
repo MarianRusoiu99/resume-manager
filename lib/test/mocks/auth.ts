@@ -7,7 +7,6 @@ export function createMockSession(user: Partial<User> = {}) {
       id: user.id || 'test-user-id',
       email: user.email || 'test@example.com',
       name: user.name || 'Test User',
-      emailVerified: user.emailVerified || new Date(),
     },
     expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
   };

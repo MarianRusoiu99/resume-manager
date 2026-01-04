@@ -232,9 +232,10 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
   /**
    * Delete AI settings for a user
    */
-  override async delete(userId: string): Promise<UserAISettingsData | null> {
+  override async delete(userId: string): Promise<UserAISettingsData> {
     await this.db.userAiPreference.deleteMany({ where: { userId } });
-    return null;
+    // Return blank settings after deletion
+    return blankSettings(userId);
   }
 
   /**

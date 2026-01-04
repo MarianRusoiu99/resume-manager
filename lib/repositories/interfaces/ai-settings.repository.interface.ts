@@ -42,6 +42,6 @@ export interface IUserAISettingsRepository {
     modelId: string | null
   ): Promise<UserAISettingsData>;
   getFeaturePreference(userId: string, feature: AIFeatureType): Promise<ModelPreference>;
-  delete(userId: string): Promise<void>;
+  delete(userId: string): Promise<UserAISettingsData>;
   clearFeaturePreference(userId: string, feature: AIFeatureType): Promise<UserAISettingsData | null>;
 }

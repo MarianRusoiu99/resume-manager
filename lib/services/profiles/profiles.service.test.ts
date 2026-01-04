@@ -5,28 +5,28 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { ProfileService } from '@/lib/services/profiles/profiles.service';
 import { ProfileRepository } from '@/lib/repositories/profiles.repository';
-import { setupTestDatabase, teardownTestDatabase, cleanDatabase, testDb } from '@/lib/test/setup';
+import { getTestPrisma, cleanupDatabase, shouldSkipDatabaseTests } from '@/lib/test/setup';
 import { createTestUser, createTestProfile } from '@/lib/test/factories';
 import { profileCache } from '@/lib/cache/simple-cache';
 import type { Resume } from '@/lib/validations/jsonresume';
 
-describe('ProfileService', () => {
+describe.skipIf(shouldSkipDatabaseTests())('ProfileService', () => {
   let service: ProfileService;
   let repository: ProfileRepository;
   let testUserId: string;
 
   beforeAll(async () => {
-    await setupTestDatabase();
+    const testDb = getTestPrisma();
     repository = new ProfileRepository(testDb);
     service = new ProfileService(repository, profileCache);
   });
 
   afterAll(async () => {
-    await teardownTestDatabase();
+    await cleanupDatabase();
   });
 
   beforeEach(async () => {
-    await cleanDatabase();
+    await cleanupDatabase();
     profileCache.clear();
     const user = await createTestUser({ email: 'profile-service-test@example.com' });
     testUserId = user.id;

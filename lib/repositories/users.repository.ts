@@ -35,8 +35,7 @@ export type SafeUser = Omit<User, 'passwordHash'>;
 /**
  * Repository for managing users in the database
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- GenericRepository requires a Prisma delegate type, but we use direct delegate access
-export class UserRepository extends GenericRepository<User, CreateUserInput, UpdateUserInput, any> {
+export class UserRepository extends GenericRepository<User, CreateUserInput, UpdateUserInput> {
   constructor(dbClient: PrismaClient = prisma) {
     super('user', dbClient);
   }
@@ -60,7 +59,7 @@ export class UserRepository extends GenericRepository<User, CreateUserInput, Upd
   override async findById(id: string): Promise<User | null> {
     return this.delegate.findUnique({
       where: { id },
-    });
+    }) as Promise<User | null>;
   }
 
   /**
@@ -87,7 +86,7 @@ export class UserRepository extends GenericRepository<User, CreateUserInput, Upd
   async findByEmail(email: string): Promise<User | null> {
     return this.delegate.findUnique({
       where: { email },
-    });
+    }) as Promise<User | null>;
   }
 
   /**
@@ -121,7 +120,7 @@ export class UserRepository extends GenericRepository<User, CreateUserInput, Upd
         ...(data.passwordHash !== undefined && { passwordHash: data.passwordHash }),
         ...(data.name !== undefined && { name: data.name }),
       },
-    });
+    }) as Promise<User>;
   }
 
   /**
@@ -131,7 +130,7 @@ export class UserRepository extends GenericRepository<User, CreateUserInput, Upd
     return this.delegate.update({
       where: { id },
       data: { passwordHash },
-    });
+    }) as Promise<User>;
   }
 
   /**
@@ -162,7 +161,7 @@ export class UserRepository extends GenericRepository<User, CreateUserInput, Upd
           },
         },
       },
-    });
+    }) as Promise<(User & { _count: { profiles: number; resumes: number } }) | null>;
   }
 }
 

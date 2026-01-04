@@ -20,7 +20,7 @@ type ResumePrismaDelegate = {
  * Repository for managing generated resumes in the database.
  */
 export class GeneratedResumeRepository 
-  extends GenericUserOwnedRepository<GeneratedResumeData, CreateResumeInput, UpdateResumeInput, ResumePrismaDelegate>
+  extends GenericUserOwnedRepository<GeneratedResumeData, CreateResumeInput, UpdateResumeInput>
   implements IGeneratedResumeRepository 
 {
   constructor(dbClient: PrismaClient = prisma) {

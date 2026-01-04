@@ -32,8 +32,7 @@ type ProfilePrismaDelegate = {
 export class ProfileRepository extends GenericUserOwnedRepository<
   ProfileData,
   CreateProfileInput,
-  UpdateProfileInput,
-  ProfilePrismaDelegate
+  UpdateProfileInput
 > implements IProfileRepository {
   
   constructor(dbClient: PrismaClient = prisma) {

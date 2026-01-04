@@ -37,13 +37,20 @@ export async function cleanupDatabase() {
   
   try {
     // Delete in correct order to respect foreign key constraints
+    await testPrisma.apiKeyAuditLog.deleteMany({});
+    await testPrisma.notification.deleteMany({});
+    await testPrisma.auditLog.deleteMany({});
     await testPrisma.coverLetter.deleteMany({});
-    await testPrisma.generatedResume.deleteMany({});
+    await testPrisma.resumeDocument.deleteMany({});
     await testPrisma.resume.deleteMany({});
+    await testPrisma.profileDocument.deleteMany({});
     await testPrisma.profile.deleteMany({});
-    await testPrisma.template.deleteMany({});
-    await testPrisma.apiKey.deleteMany({});
-    await testPrisma.aiAuditLog.deleteMany({});
+    await testPrisma.jobPosting.deleteMany({});
+    await testPrisma.company.deleteMany({});
+    await testPrisma.resumeTemplate.deleteMany({});
+    await testPrisma.userAiPreference.deleteMany({});
+    await testPrisma.apiModel.deleteMany({});
+    await testPrisma.apiProvider.deleteMany({});
     await testPrisma.session.deleteMany({});
     await testPrisma.user.deleteMany({});
   } catch (error) {

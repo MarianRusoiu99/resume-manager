@@ -43,7 +43,7 @@ export {
   
   // Hooks
   useSidebar,
-} from "./sidebar"
+} from "./sidebar/index"
 
 // Re-export types
 export type {

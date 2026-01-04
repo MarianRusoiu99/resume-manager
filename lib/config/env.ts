@@ -122,6 +122,11 @@ class EnvironmentConfig {
       return;
     }
 
+    // Skip validation during build time (Next.js sets NEXT_PHASE during build)
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return;
+    }
+
     // Required variables in production
     if (!this.config.DATABASE_URL) {
       throw new Error('DATABASE_URL is required in production');

@@ -5,7 +5,7 @@ import { Copy, Trash2, Save, Share2 } from 'lucide-react';
 import type { ResumeEditorRef } from "@/components/editor/ResumeEditor";
 
 interface ResumeDetailActionsProps {
-  editorRef: React.RefObject<ResumeEditorRef>;
+  editorRef: React.RefObject<ResumeEditorRef | null>;
   onDelete: () => void;
   onDuplicate: () => void;
   isDeleting: boolean;

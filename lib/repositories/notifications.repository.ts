@@ -9,8 +9,7 @@ import type { INotificationRepository, NotificationData, CreateNotificationInput
  * Implements INotificationRepository for data access abstraction.
  */
 export class NotificationRepository 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- TPrismaDelegate requires dynamic Prisma types
-  extends GenericUserOwnedRepository<NotificationData, CreateNotificationInput, Partial<NotificationData>, any>
+  extends GenericUserOwnedRepository<NotificationData, CreateNotificationInput, Partial<NotificationData>>
   implements INotificationRepository 
 {
   constructor(dbClient: PrismaClient = prisma) {

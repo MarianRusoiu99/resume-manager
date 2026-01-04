@@ -13,20 +13,17 @@ interface CreateProfileOptions {
   userId: string;
   firstName?: string;
   lastName?: string;
-  email?: string;
-  phone?: string;
 }
 
 interface CreateResumeOptions {
   userId: string;
+  profileId?: string;
   title?: string;
-  data?: any;
-  isActive?: boolean;
 }
 
 interface CreateCoverLetterOptions {
   userId: string;
-  profileId: string;
+  resumeId?: string;
   title?: string;
   content?: string;
   jobDescription?: string;
@@ -58,13 +55,9 @@ export async function createTestProfile(
   return prisma.profile.create({
     data: {
       userId: options.userId,
-      firstName: options.firstName || 'John',
-      lastName: options.lastName || 'Doe',
-      email: options.email || `john.doe-${Date.now()}@example.com`,
-      phone: options.phone || '+1234567890',
-      summary: 'Experienced professional with a passion for technology.',
-      headline: 'Software Engineer',
-      location: 'San Francisco, CA',
+      name: options.firstName ? `${options.firstName} ${options.lastName || ''}`.trim() : 'John Doe',
+      isDefault: false,
+      isPublic: false,
     },
   });
 }
@@ -74,46 +67,16 @@ export async function createTestResume(
 ): Promise<Resume> {
   const prisma = getTestPrisma();
   
-  const defaultData = {
-    basics: {
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '+1234567890',
-      summary: 'Experienced software engineer',
-    },
-    work: [
-      {
-        company: 'Tech Corp',
-        position: 'Senior Developer',
-        startDate: '2020-01-01',
-        endDate: '2023-12-31',
-        summary: 'Led development of key features',
-      },
-    ],
-    education: [
-      {
-        institution: 'University of Example',
-        area: 'Computer Science',
-        studyType: 'Bachelor',
-        startDate: '2015-09-01',
-        endDate: '2019-06-01',
-      },
-    ],
-    skills: [
-      {
-        name: 'JavaScript',
-        level: 'Expert',
-        keywords: ['React', 'Node.js', 'TypeScript'],
-      },
-    ],
+  const defaultMetadata = {
+    jobTitle: options.title || 'Software Engineer',
+    companyName: 'Test Company',
   };
   
   return prisma.resume.create({
     data: {
       userId: options.userId,
-      title: options.title || 'Test Resume',
-      data: options.data || defaultData,
-      isActive: options.isActive ?? true,
+      profileId: options.profileId,
+      metadata: defaultMetadata,
     },
   });
 }
@@ -126,18 +89,19 @@ export async function createTestCoverLetter(
   return prisma.coverLetter.create({
     data: {
       userId: options.userId,
-      profileId: options.profileId,
-      title: options.title || 'Test Cover Letter',
+      resumeId: options.resumeId,
       content: options.content || 'Dear Hiring Manager,\n\nI am writing to express my interest...',
-      jobDescription: options.jobDescription || 'We are looking for a talented developer...',
-      companyName: 'Example Corp',
-      position: 'Software Engineer',
+      metadata: {
+        jobTitle: options.title || 'Software Engineer',
+        companyName: 'Example Corp',
+        jobDescription: options.jobDescription || 'We are looking for a talented developer...',
+      },
     },
   });
 }
 
 // Helper to create a complete test context with user, profile, and resume
-export async function createTestContext() {
+export async function createFullTestContext() {
   const user = await createTestUser();
   const profile = await createTestProfile({ userId: user.id });
   const resume = await createTestResume({ userId: user.id });
