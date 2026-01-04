@@ -1,9 +1,12 @@
 /**
  * Rate Limiting Middleware for Next.js API Routes
  * 
- * Simple in-memory rate limiter suitable for single-server deployments.
- * For production with multiple servers, consider using Redis-backed rate limiting.
+ * Supports both Redis-backed (production) and in-memory (development) rate limiting.
+ * Redis-backed rate limiting is suitable for multi-server deployments.
  */
+
+import { getCacheProvider } from '@/lib/redis/client';
+import { env } from '@/lib/config/env';
 
 interface RateLimitEntry {
   count: number;
@@ -16,7 +19,51 @@ export interface RateLimitConfig {
   message?: string;  // Custom error message
 }
 
-class RateLimiter {
+/**
+ * Redis-backed rate limiter for production use
+ */
+class RedisRateLimiter {
+  private cache = getCacheProvider();
+  
+  async checkLimit(identifier: string, limit: number, windowMs: number): Promise<boolean> {
+    const key = `rate-limit:${identifier}`;
+    const current = await this.cache.get<string>(key);
+    const count = current ? parseInt(current, 10) : 0;
+    
+    if (count >= limit) return false;
+    
+    await this.cache.incr(key);
+    if (count === 0) {
+      await this.cache.expire(key, Math.ceil(windowMs / 1000));
+    }
+    return true;
+  }
+  
+  async getCount(identifier: string): Promise<number> {
+    const key = `rate-limit:${identifier}`;
+    const current = await this.cache.get<string>(key);
+    return current ? parseInt(current, 10) : 0;
+  }
+  
+  async getTTL(identifier: string): Promise<number> {
+    const key = `rate-limit:${identifier}`;
+    return this.cache.ttl(key);
+  }
+  
+  async clear(identifier: string): Promise<void> {
+    const key = `rate-limit:${identifier}`;
+    await this.cache.delete(key);
+  }
+  
+  async clearAll(): Promise<void> {
+    await this.cache.deletePattern('rate-limit:*');
+  }
+}
+
+/**
+ * In-memory rate limiter for development/testing
+ */
+class MemoryRateLimiter {
   private requests: Map<string, RateLimitEntry> = new Map();
   private cleanupInterval: NodeJS.Timeout;
 
@@ -30,7 +77,7 @@ class RateLimiter {
   /**
    * Check if a request should be rate limited
    */
-  isRateLimited(identifier: string, config: RateLimitConfig): boolean {
+  async checkLimit(identifier: string, limit: number, windowMs: number): Promise<boolean> {
     const now = Date.now();
     const entry = this.requests.get(identifier);
 
@@ -38,39 +85,40 @@ class RateLimiter {
     if (!entry || now > entry.resetTime) {
       this.requests.set(identifier, {
         count: 1,
-        resetTime: now + config.windowMs
+        resetTime: now + windowMs
       });
-      return false;
+      return true;
     }
 
     // If within limit, increment counter
-    if (entry.count < config.maxRequests) {
+    if (entry.count < limit) {
       entry.count++;
-      return false;
+      return true;
     }
 
     // Rate limit exceeded
-    return true;
+    return false;
   }
 
   /**
-   * Get remaining requests for an identifier
+   * Get count for an identifier
    */
-  getRemaining(identifier: string, config: RateLimitConfig): number {
+  async getCount(identifier: string): Promise<number> {
     const entry = this.requests.get(identifier);
     if (!entry || Date.now() > entry.resetTime) {
-      return config.maxRequests;
+      return 0;
     }
-    return Math.max(0, config.maxRequests - entry.count);
+    return entry.count;
   }
 
   /**
-   * Get time until reset for an identifier
+   * Get TTL in seconds
    */
-  getResetTime(identifier: string): number | null {
+  async getTTL(identifier: string): Promise<number> {
     const entry = this.requests.get(identifier);
-    if (!entry) return null;
-    return entry.resetTime;
+    if (!entry) return -2; // Key doesn't exist
+    const remaining = Math.ceil((entry.resetTime - Date.now()) / 1000);
+    return remaining > 0 ? remaining : -1; // -1 means expired
   }
 
   /**
@@ -86,9 +134,16 @@ class RateLimiter {
   }
 
   /**
+   * Clear single entry
+   */
+  async clear(identifier: string): Promise<void> {
+    this.requests.delete(identifier);
+  }
+
+  /**
    * Clear all entries (useful for testing)
    */
-  clear(): void {
+  async clearAll(): Promise<void> {
     this.requests.clear();
   }
 
@@ -97,7 +152,64 @@ class RateLimiter {
    */
   destroy(): void {
     clearInterval(this.cleanupInterval);
-    this.clear();
+    this.requests.clear();
+  }
+}
+
+/**
+ * Unified rate limiter interface
+ */
+class RateLimiter {
+  private backend: RedisRateLimiter | MemoryRateLimiter;
+  
+  constructor() {
+    // Use Redis in production if available, otherwise fall back to memory
+    if (env.hasRedis) {
+      this.backend = new RedisRateLimiter();
+    } else {
+      this.backend = new MemoryRateLimiter();
+    }
+  }
+  
+  /**
+   * Check if a request should be rate limited
+   */
+  async isRateLimited(identifier: string, config: RateLimitConfig): Promise<boolean> {
+    const allowed = await this.backend.checkLimit(identifier, config.maxRequests, config.windowMs);
+    return !allowed;
+  }
+  
+  /**
+   * Get remaining requests for an identifier
+   */
+  async getRemaining(identifier: string, config: RateLimitConfig): Promise<number> {
+    const count = await this.backend.getCount(identifier);
+    return Math.max(0, config.maxRequests - count);
+  }
+  
+  /**
+   * Get time until reset for an identifier
+   */
+  async getResetTime(identifier: string, config: RateLimitConfig): Promise<number | null> {
+    const ttl = await this.backend.getTTL(identifier);
+    if (ttl < 0) return null;
+    return Date.now() + (ttl * 1000);
+  }
+  
+  /**
+   * Clear all entries (useful for testing)
+   */
+  async clear(): Promise<void> {
+    await this.backend.clearAll();
+  }
+  
+  /**
+   * Cleanup on destroy (for memory backend)
+   */
+  destroy(): void {
+    if (this.backend instanceof MemoryRateLimiter) {
+      this.backend.destroy();
+    }
   }
 }
 
@@ -192,16 +304,16 @@ export function createRateLimitResponse(
  * @param config - Rate limit configuration
  * @returns Response if rate limited, null otherwise
  */
-export function applyRateLimit(
+export async function applyRateLimit(
   identifier: string,
   config: RateLimitConfig,
   requestId?: string
-): Response | null {
-  const isLimited = rateLimiter.isRateLimited(identifier, config);
+): Promise<Response | null> {
+  const isLimited = await rateLimiter.isRateLimited(identifier, config);
   
   if (isLimited) {
-    const resetTime = rateLimiter.getResetTime(identifier);
-    const remaining = rateLimiter.getRemaining(identifier, config);
+    const resetTime = await rateLimiter.getResetTime(identifier, config);
+    const remaining = await rateLimiter.getRemaining(identifier, config);
     return createRateLimitResponse(
       config.message || 'Too many requests',
       resetTime,
@@ -235,13 +347,13 @@ export function getClientIdentifier(
 /**
  * Add rate limit headers to a successful response
  */
-export function addRateLimitHeaders(
+export async function addRateLimitHeaders(
   response: Response,
   identifier: string,
   config: RateLimitConfig
-): Response {
-  const remaining = rateLimiter.getRemaining(identifier, config);
-  const resetTime = rateLimiter.getResetTime(identifier);
+): Promise<Response> {
+  const remaining = await rateLimiter.getRemaining(identifier, config);
+  const resetTime = await rateLimiter.getResetTime(identifier, config);
 
   const headers = new Headers(response.headers);
   headers.set('X-RateLimit-Limit', config.maxRequests.toString());

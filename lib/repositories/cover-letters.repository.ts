@@ -15,8 +15,7 @@ import type { CreateCoverLetterInput, ICoverLetterRepository, UpdateCoverLetterI
  * Cover Letter Repository Implementation
  */
 export class CoverLetterRepository
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GenericUserOwnedRepository requires a Prisma delegate type, but we use direct db access
-  extends GenericUserOwnedRepository<CoverLetterData, CreateCoverLetterInput, UpdateCoverLetterInput, any>
+  extends GenericUserOwnedRepository<CoverLetterData, CreateCoverLetterInput, UpdateCoverLetterInput>
   implements ICoverLetterRepository
 {
   constructor(dbClient: PrismaClient = prisma) {

@@ -15,8 +15,7 @@ import type { ITemplateRepository, CreateTemplateInput, UpdateTemplateInput } fr
  * Template Repository Implementation
  */
 export class TemplateRepository 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GenericRepository requires a Prisma delegate type, but we use direct delegate access with custom mapping
-  extends GenericRepository<ResumeTemplate, CreateTemplateInput, UpdateTemplateInput, any>
+  extends GenericRepository<ResumeTemplate, CreateTemplateInput, UpdateTemplateInput>
   implements ITemplateRepository 
 {
   constructor(dbClient: PrismaClient = prisma) {

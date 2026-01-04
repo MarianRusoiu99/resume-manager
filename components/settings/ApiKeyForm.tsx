@@ -5,7 +5,7 @@ import { FieldConfig } from "@/lib/forms/form-schema";
 import { addApiProviderInputSchema, type AddApiProviderInput } from '@/lib/validations/shared-inputs';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToastAction } from '@/hooks/useToastAction';
 import { addApiProvider } from '@/app/actions/api-provider';
 
 interface ApiKeyFormProps {
@@ -48,18 +48,24 @@ const API_KEY_FIELDS: FieldConfig<AddApiProviderInput>[] = [
 ];
 
 export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider', initialData }: ApiKeyFormProps) {
+  const { runWithToast } = useToastAction();
+
   const onSubmit = async (data: AddApiProviderInput) => {
     const fd = new FormData();
     fd.append('name', data.name);
     fd.append('provider', data.provider);
     fd.append('apiKey', data.apiKey);
 
-    const result = await addApiProvider(fd);
-    if (result.success) {
-      toast.success('API provider added successfully');
+    const result = await runWithToast(
+      () => addApiProvider(fd),
+      {
+        successMessage: 'API provider added successfully',
+        errorMessage: 'Failed to add provider',
+      }
+    );
+
+    if (result) {
       onSuccess?.();
-    } else {
-      toast.error(result.error || 'Failed to add provider');
     }
   };
 

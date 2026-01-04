@@ -68,9 +68,7 @@ function applyPreference(settings: UserAISettingsData, feature: AIFeatureType, p
 export class UserAISettingsRepository extends GenericUserOwnedRepository<
   UserAISettingsData,
   UpsertAISettingsInput,
-  UpsertAISettingsInput,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Custom repository pattern doesn't use standard Prisma delegate
-  any
+  UpsertAISettingsInput
 > implements IUserAISettingsRepository {
   
   constructor(dbClient: PrismaClient = prisma) {
@@ -234,8 +232,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
   /**
    * Delete AI settings for a user
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Override returns void instead of entity for this delete-all operation
-  override async delete(userId: string): Promise<any> {
+  override async delete(userId: string): Promise<UserAISettingsData | null> {
     await this.db.userAiPreference.deleteMany({ where: { userId } });
     return null;
   }
