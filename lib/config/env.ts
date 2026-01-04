@@ -111,6 +111,64 @@ class EnvironmentConfig {
 
   constructor() {
     this.config = parseEnv();
+    this.validateProductionRequirements();
+  }
+
+  /**
+   * Validate production-specific requirements
+   */
+  private validateProductionRequirements(): void {
+    if (this.config.NODE_ENV !== 'production') {
+      return;
+    }
+
+    // Required variables in production
+    if (!this.config.DATABASE_URL) {
+      throw new Error('DATABASE_URL is required in production');
+    }
+
+    if (!this.config.NEXTAUTH_SECRET) {
+      throw new Error('NEXTAUTH_SECRET is required in production');
+    }
+
+    if (!this.config.ENCRYPTION_KEY) {
+      throw new Error('ENCRYPTION_KEY is required in production');
+    }
+
+    // Check for default/weak secrets
+    const defaultSecrets = [
+      'your-nextauth-secret-key-here-min-32-chars',
+      'your-encryption-key-here-minimum-32-characters',
+      'changeme',
+      'secret',
+      'password',
+    ];
+
+    if (this.config.NEXTAUTH_SECRET && defaultSecrets.includes(this.config.NEXTAUTH_SECRET)) {
+      throw new Error(
+        'NEXTAUTH_SECRET is using a default/weak value. Change it in production! ' +
+        'Generate a secure value with: openssl rand -base64 32'
+      );
+    }
+
+    if (this.config.ENCRYPTION_KEY && defaultSecrets.includes(this.config.ENCRYPTION_KEY)) {
+      throw new Error(
+        'ENCRYPTION_KEY is using a default/weak value. Change it in production! ' +
+        'Generate a secure value with: openssl rand -hex 32'
+      );
+    }
+
+    // Warn about missing optional but recommended configs
+    if (!this.config.REDIS_URL) {
+      logger.warn(
+        'REDIS_URL not configured in production. ' +
+        'Using in-memory storage (not suitable for multi-instance deployments)'
+      );
+    }
+
+    if (!this.config.NEXTAUTH_URL) {
+      logger.warn('NEXTAUTH_URL not configured. This may cause authentication issues.');
+    }
   }
 
   // Node environment helpers
