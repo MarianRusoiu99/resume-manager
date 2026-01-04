@@ -1,6 +1,6 @@
 "use client";
 
-import { FormProvider, useForm, UseFormReturn, FieldValues, Path, PathValue } from "react-hook-form";
+import { FormProvider, useForm, useWatch, UseFormReturn, FieldValues, Path, PathValue } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ZodType } from "zod";
 import { GenericForm } from "./GenericForm";
@@ -57,8 +57,8 @@ export function ManagedForm<T extends FieldValues>({
     mode: "onBlur",
   });
 
-  const { watch, formState: { isDirty }, getValues } = form;
-  const values = watch();
+  const { control, formState: { isDirty }, getValues } = form;
+  const values = useWatch({ control });
   const prevValuesRef = useRef<T>(defaultValues);
 
   // Auto-save logic

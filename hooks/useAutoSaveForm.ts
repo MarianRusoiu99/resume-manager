@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useForm, UseFormProps, FieldValues } from 'react-hook-form';
+import { useForm, useWatch, UseFormProps, FieldValues } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ZodType } from 'zod';
 import { createComponentLogger } from '@/lib/utils/client-logger';
@@ -26,8 +26,8 @@ export function useAutoSaveForm<T extends FieldValues>({
     resolver: zodResolver(schema as any),
   });
 
-  const { watch, reset, formState: { isDirty }, getValues } = form;
-  const values = watch();
+  const { reset, formState: { isDirty }, getValues, control } = form;
+  const values = useWatch({ control });
   const prevValuesRef = useRef<T>(formProps.defaultValues as T);
 
   // Auto-save logic
