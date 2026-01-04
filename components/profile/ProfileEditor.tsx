@@ -6,6 +6,7 @@ import { Button } from "@/components/ui";
 import { Page } from "@/components/layout/Page";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useToastAction } from "@/hooks/useToastAction";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { getProfile, updateProfile } from "@/app/actions/profile";
@@ -32,6 +33,7 @@ interface ProfileEditorProps {
 
 export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const router = useRouter();
+  const { runWithToast } = useToastAction();
   const [profile, setProfile] = useState<ProfileEditorData | null>(null);
   const editorRef = useRef<ResumeEditorRef>(null);
 
@@ -86,14 +88,18 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
       toast.error("Name cannot be empty");
       return;
     }
-    try {
-      const result = await updateProfile(profileId, { name: newName });
-      if (!result.success) throw new Error(result.error);
+    
+    const result = await runWithToast(
+      () => updateProfile(profileId, { name: newName }),
+      {
+        successMessage: 'Profile renamed',
+        errorMessage: 'Failed to update profile name',
+      }
+    );
+
+    if (result) {
       setProfile((prev) => prev ? { ...prev, name: newName } : null);
       setIsRenameModalOpen(false);
-      toast.success("Profile renamed");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update profile name");
     }
   };
 

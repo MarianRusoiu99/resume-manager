@@ -18,6 +18,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { FileText, ClipboardPaste, Upload, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useToastAction } from "@/hooks/useToastAction";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createComponentLogger } from "@/lib/utils/client-logger";
@@ -29,6 +30,7 @@ interface ResumeImportButtonProps {
 
 export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportButtonProps>) {
     const log = createComponentLogger("ResumeImportButton");
+    const { runWithToast } = useToastAction();
     const [isUploading] = useState(false);
     const [showJsonDialog, setShowJsonDialog] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
@@ -41,27 +43,32 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
             return;
         }
 
-        try {
-            const parsedData = JSON.parse(jsonText);
-            const validation = resumeSchema.safeParse(parsedData);
+        const result = await runWithToast(
+            async () => {
+                const parsedData = JSON.parse(jsonText);
+                const validation = resumeSchema.safeParse(parsedData);
 
-            if (!validation.success) {
-                log.error("Validation errors", undefined, { issues: validation.error.issues });
-                const firstError = validation.error.issues[0];
-                const errorMessage = firstError
-                    ? `Invalid field: ${firstError.path.join(".")} - ${firstError.message}`
-                    : "JSON doesn't match Resume schema.";
-                toast.error(errorMessage);
-                return;
+                if (!validation.success) {
+                    log.error("Validation errors", undefined, { issues: validation.error.issues });
+                    const firstError = validation.error.issues[0];
+                    const errorMessage = firstError
+                        ? `Invalid field: ${firstError.path.join(".")} - ${firstError.message}`
+                        : "JSON doesn't match Resume schema.";
+                    throw new Error(errorMessage);
+                }
+
+                return validation.data;
+            },
+            {
+                successMessage: 'Resume imported successfully from JSON!',
+                errorMessage: 'Invalid JSON format. Please check your input.',
             }
+        );
 
-            onImportSuccess(validation.data);
-            toast.success("Resume imported successfully from JSON!");
+        if (result) {
+            onImportSuccess(result);
             setShowJsonDialog(false);
             setJsonText("");
-        } catch (error) {
-            log.error("JSON parse error", error);
-            toast.error("Invalid JSON format. Please check your input.");
         }
     };
 
