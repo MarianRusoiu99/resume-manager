@@ -5,6 +5,7 @@
 
 'use client';
 
+import { memo } from 'react';
 import { Download, FileText, Briefcase } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import { useExportPDF } from '@/hooks';
@@ -21,7 +22,7 @@ interface CoverLetterCardProps {
   onDelete: (id: string) => void;
 }
 
-export function CoverLetterCard({
+export const CoverLetterCard = memo(function CoverLetterCard({
   id,
   jobTitle,
   companyName,
@@ -88,4 +89,4 @@ export function CoverLetterCard({
       }}
     />
   );
-}
+});

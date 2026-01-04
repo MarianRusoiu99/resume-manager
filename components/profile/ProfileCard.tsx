@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useTransition } from 'react';
+import { useTransition, memo } from 'react';
 import { Star, Edit, Copy, Check, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import type { GalleryCardAction } from "@/components/shared/GalleryCard";
@@ -26,7 +26,7 @@ interface ProfileCardProps {
   onSetDefault: (id: string) => void;
 }
 
-export function ProfileCard({
+export const ProfileCard = memo(function ProfileCard({
   id,
   name,
   isDefault,
@@ -150,4 +150,4 @@ export function ProfileCard({
       }}
     />
   );
-}
+});

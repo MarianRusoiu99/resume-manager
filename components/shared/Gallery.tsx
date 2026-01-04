@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { type ReactNode, memo } from "react";
 import { cn } from "@/lib/utils";
 import { EmptyState, SearchEmptyState } from "@/components/shared/states";
 import { GallerySkeleton } from "@/components/shared/skeletons/GallerySkeleton";
@@ -56,7 +56,7 @@ export interface GalleryProps<T> {
  * Provides consistent patterns for displaying collections of items across the app.
  * Handles loading states, empty states, search empty states, and filtering.
  */
-export function Gallery<T>({
+const GalleryComponent = <T,>({
   items,
   renderItem,
   getItemKey,
@@ -67,7 +67,7 @@ export function Gallery<T>({
   header,
   gridCols = DEFAULT_GRID_COLS,
   className,
-}: GalleryProps<T>) {
+}: GalleryProps<T>) => {
   // Handle loading state
   if (isLoading) {
     return <GallerySkeleton columns={gridCols} />;
@@ -131,7 +131,10 @@ export function Gallery<T>({
       </div>
     </div>
   );
-}
+};
+
+// Memoize the Gallery component for performance
+export const Gallery = memo(GalleryComponent) as typeof GalleryComponent;
 
 export { GalleryGrid, DEFAULT_GRID_COLS };
 export type { GridConfig, GalleryHeaderConfig, GalleryEmptyConfig };

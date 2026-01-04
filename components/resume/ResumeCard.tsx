@@ -5,6 +5,7 @@
 
 'use client';
 
+import { memo } from 'react';
 import { Edit, Eye, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import type { GalleryCardAction } from "@/components/shared/GalleryCard";
@@ -26,7 +27,7 @@ interface ResumeCardProps {
   onDelete: (id: string) => void;
 }
 
-export function ResumeCard({
+export const ResumeCard = memo(function ResumeCard({
   id,
   jobTitle,
   companyName,
@@ -88,4 +89,4 @@ export function ResumeCard({
       }}
     />
   );
-}
+});

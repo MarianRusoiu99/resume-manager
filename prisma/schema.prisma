@@ -262,7 +262,7 @@ model Resume {
   updatedAt DateTime @updatedAt
 
   @@index([userId, createdAt(sort: Desc)])
-  @@index([userId, updatedAt])
+  @@index([userId, updatedAt(sort: Desc)])
   @@index([profileId])
   @@index([jobPostingId])
   @@index([templateId])
@@ -304,7 +304,7 @@ model CoverLetter {
   updatedAt DateTime @updatedAt
 
   @@index([userId, createdAt(sort: Desc)])
-  @@index([userId, updatedAt])
+  @@index([userId, updatedAt(sort: Desc)])
   @@index([resumeId])
   @@index([jobPostingId])
 }
@@ -428,7 +428,7 @@ model Notification {
   expiresAt DateTime?
 
   @@index([userId, isRead, createdAt(sort: Desc)])
-  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc), type])
 }
 
 model AuditLog {

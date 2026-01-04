@@ -9,6 +9,10 @@ import { validateCreateTemplateInput, validateUpdateTemplateInput } from './vali
 import { validateHandlebarsTemplateSyntax } from './syntax';
 import { sanitizeTemplate } from '@/lib/templates/utils/sanitizer';
 import { GenericCrudService } from '../utils/generic-crud.service';
+import { getCacheProvider } from '@/lib/redis/client';
+
+const TEMPLATE_CACHE_KEY = 'templates:public';
+const TEMPLATE_CACHE_TTL = 300; // 5 minutes
 
 /**
  * Service for managing resume templates
@@ -26,11 +30,34 @@ export class TemplateService
   }
 
   /**
-   * Get all public templates
+   * Get all public templates with caching
    */
   async getAllPublicTemplates(): Promise<ServiceResult<ResumeTemplate[]>> {
     return withServiceError('fetch templates', async () => {
-      return await this.repository.findAllPublic();
+      // Try to get from cache first
+      const cache = getCacheProvider();
+      const cached = await cache.get<string>(TEMPLATE_CACHE_KEY);
+      
+      if (cached) {
+        try {
+          return JSON.parse(cached) as ResumeTemplate[];
+        } catch {
+          // If parsing fails, invalidate cache and fetch from DB
+          await cache.delete(TEMPLATE_CACHE_KEY);
+        }
+      }
+      
+      // Fetch from database
+      const templates = await this.repository.findAllPublic();
+      
+      // Cache the results
+      await cache.set(
+        TEMPLATE_CACHE_KEY,
+        JSON.stringify(templates),
+        TEMPLATE_CACHE_TTL
+      );
+      
+      return templates;
     });
   }
 
@@ -51,10 +78,16 @@ export class TemplateService
         htmlTemplate: validatedData.htmlTemplate,
       });
 
-      return await this.repository.create({
+      const template = await this.repository.create({
         ...validatedData,
         htmlTemplate: sanitized.htmlTemplate,
       });
+      
+      // Invalidate cache
+      const cache = getCacheProvider();
+      await cache.delete(TEMPLATE_CACHE_KEY);
+      
+      return template;
     });
   }
 
@@ -77,10 +110,16 @@ export class TemplateService
         htmlTemplate: validatedData.htmlTemplate ?? existing.htmlTemplate,
       });
 
-      return await this.repository.update(id, {
+      const template = await this.repository.update(id, {
         ...validatedData,
         ...(validatedData.htmlTemplate === undefined ? {} : { htmlTemplate: sanitized.htmlTemplate }),
       });
+      
+      // Invalidate cache
+      const cache = getCacheProvider();
+      await cache.delete(TEMPLATE_CACHE_KEY);
+      
+      return template;
     });
   }
 
@@ -98,6 +137,10 @@ export class TemplateService
       }
 
       await this.repository.delete(id);
+      
+      // Invalidate cache
+      const cache = getCacheProvider();
+      await cache.delete(TEMPLATE_CACHE_KEY);
     });
   }
 

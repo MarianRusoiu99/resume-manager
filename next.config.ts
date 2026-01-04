@@ -62,7 +62,7 @@ const nextConfig: NextConfig = {
 
   experimental: {
     // Reduce import cost for packages with large export surfaces.
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
 
   // Apply security headers to routes.

@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Edit, Eye, Copy, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from '@/components/shared/EntityCard';
 import type { GalleryCardAction } from '@/components/shared/GalleryCard';
@@ -67,7 +67,7 @@ const SAMPLE_RESUME: Resume = {
   ],
 };
 
-export function TemplateCard({
+export const TemplateCard = memo(function TemplateCard({
   template,
   showAdminActions = false,
   onDelete,
@@ -232,4 +232,4 @@ export function TemplateCard({
       )}
     </>
   );
-}
+});
