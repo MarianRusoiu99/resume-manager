@@ -81,7 +81,7 @@ export const authConfig: NextAuthConfig = {
     maxAge: 60 * 60 * 24, // 24 hours
   },
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
-  trustHost: true, // Required for NextAuth v5 to prevent CSRF errors
+  trustHost: process.env.NODE_ENV === 'development', // Only trust host in development to prevent CSRF attacks
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

@@ -241,3 +241,20 @@ export const idParamSchema = z.object({
 });
 
 export type IdParam = z.infer<typeof idParamSchema>;
+
+// ============================================================================
+// PDF EXPORT SCHEMAS
+// ============================================================================
+
+/**
+ * Schema for PDF export
+ */
+export const pdfExportSchema = z.object({
+  resume: resumeSchema.passthrough(),
+  template: z.object({
+    htmlTemplate: z.string().min(1, 'HTML template is required'),
+  }),
+  fileName: z.string().optional().default('resume.pdf'),
+});
+
+export type PdfExportInput = z.infer<typeof pdfExportSchema>;
