@@ -30,7 +30,16 @@ export class TemplateRepository
       orderBy: [{ name: 'asc' }],
     });
 
-    return templates.map((t: unknown) => this.mapToTemplate(t as Parameters<typeof this.mapToTemplate>[0]));
+    return (templates as Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      htmlTemplate: string;
+      previewUrl: string | null;
+      isPublic: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).map((t) => this.mapToTemplate(t));
   }
 
   /**
@@ -41,7 +50,16 @@ export class TemplateRepository
       where: { id },
     });
 
-    return template ? this.mapToTemplate(template) : null;
+    return template ? this.mapToTemplate(template as {
+      id: string;
+      name: string;
+      description: string | null;
+      htmlTemplate: string;
+      previewUrl: string | null;
+      isPublic: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    }) : null;
   }
 
   /**
@@ -58,7 +76,16 @@ export class TemplateRepository
       },
     });
 
-    return this.mapToTemplate(template);
+    return this.mapToTemplate(template as {
+      id: string;
+      name: string;
+      description: string | null;
+      htmlTemplate: string;
+      previewUrl: string | null;
+      isPublic: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    });
   }
 
   /**
@@ -81,7 +108,16 @@ export class TemplateRepository
       data: updateData,
     });
 
-    return this.mapToTemplate(template);
+    return this.mapToTemplate(template as {
+      id: string;
+      name: string;
+      description: string | null;
+      htmlTemplate: string;
+      previewUrl: string | null;
+      isPublic: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    });
   }
 
   /**
