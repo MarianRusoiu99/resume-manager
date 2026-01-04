@@ -33,7 +33,7 @@ export function ResumeGenerator({
   const [jobDescription, setJobDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleModelChange = useCallback((modelId: string, _providerId: string) => {
+  const handleModelChange = useCallback((modelId: string) => {
     setSelectedModelId(modelId);
   }, []);
 

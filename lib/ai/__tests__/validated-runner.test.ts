@@ -4,7 +4,7 @@
  * Tests for schema validation, retry logic, and JSON parsing
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { ValidatedAIRunner } from '../core/validated-runner';
 import { createMockLanguageModel, TEST_USER } from './mocks';

@@ -18,7 +18,7 @@ export class ResumeImportService {
       const requestedModelId = formData.get("modelId");
 
       if (!(fileValue instanceof File)) {
-        throw new Error("No file provided");
+        throw new TypeError("No file provided");
       }
 
       const file = fileValue;
@@ -73,7 +73,7 @@ export class ResumeImportService {
             provider: resolvedModel.provider,
             modelKey: resolvedModel.modelKey,
           });
-        } catch (e) {
+        } catch {
           throw new Error(`Unsupported file type: ${fileType}`);
         }
       }

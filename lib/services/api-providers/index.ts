@@ -1,4 +1,4 @@
-export { ApiProviderService, apiProviderService } from './api-providers.service';
+export { ApiProviderService, apiProviderService } from './api-providers.workflow';
 export type {
   AddApiProviderInput,
   UpdateApiProviderInput,

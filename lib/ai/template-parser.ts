@@ -10,7 +10,6 @@ import {
   templateExtractionSchema,
   TEMPLATE_EXTRACTION_PROMPT,
   TEMPLATE_EXTRACTION_USER_MESSAGE,
-  type ExtractedTemplateData
 } from "./prompts/template-extraction";
 import { logger } from "@/lib/utils/logger";
 
@@ -143,9 +142,9 @@ export async function parseTemplateFromImage(input: ParseTemplateInput): Promise
  * @deprecated Use parseTemplateFromImage with full input object
  */
 export async function parseTemplateFromImageLegacy(
-  imageBase64: string,
-  mimeType: string,
-  apiKey: string
+  _imageBase64: string,
+  _mimeType: string,
+  _apiKey: string
 ): Promise<ExtractedTemplate> {
   throw new Error(
     'parseTemplateFromImageLegacy is no longer supported. Call parseTemplateFromImage with a resolved provider/modelKey.'

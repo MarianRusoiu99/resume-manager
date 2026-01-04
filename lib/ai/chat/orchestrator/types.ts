@@ -1,4 +1,3 @@
-import type { ConversationMode } from '../conversation';
 import type { AIProvider } from '../../providers';
 
 /**

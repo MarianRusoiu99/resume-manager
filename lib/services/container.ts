@@ -17,12 +17,12 @@ import { TemplateRepository, templateRepository } from '@/lib/repositories/templ
 import { AnalyticsService, analyticsService as analyticsServiceInstance } from './analytics/analytics.service';
 import { ProfileService } from './profiles/profiles.service';
 import { ResumeGenerationService } from './resumes/generation/resume-generation.service';
-import { ResumeCrudService } from './resumes/crud/resume-crud.service';
+import { ResumeCrudService } from './resumes/crud/resume-crud.workflow';
 import { NotificationService } from './notifications/notifications.service';
-import { ApiProviderService } from './api-providers/api-providers.service';
-import { UserAISettingsService } from './ai-settings/user-ai-settings.service';
+import { ApiProviderService } from './api-providers/api-providers.workflow';
+import { UserAISettingsService } from './ai-settings/user-ai-settings.workflow';
 import { AIService, aiService as aiServiceInstance } from './ai';
-import { TemplateService } from './templates/templates.service';
+import { TemplateService } from './templates/templates.workflow';
 import { CoverLetterService } from './cover-letters';
 
 import { profileCache } from '@/lib/cache/simple-cache';

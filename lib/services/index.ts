@@ -60,14 +60,14 @@ export type {
 export { ProfileService } from './profiles/profiles.service';
 export type { Profile, ProfileList } from './profiles/types';
 
-export { TemplateService } from './templates/templates.service';
+export { TemplateService } from './templates/templates.workflow';
 
 export { CoverLetterService } from './cover-letters';
 
 export { NotificationService } from './notifications/notifications.service';
 
 export { AIService } from './ai';
-export { ApiProviderService } from './api-providers/api-providers.service';
+export { ApiProviderService } from './api-providers/api-providers.workflow';
 export type {
   AddApiProviderInput,
   UpdateApiProviderInput as ApiProviderUpdateInput,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { logger } from "@/lib/utils/logger";
-import { errorCodeToStatus, type ServiceErrorCode } from "@/lib/types/service-result";
+import { type ServiceErrorCode } from "@/lib/types/service-result";
 
 /**
  * Service error with code for proper HTTP status mapping

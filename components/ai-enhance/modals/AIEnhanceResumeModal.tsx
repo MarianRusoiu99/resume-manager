@@ -61,17 +61,15 @@ export function AIEnhanceResumeModal({
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [instructions, setInstructions] = useState('');
 
-  const handleModelChange = useCallback((modelId: string, _providerId: string) => {
+  const handleModelChange = useCallback((modelId: string) => {
     setSelectedModel(modelId);
   }, []);
 
   // Use centralized enhancement hook
   const {
     runTask,
-    reset,
     isLoading,
     output,
-    hasOutput,
   } = useAITask<ResumeEnhancementOutput>({
     mode: 'resume-enhancement',
   });

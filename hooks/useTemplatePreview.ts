@@ -6,7 +6,6 @@ import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Template } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { getTemplate, getTemplates } from '@/app/actions/template';
-import type { ResumeTemplate } from '@/lib/templates/template';
 
 const logger = createComponentLogger('useTemplatePreview');
 

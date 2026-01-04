@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Cpu, ChevronRight, Sparkles, Box, Zap, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { ModelSelectionModal } from './ModelSelectionModal';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { getAllAvailableModels } from '@/app/actions/api-provider';
 import { updateFeaturePreference, getAISettings } from '@/app/actions/ai-settings';
 import type { AIFeatureType } from '@/lib/repositories/interfaces';
+import type { ProviderWithModels, ConfiguredModelInfo } from '@/lib/services/api-providers/types';
 
 const logger = createComponentLogger('ModelSelector');
 
@@ -23,11 +23,24 @@ interface ModelSelectorProps {
     showProvider?: boolean;
 }
 
-const PROVIDER_ICONS: Record<string, any> = {
+const PROVIDER_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
     openai: Sparkles,
     anthropic: Box,
     google: Zap,
 };
+
+interface SimplifiedModelInfo {
+    id: string;
+    modelKey: string;
+    name: string;
+    providerId: string;
+    providerName: string;
+    providerType: string;
+    capabilities?: {
+        vision?: boolean;
+        structuredOutput?: boolean;
+    };
+}
 
 export function ModelSelector({
     value,
@@ -72,9 +85,16 @@ export function ModelSelector({
 
                 // If still no model, find a smart default
                 if (!activeModelId) {
-                    const allModels = byProvider.flatMap(p => p.models.map((m: any) => ({ ...m, providerId: p.id, providerName: p.name, providerType: p.provider })));
+                    const allModels: SimplifiedModelInfo[] = (byProvider as ProviderWithModels[]).flatMap((p) => 
+                        (p.models as ConfiguredModelInfo[]).map((m) => ({ 
+                            ...m, 
+                            providerId: p.id, 
+                            providerName: p.name, 
+                            providerType: p.provider 
+                        }))
+                    );
                     
-                    const filtered = allModels.filter((m: any) => {
+                    const filtered = allModels.filter((m) => {
                         // Only apply capability filters for OpenAI as requested
                         if (m.providerType === 'openai') {
                             const caps = m.capabilities || {};
@@ -85,15 +105,15 @@ export function ModelSelector({
                     });
 
                     // Priority 1: GPT-4o
-                    let defaultModel = filtered.find((m: any) => m.modelKey === 'gpt-4o' || m.id === 'gpt-4o');
+                    let defaultModel = filtered.find((m) => m.modelKey === 'gpt-4o' || m.id === 'gpt-4o');
                     // Priority 2: GPT-4o-mini
-                    if (!defaultModel) defaultModel = filtered.find((m: any) => m.modelKey === 'gpt-4o-mini' || m.id === 'gpt-4o-mini');
+                    if (!defaultModel) defaultModel = filtered.find((m) => m.modelKey === 'gpt-4o-mini' || m.id === 'gpt-4o-mini');
                     // Priority 3: Any GPT-4
-                    if (!defaultModel) defaultModel = filtered.find((m: any) => m.id.includes('gpt-4'));
+                    if (!defaultModel) defaultModel = filtered.find((m) => m.id.includes('gpt-4'));
                     // Priority 4: Claude 3.5 Sonnet
-                    if (!defaultModel) defaultModel = filtered.find((m: any) => m.id.includes('claude-3-5-sonnet'));
+                    if (!defaultModel) defaultModel = filtered.find((m) => m.id.includes('claude-3-5-sonnet'));
                     // Priority 5: Gemini 1.5 Pro
-                    if (!defaultModel) defaultModel = filtered.find((m: any) => m.id.includes('gemini-1.5-pro'));
+                    if (!defaultModel) defaultModel = filtered.find((m) => m.id.includes('gemini-1.5-pro'));
                     // Fallback: First available
                     if (!defaultModel) defaultModel = filtered[0];
 
@@ -105,8 +125,8 @@ export function ModelSelector({
 
                 // Resolve display names
                 if (activeModelId) {
-                    for (const p of byProvider) {
-                        const found = p.models.find((m: any) => m.id === activeModelId || m.modelKey === activeModelId);
+                    for (const p of byProvider as ProviderWithModels[]) {
+                        const found = (p.models as ConfiguredModelInfo[]).find((m) => m.id === activeModelId || m.modelKey === activeModelId);
                         if (found) {
                             setModelName(found.name);
                             setProviderName(p.name);
@@ -130,7 +150,7 @@ export function ModelSelector({
 
         initModel();
         return () => { cancelled = true; };
-    }, [feature, requiresVision, requiresStructuredOutput]);
+    }, [feature, requiresVision, requiresStructuredOutput, onValueChange, value]);
 
     // Update details when value changes externally
     useEffect(() => {
@@ -142,8 +162,8 @@ export function ModelSelector({
                 const result = await getAllAvailableModels();
                 if (cancelled || !result.success || !result.data) return;
 
-                for (const p of result.data.byProvider) {
-                    const found = p.models?.find((m: any) => m.id === value);
+                for (const p of (result.data.byProvider as ProviderWithModels[])) {
+                    const found = p.models?.find((m) => m.id === value);
                     if (found) {
                         setModelName(found.name);
                         setProviderName(p.name);
@@ -158,7 +178,7 @@ export function ModelSelector({
 
         fetchDetails();
         return () => { cancelled = true; };
-    }, [value]);
+    }, [value, onValueChange]);
 
     const handleModelSelect = async (mid: string, pid: string) => {
         onValueChange(mid, pid);

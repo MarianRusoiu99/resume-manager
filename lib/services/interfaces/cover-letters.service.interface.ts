@@ -7,7 +7,6 @@
  */
 
 import type { ServiceResult } from '@/lib/types/service-result';
-import type { CoverLetter } from '@prisma/client';
 import type {
   CreateCoverLetterInput,
   UpdateCoverLetterInput,

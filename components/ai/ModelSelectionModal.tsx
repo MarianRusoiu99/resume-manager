@@ -6,7 +6,6 @@ import {
     Search,
     Cpu,
     Check,
-    X,
     Sparkles,
     Zap,
     Box
@@ -56,7 +55,7 @@ export interface ModelSelectionModalProps {
 
 // --- Constants ---
 
-const PROVIDER_CONFIG: Record<string, { name: string; color: string; icon: any }> = {
+const PROVIDER_CONFIG: Record<string, { name: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
     openai: { name: 'OpenAI', color: 'text-green-500', icon: Sparkles },
     anthropic: { name: 'Anthropic', color: 'text-orange-500', icon: Box },
     google: { name: 'Google', color: 'text-blue-500', icon: Zap },
@@ -87,8 +86,8 @@ export function ModelSelectionModal({
                 if (cancelled) return;
 
                 if (result.success && result.data?.byProvider) {
-                    const active = result.data.byProvider.filter(
-                        (p: ProviderWithModels) => p.isActive && p.models?.length > 0
+                    const active = (result.data.byProvider as ProviderWithModels[]).filter(
+                        (p) => p.isActive && p.models?.length > 0
                     );
                     setProviders(active);
                 }

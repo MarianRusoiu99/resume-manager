@@ -17,9 +17,10 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Image as ImageIcon, Loader2, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
+import { Upload, Image as ImageIcon, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { useTemplateImport } from '@/hooks/useTemplateImport';
 import type { ExtractedTemplate } from '@/lib/ai/template-parser';
+import type { Resume } from '@/lib/validations/jsonresume';
 import { ModelSelector } from '@/components/ai/ModelSelector';
 import { ResumePreview } from '../resume/ResumePreview';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
@@ -194,8 +195,8 @@ export function TemplateImportModal({
               
               <div className="border rounded-lg overflow-hidden bg-white shadow-sm h-[300px] relative">
                 <div className="absolute inset-0 overflow-auto p-4 origin-top scale-[0.6] w-[166.6%] h-[166.6%]">
-                   <ResumePreview 
-                    resumeData={sampleResume as any} 
+                    <ResumePreview 
+                    resumeData={sampleResume as Resume} 
                     templateHtml={template.htmlTemplate}
                     showTemplateSelector={false}
                     showCard={false}

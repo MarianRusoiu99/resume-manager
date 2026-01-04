@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { importResume } from '@/app/actions/resume';
 import { resumeSchema } from '@/lib/validations/jsonresume';

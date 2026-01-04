@@ -1,4 +1,4 @@
-import { generateText, streamText, type LanguageModel, type CoreMessage, type GenerateTextResult, type StreamTextResult } from 'ai';
+import { generateText, streamText, type LanguageModel, type CoreMessage } from 'ai';
 import { z } from 'zod';
 import { logger } from '@/lib/utils/logger';
 import { ServiceErrors } from '@/lib/services/utils/service-wrapper';
@@ -173,8 +173,6 @@ export class ValidatedAIRunner {
     if (userId) {
       // We'll log when the stream is consumed - the caller should handle this
       // The usage is available on result.usage after the stream completes
-      const originalTextStream = result.textStream;
-      
       // Note: Logging happens asynchronously when result.usage is accessed
       // The caller can await result.usage to get the final token counts
       result.usage.then((usage) => {

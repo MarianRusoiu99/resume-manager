@@ -37,7 +37,7 @@ export function GenericFormList<T extends Record<string, unknown>>({
   // Use the new auto-save hook to ensure consistent debouncing across all lists
   useAutoSave({
     data: items,
-    onSave: async (_data) => {
+    onSave: async () => {
       // Logic for saving is usually handled by the parent EditorContext
     },
     enabled: autoSave,

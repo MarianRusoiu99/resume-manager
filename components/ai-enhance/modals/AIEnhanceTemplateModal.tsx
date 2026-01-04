@@ -52,7 +52,7 @@ export function AIEnhanceTemplateModal({
   const [viewMode, setViewMode] = useState<ViewMode>('visual');
   const [selectedModel, setSelectedModel] = useState<string>('');
 
-  const handleModelChange = useCallback((modelId: string, _providerId: string) => {
+  const handleModelChange = useCallback((modelId: string) => {
     setSelectedModel(modelId);
   }, []);
 

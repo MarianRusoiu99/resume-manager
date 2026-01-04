@@ -36,7 +36,7 @@ export function useTemplatePreview() {
         if (result.success && result.data?.resume) {
           setPreviewResume(result.data.resume as unknown as Resume);
         }
-      } catch (err) {
+      } catch {
         toast.error('Failed to load profile for preview');
       } finally {
         setIsLoadingProfile(false);

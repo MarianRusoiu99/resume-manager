@@ -79,7 +79,6 @@ export const templateGenerationMode = defineMode({
   },
 
   validateOutput(output) {
-    const errors: Array<{ path: string; message: string }> = [];
     const warnings: string[] = [];
 
     // Validate HTML has Handlebars placeholders

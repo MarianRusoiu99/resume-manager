@@ -78,7 +78,6 @@ export const templateEnhancementMode = defineMode({
   },
 
   validateOutput(output) {
-    const errors: Array<{ path: string; message: string }> = [];
     const warnings: string[] = [];
 
     if (!output.htmlTemplate.includes('{{')) {

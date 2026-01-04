@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { optimizedResumeSchema } from '../agents/resume-optimization/agent';
-import { mockOptimizedResume, mockResume } from './mocks';
+import { mockOptimizedResume } from './mocks';
 
 describe('Resume Optimization Agent Schema', () => {
   describe('optimizedResumeSchema', () => {

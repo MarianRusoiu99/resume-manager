@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db/index';
 import { PrismaClient, Prisma } from '@prisma/client';
-import { GenericUserOwnedRepository, UserOwnedEntity, PrismaArgs } from './generic.repository';
+import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
 import type { IProfileRepository, ProfileData, CreateProfileInput, UpdateProfileInput, ProfileWithTemplate } from './interfaces/profiles.repository.interface';
 import type { Resume } from '@/lib/validations/jsonresume';
 
@@ -106,22 +106,21 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   // Custom update to handle document relation
   override async update(profileId: string, data: UpdateProfileInput, userId?: string): Promise<ProfileData> {
     const updateData: Prisma.ProfileUpdateInput = {
-      ...(data.name !== undefined ? { name: data.name } : {}),
-      ...(data.isDefault !== undefined ? { isDefault: data.isDefault } : {}),
-      ...(data.isPublic !== undefined ? { isPublic: data.isPublic } : {}),
-      ...(data.publicSlug !== undefined ? { publicSlug: data.publicSlug } : {}),
-      ...(data.selectedTemplateId !== undefined ? { selectedTemplateId: data.selectedTemplateId } : {}),
-      ...(data.resume !== undefined
-
-        ? {
+      ...(data.name === undefined ? {} : { name: data.name }),
+      ...(data.isDefault === undefined ? {} : { isDefault: data.isDefault }),
+      ...(data.isPublic === undefined ? {} : { isPublic: data.isPublic }),
+      ...(data.publicSlug === undefined ? {} : { publicSlug: data.publicSlug }),
+      ...(data.selectedTemplateId === undefined ? {} : { selectedTemplateId: data.selectedTemplateId }),
+      ...(data.resume === undefined
+        ? {}
+        : {
             document: {
               upsert: {
                 create: { document: data.resume as Prisma.InputJsonValue },
                 update: { document: data.resume as Prisma.InputJsonValue, updatedAt: new Date() },
               },
             },
-          }
-        : {}),
+          }),
     };
 
     const updated = await this.db.profile.update({

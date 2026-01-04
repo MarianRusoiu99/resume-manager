@@ -86,7 +86,6 @@ export async function runResumeGenerationWorkflowWithProgress(
     return runResumeGenerationWorkflow(repository, profileService, input);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Placeholder for future implementation
 export async function runStandaloneCoverLetterWorkflow(_input: Record<string, unknown>): Promise<ServiceResult<never>> {
     return failure('Cover letter generation not implemented in this workflow', 'INTERNAL_ERROR');
 }

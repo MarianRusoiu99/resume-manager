@@ -125,9 +125,7 @@ export function ResumePreview({
     htmlContent,
   });
 
-  const {
-    isFullscreen: isFullscreenNested, // unused
-  } = usePagination({
+  usePagination({
     iframeRef: fullscreenIframeRef,
     htmlContent,
   });

@@ -1,7 +1,7 @@
 import { TemplateRepository, templateRepository } from '@/lib/repositories/templates.repository';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { type ServiceResult, isFailure } from '@/lib/types/service-result';
-import { withServiceError, NotFoundError, ConflictError } from '@/lib/services/utils';
+import { withServiceError, ConflictError } from '@/lib/services/utils';
 import type { ITemplateService } from '../interfaces';
 import type { CreateTemplateInput, UpdateTemplateInput } from '@/lib/validations/api-schemas';
 
@@ -79,7 +79,7 @@ export class TemplateService
 
       return await this.repository.update(id, {
         ...validatedData,
-        ...(validatedData.htmlTemplate !== undefined ? { htmlTemplate: sanitized.htmlTemplate } : {}),
+        ...(validatedData.htmlTemplate === undefined ? {} : { htmlTemplate: sanitized.htmlTemplate }),
       });
     });
   }

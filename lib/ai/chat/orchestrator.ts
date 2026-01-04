@@ -375,7 +375,7 @@ export class AIOrchestrator {
       tools[tool.name] = {
         description: tool.description,
         inputSchema: tool.parameters,
-        execute: async (_params: unknown) => {
+        execute: async () => {
           // Note: In actual usage, we'd need to pass the context
           // For now, tools are primarily for AI guidance
           return { message: 'Tool execution requires context' };

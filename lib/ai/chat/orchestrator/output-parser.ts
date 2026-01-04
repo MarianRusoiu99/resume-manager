@@ -82,10 +82,17 @@ export function parseOutput<T>(text: string, mode: AIMode): T {
   }
 
   // Try to extract and parse JSON
-  const jsonString = extractJSON(trimmed);
+  let jsonString = extractJSON(trimmed);
   
   try {
-    const parsed = JSON.parse(jsonString);
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch {
+      // Attempt repair if direct parse fails
+      jsonString = attemptJSONRepair(jsonString);
+      parsed = JSON.parse(jsonString);
+    }
     const validated = mode.outputSchema.parse(parsed);
     return (mode.postprocessOutput ? mode.postprocessOutput(validated) : validated) as T;
   } catch (error) {

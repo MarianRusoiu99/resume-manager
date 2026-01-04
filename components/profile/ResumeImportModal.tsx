@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Upload, FileText, Loader2, AlertCircle, Sparkles as SparkleIcon, Settings2 } from 'lucide-react';
+import { Upload, FileText, Loader2, AlertCircle, Settings2 } from 'lucide-react';
 import { useResumeImport } from '@/hooks/useResumeImport';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { ModelSelector } from '@/components/ai/ModelSelector';
@@ -29,6 +29,7 @@ export function ResumeImportModal({
   onImportComplete,
 }: Readonly<ResumeImportModalProps>) {
   const [selectedModelId, setSelectedModelId] = React.useState<string>('');
+
   const {
     selectedFile,
     preview,
@@ -44,7 +45,6 @@ export function ResumeImportModal({
     onImportComplete,
     onClose: () => onOpenChange(false),
   });
-
 
   const handleClose = useCallback(() => {
     if (!isLoading) {
@@ -220,7 +220,7 @@ export function ResumeImportModal({
             </Button>
             {selectedFile && !isLoading && !error && (
               <Button onClick={() => handleImport(selectedModelId)} className="gap-2">
-                <SparkleIcon className="h-4 w-4" />
+                <SparklesIcon className="h-4 w-4" />
                 Start Extraction
               </Button>
             )}
@@ -237,7 +237,7 @@ export function ResumeImportModal({
   );
 }
 
-function Sparkles(props: React.SVGProps<SVGSVGElement>) {
+function SparklesIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

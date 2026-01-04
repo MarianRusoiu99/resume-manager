@@ -1,4 +1,4 @@
-import { PrismaClient, NotificationType, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/index';
 import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
 import type { INotificationRepository, NotificationData, CreateNotificationInput, FindNotificationsOptions } from './interfaces/notifications.repository.interface';

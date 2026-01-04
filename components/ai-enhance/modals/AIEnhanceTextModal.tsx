@@ -43,7 +43,7 @@ export function AIEnhanceTextModal({
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [instructions, setInstructions] = useState('');
 
-  const handleModelChange = useCallback((modelId: string, _providerId: string) => {
+  const handleModelChange = useCallback((modelId: string) => {
     setSelectedModel(modelId);
   }, []);
 

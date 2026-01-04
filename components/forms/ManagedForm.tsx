@@ -57,23 +57,24 @@ export function ManagedForm<T extends FieldValues>({
     mode: "onBlur",
   });
 
-  const { watch, formState: { isDirty } } = form;
+  const { watch, formState: { isDirty }, getValues } = form;
   const values = watch();
   const prevValuesRef = useRef<T>(defaultValues);
 
   // Auto-save logic
   useEffect(() => {
-    if (autoSave && isDirty && JSON.stringify(values) !== JSON.stringify(prevValuesRef.current)) {
+    const currentValues = getValues();
+    if (autoSave && isDirty && JSON.stringify(currentValues) !== JSON.stringify(prevValuesRef.current)) {
       const timeoutId = setTimeout(async () => {
         if (onUpdate) {
-          onUpdate(values);
+          onUpdate(currentValues);
         }
-        prevValuesRef.current = values;
+        prevValuesRef.current = currentValues;
       }, debounceMs);
 
       return () => clearTimeout(timeoutId);
     }
-  }, [values, isDirty, onUpdate, autoSave, debounceMs]);
+  }, [values, isDirty, onUpdate, autoSave, debounceMs, getValues]);
 
   const handleFormSubmit = form.handleSubmit(async (data) => {
     await onSubmit(data);

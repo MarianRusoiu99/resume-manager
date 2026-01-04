@@ -14,6 +14,18 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
 
+  // React Compiler rules
+  {
+    rules: {
+      "react-hooks/exhaustive-deps": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }],
+    },
+  },
+
   // Guardrails: layering / boundaries
   {
     files: ["lib/**/*.{js,jsx,ts,tsx}"],
@@ -38,6 +50,7 @@ const eslintConfig = defineConfig([
     files: ["lib/services/**/*.{js,jsx,ts,tsx}"],
     ignores: [
       "lib/services/index.ts",
+      "lib/services/container.ts",
       "lib/services/**/*.workflow.ts",
       "lib/services/**/*.orchestrator.ts",
       "lib/services/interfaces/**",

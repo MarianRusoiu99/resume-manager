@@ -18,7 +18,6 @@ import { withServiceError, ValidationError } from '@/lib/services/utils';
 import { GenericUserOwnedCrudService } from '../utils/generic-crud.service';
 
 import type {
-  UpdateApiProviderInput,
   ProviderListItem,
   AvailableModelsData,
   ValidationData,

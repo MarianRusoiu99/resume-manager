@@ -37,10 +37,10 @@ const textEnhancementSchema = z.object({
   content: z.string(),
 });
 
-const coverLetterSchema = z.object({
-  content: z.string(),
-  subject: z.string().optional(),
-});
+// const coverLetterSchema = z.object({
+//   content: z.string(),
+//   subject: z.string().optional(),
+// });
 
 // Test mode definitions
 function createTestMode(id: string, schema: z.ZodSchema): AIMode {
@@ -56,7 +56,7 @@ function createTestMode(id: string, schema: z.ZodSchema): AIMode {
 
 const resumeMode = createTestMode('resume-generation', resumeGenerationSchema);
 const textMode = createTestMode('text-enhancement', textEnhancementSchema);
-const coverLetterMode = createTestMode('cover-letter-generation', coverLetterSchema);
+// const coverLetterMode = createTestMode('cover-letter-generation', coverLetterSchema);
 
 describe('parseOutput', () => {
   describe('valid JSON parsing', () => {

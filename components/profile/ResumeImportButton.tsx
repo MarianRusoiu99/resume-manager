@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -29,7 +29,7 @@ interface ResumeImportButtonProps {
 
 export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportButtonProps>) {
     const log = createComponentLogger("ResumeImportButton");
-    const [isUploading, setIsUploading] = useState(false);
+    const [isUploading] = useState(false);
     const [showJsonDialog, setShowJsonDialog] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
     const [jsonText, setJsonText] = useState("");

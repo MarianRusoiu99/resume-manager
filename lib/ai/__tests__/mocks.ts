@@ -163,7 +163,7 @@ export class MockAIProvider implements AIProvider {
     return this.mockModels;
   }
   
-  createLanguageModel(modelId: string): LanguageModel {
+  createLanguageModel(_: string): LanguageModel {
     return createMockLanguageModel(this.mockResponse);
   }
   

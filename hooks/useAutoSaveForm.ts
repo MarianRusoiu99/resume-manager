@@ -26,18 +26,19 @@ export function useAutoSaveForm<T extends FieldValues>({
     resolver: zodResolver(schema as any),
   });
 
-  const { watch, reset, formState: { isDirty } } = form;
+  const { watch, reset, formState: { isDirty }, getValues } = form;
   const values = watch();
   const prevValuesRef = useRef<T>(formProps.defaultValues as T);
 
   // Auto-save logic
   useEffect(() => {
     // Only save if dirty and values changed
-    if (isDirty && JSON.stringify(values) !== JSON.stringify(prevValuesRef.current)) {
+    const currentValues = getValues();
+    if (isDirty && JSON.stringify(currentValues) !== JSON.stringify(prevValuesRef.current)) {
       const timeoutId = setTimeout(async () => {
         try {
-          await onSave(values);
-          prevValuesRef.current = values;
+          await onSave(currentValues);
+          prevValuesRef.current = currentValues;
           // Optional: mark as clean after save if needed
           // reset(values, { keepValues: true }); 
         } catch (error) {
@@ -47,7 +48,7 @@ export function useAutoSaveForm<T extends FieldValues>({
 
       return () => clearTimeout(timeoutId);
     }
-  }, [values, isDirty, onSave, debounceMs]);
+  }, [values, isDirty, onSave, debounceMs, getValues]);
 
   // Handle external updates to defaultValues
   useEffect(() => {

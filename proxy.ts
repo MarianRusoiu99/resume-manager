@@ -15,11 +15,9 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  DEFAULT_LOGIN_REDIRECT,
   DEFAULT_AUTH_REDIRECT,
   shouldSkipProxy,
   isPublicPath,
-  isAuthRoute,
 } from '@/lib/auth/routes';
 
 function buildStrictCsp(isDev: boolean): string {
@@ -126,7 +124,6 @@ export async function proxy(request: NextRequest) {
   // Optimistic check: does session cookie exist?
   const hasSession = await hasSessionCookie();
   const isPublic = isPublicPath(pathname);
-  const isAuth = isAuthRoute(pathname);
 
   // Redirect to login if accessing protected route without session cookie
   if (!isPublic && !hasSession) {
@@ -138,11 +135,8 @@ export async function proxy(request: NextRequest) {
   // Remove optimistic redirect to profile for auth pages
   // This prevents infinite loops when session cookie exists but session is invalid
   // Client-side logic in login page will handle redirecting authenticated users
-  /*
-  if (isAuth && hasSession) {
-    return applyCspHeader(request, NextResponse.redirect(new URL(DEFAULT_LOGIN_REDIRECT, request.url)));
-  }
-  */
+  
+
 
   return applyCspHeader(request, NextResponse.next());
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useAITask } from './useAITask';
-import { Resume } from '@/lib/validations/jsonresume';
 import { useCallback } from 'react';
 import type { ResumeGenerationOutput } from '@/lib/ai/modes/types';
 

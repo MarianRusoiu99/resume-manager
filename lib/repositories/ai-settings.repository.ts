@@ -255,7 +255,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
     return this.findByUserId(userId || id);
   }
 
-  async findAll(_args?: PrismaArgs): Promise<UserAISettingsData[]> {
+  async findAll(_?: PrismaArgs): Promise<UserAISettingsData[]> {
     // This is not really used for this repository as it's user-centric
     return [];
   }

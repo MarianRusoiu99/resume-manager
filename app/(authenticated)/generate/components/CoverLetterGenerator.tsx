@@ -30,7 +30,7 @@ export function CoverLetterGenerator({
   const [jobDescription, setJobDescription] = useState('');
   const [personalInstructions, setPersonalInstructions] = useState('');
 
-  const handleModelChange = useCallback((modelId: string, _providerId: string) => {
+  const handleModelChange = useCallback((modelId: string) => {
     setSelectedModelId(modelId);
   }, []);
 
