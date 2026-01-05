@@ -6,8 +6,9 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { apiV1 } from '@/lib/client';
+import { getAllAvailableModels } from '@/app/actions/api-provider';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { ExternalServiceError } from '@/lib/errors';
 
 const logger = createComponentLogger('useAIModels');
 
@@ -60,13 +61,13 @@ export function useAIModels(options: UseAIModelsOptions = {}): UseAIModelsReturn
       setIsLoading(true);
       setError(null);
 
-      const result = await apiV1.SETTINGS.MODELS.get<{ allModels?: unknown[] }>();
+      const result = await getAllAvailableModels();
 
-      if (result.error) {
-        throw new Error(result.error);
+      if (!result.success) {
+        throw new ExternalServiceError('AI Models API', result.error);
       }
 
-      const data = result.data;
+      const data = result.data as { allModels?: unknown[] };
 
       // API returns { allModels: [...], byProvider: {...} }
       const rawModels = data?.allModels ?? [];

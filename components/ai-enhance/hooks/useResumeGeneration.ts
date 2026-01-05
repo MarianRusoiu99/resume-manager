@@ -1,86 +1,48 @@
 'use client';
 
+import { useAITask } from './useAITask';
+import { useCallback } from 'react';
+import type { ResumeGenerationOutput } from '@/lib/ai/modes/types';
+import type { Resume } from '@/lib/validations/jsonresume';
+
 /**
- * useResumeGeneration Hook
- * 
- * Specialized hook for generating resumes using AI.
- * Uses the unified conversational AI system with 'resume-generation' mode.
+ * useResumeGeneration - Specialized hook for resume generation using the unified AITask orchestrator.
  */
-
-import { useCallback, useState } from 'react';
-import { useConversation, type ConversationContext } from './useConversation';
-import { toast } from 'sonner';
-
-export interface ResumeGenerationOptions {
-  jobDescription?: string;
-  jobTitle?: string;
-  company?: string;
-  personalInstructions?: string;
-}
-
-export interface UseResumeGenerationReturn {
-  generate: (options: ResumeGenerationOptions) => Promise<void>;
-  resume: any | null;
-  matchScore: number | null;
-  suggestions: string[];
-  isLoading: boolean;
-  error: string | null;
-  reset: () => void;
-}
-
-export function useResumeGeneration(): UseResumeGenerationReturn {
-  const [resume, setResume] = useState<any | null>(null);
-  const [matchScore, setMatchScore] = useState<number | null>(null);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-
-  const { sendMessage, state, reset: resetConversation, updateContext } = useConversation({
+export function useResumeGeneration() {
+  const { runTask, isLoading, error, output } = useAITask<ResumeGenerationOutput>({
     mode: 'resume-generation',
-    onComplete: (output: any) => {
-      if (output && typeof output === 'object') {
-        setResume(output.resume || output);
-        setMatchScore(output.matchScore || null);
-        setSuggestions(output.suggestions || []);
-      }
-    },
-    onError: (error) => {
-      toast.error(`Resume generation failed: ${error}`);
-    },
   });
 
-  const generate = useCallback(async (options: ResumeGenerationOptions) => {
-    // Set context first
-    updateContext({
-      job: {
-        description: options.jobDescription,
-        title: options.jobTitle,
-        company: options.company,
-      },
-      personalInstructions: options.personalInstructions,
+  const generate = useCallback(async ({
+    jobDescription,
+    personalInstructions,
+    overrideModelId,
+    profileResume
+  }: {
+    jobDescription: string;
+    personalInstructions?: string;
+    overrideModelId?: string;
+    profileResume?: Resume | null;
+  }) => {
+    return runTask({
+      message: `Job Description: ${jobDescription}\n\nAdditional Instructions: ${personalInstructions || 'None'}`,
+      modelId: overrideModelId,
+      context: { 
+        job: { description: jobDescription },
+        userProfile: profileResume ? { resume: profileResume } : undefined,
+        personalInstructions 
+      }
     });
-
-    try {
-      await sendMessage({
-        message: 'Please generate a tailored resume based on my profile and the provided job description. Optimize for ATS and highlight relevant skills.',
-      });
-    } catch (error) {
-      console.error('Failed to start resume generation:', error);
-    }
-  }, [sendMessage, updateContext]);
-
-  const reset = useCallback(() => {
-    resetConversation();
-    setResume(null);
-    setMatchScore(null);
-    setSuggestions([]);
-  }, [resetConversation]);
+  }, [runTask]);
 
   return {
     generate,
-    resume,
-    matchScore,
-    suggestions,
-    isLoading: state.isLoading,
-    error: state.error,
-    reset,
+    resume: output?.resume ?? null,
+    jobTitle: output?.jobTitle ?? '',
+    companyName: output?.companyName ?? '',
+    matchScore: output?.matchScore ?? null,
+    suggestions: output?.suggestions ?? [],
+    isLoading,
+    error,
   };
 }

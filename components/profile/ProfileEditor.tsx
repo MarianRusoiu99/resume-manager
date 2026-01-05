@@ -1,18 +1,32 @@
 "use client";
 
 import { EditorProvider } from "@/lib/contexts";
-import { ResumeEditor } from "@/components/editor/ResumeEditor";
+import { ExternalServiceError, ValidationError } from "@/lib/errors";
+import { ResumeEditor, type ResumeEditorRef } from "@/components/editor/ResumeEditor";
 import { Button } from "@/components/ui";
-import { ArrowLeft } from "lucide-react";
+import { Page } from "@/components/layout/Page";
 import { useRouter } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useToastAction } from "@/hooks/useToastAction";
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { apiV1, type ProfileDto } from "@/lib/client";
+import { getProfile, updateProfile } from "@/app/actions/profile";
 import { createComponentLogger } from "@/lib/utils/client-logger";
+import { Save, Share2, Edit2, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const logger = createComponentLogger('ProfileEditor');
 
+/** Local profile type for editor state */
+interface ProfileEditorData {
+  id: string;
+  name: string;
+  resume: Resume | null;
+  isPublic: boolean;
+  publicSlug: string | null;
+}
 
 interface ProfileEditorProps {
   profileId: string;
@@ -20,41 +34,38 @@ interface ProfileEditorProps {
 
 export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const router = useRouter();
-  const [profile, setProfile] = useState<ProfileDto | null>(null);
+  const { runWithToast } = useToastAction();
+  const [profile, setProfile] = useState<ProfileEditorData | null>(null);
+  const editorRef = useRef<ResumeEditorRef>(null);
+
+  // State for title rename
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [newName, setNewName] = useState("");
 
   const loadProfile = useCallback(async () => {
     try {
-      const result = await apiV1.PROFILE.GET(profileId).get<ProfileDto>();
-
-      if (result.error || !result.data) {
-        throw new Error(result.error ?? 'Failed to load profile');
-      }
-
-      setProfile(result.data);
+      const result = await getProfile(profileId);
+      if (!result.success || !result.data) throw !result.success ? new ExternalServiceError('Profile API', result.error) : new ValidationError('Failed to load profile');
+      setProfile({
+        id: result.data.id,
+        name: result.data.name,
+        resume: result.data.resume as Resume | null,
+        isPublic: result.data.isPublic,
+        publicSlug: result.data.publicSlug,
+      });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to load profile";
-      toast.error(message);
+      toast.error(error instanceof Error ? error.message : "Failed to load profile");
       router.push("/profile");
     }
   }, [profileId, router]);
 
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
+  useEffect(() => { loadProfile(); }, [loadProfile]);
 
   const handleLoad = async (): Promise<Resume | null> => {
     try {
-      const result = await apiV1.PROFILE.GET(profileId).get<ProfileDto>({ skipSessionCheck: true });
-
-      if (result.status === 404) {
-        return null;
-      }
-
-      if (result.error || !result.data) {
-        throw new Error(result.error ?? "Failed to load profile");
-      }
-
-      return result.data.resume ?? null;
+      const result = await getProfile(profileId);
+      if (!result.success || !result.data) throw !result.success ? new ExternalServiceError('Profile API', result.error) : new ValidationError("Failed to load profile");
+      return result.data.resume as unknown as Resume | null;
     } catch (error) {
       logger.error('Error loading profile', error);
       return null;
@@ -63,13 +74,8 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
 
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
-      const result = await apiV1.PROFILE.GET(profileId).patch<ProfileDto>({ resume });
-
-      if (result.error) {
-        logger.error('Profile save error', new Error(result.error));
-        throw new Error(result.error);
-      }
-
+      const result = await updateProfile(profileId, { resume });
+      if (!result.success) throw new ExternalServiceError('Profile API', result.error);
       setProfile((prev) => (prev ? { ...prev, resume } : prev));
       return true;
     } catch (error) {
@@ -78,79 +84,123 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
     }
   };
 
-  const handleProfileNameChange = async (name: string) => {
-    try {
-      const result = await apiV1.PROFILE.GET(profileId).patch<ProfileDto>({ name });
-
-      if (result.error) {
-        throw new Error(result.error);
+  const handleProfileNameChange = async () => {
+    if (!newName.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+    
+    const result = await runWithToast(
+      () => updateProfile(profileId, { name: newName }),
+      {
+        successMessage: 'Profile renamed',
+        errorMessage: 'Failed to update profile name',
       }
+    );
 
-      toast.success("Profile name updated");
-      setProfile((prev) => prev ? { ...prev, name } : null);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update profile name";
-      toast.error(message);
-      throw error;
+    if (result) {
+      setProfile((prev) => prev ? { ...prev, name: newName } : null);
+      setIsRenameModalOpen(false);
     }
   };
 
-  const handleTogglePublic = async () => {
-    try {
-      const nextIsPublic = !profile?.isPublic;
-      const result = await apiV1.PROFILE.PUBLIC(profileId).post<{ isPublic: boolean; publicSlug: string | null }>({
-        isPublic: nextIsPublic,
-      });
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      const isPublic = Boolean(result.data?.isPublic ?? nextIsPublic);
-      const publicSlug = result.data?.publicSlug ?? profile?.publicSlug ?? null;
-
-      toast.success(isPublic ? "Profile is now public" : "Profile is now private");
-      setProfile((prev) => (prev ? { ...prev, isPublic, publicSlug } : null));
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to update public status";
-      toast.error(message);
-      throw error;
-    }
+  const onDisplayNameChange = async (name: string) => {
+    setProfile((prev) => prev ? { ...prev, name } : null);
   };
 
-
-
-  if (!profile) {
-    return null;
-  }
+  if (!profile) return null;
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Header with Back Button */}
-      <div className="border-b bg-background px-6 py-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/profile")}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Profiles
-        </Button>
-      </div>
-
-      {/* Editor */}
-      <div className="flex-1">
+    <Page
+      title={
+        <div className="flex items-center gap-2">
+          <span className="text-xl font-bold uppercase tracking-tight">{profile.name}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => {
+              setNewName(profile.name);
+              setIsRenameModalOpen(true);
+            }}
+          >
+            <Edit2 className="h-4 w-4" />
+          </Button>
+        </div>
+      }
+      description="Edit your professional profile content"
+      breadcrumbs={[
+        { label: 'Profiles', href: '/profile' },
+        { label: profile.name }
+      ]}
+      maxWidth="full"
+      className="p-0"
+      scrollable={false}
+      actions={
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 font-bold uppercase tracking-widest text-xs"
+            onClick={() => editorRef.current?.setShowAIEnhance(true)}
+          >
+            <Sparkles className="h-3 w-3 mr-2" />
+            AI Enhance
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 font-bold uppercase tracking-widest text-xs"
+            onClick={() => editorRef.current?.setShowShareDialog(true)}
+          >
+            <Share2 className="h-3 w-3 mr-2" />
+            Share
+          </Button>
+          <Button
+            size="sm"
+            className="h-8 font-bold uppercase tracking-widest text-xs"
+            onClick={() => editorRef.current?.save()}
+          >
+            <Save className="h-3 w-3 mr-2" />
+            Save
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex-1 flex flex-col min-h-0 -mx-4 sm:-mx-8">
         <EditorProvider onLoad={handleLoad} onSave={handleSave}>
           <ResumeEditor 
+            ref={editorRef}
             id={profileId}
             displayName={profile.name}
             isPublic={profile.isPublic}
-             publicSlug={profile.publicSlug ?? undefined}
-            onDisplayNameChange={handleProfileNameChange}
-            onTogglePublic={handleTogglePublic}
+            publicSlug={profile.publicSlug ?? undefined}
+            onDisplayNameChange={onDisplayNameChange}
           />
         </EditorProvider>
       </div>
-    </div>
+
+      <Dialog open={isRenameModalOpen} onOpenChange={setIsRenameModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Profile</DialogTitle>
+            <DialogDescription>Give your profile a clear identification.</DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest mb-2 block">Profile Name</Label>
+            <Input
+              id="name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleProfileNameChange}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Page>
   );
 }

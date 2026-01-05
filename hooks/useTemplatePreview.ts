@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Template } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { apiV1, type TemplateListResponseDto } from '@/lib/client';
+import { getTemplate, getTemplates, renderTemplate } from '@/app/actions/template';
+import { NotFoundError } from '@/lib/errors';
 
 const logger = createComponentLogger('useTemplatePreview');
 
@@ -29,6 +29,8 @@ interface UseTemplatePreviewOptions {
 interface UseTemplatePreviewReturn {
   /** Rendered HTML content */
   htmlContent: string;
+  /** The template object used */
+  template: Template | null;
   /** Loading state */
   isLoading: boolean;
   /** Error message if any */
@@ -42,16 +44,16 @@ interface UseTemplatePreviewReturn {
  */
 async function fetchTemplate(templateId?: string | null, useFallback = true): Promise<Template | null> {
   if (templateId) {
-    const result = await apiV1.TEMPLATE.GET(templateId).get<Template>();
-    if (!result.error && result.data) {
-      return result.data;
+    const result = await getTemplate(templateId);
+    if (result.success && result.data) {
+      return result.data as unknown as Template;
     }
   }
 
   if (useFallback) {
-    const listResult = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<Template>>();
-    if (!listResult.error && listResult.data?.templates?.length) {
-      return listResult.data.templates[0];
+    const listResult = await getTemplates();
+    if (listResult.success && listResult.data?.length) {
+      return listResult.data[0] as unknown as Template;
     }
   }
 
@@ -97,6 +99,7 @@ export function useTemplatePreview({
   useFallback = true,
 }: UseTemplatePreviewOptions): UseTemplatePreviewReturn {
   const [htmlContent, setHtmlContent] = useState<string>('');
+  const [template, setTemplate] = useState<Template | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -104,6 +107,7 @@ export function useTemplatePreview({
     // Skip if disabled or no resume data
     if (!enabled || !resumeData) {
       setHtmlContent('');
+      setTemplate(null);
       setIsLoading(false);
       return;
     }
@@ -111,6 +115,7 @@ export function useTemplatePreview({
     // If no templateId and no fallback, clear content
     if (!templateId && !useFallback) {
       setHtmlContent('');
+      setTemplate(null);
       setIsLoading(false);
       return;
     }
@@ -119,24 +124,27 @@ export function useTemplatePreview({
       setIsLoading(true);
       setError(null);
 
-      const template = await fetchTemplate(templateId, useFallback);
+      const fetchedTemplate = await fetchTemplate(templateId, useFallback);
 
-      if (!template) {
-        throw new Error('No template available');
+      if (!fetchedTemplate) {
+        throw new NotFoundError('Template');
       }
 
-      // Render template client-side
-      const html = renderTemplateClientSide({
-        htmlTemplate: template.htmlTemplate,
-        cssStyles: template.cssStyles,
-        resumeData,
-      });
+      setTemplate(fetchedTemplate);
 
-      setHtmlContent(html);
+      // Render template server-side to avoid CSP issues with Handlebars.compile()
+      const result = await renderTemplate(fetchedTemplate.htmlTemplate, resumeData);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to render template');
+      }
+
+      setHtmlContent(result.data);
     } catch (err) {
       logger.error('Template preview error', err);
       setError(err instanceof Error ? err.message : 'Failed to load template');
       setHtmlContent('');
+      setTemplate(null);
     } finally {
       setIsLoading(false);
     }
@@ -149,6 +157,7 @@ export function useTemplatePreview({
 
   return {
     htmlContent,
+    template,
     isLoading,
     error,
     refresh: renderPreview,

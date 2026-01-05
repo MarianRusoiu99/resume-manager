@@ -9,9 +9,9 @@
  * ```
  * 
  * Hook Categories:
- * - Shared: Low-level, reusable hooks (useIsMobile, useKeyboardShortcut)
+ * - Shared: Low-level, reusable hooks (useIsMobile)
  * - Data: Data fetching and persistence (useAutoSave, useDataFetching)
- * - Features: Domain-specific business logic (useTemplatePreview, useProfileSave)
+ * - Features: Domain-specific business logic (useTemplatePreview)
  * - Preview: Resume preview-specific hooks (useExportPDF, useTemplateSelection)
  */
 
@@ -19,15 +19,13 @@
 // Shared Hooks - Low-level, reusable utilities
 // ============================================================================
 
-export { useIsMobile } from './use-mobile';
-export { useKeyboardShortcut } from './useKeyboardShortcut';
+export { useIsMobile } from './useMobile';
 
 // ============================================================================
 // Data Hooks - Data fetching and persistence
 // ============================================================================
 
 export { useAutoSave } from './useAutoSave';
-export { useFetch, useAction } from './useDataFetching';
 export { useComponentLogger } from './useComponentLogger';
 
 // ============================================================================
@@ -35,13 +33,17 @@ export { useComponentLogger } from './useComponentLogger';
 // ============================================================================
 
 export { useTemplatePreview } from './useTemplatePreview';
-export { useProfileSave } from './useProfileSave';
 export { useCardPreview } from './useCardPreview';
-export { useListForm } from './use-list-form';
+export { useListForm } from './useListForm';
 export { useToastAction } from './useToastAction';
-export { useAIEnhance } from './useAIEnhance';
 export { useAIModels } from './useAIModels';
 export type { AIModel } from './useAIModels';
+export { useSettingsManager } from './useSettingsManager';
+export { useCoverLetterOperations } from './features/useCoverLetterOperations';
+export { useResumeOperations } from './features/useResumeOperations';
+export { useResourceOperations } from './features/useResourceOperations';
+export type { ResourceOperationsConfig, ResourceOperationsReturn } from './features/useResourceOperations';
+export { useFeatureModelPreference } from './useFeatureModelPreference';
 
 // ============================================================================
 // Preview Hooks - Resume preview-specific (re-exported from components/preview)

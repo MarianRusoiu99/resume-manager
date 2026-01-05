@@ -39,7 +39,7 @@ export function withRateLimit(
     const identifier = getClientIdentifier(request, userId);
 
     // Check rate limit
-    const rateLimitResponse = applyRateLimit(identifier, config);
+    const rateLimitResponse = await applyRateLimit(identifier, config);
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
@@ -48,7 +48,7 @@ export function withRateLimit(
     const response = await handler(request);
 
     // Add rate limit headers to successful response
-    return addRateLimitHeaders(response, identifier, config);
+    return await addRateLimitHeaders(response, identifier, config);
   };
 }
 
@@ -75,7 +75,7 @@ export async function checkRateLimit(
   limited: boolean;
   response: Response | null;
   identifier: string;
-  addHeaders: (response: Response) => Response;
+  addHeaders: (response: Response) => Promise<Response>;
 }> {
   // Get user ID if authenticated via DAL
   const session = await getSession();
@@ -85,7 +85,7 @@ export async function checkRateLimit(
   const identifier = getClientIdentifier(request, userId);
 
   // Check rate limit
-  const rateLimitResponse = applyRateLimit(identifier, config);
+  const rateLimitResponse = await applyRateLimit(identifier, config);
 
   return {
     limited: rateLimitResponse !== null,
@@ -117,7 +117,7 @@ export function withAuthRateLimit(
     const identifier = `user:${userId}`;
 
     // Check rate limit
-    const rateLimitResponse = applyRateLimit(identifier, config);
+    const rateLimitResponse = await applyRateLimit(identifier, config);
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
@@ -126,7 +126,7 @@ export function withAuthRateLimit(
     const response = await handler(request, userId);
 
     // Add rate limit headers
-    return addRateLimitHeaders(response, identifier, config);
+    return await addRateLimitHeaders(response, identifier, config);
   };
 }
 

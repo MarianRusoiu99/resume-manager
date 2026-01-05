@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { env } from '@/lib/config';
+import { ConfigurationError, ValidationError } from '@/lib/errors';
 
 /**
  * Encryption utility for storing sensitive data like API keys
@@ -19,10 +20,10 @@ const ITERATIONS = 100000;
 function getEncryptionKey(): string {
   const key = env.ENCRYPTION_KEY;
   if (!key) {
-    throw new Error('ENCRYPTION_KEY environment variable is not set');
+    throw new ConfigurationError('ENCRYPTION_KEY environment variable is not set');
   }
   if (key.length < 32) {
-    throw new Error('ENCRYPTION_KEY must be at least 32 characters long');
+    throw new ConfigurationError('ENCRYPTION_KEY must be at least 32 characters long');
   }
   return key;
 }
@@ -66,7 +67,7 @@ export function encrypt(plaintext: string): string {
       authTag.toString('base64')
     ].join(':');
   } catch (error) {
-    throw new Error(`Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new ConfigurationError(`Encryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`, error);
   }
 }
 
@@ -82,7 +83,7 @@ export function decrypt(encryptedData: string): string {
     // Parse the encrypted data
     const parts = encryptedData.split(':');
     if (parts.length !== 4) {
-      throw new Error('Invalid encrypted data format');
+      throw new ValidationError('Invalid encrypted data format');
     }
     
     const [saltB64, ivB64, encryptedB64, authTagB64] = parts;
@@ -104,7 +105,7 @@ export function decrypt(encryptedData: string): string {
     
     return decrypted;
   } catch (error) {
-    throw new Error(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new ConfigurationError(`Decryption failed: ${error instanceof Error ? error.message : 'Unknown error'}`, error);
   }
 }
 

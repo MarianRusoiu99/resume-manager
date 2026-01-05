@@ -7,9 +7,16 @@
  * Built with shadcn/ui Badge components.
  */
 
+// React
+// (none needed)
+
+// Third-party
+// (none needed)
+
+// Local (absolute)
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { InstructionPreset } from '../types';
+import type { InstructionPreset } from '@/components/ai-enhance/types';
 
 interface PromptPresetsProps {
   presets: InstructionPreset[];

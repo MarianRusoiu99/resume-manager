@@ -33,7 +33,7 @@ export class AnalyticsService {
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const [resumeCount, profileCount, optimizationsCount, recentResumes, recentCoverLetters] = await Promise.all([
+      const [resumeCount, profileCount, optimizationsCount, recentResumes, recentCoverLetters, recentProfiles] = await Promise.all([
         prisma.resume.count({ where: { userId } }),
         prisma.profile.count({ where: { userId } }),
         prisma.auditLog.count({
@@ -55,6 +55,11 @@ export class AnalyticsService {
           take: 5,
           include: { jobPosting: { include: { company: true } } },
         }),
+        prisma.profile.findMany({
+          where: { userId },
+          orderBy: { updatedAt: 'desc' },
+          take: 5,
+        }),
       ]);
 
       const activity = [
@@ -69,6 +74,12 @@ export class AnalyticsService {
           type: 'COVER_LETTER' as const,
           title: cl.jobPosting?.title || 'Untitled Cover Letter',
           date: cl.createdAt,
+        })),
+        ...recentProfiles.map((p) => ({
+          id: p.id,
+          type: 'PROFILE' as const,
+          title: `Profile: ${p.name}`,
+          date: p.updatedAt,
         })),
       ]
         .sort((a, b) => b.date.getTime() - a.date.getTime())
@@ -139,7 +150,7 @@ export class AnalyticsService {
       });
 
       const totalTokens = aiLogs.reduce((sum, log) => {
-        const meta = log.metadata as any;
+        const meta = log.metadata as { usage?: { totalTokens?: number } } | null;
         return sum + (meta?.usage?.totalTokens || 0);
       }, 0);
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
 
 interface LoadingStateProps {
   /** Loading message to display */
@@ -14,23 +13,13 @@ interface LoadingStateProps {
   className?: string;
 }
 
-const sizeClasses = {
-  sm: "h-6 w-6",
-  md: "h-12 w-12",
-  lg: "h-16 w-16",
-};
+import { Spinner } from "@/components/shared/Spinner";
 
 /**
  * LoadingState - Standardized loading indicator component
  * 
  * Use this component to display loading states consistently across the app.
- * 
- * @example
- * ```tsx
- * if (isLoading) {
- *   return <LoadingState message="Loading your resumes..." />;
- * }
- * ```
+ * Refactored to use the unified Spinner component.
  */
 export function LoadingState({
   message = "Loading...",
@@ -41,15 +30,12 @@ export function LoadingState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center text-center",
+        "flex flex-col items-center justify-center text-center animate-in fade-in duration-500",
         className
       )}
       style={{ minHeight }}
     >
-      <Loader2 className={cn("animate-spin text-primary mb-4", sizeClasses[size])} />
-      {message && (
-        <p className="text-muted-foreground text-sm">{message}</p>
-      )}
+      <Spinner size={size} label={message} />
     </div>
   );
 }

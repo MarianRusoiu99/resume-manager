@@ -165,39 +165,3 @@ export async function enhanceText(
     },
   };
 }
-
-/**
- * Streams text enhancement
- */
-export async function streamEnhanceText(
-  model: LanguageModel,
-  input: EnhanceTextInput,
-  userId?: string
-) {
-  const systemPrompt = getSystemPrompt(input.contentType);
-  const userPrompt = buildUserPrompt(input);
-
-  const messages: CoreMessage[] = [
-    { 
-      role: 'system', 
-      content: systemPrompt + `\n\nIMPORTANT: Return ONLY the enhanced text. Do NOT include any JSON formatting, code blocks, or explanations. Just return the clean, enhanced text directly.` 
-    },
-    { 
-      role: 'user', 
-      content: [
-        { type: 'text', text: userPrompt },
-        ...(input.attachments?.filter(a => a.type.startsWith('image/')).map(a => ({
-          type: 'image' as const,
-          image: a.content, // base64 data URL
-        })) || [])
-      ]
-    }
-  ];
-
-  return ValidatedAIRunner.stream({
-    model,
-    messages,
-    userId,
-    feature: 'enhance-stream',
-  });
-}

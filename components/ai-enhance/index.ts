@@ -23,8 +23,8 @@ export { AIEnhanceTextarea } from './AIEnhanceTextarea';
 export {
   AIEnhanceTextModal,
   AIEnhanceBaseModal,
-  AIEnhanceResumeModalUnified,
-  AIEnhanceTemplateModalUnified,
+  AIEnhanceResumeModal,
+  AIEnhanceTemplateModal,
 } from './modals';
 
 // Prompt components
@@ -62,9 +62,5 @@ export type {
   EnhancementState,
   EnhancementResult,
 } from './types';
-export type {
-  TextEnhancementOptions,
-  TemplateEnhancementOptions,
-  UseAIEnhancementReturn,
-} from './hooks';
+
 export { TEXT_PRESETS, RESUME_PRESETS } from './types';

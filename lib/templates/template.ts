@@ -14,8 +14,6 @@ export interface TemplateMetadata {
 }
 
 export interface ResumeTemplate extends TemplateMetadata {
-  /** Handlebars HTML template */
+  /** Handlebars HTML template (includes styles) */
   htmlTemplate: string;
-  /** CSS styles for the template */
-  cssStyles: string;
 }

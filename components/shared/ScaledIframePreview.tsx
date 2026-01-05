@@ -6,18 +6,18 @@
 
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, memo, useCallback } from 'react';
 
 interface ScaledIframePreviewProps {
   /** HTML content to render in iframe */
   htmlContent: string;
   /** Alt text for accessibility */
   altText?: string;
-  /** Width of the content (e.g., A4 width = 794px) */
+  /** Width of content (e.g., A4 width = 794px) */
   contentWidth?: number;
-  /** Height of the content (e.g., A4 height = 1123px) */
+  /** Height of content (e.g., A4 height = 1123px) */
   contentHeight?: number;
-  /** Custom class for the container */
+  /** Custom class for container */
   className?: string;
   /** Callback when iframe loads */
   onLoad?: () => void;
@@ -27,7 +27,7 @@ interface ScaledIframePreviewProps {
 const DEFAULT_CONTENT_WIDTH = 794;
 const DEFAULT_CONTENT_HEIGHT = 1123;
 
-export function ScaledIframePreview({
+export const ScaledIframePreview = memo(function ScaledIframePreview({
   htmlContent,
   altText = 'Preview',
   contentWidth = DEFAULT_CONTENT_WIDTH,
@@ -73,9 +73,9 @@ export function ScaledIframePreview({
   useEffect(() => {
     const iframe = iframeRef.current;
     if (iframe && onLoad) {
-      const handleLoad = () => {
+      const handleLoad = useCallback(() => {
         onLoad();
-      };
+      }, [onLoad]);
       iframe.addEventListener('load', handleLoad);
       return () => iframe.removeEventListener('load', handleLoad);
     }
@@ -109,4 +109,4 @@ export function ScaledIframePreview({
       </div>
     </div>
   );
-}
+});

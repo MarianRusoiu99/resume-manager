@@ -1,0 +1,338 @@
+/**
+ * Tests for Profile Service
+ */
+
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { ProfileService } from '@/lib/services/profiles/profiles.service';
+import { ProfileRepository } from '@/lib/repositories/profiles.repository';
+import { getTestPrisma, cleanupDatabase, shouldSkipDatabaseTests } from '@/lib/test/setup';
+import { createTestUser, createTestProfile } from '@/lib/test/factories';
+import { profileCache } from '@/lib/cache/simple-cache';
+import type { Resume } from '@/lib/validations/jsonresume';
+
+describe.skipIf(shouldSkipDatabaseTests())('ProfileService', () => {
+  let service: ProfileService;
+  let repository: ProfileRepository;
+  let testUserId: string;
+
+  beforeAll(async () => {
+    const testDb = getTestPrisma();
+    repository = new ProfileRepository(testDb);
+    service = new ProfileService(repository, profileCache);
+  });
+
+  afterAll(async () => {
+    await cleanupDatabase();
+  });
+
+  beforeEach(async () => {
+    await cleanupDatabase();
+    profileCache.clear();
+    const user = await createTestUser({ email: 'profile-service-test@example.com' });
+    testUserId = user.id;
+  });
+
+  describe('createProfile', () => {
+    it('should create a profile successfully', async () => {
+      const resume: Resume = {
+        basics: {
+          name: 'John Doe',
+          label: 'Software Engineer',
+          email: 'john@example.com',
+          profiles: [],
+        },
+        work: [],
+        education: [],
+        skills: [],
+        projects: [],
+      };
+
+      const result = await service.createProfile(testUserId, 'My Profile', resume, false);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect((result.data as any).name).toBe('My Profile');
+        expect((result.data as any).userId).toBe(testUserId);
+        expect((result.data as any).resume).toEqual(resume);
+      }
+    });
+
+    it('should set profile as default when specified', async () => {
+      const resume: Resume = {
+        basics: {
+          name: 'John Doe',
+          label: 'Software Engineer',
+          profiles: [],
+        },
+        work: [],
+        education: [],
+        skills: [],
+        projects: [],
+      };
+
+      const result = await service.createProfile(testUserId, 'Default Profile', resume, true);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect((result.data as any).isDefault).toBe(true);
+      }
+    });
+
+    it('should unset previous default when creating new default', async () => {
+      const resume: Resume = {
+        basics: {
+          name: 'Test User',
+          profiles: [],
+        },
+        work: [],
+        education: [],
+        skills: [],
+        projects: [],
+      };
+
+      await createTestProfile({ userId: testUserId, firstName: 'Old Default' });
+      
+      const result = await service.createProfile(testUserId, 'New Default', resume, true);
+
+      expect(result.success).toBe(true);
+
+      const profiles = await repository.findAllByUserId(testUserId);
+      const defaultProfiles = profiles.filter(p => p.isDefault);
+      expect(defaultProfiles).toHaveLength(1);
+      expect(defaultProfiles[0].name).toBe('New Default');
+    });
+
+    it('should fail with invalid resume data', async () => {
+      const invalidResume = {
+        // Missing required fields
+        work: [],
+      };
+
+      const result = await service.createProfile(
+        testUserId,
+        'Invalid Profile',
+        invalidResume as Resume,
+        false
+      );
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('getProfiles', () => {
+    it('should get all profiles for a user', async () => {
+      await createTestProfile({ userId: testUserId, firstName: 'Profile 1' });
+      await createTestProfile({ userId: testUserId, firstName: 'Profile 2' });
+
+      const result = await service.getProfiles(testUserId);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toHaveLength(2);
+        expect(result.data.map(p => p.name)).toContain('Profile 1');
+        expect(result.data.map(p => p.name)).toContain('Profile 2');
+      }
+    });
+
+    it('should return empty array when user has no profiles', async () => {
+      const result = await service.getProfiles(testUserId);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data).toEqual([]);
+      }
+    });
+  });
+
+  describe('getProfileById', () => {
+    it('should get a profile by id', async () => {
+      const profile = await createTestProfile({ userId: testUserId, firstName: 'Test Profile' });
+
+      const result = await service.getProfileById(profile.id, testUserId);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.id).toBe(profile.id);
+        expect(result.data.name).toBe('Test Profile');
+      }
+    });
+
+    it('should fail when profile not found', async () => {
+      const result = await service.getProfileById('non-existent-id', testUserId);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect((result.error as any).message).toContain('not found');
+      }
+    });
+
+    it('should fail when accessing another user profile', async () => {
+      const otherUser = await createTestUser({ email: 'other@example.com' });
+      const profile = await createTestProfile({ userId: otherUser.id, firstName: 'Other Profile' });
+
+      const result = await service.getProfileById(profile.id, testUserId);
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('should update profile name', async () => {
+      const profile = await createTestProfile({ userId: testUserId, firstName: 'Old Name' });
+
+      const result = await service.updateProfile(profile.id, testUserId, { name: 'New Name' });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.name).toBe('New Name');
+      }
+    });
+
+    it('should update profile resume', async () => {
+      const profile = await createTestProfile({ userId: testUserId, firstName: 'Test Profile' });
+
+      const newResume: Resume = {
+        basics: {
+          name: 'Jane Smith',
+          label: 'Designer',
+          profiles: [],
+        },
+        work: [{
+          name: 'Acme Corp',
+          position: 'Senior Designer',
+          startDate: '2020-01-01',
+        }],
+        education: [],
+        skills: [],
+        projects: [],
+      };
+
+      const result = await service.updateProfile(profile.id, testUserId, { resume: newResume });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.resume).toEqual(newResume);
+      }
+    });
+
+    it('should invalidate cache after update', async () => {
+      const profile = await createTestProfile({ userId: testUserId, firstName: 'Test Profile' });
+
+      // Populate cache
+      await service.getProfileById(profile.id, testUserId);
+
+      // Update profile
+      await service.updateProfile(profile.id, testUserId, { name: 'Updated Name' });
+
+      // Verify cache was invalidated by fetching again
+      const result = await service.getProfileById(profile.id, testUserId);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.name).toBe('Updated Name');
+      }
+    });
+  });
+
+  describe('deleteProfile', () => {
+    it('should delete a profile', async () => {
+      const profile = await createTestProfile({ userId: testUserId, firstName: 'To Delete' });
+
+      const result = await service.deleteProfile(profile.id, testUserId);
+
+      expect(result.success).toBe(true);
+
+      const findResult = await service.getProfileById(profile.id, testUserId);
+      expect(findResult.success).toBe(false);
+    });
+
+    it('should fail when deleting the last profile', async () => {
+      const profile = await createTestProfile({ userId: testUserId, firstName: 'Only Profile' });
+
+      const result = await service.deleteProfile(profile.id, testUserId);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect((result.error as any).message).toContain('last profile');
+      }
+    });
+
+    it('should set another profile as default when deleting default profile', async () => {
+      await createTestProfile({ userId: testUserId, firstName: 'Profile 1' });
+      await createTestProfile({ userId: testUserId, firstName: 'Profile 2' });
+
+      const deleteResult = await service.deleteProfile(
+        (await repository.findDefaultByUserId(testUserId))!.id,
+        testUserId
+      );
+
+      expect(deleteResult.success).toBe(true);
+
+      const profiles = await repository.findAllByUserId(testUserId);
+      expect(profiles.some(p => p.isDefault)).toBe(true);
+    });
+  });
+
+  describe('setDefaultProfile', () => {
+    it('should set a profile as default', async () => {
+      await createTestProfile({ userId: testUserId, firstName: 'Profile 1' });
+      const profile2 = await createTestProfile({ userId: testUserId, firstName: 'Profile 2' });
+
+      const result = await service.setDefaultProfile(profile2.id, testUserId);
+
+      expect(result.success).toBe(true);
+
+      const profiles = await repository.findAllByUserId(testUserId);
+      const defaultProfiles = profiles.filter(p => p.isDefault);
+      expect(defaultProfiles).toHaveLength(1);
+      expect(defaultProfiles[0].id).toBe(profile2.id);
+    });
+
+    it('should fail when profile not found', async () => {
+      const result = await service.setDefaultProfile('non-existent-id', testUserId);
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('duplicateProfile', () => {
+    it('should duplicate a profile', async () => {
+      const originalProfile = await createTestProfile({ userId: testUserId, firstName: 'Original' });
+
+      const result = await service.duplicateProfile(originalProfile.id, testUserId);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.name).toBe('Original (Copy)');
+        expect(result.data.id).not.toBe(originalProfile.id);
+        expect((result.data as any).resume).toBeDefined();
+      }
+    });
+
+    it('should duplicate with custom name', async () => {
+      const originalProfile = await createTestProfile({ userId: testUserId, firstName: 'Original' });
+
+      const result = await service.duplicateProfile(
+        originalProfile.id,
+        testUserId,
+        'Custom Copy Name'
+      );
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.name).toBe('Custom Copy Name');
+      }
+    });
+
+    it('should not set duplicate as default', async () => {
+      const originalProfile = await createTestProfile({ userId: testUserId, firstName: 'Original' });
+
+      const result = await service.duplicateProfile(originalProfile.id, testUserId);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.isDefault).toBe(false);
+      }
+    });
+  });
+});

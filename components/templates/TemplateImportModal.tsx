@@ -5,7 +5,7 @@
  * Uses the new useTemplateGeneration hook for AI extraction.
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import NextImage from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import {
@@ -18,9 +18,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Upload, Image as ImageIcon, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { useTemplateGeneration } from '../ai-enhance/hooks/useTemplateGeneration';
+import { useTemplateImport } from '@/hooks/useTemplateImport';
 import type { ExtractedTemplate } from '@/lib/ai/template-parser';
+import type { Resume } from '@/lib/validations/jsonresume';
+import { ModelSelector } from '@/components/ai/ModelSelector';
+import { ResumePreview } from '../resume/ResumePreview';
+import { sampleResume } from '@/lib/templates/constants/sample-resume';
+import { useFeatureModelPreference } from '@/hooks';
 
 interface TemplateImportModalProps {
   open: boolean;
@@ -33,73 +37,42 @@ export function TemplateImportModal({
   onOpenChange,
   onImportComplete,
 }: Readonly<TemplateImportModalProps>) {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const { modelId, updatePreference, isLoading: isPreferencesLoading } = useFeatureModelPreference('template');
 
-  const { generate, template, isLoading, error, reset } = useTemplateGeneration();
+  const handleModelChange = React.useCallback((newModelId: string, newProviderId: string) => {
+    updatePreference(newModelId, newProviderId);
+  }, [updatePreference]);
 
-  // Handle completion
-  useEffect(() => {
-    if (template) {
-      setProgress(100);
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-      
-      toast.success('Template extracted successfully!');
-      
-      const timer = setTimeout(() => {
-        onImportComplete(template);
-        handleClose();
-      }, 800);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [template, onImportComplete]);
-
-  // Handle errors
-  useEffect(() => {
-    if (error) {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
-      setProgress(0);
-    }
-  }, [error]);
+  const {
+    selectedFile,
+    preview,
+    progress,
+    loadingStep,
+    isLoading,
+    error,
+    template,
+    handleFileSelect,
+    handleImport,
+    handleRemoveFile,
+    resetStates,
+  } = useTemplateImport({
+    onImportComplete,
+    onClose: () => onOpenChange(false),
+  });
 
   const handleClose = useCallback(() => {
     if (!isLoading) {
-      reset();
-      setSelectedFile(null);
-      setPreview(null);
-      setProgress(0);
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
+      resetStates();
       onOpenChange(false);
     }
-  }, [isLoading, onOpenChange, reset]);
+  }, [isLoading, onOpenChange, resetStates]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     if (file) {
-      setSelectedFile(file);
-      
-      // Create preview
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = () => {
-          setPreview(reader.result as string);
-        };
-        reader.readAsDataURL(file);
-      } else if (file.type === 'application/pdf') {
-        // Use a placeholder for PDF preview for now
-        setPreview('pdf-placeholder');
-      }
+      handleFileSelect(file);
     }
-  }, []);
+  }, [handleFileSelect]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -115,21 +88,9 @@ export function TemplateImportModal({
     disabled: isLoading,
   });
 
-  const handleImport = async () => {
-    if (!selectedFile) return;
-
-    setProgress(10);
-    
-    // Start progress simulation
-    progressIntervalRef.current = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 90) return 90;
-        return prev + 5;
-      });
-    }, 1500);
-
-    await generate(selectedFile);
-  };
+  const onExtract = useCallback(() => {
+    handleImport(modelId);
+  }, [handleImport, modelId]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -195,8 +156,7 @@ export function TemplateImportModal({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedFile(null);
-                      setPreview(null);
+                      handleRemoveFile();
                     }}
                     className="absolute top-2 right-2 p-1 bg-background/80 rounded-full hover:bg-background"
                     title="Clear selected file"
@@ -218,18 +178,40 @@ export function TemplateImportModal({
           {isLoading && (
             <div className="space-y-3">
               <Progress value={progress} className="h-2" />
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                AI is analyzing the template...
+              <div className="flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 h-6">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {loadingStep || 'AI is analyzing the template...'}
+                </div>
+                <p className="text-[10px] text-muted-foreground/60 animate-pulse">
+                  This multi-step process can take up to 60 seconds...
+                </p>
               </div>
             </div>
           )}
 
           {/* Success */}
           {template && (
-            <div className="flex items-center justify-center gap-2 text-sm text-green-600">
-              <CheckCircle className="h-5 w-5" />
-              Template extracted successfully!
+            <div className="space-y-4">
+              <div className="flex items-center justify-center gap-2 text-sm text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                Template extracted and refined successfully!
+              </div>
+
+              <div className="border rounded-lg overflow-hidden bg-white shadow-sm h-[300px] relative">
+                <div className="absolute inset-0 overflow-auto p-4 origin-top scale-[0.6] w-[166.6%] h-[166.6%]">
+                  <ResumePreview
+                    resumeData={sampleResume as Resume}
+                    templateHtml={template.htmlTemplate}
+                    showTemplateSelector={false}
+                    showCard={false}
+                    disableScaling={true}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground text-center italic">
+                Preview rendering with sample data
+              </p>
             </div>
           )}
 
@@ -242,25 +224,44 @@ export function TemplateImportModal({
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
+          <div className="flex flex-col gap-4 pt-2">
             {!isLoading && selectedFile && !template && (
-              <Button onClick={handleImport}>
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Extract Template
-              </Button>
+              <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/10">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">Model Selection</span>
+                  <span className="text-xs text-muted-foreground">Select a vision-capable model</span>
+                </div>
+                <ModelSelector
+                  requiresVision
+                  requiresStructuredOutput
+                  value={modelId}
+                  onValueChange={handleModelChange}
+                  isLoading={isPreferencesLoading}
+                  className="w-[200px]"
+                />
+              </div>
             )}
-            {error && !isLoading && (
-              <Button onClick={handleImport}>
-                Try Again
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                Cancel
               </Button>
-            )}
+              {!isLoading && selectedFile && !template && (
+                <Button onClick={onExtract}>
+                  <ImageIcon className="mr-2 h-4 w-4" />
+                  Extract Template
+                </Button>
+              )}
+              {error && !isLoading && (
+                <Button onClick={onExtract}>
+                  Try Again
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>

@@ -1,254 +1,114 @@
 import { TabsContent } from "@/components/ui/tabs";
 import { useEditor } from "@/lib/contexts";
-import { PersonalInfoForm } from "@/components/editor/forms/PersonalInfoForm";
-import { SummaryForm } from "@/components/editor/forms/SummaryForm";
-import { ExperienceForm } from "@/components/editor/forms/ExperienceForm";
-import { EducationForm } from "@/components/editor/forms/EducationForm";
-import SkillsForm from "@/components/editor/forms/SkillsForm";
-import { ProjectsForm } from "@/components/editor/forms/ProjectsForm";
-import CertificationsForm from "@/components/editor/forms/CertificationsForm";
-import LanguagesForm from "@/components/editor/forms/LanguagesForm";
-import { VolunteerForm } from "@/components/editor/forms/VolunteerForm";
-import { AwardsForm } from "@/components/editor/forms/AwardsForm";
-import { PublicationsForm } from "@/components/editor/forms/PublicationsForm";
-import { InterestsForm } from "@/components/editor/forms/InterestsForm";
-import { ReferencesForm } from "@/components/editor/forms/ReferencesForm";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import type { Basics, Skill, Certificate, Language } from "@/lib/validations/jsonresume";
+import { EDITOR_CONFIG, EditorSection } from "@/lib/constants/editor-config";
+import type { Resume } from "@/lib/validations/jsonresume";
+import { ManagedForm } from "@/components/forms/ManagedForm";
+import { GenericFormList } from "@/components/forms/GenericFormList";
+import { ChevronDown } from "lucide-react";
 
 export function EditorContent() {
     const { resume, updateField } = useEditor();
 
-    const handlePersonalInfoChange = (data: Basics) => {
-        updateField('basics', data);
+    const getCount = (section: EditorSection, resumeData: Resume) => {
+        const val = resumeData[section.field as keyof Resume];
+        return Array.isArray(val) ? val.length : 0;
     };
 
-    const handleSkillsChange = (skills: Skill[]) => {
-        updateField('skills', skills);
-    };
+    const renderSection = (section: EditorSection) => {
+        if (section.type === 'object') {
+            if (!section.schema) {
+                return <div className="text-muted-foreground">No schema defined for this section</div>;
+            }
+            
+            const data = resume[section.field as keyof Resume];
+            const formData = (section.toForm ? section.toForm(data) : data) as Record<string, any>;
 
-    const handleCertificationsChange = (certificates: Certificate[]) => {
-        updateField('certificates', certificates);
-    };
+            return (
+                <ManagedForm
+                    schema={section.schema}
+                    defaultValues={formData}
+                    fields={section.fields as any || []}
+                    onSubmit={() => {}}
+                    onUpdate={(updatedFormData) => {
+                        const updatedData = section.fromForm 
+                            ? section.fromForm(updatedFormData) 
+                            : updatedFormData;
+                        
+                        // If it's a nested update (like summary in basics)
+                        if (section.field === 'basics' && section.id === 'summary') {
+                            updateField('basics', { ...(resume.basics || {}), ...(updatedData as any) } as any);
+                        } else {
+                            updateField(section.field as keyof Resume, updatedData as any);
+                        }
+                    }}
+                    autoSave
+                />
+            );
+        }
 
-    const handleLanguagesChange = (languages: Language[]) => {
-        updateField('languages', languages);
+        if (section.type === 'list') {
+            if (!section.config) {
+                return <div className="text-muted-foreground">No config defined for this section</div>;
+            }
+            
+            const items = (resume[section.field as keyof Resume] || []) as Record<string, unknown>[];
+            return (
+                <GenericFormList
+                    schema={section.config}
+                    items={items}
+                    onChange={(newItems) => updateField(section.field as keyof Resume, newItems)}
+                />
+            );
+        }
+
+        return null;
     };
 
     return (
-        <>
-            {/* Basics Tab */}
-            <TabsContent value="basics" className="p-6 space-y-6">
-                <div>
-                    <h3 className="text-lg font-semibold mb-1">Personal Information</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Your contact details and professional links
-                    </p>
-                    <PersonalInfoForm
-                        initialData={resume.basics}
-                        onChange={handlePersonalInfoChange}
-                    />
+        <div className="h-full overflow-y-auto">
+            {EDITOR_CONFIG.filter(s => s.isPrimary).map(section => (
+                <TabsContent key={section.id} value={section.id} className="p-6 focus-visible:outline-none mt-0">
+                    <div className="mb-6">
+                        <h2 className="text-2xl font-bold tracking-tight">{section.label}</h2>
+                        {section.description && (
+                            <p className="text-muted-foreground">{section.description}</p>
+                        )}
+                    </div>
+                    {renderSection(section)}
+                </TabsContent>
+            ))}
+
+            <TabsContent value="more" className="p-6 space-y-4 focus-visible:outline-none mt-0">
+                <div className="mb-6">
+                    <h2 className="text-2xl font-bold tracking-tight">Additional Sections</h2>
+                    <p className="text-muted-foreground">Add more information to your resume</p>
                 </div>
-
-                <div className="pt-6 border-t">
-                    <h3 className="text-lg font-semibold mb-1">Professional Summary</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        A brief overview of your experience and career goals
-                    </p>
-                    <SummaryForm
-                        summary={resume.basics?.summary || ""}
-                        onChange={(summary) => updateField('basics', { ...resume.basics, summary })}
-                    />
-                </div>
+                {EDITOR_CONFIG.filter(s => !s.isPrimary).map(section => (
+                    <Collapsible key={section.id} className="border rounded-lg overflow-hidden bg-card">
+                        <CollapsibleTrigger asChild>
+                            <Button variant="ghost" className="w-full justify-between p-4 h-auto hover:bg-muted/50 rounded-none">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-md bg-primary/10 text-primary">
+                                        <section.icon className="h-4 w-4" />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="font-semibold">{section.label}</div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {getCount(section, resume)} items added
+                                        </div>
+                                    </div>
+                                </div>
+                                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200" />
+                            </Button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="p-4 border-t bg-muted/5">
+                            {renderSection(section)}
+                        </CollapsibleContent>
+                    </Collapsible>
+                ))}
             </TabsContent>
-
-            {/* Experience Tab */}
-            <TabsContent value="experience" className="p-6">
-                <div>
-                    <h3 className="text-lg font-semibold mb-1">Work Experience</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Your professional work history and achievements
-                    </p>
-                    <ExperienceForm
-                        experiences={resume.work || []}
-                        onChange={(work) => updateField('work', work)}
-                    />
-                </div>
-            </TabsContent>
-
-            {/* Education Tab */}
-            <TabsContent value="education" className="p-6">
-                <div>
-                    <h3 className="text-lg font-semibold mb-1">Education</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Your academic background and qualifications
-                    </p>
-                    <EducationForm
-                        education={resume.education || []}
-                        onChange={(education) => updateField('education', education)}
-                    />
-                </div>
-            </TabsContent>
-
-            {/* Skills Tab */}
-            <TabsContent value="skills" className="p-6">
-                <div>
-                    <h3 className="text-lg font-semibold mb-1">Skills</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Your technical abilities and expertise
-                    </p>
-                    <SkillsForm
-                        skills={resume.skills || []}
-                        onChange={handleSkillsChange}
-                    />
-                </div>
-            </TabsContent>
-
-            {/* Projects Tab */}
-            <TabsContent value="projects" className="p-6">
-                <div>
-                    <h3 className="text-lg font-semibold mb-1">Projects</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                        Showcase your personal or professional projects
-                    </p>
-                    <ProjectsForm
-                        projects={resume.projects || []}
-                        onChange={(projects) => updateField('projects', projects)}
-                    />
-                </div>
-            </TabsContent>
-
-            {/* More Tab - Collapsible sections */}
-            <TabsContent value="more" className="p-6 space-y-4">
-                <h3 className="text-lg font-semibold mb-4">Additional Sections</h3>
-
-                {/* Certifications */}
-                <Collapsible>
-                    <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                            <span className="font-medium">Certifications</span>
-                            <span className="text-sm text-muted-foreground">
-                                {resume.certificates?.length || 0} items
-                            </span>
-                        </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                        <CertificationsForm
-                            certifications={resume.certificates || []}
-                            onChange={handleCertificationsChange}
-                        />
-                    </CollapsibleContent>
-                </Collapsible>
-
-                {/* Languages */}
-                <Collapsible>
-                    <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                            <span className="font-medium">Languages</span>
-                            <span className="text-sm text-muted-foreground">
-                                {resume.languages?.length || 0} items
-                            </span>
-                        </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                        <LanguagesForm
-                            languages={resume.languages || []}
-                            onChange={handleLanguagesChange}
-                        />
-                    </CollapsibleContent>
-                </Collapsible>
-
-                {/* Volunteer */}
-                <Collapsible>
-                    <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                            <span className="font-medium">Volunteer Work</span>
-                            <span className="text-sm text-muted-foreground">
-                                {resume.volunteer?.length || 0} items
-                            </span>
-                        </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                        <VolunteerForm
-                            volunteer={resume.volunteer || []}
-                            onChange={(volunteer) => updateField('volunteer', volunteer)}
-                        />
-                    </CollapsibleContent>
-                </Collapsible>
-
-                {/* Awards */}
-                <Collapsible>
-                    <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                            <span className="font-medium">Awards & Honors</span>
-                            <span className="text-sm text-muted-foreground">
-                                {resume.awards?.length || 0} items
-                            </span>
-                        </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                        <AwardsForm
-                            awards={resume.awards || []}
-                            onChange={(awards) => updateField('awards', awards)}
-                        />
-                    </CollapsibleContent>
-                </Collapsible>
-
-                {/* Publications */}
-                <Collapsible>
-                    <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                            <span className="font-medium">Publications</span>
-                            <span className="text-sm text-muted-foreground">
-                                {resume.publications?.length || 0} items
-                            </span>
-                        </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                        <PublicationsForm
-                            publications={resume.publications || []}
-                            onChange={(publications) => updateField('publications', publications)}
-                        />
-                    </CollapsibleContent>
-                </Collapsible>
-
-                {/* Interests */}
-                <Collapsible>
-                    <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                            <span className="font-medium">Interests</span>
-                            <span className="text-sm text-muted-foreground">
-                                {resume.interests?.length || 0} items
-                            </span>
-                        </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                        <InterestsForm
-                            interests={resume.interests || []}
-                            onChange={(interests) => updateField('interests', interests)}
-                        />
-                    </CollapsibleContent>
-                </Collapsible>
-
-                {/* References */}
-                <Collapsible>
-                    <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
-                            <span className="font-medium">References</span>
-                            <span className="text-sm text-muted-foreground">
-                                {resume.references?.length || 0} items
-                            </span>
-                        </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-4">
-                        <ReferencesForm
-                            references={resume.references || []}
-                            onChange={(references) => updateField('references', references)}
-                        />
-                    </CollapsibleContent>
-                </Collapsible>
-            </TabsContent>
-        </>
+        </div>
     );
 }

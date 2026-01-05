@@ -50,9 +50,9 @@ export {
   
   // Cover Letter
   generateCoverLetterSchema,
-  updateCoverLetterSchema,
+  generateStandaloneCoverLetterSchema,
   type GenerateCoverLetterInput,
-  type UpdateCoverLetterInput,
+  type GenerateStandaloneCoverLetterInput,
   
   // API Provider
   addApiProviderSchema,
@@ -73,4 +73,30 @@ export {
 } from './api-schemas';
 
 // JSON Resume schemas
-export { resumeSchema, type Resume } from './jsonresume';
+export { 
+  resumeSchema, 
+  type Resume,
+  type Basics,
+  type Location,
+  type Profile,
+  type Work,
+  type Volunteer,
+  type Education,
+  type Award,
+  type Certificate,
+  type Publication,
+  type Skill,
+  type Language,
+  type Interest,
+  type Reference,
+  type Project,
+  type Meta,
+} from './jsonresume';
+
+// Strict resume validation
+export {
+  strictResumeSchema,
+  validateResumeStrict,
+  getValidationSummary,
+  type ValidationError,
+} from './jsonresume/strict';

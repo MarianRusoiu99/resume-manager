@@ -4,10 +4,11 @@
  */
 
 import { useState } from 'react';
+import { ExternalServiceError, NotFoundError, ValidationError } from "@/lib/errors";
 import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { apiV1 } from '@/lib/client';
+import { getTemplate } from '@/app/actions/template';
 
 const logger = createComponentLogger('useExportPDF');
 
@@ -15,7 +16,6 @@ interface ExportPDFParams {
   resume: Resume;
   templateId?: string | null;
   templateHtml?: string;
-  templateCss?: string;
   fileName?: string;
 }
 
@@ -32,24 +32,24 @@ export function useExportPDF() {
     try {
       setIsExportingPDF(true);
 
-      const { resume, templateId, templateHtml, templateCss, fileName } = params;
+      const { resume, templateId, templateHtml, fileName } = params;
 
       // If custom template is provided, use it directly
       if (templateHtml) {
-        const response = await apiV1.EXPORT.PDF.postFetch(
-          {
+        const response = await fetch('/api/v1/export/pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             resume,
             template: {
               htmlTemplate: templateHtml,
-              cssStyles: templateCss || '',
             },
             fileName,
-          },
-          { skipSessionCheck: true },
-        );
+          })
+        });
 
         if (!response.ok) {
-          throw new Error('Failed to export PDF');
+          throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
         }
 
         await downloadPDF(response);
@@ -59,34 +59,30 @@ export function useExportPDF() {
 
       // Otherwise, fetch the template first
       if (!templateId) {
-        throw new Error('No template selected');
+        throw new ValidationError('No template selected');
       }
 
-      const templateResult = await apiV1.TEMPLATE.GET(templateId).get<{
-        id: string;
-        htmlTemplate: string;
-        cssStyles: string;
-      }>();
-      if (templateResult.error || !templateResult.data) {
-        throw new Error(templateResult.error ?? 'Failed to fetch template');
+      const templateResult = await getTemplate(templateId);
+      if (!templateResult.success || !templateResult.data) {
+        throw !templateResult.success ? new ExternalServiceError('Template API', templateResult.error) : new NotFoundError('Template');
       }
 
       const template = templateResult.data;
 
-      const response = await apiV1.EXPORT.PDF.postFetch(
-        {
+      const response = await fetch('/api/v1/export/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           resume,
           template: {
             htmlTemplate: template.htmlTemplate,
-            cssStyles: template.cssStyles,
           },
           fileName,
-        },
-        { skipSessionCheck: true },
-      );
+        })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to export PDF');
+        throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
       }
 
       await downloadPDF(response);
@@ -102,7 +98,7 @@ export function useExportPDF() {
   /**
    * Download PDF blob from response
    */
-  const downloadPDF = async (response: Response) => {
+  const downloadPDF = async (response: Response, defaultFileName?: string) => {
     // Download the PDF blob
     const blob = await response.blob();
     const url = globalThis.URL.createObjectURL(blob);
@@ -110,7 +106,7 @@ export function useExportPDF() {
     // Extract filename from Content-Disposition header
     const contentDisposition = response.headers.get('Content-Disposition');
     const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
-    const fileName = fileNameMatch?.[1] || 'resume.pdf';
+    const fileName = fileNameMatch?.[1] || defaultFileName || 'resume.pdf';
 
     // Trigger download
     const link = document.createElement('a');
@@ -124,8 +120,30 @@ export function useExportPDF() {
     globalThis.URL.revokeObjectURL(url);
   };
 
+  const handleExportCoverLetter = async (id: string, fileName?: string) => {
+    try {
+      setIsExportingPDF(true);
+      const response = await fetch(`/api/v1/cover-letter/${id}/export`, {
+        method: 'POST'
+      });
+
+      if (!response.ok) {
+        throw new ExternalServiceError('PDF Export', 'Failed to export cover letter');
+      }
+
+      await downloadPDF(response, fileName ? `${fileName}.pdf` : 'cover-letter.pdf');
+      toast.success('Cover letter exported successfully');
+    } catch (err) {
+      logger.error('Cover letter export error', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to export cover letter');
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
   return {
     isExportingPDF,
     handleExportPDF,
+    handleExportCoverLetter,
   };
 }

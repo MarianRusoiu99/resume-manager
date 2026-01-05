@@ -27,8 +27,6 @@ export {
   getMode,
   getModeOrThrow,
   requiresVision,
-  type AIStreamChunk,
-  type AIStreamChunkType,
   type OrchestratorOptions,
   type GenerationResult,
 } from './orchestrator';

@@ -9,8 +9,7 @@ export {
   generateResume,
   type GenerateResumeInput,
   type GenerateResumeResult,
-  type OptimizedResume,
-} from './resume-generator';
+} from './workflow/resume-generation';
 
 // Workflow Engine
 export * from './workflow';

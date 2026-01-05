@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ReactNode } from "react";
+import { ReactNode, memo } from "react";
 
 interface FormListProps<T> {
     items: T[];
@@ -14,7 +14,7 @@ interface FormListProps<T> {
     description?: string;
 }
 
-export function FormList<T>({
+export const FormList = memo(function FormList<T>({
     items,
     onAdd,
     onRemove,
@@ -38,7 +38,7 @@ export function FormList<T>({
 
             {items.map((item, index) => (
                 <div
-                    key={index}
+                    key={`item-${index}`}
                     className="p-4 border rounded-lg space-y-4 relative group bg-card text-card-foreground"
                 >
                     <div className="absolute top-4 right-4">
@@ -65,4 +65,4 @@ export function FormList<T>({
             )}
         </div>
     );
-}
+});

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { useEffect, forwardRef, useImperativeHandle, useRef, useState, useCallback, memo } from 'react';
 import { Block, PartialBlock } from '@blocknote/core';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
@@ -28,7 +28,7 @@ interface BlockNoteEditorWrapperProps {
   readOnly?: boolean;
 }
 
-export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNoteEditorWrapperProps>(
+const BlockNoteEditorWrapperComponent = forwardRef<BlockNoteEditorMethods, BlockNoteEditorWrapperProps>(
   ({ markdown: initialMarkdown, jsonContent, onChange, onJSONChange, className = '', placeholder = 'Type / for commands...', readOnly = false }, ref) => {
     const log = useComponentLogger('BlockNoteEditorWrapper');
     
@@ -91,32 +91,34 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
     }, [editor, initialMarkdown, jsonContent, log]);
 
     // Handle content changes - debounce to avoid excessive updates
+    const handleChange = useCallback(async () => {
+      if (!editor) return;
+      
+      try {
+        const blocks = editor.document;
+        
+        // Emit JSON change if callback exists
+        if (onJSONChange) {
+          const jsonString = JSON.stringify(blocks, null, 2);
+          onJSONChange(jsonString);
+        }
+        
+        // Emit markdown change if callback exists
+        if (onChange) {
+          const markdownString = await editor.blocksToMarkdownLossy(blocks);
+          onChange(markdownString);
+        }
+      } catch (error) {
+        log.error('Failed to handle content change', error);
+      }
+    }, [editor, onChange, onJSONChange, log]);
+
     useEffect(() => {
       if (!editor) return;
 
-      const handleChange = async () => {
-        try {
-          const blocks = editor.document;
-          
-          // Emit JSON change if callback exists
-          if (onJSONChange) {
-            const jsonString = JSON.stringify(blocks, null, 2);
-            onJSONChange(jsonString);
-          }
-          
-          // Emit markdown change if callback exists
-          if (onChange) {
-            const markdownString = await editor.blocksToMarkdownLossy(blocks);
-            onChange(markdownString);
-          }
-        } catch (error) {
-          log.error('Failed to handle content change', error);
-        }
-      };
-
       // Subscribe to editor changes
       return editor.onChange(handleChange);
-    }, [editor, onChange, onJSONChange, log]);
+    }, [editor, handleChange]);
 
     // Expose imperative methods via ref
     useImperativeHandle(ref, () => ({
@@ -188,4 +190,6 @@ export const BlockNoteEditorWrapper = forwardRef<BlockNoteEditorMethods, BlockNo
   }
 );
 
-BlockNoteEditorWrapper.displayName = 'BlockNoteEditorWrapper';
+BlockNoteEditorWrapperComponent.displayName = 'BlockNoteEditorWrapper';
+
+export const BlockNoteEditorWrapper = memo(BlockNoteEditorWrapperComponent);

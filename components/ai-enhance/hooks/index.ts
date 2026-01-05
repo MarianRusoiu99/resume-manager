@@ -4,21 +4,12 @@
 
 export { useFileAttachments } from './useFileAttachments';
 export { useEnhanceHistory } from './useEnhanceHistory';
-
-export { useTemplateGeneration } from './useTemplateGeneration';
+export { useAITask } from './useAITask';
 export { useResumeGeneration } from './useResumeGeneration';
+export { useResumeEnhancement } from './useResumeEnhancement';
+export { useTextEnhancement } from './useTextEnhancement';
 export { useCoverLetterGeneration } from './useCoverLetterGeneration';
-
-// Centralized enhancement hooks
-export {
-  useTextEnhancement,
-  useResumeEnhancement,
-  useTemplateEnhancement,
-  type TextEnhancementOptions,
-  type TemplateEnhancementOptions,
-  type EnhancementResult,
-  type UseAIEnhancementReturn,
-} from './useAIEnhancement';
+export { useTemplateEnhancement, useTemplateGeneration } from './useTemplateEnhancement';
 
 // New conversational AI hooks
 export {

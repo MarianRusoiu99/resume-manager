@@ -14,10 +14,10 @@
  */
 
 import type { ServiceErrorCode } from '@/lib/types/service-result';
+import { AppError, isAppError } from './base';
 
 // Re-export base error class and type guard
 export { AppError, isAppError } from './base';
-import { AppError, isAppError } from './base';
 
 /**
  * Resource not found error (404)
@@ -192,3 +192,50 @@ export {
   isAIError,
   createAIErrorFromResponse,
 } from './ai';
+
+// Re-export database errors
+export {
+  DatabaseError,
+  RecordNotFoundError,
+  UniqueConstraintError,
+  ForeignKeyConstraintError,
+  DatabaseConnectionError,
+  DatabaseTransactionError,
+  DatabaseQueryError,
+  isDatabaseError,
+} from './database';
+
+// Re-export authentication errors
+export {
+  AuthenticationError,
+  UnauthorizedError as AuthUnauthorizedError,
+  ForbiddenError as AuthForbiddenError,
+  InvalidCredentialsError,
+  SessionExpiredError,
+  InvalidTokenError,
+  AccountLockedError,
+  isAuthenticationError,
+} from './authentication';
+
+// Re-export API errors
+export {
+  ApiError,
+  RateLimitError as ApiRateLimitError,
+  ServiceUnavailableError,
+  BadRequestError,
+  MethodNotAllowedError,
+  RequestTimeoutError,
+  PayloadTooLargeError,
+  isApiError,
+} from './api';
+
+// Re-export validation errors
+export {
+  ValidationError as TypedValidationError,
+  SchemaValidationError,
+  RequiredFieldError,
+  InvalidFieldError,
+  FieldLengthError,
+  InvalidFormatError,
+  isValidationError,
+} from './validation';

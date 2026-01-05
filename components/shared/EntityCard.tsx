@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, memo, useCallback } from "react";
 import { GalleryCard, type GalleryCardProps, type GalleryCardAction } from "@/components/shared/GalleryCard";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
@@ -32,11 +32,11 @@ const DEFAULT_DELETE_DIALOG: DeleteDialogConfig = {
 
 /**
  * EntityCard - Wrapper around GalleryCard with built-in delete confirmation
- * 
- * Reduces boilerplate by handling the common pattern of:
+ *
+ * Reduces boilerplate by handling common pattern of:
  * - GalleryCard display
  * - Delete action with confirmation dialog
- * 
+ *
  * @example
  * ```tsx
  * <EntityCard
@@ -81,7 +81,7 @@ export function EntityCard({
     });
   }
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!onDelete) return;
 
     try {
@@ -91,7 +91,7 @@ export function EntityCard({
       setIsDeletePending(false);
       setShowDeleteDialog(false);
     }
-  };
+  }, [onDelete]);
 
   return (
     <>
@@ -115,38 +115,43 @@ export function EntityCard({
   );
 }
 
+export const MemoizedEntityCard = memo(EntityCard);
+
+// Also export EntityCard directly (the memo wrapper is optional)
+export default EntityCard;
+
 /**
  * Helper to create common card action configurations
  */
-export const createCardAction = {
-  edit: (onClick: () => void, icon?: ReactNode): GalleryCardAction => ({
-    label: "Edit",
+  export const createCardAction = {
+  edit: (onClick: () => void, icon?: ReactNode, label: string = "Edit"): GalleryCardAction => ({
+    label,
     icon,
     onClick,
   }),
   
-  view: (onClick: () => void, icon?: ReactNode): GalleryCardAction => ({
-    label: "View",
+  view: (onClick: () => void, icon?: ReactNode, label: string = "View"): GalleryCardAction => ({
+    label,
     icon,
     onClick,
   }),
   
-  duplicate: (onClick: () => void, icon?: ReactNode, disabled?: boolean): GalleryCardAction => ({
-    label: "Duplicate",
-    icon,
-    onClick,
-    disabled,
-  }),
-  
-  export: (onClick: () => void, icon?: ReactNode, disabled?: boolean): GalleryCardAction => ({
-    label: "Export PDF",
+  duplicate: (onClick: () => void, icon?: ReactNode, disabled?: boolean, label: string = "Duplicate"): GalleryCardAction => ({
+    label,
     icon,
     onClick,
     disabled,
   }),
   
-  setDefault: (onClick: () => void, icon?: ReactNode, disabled?: boolean): GalleryCardAction => ({
-    label: "Set as Default",
+  export: (onClick: () => void, icon?: ReactNode, disabled?: boolean, label: string = "Export PDF"): GalleryCardAction => ({
+    label,
+    icon,
+    onClick,
+    disabled,
+  }),
+  
+  setDefault: (onClick: () => void, icon?: ReactNode, disabled?: boolean, label: string = "Set as Default"): GalleryCardAction => ({
+    label,
     icon,
     onClick,
     disabled,

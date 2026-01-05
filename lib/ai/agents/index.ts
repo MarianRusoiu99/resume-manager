@@ -7,6 +7,7 @@
 // Agents
 export * from './resume-optimization';
 export * from './cover-letter';
+export * from './resume-parsing';
 
 // Shared utilities & types
 export * from './shared';

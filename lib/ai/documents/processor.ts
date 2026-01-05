@@ -6,6 +6,7 @@
  */
 
 import { documentParserService } from '@/lib/services';
+import { ValidationError, ExternalServiceError } from "@/lib/errors";
 import { logger } from '@/lib/utils/logger';
 import type {
   DocumentInput,
@@ -101,7 +102,7 @@ export async function processDocument(
     const result = await documentParserService.parseDocument(buffer, mimeType);
 
     if (!result.success) {
-      throw new Error(result.error || 'Failed to parse document');
+      throw new ExternalServiceError('Document Parser', result.error || 'Failed to parse document');
     }
 
     const text = (result.data || '').slice(0, maxTextLength);

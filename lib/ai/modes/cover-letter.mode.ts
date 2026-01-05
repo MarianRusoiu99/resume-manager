@@ -15,6 +15,7 @@ export const coverLetterMode = defineMode({
   description: 'Generate personalized cover letters based on resume and job description',
 
   outputSchema: coverLetterOutputSchema,
+  primaryResultKey: 'content',
 
   useStructuredOutput: true,
   maxTokens: 4000,
@@ -27,11 +28,19 @@ export const coverLetterMode = defineMode({
       '',
       '## YOUR TASK',
       'Generate a compelling, personalized cover letter that:',
-      '1. Addresses the specific job requirements',
-      '2. Highlights relevant experience from the candidate\'s background',
-      '3. Shows genuine interest in the company and role',
+      '1. Addresses specific job requirements',
+      '2. Highlights relevant experience from candidate\'s background',
+      '3. Shows genuine interest in company and role',
       '4. Maintains professional tone while being engaging',
-      '5. Complements (not repeats) the resume',
+      '5. Complements (not repeats) resume',
+      '',
+      '## REQUIRED ELEMENTS',
+      'Your cover letter MUST include:',
+      '- Candidate\'s name at the top (from candidate profile)',
+      '- Contact information (email, phone) at the end in signature area',
+      '- Reference to location if relevant for context (relocation, local availability)',
+      '- Mention of relevant profiles (LinkedIn, portfolio, GitHub) if available',
+      '- These details are CRITICAL for hiring manager to identify and contact the candidate',
       '',
       COVER_LETTER_OUTPUT_INSTRUCTIONS,
     ];
@@ -40,8 +49,8 @@ export const coverLetterMode = defineMode({
     if (context.userProfile?.resume || context.currentResume) {
       parts.push('');
       parts.push('## CANDIDATE BACKGROUND');
-      parts.push('Use the provided resume/profile as the source for the candidate\'s experience and skills.');
-      parts.push('Draw specific examples from their work history to support claims in the cover letter.');
+      parts.push('Use provided resume/profile as source for candidate\'s experience and skills.');
+      parts.push('Draw specific examples from their work history to support claims in cover letter.');
     }
 
     if (context.job?.description) {
@@ -72,10 +81,26 @@ export const coverLetterMode = defineMode({
       parts.push('');
     }
 
-    // Include resume/profile
+    // Include resume/profile with explicit headers for personal information
     const profileResume = context.userProfile?.resume || context.currentResume;
     if (profileResume) {
-      parts.push('## CANDIDATE RESUME');
+      const basics = profileResume.basics || {};
+      parts.push('## CANDIDATE PROFILE INFORMATION');
+      parts.push(`Name: ${basics.name || 'Not specified'}`);
+      parts.push(`Email: ${basics.email || 'Not specified'}`);
+      parts.push(`Phone: ${basics.phone || 'Not specified'}`);
+      if (basics.location) {
+        parts.push(`Location: ${[basics.location.city, basics.location.region, basics.location.countryCode].filter(Boolean).join(', ') || 'Not specified'}`);
+      }
+      if (basics.profiles && basics.profiles.length > 0) {
+        parts.push('Profiles:');
+        basics.profiles.forEach((profile: { network?: string; username?: string; url?: string }) => {
+          parts.push(`  - ${profile.network}: ${profile.url || profile.username || 'Not specified'}`);
+        });
+      }
+      parts.push('');
+
+      parts.push('## FULL RESUME DETAILS');
       parts.push('```json');
       parts.push(JSON.stringify(profileResume, null, 2));
       parts.push('```');

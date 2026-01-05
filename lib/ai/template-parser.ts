@@ -10,14 +10,17 @@ import {
   templateExtractionSchema,
   TEMPLATE_EXTRACTION_PROMPT,
   TEMPLATE_EXTRACTION_USER_MESSAGE,
-  type ExtractedTemplateData
 } from "./prompts/template-extraction";
 import { logger } from "@/lib/utils/logger";
+import { SchemaValidationError, ValidationError, ConfigurationError, AIProviderError } from "@/lib/errors";
 
 /**
  * Extracted template data with resolved types
  */
-export interface ExtractedTemplate extends ExtractedTemplateData {
+export interface ExtractedTemplate {
+  htmlTemplate: string;
+  name?: string;
+  description?: string;
 }
 
 /**
@@ -107,14 +110,17 @@ export async function parseTemplateFromImage(input: ParseTemplateInput): Promise
 
       if (!validationResult.success) {
         const errors = validationResult.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ');
-        throw new Error(`Invalid AI response: ${errors}`);
+        const errorDetails = validationResult.error.issues.map((e) => ({
+          field: e.path.join('.'),
+          message: e.message
+        }));
+        throw new SchemaValidationError(`Invalid AI response: ${errors}`, 'templateExtractionSchema', errorDetails);
       }
 
       const validated = validationResult.data;
 
       return {
         htmlTemplate: validated.htmlTemplate,
-        cssStyles: validated.cssStyles,
         name: validated.name,
         description: validated.description,
       };
@@ -133,7 +139,7 @@ export async function parseTemplateFromImage(input: ParseTemplateInput): Promise
   }
 
   // All retries exhausted
-  throw new Error(`Template extraction failed after ${RETRY_CONFIG.maxAttempts} attempts: ${lastError?.message}`);
+  throw new AIProviderError('Template extraction failed', `Template extraction failed after ${RETRY_CONFIG.maxAttempts} attempts: ${lastError?.message}`, undefined, lastError);
 }
 
 /**
@@ -141,11 +147,11 @@ export async function parseTemplateFromImage(input: ParseTemplateInput): Promise
  * @deprecated Use parseTemplateFromImage with full input object
  */
 export async function parseTemplateFromImageLegacy(
-  imageBase64: string,
-  mimeType: string,
-  apiKey: string
+  _imageBase64: string,
+  _mimeType: string,
+  _apiKey: string
 ): Promise<ExtractedTemplate> {
-  throw new Error(
+  throw new ConfigurationError(
     'parseTemplateFromImageLegacy is no longer supported. Call parseTemplateFromImage with a resolved provider/modelKey.'
   );
 }

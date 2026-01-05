@@ -2,6 +2,7 @@ import { CoverLetterCard } from '@/components/cover-letter/CoverLetterCard';
 import { Gallery } from '@/components/shared/Gallery';
 import { FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { ROUTES } from '@/lib/constants';
 
 export interface CoverLetterListItem {
     id: string;
@@ -50,8 +51,8 @@ export function CoverLetterList({
                     companyName={coverLetter.jobPosting?.company?.name ?? null}
                     content={coverLetter.content}
                     createdAt={coverLetter.createdAt}
-                    onView={(id) => router.push(`/cover-letters/${id}`)}
-                    onEdit={(id) => router.push(`/cover-letters/${id}`)}
+                    onView={(id) => router.push(ROUTES.COVER_LETTER(id))}
+                    onEdit={(id) => router.push(ROUTES.COVER_LETTER(id))}
                     onDelete={onDelete}
                 />
             )}

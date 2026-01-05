@@ -7,6 +7,8 @@
 'use client';
 
 import { ScaledIframePreview } from './ScaledIframePreview';
+import { Spinner } from '@/components/shared/Spinner';
+import { memo } from 'react';
 
 interface GalleryCardPreviewProps {
   /** HTML content to preview */
@@ -19,7 +21,7 @@ interface GalleryCardPreviewProps {
   isLoading?: boolean;
 }
 
-export function GalleryCardPreview({
+export const GalleryCardPreview = memo(function GalleryCardPreview({
   htmlContent,
   fallbackIcon,
   altText = 'Preview',
@@ -28,10 +30,7 @@ export function GalleryCardPreview({
   if (isLoading) {
     return (
       <div className="w-full h-full bg-linear-to-br from-muted/50 to-muted flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-          <p className="text-xs text-muted-foreground">Loading...</p>
-        </div>
+        <Spinner size="md" label="Loading..." />
       </div>
     );
   }
@@ -57,4 +56,4 @@ export function GalleryCardPreview({
       altText={altText}
     />
   );
-}
+});

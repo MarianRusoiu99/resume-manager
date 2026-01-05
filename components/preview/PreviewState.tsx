@@ -5,7 +5,7 @@
 
 'use client';
 
-import { RefObject } from 'react';
+import { RefObject, useState, useEffect } from 'react';
 import { A4_WIDTH, A4_HEIGHT } from '@/lib/utils/pagination';
 
 interface PreviewStateProps {
@@ -17,6 +17,18 @@ interface PreviewStateProps {
   containerRef: RefObject<HTMLDivElement | null>;
 }
 
+/**
+ * Wrapper div used consistently for all placeholder states
+ * to avoid hydration mismatches between server and client
+ */
+function PlaceholderState({ children, className = 'text-muted-foreground' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`absolute inset-0 flex items-center justify-center ${className}`}>
+      {children}
+    </div>
+  );
+}
+
 export function PreviewState({
   isLoading,
   error,
@@ -25,59 +37,69 @@ export function PreviewState({
   iframeRef,
   containerRef,
 }: Readonly<PreviewStateProps>) {
+  // Track if component has mounted to avoid hydration mismatch
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // During SSR and initial client render, show consistent loading state
+  // This ensures server HTML matches initial client render
+  if (!hasMounted) {
+    return <PlaceholderState>Loading template...</PlaceholderState>;
+  }
+
   if (isLoading) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-        Loading template...
-      </div>
-    );
+    return <PlaceholderState>Loading template...</PlaceholderState>;
   }
 
   if (error) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center text-destructive">
-        {error}
-      </div>
-    );
+    return <PlaceholderState className="text-destructive">{error}</PlaceholderState>;
   }
 
   if (!htmlContent) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-        No preview available
-      </div>
-    );
+    return <PlaceholderState>No preview available</PlaceholderState>;
   }
 
   return (
     <div
       ref={containerRef}
-      className="flex items-center justify-center w-full h-full"
+      className="w-full h-full flex items-center justify-center overflow-auto p-4 md:p-8"
     >
       <div
         style={{
-          width: A4_WIDTH,
-          height: A4_HEIGHT,
-          transform: `scale(${scale})`,
-          transformOrigin: 'top center',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+          width: `${A4_WIDTH * scale}px`,
+          height: `${A4_HEIGHT * scale}px`,
+          transition: 'width 0.2s ease-out, height 0.2s ease-out',
         }}
-        className="relative bg-white"
+        className="relative shrink-0 shadow-2xl origin-center mb-auto mt-auto"
       >
-        <iframe
-          ref={iframeRef}
-          srcDoc={htmlContent}
-          className="w-full border-0"
-          title="Template Preview"
-          sandbox="allow-same-origin"
+        <div
           style={{
-            width: `${A4_WIDTH}px`,
-            minHeight: `${A4_HEIGHT}px`,
-            overflow: 'hidden',
+            width: A4_WIDTH,
+            height: A4_HEIGHT,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            position: 'absolute',
+            top: 0,
+            left: 0,
           }}
-        />
+          className="bg-white overflow-hidden rounded-sm"
+        >
+          <iframe
+            ref={iframeRef}
+            srcDoc={htmlContent}
+            className="w-full h-full border-0"
+            title="Template Preview"
+            sandbox="allow-same-origin"
+            style={{
+              width: `${A4_WIDTH}px`,
+              height: `${A4_HEIGHT}px`,
+              pointerEvents: 'auto',
+            }}
+          />
+        </div>
       </div>
     </div>
   );

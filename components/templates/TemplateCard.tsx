@@ -5,17 +5,17 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
+import { ExternalServiceError } from "@/lib/errors";
 import { Edit, Eye, Copy, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from '@/components/shared/EntityCard';
 import type { GalleryCardAction } from '@/components/shared/GalleryCard';
 import { TemplatePreviewModal } from './TemplatePreviewModal';
-import { useToastAction } from '@/hooks';
+import { deleteTemplate, duplicateTemplate } from '@/app/actions/template';
+import { useToastAction, useComponentLogger } from '@/hooks';
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
+import { renderTemplateServerSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { useComponentLogger } from '@/hooks';
-import { apiV1 } from '@/lib/client';
 
 interface TemplateCardProps {
   template: ResumeTemplate;
@@ -68,7 +68,7 @@ const SAMPLE_RESUME: Resume = {
   ],
 };
 
-export function TemplateCard({
+export const TemplateCard = memo(function TemplateCard({
   template,
   showAdminActions = false,
   onDelete,
@@ -86,10 +86,9 @@ export function TemplateCard({
       try {
         setIsLoadingPreview(true);
 
-        // Render preview client-side with sample data
-        const html = renderTemplateClientSide({
+        // Render preview server-side with sample data to avoid CSP issues
+        const html = await renderTemplateServerSide({
           htmlTemplate: template.htmlTemplate,
-          cssStyles: template.cssStyles,
           resumeData: SAMPLE_RESUME,
         });
 
@@ -107,17 +106,25 @@ export function TemplateCard({
   const handleExportPDF = async () => {
     await runWithToast(
       async () => {
-        const response = await apiV1.EXPORT.PDF.postFetch({
-          resume: SAMPLE_RESUME,
-          template: {
-            htmlTemplate: template.htmlTemplate,
-            cssStyles: template.cssStyles,
+        // This still uses a client-side fetch because it's a file download
+        // and we don't have a direct "download file" server action yet.
+        // But we could potentially move the PDF generation logic.
+        const response = await fetch('/api/v1/export/pdf', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-          fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
+          body: JSON.stringify({
+            resume: SAMPLE_RESUME,
+            template: {
+              htmlTemplate: template.htmlTemplate,
+            },
+            fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
+          }),
         });
 
         if (!response.ok) {
-          throw new Error('Failed to export PDF');
+          throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
         }
 
         const blob = await response.blob();
@@ -142,11 +149,10 @@ export function TemplateCard({
   const handleDelete = async () => {
     const result = await runWithToast(
       async () => {
-        const { error } = await apiV1.TEMPLATE.GET(template.id).delete<unknown>();
-        if (error) {
-          throw new Error(error);
+        const res = await deleteTemplate(template.id);
+        if (!res.success) {
+          throw new ExternalServiceError('Template API', res.error);
         }
-
         return true;
       },
       {
@@ -163,11 +169,10 @@ export function TemplateCard({
   const handleDuplicate = async () => {
     const result = await runWithToast(
       async () => {
-        const { error } = await apiV1.TEMPLATE.DUPLICATE(template.id).post<unknown>();
-        if (error) {
-          throw new Error(error);
+        const res = await duplicateTemplate(template.id);
+        if (!res.success) {
+          throw new ExternalServiceError('Template API', res.error);
         }
-
         return true;
       },
       {
@@ -228,4 +233,4 @@ export function TemplateCard({
       )}
     </>
   );
-}
+});

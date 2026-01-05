@@ -1,58 +1,225 @@
 'use client';
 
-import Link from 'next/link';
+import { useState } from 'react';
 import { Page } from '@/components/layout/Page';
-import { Card } from '@/components/ui';
-import { Key, Cpu, ChevronRight, User } from 'lucide-react';
+import {
+  Card,
+  Button,
+  Input,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui';
+import { SectionHeader } from '@/components/shared/SectionHeader';
+import {
+  Trash2,
+  Loader2,
+  Cpu,
+  UserCircle,
+} from 'lucide-react';
+import { useSettings } from '@/lib/contexts/SettingsContext';
+import { addApiProvider, deleteApiProvider } from '@/app/actions/api-provider';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
+import { deleteAccountAction } from '@/app/actions/auth';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { ApiProviderSettings } from '@/components/settings/ApiProviderSettings';
 
-const settingsPages = [
-  {
-    title: 'API Keys',
-    description: 'Manage your AI provider API keys securely',
-    href: '/settings/api-keys',
-    icon: Key,
-  },
-  {
-    title: 'AI Models',
-    description: 'Configure which AI models to use for each feature',
-    href: '/settings/ai-models',
-    icon: Cpu,
-  },
-  {
-    title: 'Account',
-    description: 'Manage your account settings and data',
-    href: '/settings/account',
-    icon: User,
-  },
+const PROVIDERS = [
+  { id: 'openai', name: 'OpenAI', url: 'https://platform.openai.com/api-keys' },
+  { id: 'anthropic', name: 'Anthropic', url: 'https://console.anthropic.com/settings/keys' },
+  { id: 'google', name: 'Google (Gemini)', url: 'https://aistudio.google.com/app/apikey' },
 ];
 
+/**
+ * Settings Page
+ * Unified management of API providers and account security.
+ */
 export default function SettingsPage() {
+  const router = useRouter();
+  const { providers, refreshProviders } = useSettings();
+
+  // API Keys state
+  const [loadingKeys, setLoadingKeys] = useState(false);
+  const [showKey, setShowKey] = useState<Record<string, boolean>>({});
+  const [newProvider, setNewProvider] = useState('openai');
+  const [newApiKey, setNewApiKey] = useState('');
+
+  // Account state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [confirmDeleteText, setConfirmDeleteText] = useState('');
+
+  const toggleShowKey = (id: string) => {
+    setShowKey(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleAddKey = async () => {
+    if (!newApiKey.trim()) return;
+    setLoadingKeys(true);
+    try {
+      const providerInfo = PROVIDERS.find(p => p.id === newProvider);
+      const result = await addApiProvider({
+        name: providerInfo?.name || newProvider,
+        provider: newProvider,
+        apiKey: newApiKey.trim(),
+      });
+      if (result.success) {
+        toast.success(`${providerInfo?.name} key added`);
+        setNewApiKey('');
+        await refreshProviders();
+      } else {
+        const errorResult = result as { error?: string };
+        toast.error(errorResult.error || 'Failed to add key');
+      }
+    } catch {
+      toast.error('An error occurred');
+    } finally {
+      setLoadingKeys(false);
+    }
+  };
+
+  const handleDeleteKey = async (id: string, name: string) => {
+    if (!confirm(`Remove ${name} key?`)) return;
+    setLoadingKeys(true);
+    try {
+      const result = await deleteApiProvider(id);
+      if (result.success) {
+        toast.success(`${name} key removed`);
+        await refreshProviders();
+      } else {
+        const errorResult = result as { error?: string };
+        toast.error(errorResult.error || 'Failed to remove key');
+      }
+    } catch {
+      toast.error('An error occurred');
+    } finally {
+      setLoadingKeys(false);
+    }
+  };
+
+
+  const handleDeleteAccount = async () => {
+    try {
+      setIsDeletingAccount(true);
+      const result = await deleteAccountAction();
+      if (result?.success) {
+        toast.success('Account deleted');
+        router.push('/login');
+      } else {
+        toast.error(result?.message || 'Failed to delete account');
+      }
+    } catch {
+      toast.error('An error occurred');
+    } finally {
+      setIsDeletingAccount(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
+
   return (
     <Page
       title="Settings"
-      description="Configure your application preferences"
-      breadcrumbs={[{ label: 'Settings' }]}
+      description="Manage your AI configurations and account preferences"
     >
-      <div className="grid gap-4 md:grid-cols-2">
-        {settingsPages.map((page) => (
-          <Link key={page.href} href={page.href}>
-            <Card className="p-6 hover:bg-muted/50 transition-colors cursor-pointer group">
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <page.icon className="h-6 w-6 text-primary" />
+      <Tabs defaultValue="ai" className="space-y-8">
+        <TabsList className="bg-muted/40 p-1.5 rounded-xl h-auto self-start border border-primary/5">
+          <TabsTrigger value="ai" className="rounded-lg px-6 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm font-bold uppercase tracking-widest text-[10px] text-muted-foreground data-[state=active]:text-primary transition-all">
+            <Cpu className="h-4 w-4 mr-2" />
+            AI Settings
+          </TabsTrigger>
+          <TabsTrigger value="account" className="rounded-lg px-6 py-2.5 data-[state=active]:bg-background data-[state=active]:shadow-sm font-bold uppercase tracking-widest text-[10px] text-muted-foreground data-[state=active]:text-primary transition-all">
+            <UserCircle className="h-4 w-4 mr-2" />
+            Account
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="ai" className="space-y-8 mt-0 focus-visible:ring-0">
+          <ApiProviderSettings
+            providers={providers}
+            loadingKeys={loadingKeys}
+            newProvider={newProvider}
+            setNewProvider={setNewProvider}
+            newApiKey={newApiKey}
+            setNewApiKey={setNewApiKey}
+            onAddKey={handleAddKey}
+            onDeleteKey={handleDeleteKey}
+            showKey={showKey}
+            toggleShowKey={toggleShowKey}
+          />
+        </TabsContent>
+
+        <TabsContent value="account" className="mt-0 focus-visible:ring-0">
+          <section className="space-y-6">
+            <SectionHeader
+              icon={Trash2}
+              title="Danger Zone"
+              className="text-destructive [&>div:first-child]:bg-destructive/10 [&>div:first-child>svg]:text-destructive [&>div:last-child>h2]:text-destructive"
+            />
+
+            <Card className="p-8 rounded-xl border-none shadow-none bg-destructive/5 backdrop-blur-sm">
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="flex-1 space-y-2 text-center md:text-left">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-destructive">Terminate Account</h3>
+                  <p className="text-[11px] text-destructive/70 leading-relaxed font-medium">
+                    Once deleted, all your resumes, cover letters, and configurations will be permanently purged. This action is irreversible.
+                  </p>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors">
-                    {page.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{page.description}</p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors mt-1" />
+                <Button
+                  variant="destructive"
+                  className="rounded-xl h-12 px-8 font-black uppercase tracking-widest text-[10px] shadow-lg shadow-destructive/10"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  Delete Infrastructure
+                </Button>
               </div>
             </Card>
-          </Link>
-        ))}
-      </div>
+          </section>
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="rounded-xl border-none shadow-2xl p-8">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black uppercase tracking-widest text-destructive">Final Confirmation</DialogTitle>
+            <DialogDescription className="text-xs font-medium leading-relaxed">
+              This will permanently destroy all data associated with this identity.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-6 space-y-4">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground block text-center">
+              Type <span className="text-destructive select-all">DELETE</span> to authorize
+            </Label>
+            <Input
+              className="bg-muted/50 border-none h-12 rounded-xl text-center font-black uppercase tracking-widest"
+              placeholder="AUTHORIZATION CODE"
+              value={confirmDeleteText}
+              onChange={(e) => setConfirmDeleteText(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="gap-3">
+            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)} className="rounded-xl font-black uppercase tracking-widest text-[10px] h-12 px-6">Abort</Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={isDeletingAccount || confirmDeleteText !== 'DELETE'}
+              className="rounded-xl font-black uppercase tracking-widest text-[10px] h-12 px-8 flex-1 sm:flex-none"
+            >
+              {isDeletingAccount ? <Loader2 className="animate-spin h-4 w-4" /> : 'Confirm Deletion'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Page>
   );
 }

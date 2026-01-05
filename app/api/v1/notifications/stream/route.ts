@@ -4,23 +4,6 @@ import { NextResponse } from 'next/server';
 
 /**
  * SSE endpoint for real-time notifications
- * 
- * @swagger
- * /api/v1/notifications/stream:
- *   get:
- *     summary: Subscribe to real-time notifications via Server-Sent Events
- *     tags: [Notifications]
- *     security:
- *       - session: []
- *     responses:
- *       200:
- *         description: SSE stream established
- *         content:
- *           text/event-stream:
- *             schema:
- *               type: string
- *       401:
- *         description: Not authenticated
  */
 export async function GET() {
   const session = await auth();
@@ -30,6 +13,8 @@ export async function GET() {
   }
   
   const userId = session.user.id;
+  
+  console.log(`[SSE] Opening connection for user: ${userId}`);
   
   // Set up SSE response headers
   const headers = new Headers({
@@ -64,6 +49,7 @@ export async function GET() {
     },
     
     async cancel() {
+      console.log(`[SSE] Closing connection for user: ${userId}`);
       // Clean up when client disconnects
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);

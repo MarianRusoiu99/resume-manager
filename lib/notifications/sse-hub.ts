@@ -62,7 +62,11 @@ export class SseHub {
       try {
         client.controller.enqueue(encoded);
         successCount++;
-      } catch {
+        console.log(`[SSE Hub] Broadcast to user ${userId} successful`);
+      } catch (err) {
+        console.error(`[SSE Hub] Broadcast to user ${userId} failed:`, err);
+        // Client connection is closed/broken - mark for cleanup
+        // This is expected when clients disconnect unexpectedly
         failedClients.push(client);
       }
     }
@@ -96,7 +100,7 @@ export class SseHub {
         try {
           client.controller.close();
         } catch {
-          // ignore
+          // Controller may already be closed - this is expected during cleanup
         }
       }
       clients.clear();

@@ -3,7 +3,7 @@
  * Browse and preview available resume templates
  */
 
-import { templateRepository } from '@/lib/repositories/template.repository';
+import { templateRepository } from '@/lib/repositories/templates.repository';
 import { Page } from '@/components/layout/Page';
 import { TemplateGallery } from '@/components/templates/TemplateGallery';
 import { getSession } from '@/lib/auth/dal';
@@ -20,9 +20,10 @@ export default async function TemplatesPage() {
     <Page
       title="Resume Templates"
       description="Choose from professionally designed templates optimized for ATS systems"
-      breadcrumbs={[{ label: "Templates" }]}
     >
-      <TemplateGallery templates={templates} showAdminActions={showAdminActions} />
+      <div className="pb-8">
+        <TemplateGallery templates={templates} showAdminActions={showAdminActions} />
+      </div>
     </Page>
   );
 }

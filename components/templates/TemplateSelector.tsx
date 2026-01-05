@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { ExternalServiceError } from "@/lib/errors";
 import { toast } from 'sonner';
 import type { TemplateBase } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { apiV1, type TemplateListResponseDto } from '@/lib/client';
+import { getTemplates } from '@/app/actions/template';
+import { updateResumeMetadata } from '@/app/actions/resume';
 
 const logger = createComponentLogger('TemplateSelector');
 
@@ -14,7 +16,7 @@ interface TemplateSelector {
   onTemplateChange: () => void;
 }
 
-export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange }: TemplateSelector) {
+export const TemplateSelector = memo(function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange }: TemplateSelector) {
   const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(currentTemplateId);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,12 +27,12 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     const fetchTemplates = async () => {
       try {
         setIsLoading(true);
-        const result = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<TemplateBase>>();
-        if (result.error) {
-          throw new Error(result.error);
+        const result = await getTemplates();
+        if (!result.success) {
+          throw new ExternalServiceError('Template API', result.error);
         }
 
-        setTemplates(result.data?.templates ?? []);
+        setTemplates((result.data as unknown as TemplateBase[]) ?? []);
       } catch (error) {
         logger.error('Error fetching templates', error);
         toast.error('Failed to load templates');
@@ -44,7 +46,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     }
   }, [isOpen]);
 
-  const handleUpdateTemplate = async () => {
+  const handleUpdateTemplate = useCallback(async () => {
     if (!selectedTemplateId || selectedTemplateId === currentTemplateId) {
       setIsOpen(false);
       return;
@@ -52,10 +54,12 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
 
     try {
       setIsUpdating(true);
-      const result = await apiV1.RESUME.TEMPLATE(resumeId).patch<{ success?: boolean }>({ templateId: selectedTemplateId });
+      const result = await updateResumeMetadata(resumeId, {
+        templateId: selectedTemplateId,
+      });
 
-      if (result.error) {
-        throw new Error(result.error);
+      if (!result.success) {
+        throw new ExternalServiceError('Template API', result.error);
       }
 
       toast.success('Template updated successfully');
@@ -68,9 +72,12 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [selectedTemplateId, currentTemplateId, resumeId, onTemplateChange]);
 
-  const currentTemplate = templates.find(t => t.id === currentTemplateId);
+  const currentTemplate = useMemo(
+    () => templates.find(t => t.id === currentTemplateId),
+    [templates, currentTemplateId]
+  );
 
   if (!isOpen) {
     return (
@@ -158,4 +165,4 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
       </div>
     </div>
   );
-}
+});

@@ -1,36 +1,38 @@
 /**
- * AI Chat API
- * POST /api/v1/ai/chat
- *
- * Unified endpoint for conversational AI interactions
- * Supports all modes: resume generation, enhancement, cover letters, templates, text
+ * AI Chat API Route
+ * 
+ * Handles conversational AI interactions with support for:
+ * - Multiple conversation modes (resume, cover letter, template, text enhancement)
+ * - File attachments (PDFs, images, documents)
+ * - Non-streaming responses
+ * - Vision API for image analysis
  */
 
-import { z } from 'zod';
 import { createApiHandler } from '@/lib/api/handler';
-import { logger } from '@/lib/utils/logger';
-import { resolveAIModelOrThrow } from '@/lib/ai/runtime/resolve-model';
-import { ConversationManager, type ConversationMode } from '@/lib/ai/chat/conversation';
-import { AIOrchestrator, requiresVision } from '@/lib/ai/chat/orchestrator';
+import { z } from 'zod';
+import { 
+  ConversationManager, 
+  AIOrchestrator, 
+  requiresVision,
+  type ConversationMode,
+} from '@/lib/ai/chat';
 import { ensureModesRegistered } from '@/lib/ai/modes';
+import { resolveAIModelOrThrow } from '@/lib/ai/runtime/resolve-model';
 import type { ConversationContext } from '@/lib/ai/chat/context';
 import type { Attachment, AttachmentType } from '@/lib/ai/chat/message';
-import type { AIFeatureType } from '@/lib/repositories/interfaces/user-ai-settings.repository.interface';
+import { logger } from '@/lib/utils/logger';
 
-// Ensure modes are registered on module load
+// Ensure AI modes are registered
 ensureModesRegistered();
 
 /**
- * Request attachment types (from client)
- */
-const requestAttachmentTypes = ['document', 'image', 'resume', 'job-description', 'template'] as const;
-
-/**
- * Request body schema
+ * Request body schema for AI chat
  */
 const chatRequestSchema = z.object({
-  // Conversation management
-  conversationId: z.string().nullable().optional(),
+  /** Existing conversation ID (optional, creates new if not provided) */
+  conversationId: z.string().optional(),
+  
+  /** Conversation mode */
   mode: z.enum([
     'resume-generation',
     'resume-enhancement',
@@ -39,66 +41,46 @@ const chatRequestSchema = z.object({
     'template-enhancement',
     'text-enhancement',
   ]),
-
-  // Message content
-  message: z.string().max(50000).default(''),
-
-  // Attachments (documents, images)
-  attachments: z
-    .array(
-      z.object({
-        type: z.enum(requestAttachmentTypes),
-        name: z.string(),
-        content: z.string(), // base64 or text content
-        mimeType: z.string(),
-      })
-    )
-    .optional(),
-  // Context data
-  context: z
-    .object({
-      userProfile: z
-        .object({
-          resume: z.record(z.string(), z.unknown()).optional(),
-          name: z.string().optional(),
-        })
-        .optional(),
-      job: z
-        .object({
-          description: z.string().optional(),
-          title: z.string().optional(),
-          company: z.string().optional(),
-        })
-        .optional(),
-      template: z
-        .object({
-          htmlTemplate: z.string().optional(),
-          cssStyles: z.string().optional(),
-          name: z.string().optional(),
-        })
-        .optional(),
-      currentResume: z.record(z.string(), z.unknown()).optional(),
-      currentCoverLetter: z.string().optional(),
-      personalInstructions: z.string().optional(),
-    })
-    .optional(),
-
-  // Model selection
+  
+  /** User message */
+  message: z.string().min(1, 'Message is required').max(50000, 'Message too long'),
+  
+  /** File attachments */
+  attachments: z.array(z.object({
+    type: z.enum(['document', 'image', 'resume', 'job-description', 'template']),
+    name: z.string(),
+    content: z.string(),
+    mimeType: z.string(),
+  })).max(3, 'Maximum 3 attachments allowed').optional(),
+  
+  /** Conversation context - loosely typed to allow frontend flexibility */
+  context: z.record(z.string(), z.unknown()).optional(),
+  
+  /** Override model ID */
   modelId: z.string().optional(),
-
-  // Streaming options
-  stream: z.boolean().default(true),
-}).refine(data => data.message.trim().length > 0 || (data.attachments && data.attachments.length > 0), {
-  message: "Either message or attachments must be provided",
-  path: ["message"],
 });
 
 type ChatRequest = z.infer<typeof chatRequestSchema>;
 
 /**
- * Map mode to AI feature for model resolution
+ * Convert frontend attachments to internal format
  */
-function getModeFeature(mode: ConversationMode): AIFeatureType {
+function convertAttachments(
+  frontendAttachments: NonNullable<ChatRequest['attachments']>
+): Attachment[] {
+  return frontendAttachments.map((att, index) => ({
+    id: `att-${Date.now()}-${index}`,
+    type: att.type as AttachmentType,
+    name: att.name,
+    content: att.content,
+    mimeType: att.mimeType,
+  }));
+}
+
+/**
+ * Map feature type from conversation mode
+ */
+function getFeatureFromMode(mode: ConversationMode): 'resume' | 'coverLetter' | 'template' {
   switch (mode) {
     case 'resume-generation':
     case 'resume-enhancement':
@@ -109,133 +91,163 @@ function getModeFeature(mode: ConversationMode): AIFeatureType {
     case 'template-enhancement':
       return 'template';
     case 'text-enhancement':
-      return 'enhance';
     default:
-      return 'resume';
+      return 'resume'; // Default to resume feature for text enhancement
   }
 }
 
 /**
- * Convert request attachments to internal format
+ * Safely convert frontend context to ConversationContext
+ * The frontend may send different shapes, so we normalize here
  */
-function convertAttachments(attachments?: ChatRequest['attachments']): Attachment[] | undefined {
-  if (!attachments?.length) return undefined;
+function normalizeContext(
+  rawContext: Record<string, unknown> | undefined,
+  attachments?: Attachment[]
+): ConversationContext {
+  if (!rawContext) {
+    return { attachments };
+  }
 
-  return attachments.map((att) => ({
-    id: crypto.randomUUID(),
-    type: att.type as AttachmentType,
-    name: att.name,
-    content: att.content,
-    mimeType: att.mimeType,
-  }));
+  const context: ConversationContext = { attachments };
+
+  // Handle currentResume (frontend may send as 'resume' or 'currentResume')
+  if (rawContext.currentResume && typeof rawContext.currentResume === 'object') {
+    context.currentResume = rawContext.currentResume as ConversationContext['currentResume'];
+  } else if (rawContext.resume && typeof rawContext.resume === 'object') {
+    context.currentResume = rawContext.resume as ConversationContext['currentResume'];
+  }
+
+  // Handle job description
+  if (rawContext.job && typeof rawContext.job === 'object') {
+    const job = rawContext.job as Record<string, unknown>;
+    context.job = {
+      description: typeof job.description === 'string' ? job.description : '',
+      title: typeof job.title === 'string' ? job.title : undefined,
+      company: typeof job.company === 'string' ? job.company : undefined,
+    };
+  }
+
+  // Handle template context
+  if (rawContext.template && typeof rawContext.template === 'object') {
+    const template = rawContext.template as Record<string, unknown>;
+    context.template = {
+      htmlTemplate: typeof template.htmlTemplate === 'string' ? template.htmlTemplate : undefined,
+      name: typeof template.name === 'string' ? template.name : undefined,
+    };
+  } else if (typeof rawContext.currentTemplate === 'string') {
+    context.template = { htmlTemplate: rawContext.currentTemplate };
+  }
+
+  // Handle personal instructions
+  if (typeof rawContext.personalInstructions === 'string') {
+    context.personalInstructions = rawContext.personalInstructions;
+  }
+
+  // Handle user profile
+  if (rawContext.userProfile && typeof rawContext.userProfile === 'object') {
+    const userProfile = rawContext.userProfile as Record<string, unknown>;
+    if (userProfile.resume && typeof userProfile.resume === 'object') {
+      context.userProfile = {
+        resume: userProfile.resume as ConversationContext['userProfile'] extends { resume: infer R } ? R : never,
+        name: typeof userProfile.name === 'string' ? userProfile.name : undefined,
+      };
+    }
+  }
+
+  return context;
 }
 
 /**
- * POST /api/v1/ai/chat - Send message to AI conversation
+ * POST /api/v1/ai/chat
+ * 
+ * Send a message to the AI and receive a response
  */
-export const POST = createApiHandler(
-  async (_request, _context, session, body, meta) => {
-    const { conversationId, mode, message, attachments, context, modelId, stream } = body!;
+export const POST = createApiHandler<unknown, ChatRequest>(
+  async (request, _context, session, body, { requestId }) => {
+    if (!body) {
+      return Response.json(
+        { success: false, error: 'Request body required', requestId },
+        { status: 400 }
+      );
+    }
+
+    const { conversationId, mode, message, attachments, context, modelId } = body;
     const userId = session.user.id;
-    const requestId = meta.requestId;
 
     logger.info('AI chat request', {
-      userId,
       requestId,
+      userId,
       mode,
-      hasConversation: !!conversationId,
       hasAttachments: !!attachments?.length,
-      stream,
     });
 
-    // Get or create conversation
-    const internalAttachments = convertAttachments(attachments);
-    const conversation = ConversationManager.getOrCreate(conversationId || undefined, {
-      mode: mode as ConversationMode,
-      initialContext: context as ConversationContext,
-      attachments: internalAttachments,
-    });
+    try {
+      // Resolve AI model for this request
+      const resolvedModel = await resolveAIModelOrThrow({
+        userId,
+        feature: getFeatureFromMode(mode),
+        modelId,
+      });
 
-    // Add user message
-    ConversationManager.addUserMessage(conversation.id, message, internalAttachments);
+      // Convert attachments to internal format
+      const internalAttachments = attachments ? convertAttachments(attachments) : undefined;
 
-    // Resolve AI model
-    const feature = getModeFeature(mode as ConversationMode);
-    const resolvedModel = await resolveAIModelOrThrow({
-      userId,
-      feature,
-      modelId,
-    });
+      // Build conversation context from request
+      const conversationContext = normalizeContext(context, internalAttachments);
 
-    // Check if vision is needed
-    const needsVision = requiresVision(conversation);
-    if (needsVision && !resolvedModel.modelKey.includes('vision') && !resolvedModel.modelKey.includes('gpt-4o')) {
-      logger.warn('Vision required but model may not support it', {
-        modelId: resolvedModel.modelId,
+      // Get or create conversation
+      const conversation = ConversationManager.getOrCreate(conversationId, {
+        mode,
+        initialContext: conversationContext,
+        attachments: internalAttachments,
+      });
+
+      // Add user message
+      ConversationManager.addUserMessage(conversation.id, message, internalAttachments);
+
+      // Check if we need vision API
+      const needsVision = requiresVision(conversation);
+
+      // Build orchestrator options
+      const orchestratorOptions = {
+        provider: resolvedModel.provider,
         modelKey: resolvedModel.modelKey,
-      });
-    }
+        modelId: resolvedModel.modelId,
+        userId,
+      };
 
-    const orchestratorOptions = {
-      userId,
-      provider: resolvedModel.provider,
-      modelKey: resolvedModel.modelKey,
-      modelId: resolvedModel.modelId,
-    };
+      // Non-streaming response only
+      const result = needsVision
+        ? await AIOrchestrator.generateWithVision(conversation, orchestratorOptions)
+        : await AIOrchestrator.generate(conversation, orchestratorOptions);
 
-    if (stream) {
-      // Streaming response
-      const encoder = new TextEncoder();
-      const readableStream = new ReadableStream({
-        async start(controller) {
-          try {
-            for await (const chunk of AIOrchestrator.streamResponse(conversation, orchestratorOptions)) {
-              const data = JSON.stringify(chunk) + '\n';
-              controller.enqueue(encoder.encode(`data: ${data}\n`));
-            }
-            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-            controller.close();
-          } catch (error) {
-            logger.error('Stream error', error);
-            const errorData = JSON.stringify({
-              type: 'error',
-              error: error instanceof Error ? error.message : 'Unknown error',
-            });
-            controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
-            controller.close();
-          }
+      return Response.json(
+        {
+          success: true,
+          data: {
+            conversationId: conversation.id,
+            text: result.text,
+            output: result.output,
+            usage: result.usage,
+          },
+          requestId,
         },
-      });
-
-      return new Response(readableStream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive',
-          'X-Conversation-Id': conversation.id,
-        },
-      });
+        {
+          headers: {
+            'X-Conversation-Id': conversation.id,
+          },
+        }
+      );
+    } catch (error) {
+      logger.error('AI chat error', { error, requestId, userId });
+      return Response.json(
+        { success: false, error: error instanceof Error ? error.message : 'An error occurred', requestId },
+        { status: 500 }
+      );
     }
-
-    // Non-streaming response
-    const result = needsVision
-      ? await AIOrchestrator.generateWithVision(conversation, orchestratorOptions)
-      : await AIOrchestrator.generate(conversation, orchestratorOptions);
-
-    return {
-      success: true,
-      data: {
-        conversationId: conversation.id,
-        output: result.output,
-        text: result.text,
-        usage: result.usage,
-        finishReason: result.finishReason,
-      },
-    };
   },
   {
-    verifyUser: true,
-    rateLimit: 'resumeGeneration',
     bodySchema: chatRequestSchema,
+    rateLimit: 'resumeGeneration',
   }
 );

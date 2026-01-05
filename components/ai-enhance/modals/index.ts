@@ -4,5 +4,5 @@
 
 export { AIEnhanceBaseModal } from './AIEnhanceBaseModal';
 export { AIEnhanceTextModal } from './AIEnhanceTextModal';
-export { AIEnhanceResumeModalUnified } from './AIEnhanceResumeModalUnified';
-export { AIEnhanceTemplateModalUnified } from './AIEnhanceTemplateModalUnified';
+export { AIEnhanceResumeModal } from './AIEnhanceResumeModal';
+export { AIEnhanceTemplateModal } from './AIEnhanceTemplateModal';

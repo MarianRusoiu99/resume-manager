@@ -44,7 +44,7 @@ export type {
 } from './interfaces';
 
 // Resume services (facade + split services)
-export { ResumeService } from './resume';
+export { ResumeService } from './resumes';
 export type {
   GenerateResumeServiceInput,
   GenerateResumeWithProgressInput,
@@ -55,19 +55,19 @@ export type {
   ResumeListItem,
   ResumeDetails,
   UpdatedResumeData,
-} from './resume';
+} from './resumes';
 
-export { ProfileService } from './profile/profile.service';
-export type { Profile, ProfileList } from './profile/types';
+export { ProfileService } from './profiles/profiles.service';
+export type { Profile, ProfileList } from './profiles/types';
 
-export { TemplateService } from './template/template.service';
+export { TemplateService } from './templates/templates.workflow';
 
-export { CoverLetterService } from './cover-letter';
+export { CoverLetterService } from './cover-letters';
 
-export { NotificationService } from './notification/notification.service';
+export { NotificationService } from './notifications/notifications.service';
 
 export { AIService } from './ai';
-export { ApiProviderService } from './api-provider/api-provider.service';
+export { ApiProviderService } from './api-providers/api-providers.workflow';
 export type {
   AddApiProviderInput,
   UpdateApiProviderInput as ApiProviderUpdateInput,
@@ -77,9 +77,9 @@ export type {
   ProviderInstanceData,
   AvailableModelsData,
   ValidationData,
-} from './api-provider/types';
+} from './api-providers/types';
 
-export { apiKeyAuditService } from './api-key-audit';
+export { apiKeyAuditService } from './api-key-management';
 
 // Service utilities for reducing boilerplate
 export {

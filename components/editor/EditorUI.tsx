@@ -19,7 +19,7 @@ export interface EditorUIProps {
  * Renders all resume editing sections using the editor context.
  * Can be used for both profile and individual resume editing.
  */
-export function EditorUI({ showParser, parserComponent }: Readonly<EditorUIProps>) {
+export function EditorUI({ showParser: _showParser, parserComponent: _parserComponent }: Readonly<EditorUIProps>) {
     const { isDirty } = useEditor();
 
     // Warn user about unsaved changes when navigating away
@@ -37,7 +37,7 @@ export function EditorUI({ showParser, parserComponent }: Readonly<EditorUIProps
     return (
         <Tabs defaultValue="basics" className="w-full">
             <EditorSidebar />
-            <ProfileEditorContent showParser={showParser} parserComponent={parserComponent} />
+            <ProfileEditorContent />
         </Tabs>
     );
 }

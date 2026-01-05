@@ -10,7 +10,8 @@
  */
 
 import { signIn, signOut } from '@/lib/auth/config';
-import { prisma } from '@/lib/db/index';
+import { InvalidCredentialsError } from "@/lib/errors";
+import { userRepository } from '@/lib/repositories/users.repository';
 import { hashPassword } from '@/lib/auth/password';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import {
@@ -62,7 +63,7 @@ export async function loginAction(
     }
 
     logger.warn('Login failed', { email });
-    
+
     return {
       message: 'Invalid email or password.',
     };
@@ -77,7 +78,7 @@ export async function registerAction(
   formData: FormData
 ): Promise<AuthFormState> {
   // Validate form fields
-    const validatedFields = registerSchema.safeParse({
+  const validatedFields = registerSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
   });
@@ -93,9 +94,7 @@ export async function registerAction(
 
   try {
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await userRepository.findByEmail(email);
 
     if (existingUser) {
       return {
@@ -107,39 +106,29 @@ export async function registerAction(
     // Hash password and create user
     const passwordHash = await hashPassword(password);
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        passwordHash,
-      },
+    const user = await userRepository.create({
+      email,
+      passwordHash,
     });
 
     // Send onboarding notifications
     await notificationService.notifySystem(
       user.id,
-      'Welcome! Set up your API Keys',
-      'To start using AI features, please add an API provider and your key.',
-      '/settings/api-keys',
-      'Set up API Keys'
-    );
-
-    await notificationService.notifySystem(
-      user.id,
-      'Configure AI Models',
-      'Choose which models to use for resume and cover letter generation.',
-      '/settings/ai-models',
-      'Configure Models'
+      'Welcome! Configure AI',
+      'Set up your API providers and model preferences to enable all features.',
+      '/settings/ai-config',
+      'Configure AI'
     );
 
     logger.info('User registered', { email });
 
-    return { 
+    return {
       success: true,
       message: 'Account created successfully. Please sign in.',
     };
   } catch (error) {
     logger.error('Registration error', error);
-    
+
     return {
       message: 'An error occurred. Please try again.',
     };
@@ -162,9 +151,7 @@ export async function deleteAccountAction(): Promise<AuthFormState> {
     const userId = session.userId;
 
     // Delete user from database (cascades will handle related data)
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    await userRepository.delete(userId);
 
     logger.info('User deleted account', { userId });
 
@@ -208,6 +195,6 @@ export async function loginAndRedirect(
     if (isRedirectError(error)) {
       throw error;
     }
-    throw new Error('Invalid credentials');
+    throw new InvalidCredentialsError();
   }
 }

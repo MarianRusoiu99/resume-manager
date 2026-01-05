@@ -5,7 +5,7 @@
  * Shows detailed template preview with sample content
  */
 
-import { useEffect } from 'react';
+import { useEffect, memo } from 'react';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
 import { ResumePreview } from '../resume/ResumePreview';
@@ -15,7 +15,7 @@ interface TemplatePreviewModalProps {
   onClose: () => void;
 }
 
-export function TemplatePreviewModal({
+export const TemplatePreviewModal = memo(function TemplatePreviewModal({
   template,
   onClose,
 }: TemplatePreviewModalProps) {
@@ -75,18 +75,10 @@ export function TemplatePreviewModal({
         {/* Preview Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-muted/20">
           <div className="bg-card rounded-lg shadow-lg overflow-hidden">
-            {(() => {
-              const templateProps: { templateHtml?: string; templateCss?: string } = {
-                templateHtml: template.htmlTemplate,
-                templateCss: template.cssStyles,
-              };
-              return (
-                <ResumePreview
-                  resumeData={sampleResume}
-                  {...templateProps}
-                />
-              );
-            })()}
+            <ResumePreview
+              resumeData={sampleResume}
+              templateHtml={template.htmlTemplate}
+            />
           </div>
         </div>
 
@@ -102,4 +94,4 @@ export function TemplatePreviewModal({
       </div>
     </div>
   );
-}
+});

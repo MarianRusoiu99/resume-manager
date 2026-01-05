@@ -7,15 +7,13 @@
  */
 
 import { SideBySideComparison, PreviewIframe } from './SideBySideComparison';
-import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
+import { renderTemplateServerSide } from '@/lib/utils/client-renderer';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 
 export interface TemplateVisualComparisonProps {
   originalHtml: string;
-  originalCss: string;
   enhancedHtml: string | null;
-  enhancedCss: string | null;
   /** AI enhancement is in progress */
   isEnhancing?: boolean;
   className?: string;
@@ -26,38 +24,81 @@ export interface TemplateVisualComparisonProps {
  */
 export function TemplateVisualComparison({
   originalHtml,
-  originalCss,
   enhancedHtml,
-  enhancedCss,
   isEnhancing = false,
   className,
 }: Readonly<TemplateVisualComparisonProps>) {
+  // State for rendered previews
+  const [originalPreview, setOriginalPreview] = useState<string | null>(null);
+  const [enhancedPreview, setEnhancedPreview] = useState<string | null>(null);
+  const [isLoadingOriginal, setIsLoadingOriginal] = useState(true);
+  const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(false);
+
   // Generate preview HTML for original template
-  const originalPreview = useMemo(() => {
-    try {
-      return renderTemplateClientSide({
-        htmlTemplate: originalHtml,
-        cssStyles: originalCss,
-        resumeData: sampleResume,
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoadingOriginal(true);
+
+    renderTemplateServerSide({
+      htmlTemplate: originalHtml,
+      resumeData: sampleResume,
+    })
+      .then((html) => {
+        if (!cancelled) {
+          setOriginalPreview(html);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setOriginalPreview(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingOriginal(false);
+        }
       });
-    } catch {
-      return null;
-    }
-  }, [originalHtml, originalCss]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [originalHtml]);
 
   // Generate preview HTML for enhanced template
-  const enhancedPreview = useMemo(() => {
-    if (!enhancedHtml) return null;
-    try {
-      return renderTemplateClientSide({
-        htmlTemplate: enhancedHtml,
-        cssStyles: enhancedCss || originalCss,
-        resumeData: sampleResume,
-      });
-    } catch {
-      return null;
+  useEffect(() => {
+    if (!enhancedHtml) {
+      setEnhancedPreview(null);
+      setIsLoadingEnhanced(false);
+      return;
     }
-  }, [enhancedHtml, enhancedCss, originalCss]);
+
+    let cancelled = false;
+    setIsLoadingEnhanced(true);
+
+    renderTemplateServerSide({
+      htmlTemplate: enhancedHtml,
+      resumeData: sampleResume,
+    })
+      .then((html) => {
+        if (!cancelled) {
+          setEnhancedPreview(html);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setEnhancedPreview(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoadingEnhanced(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enhancedHtml]);
 
   const hasEnhancement = enhancedHtml !== null;
 
@@ -68,6 +109,7 @@ export function TemplateVisualComparison({
       originalContent={
         <PreviewIframe
           htmlContent={originalPreview}
+          isLoading={isLoadingOriginal}
           title="Original Template Preview"
           emptyMessage="No preview available"
         />
@@ -75,7 +117,7 @@ export function TemplateVisualComparison({
       enhancedContent={
         <PreviewIframe
           htmlContent={hasEnhancement ? enhancedPreview : null}
-          isLoading={isEnhancing}
+          isLoading={isEnhancing || isLoadingEnhanced}
           title="Enhanced Template Preview"
           emptyMessage="Enter instructions and click Enhance to generate"
         />

@@ -22,24 +22,12 @@
 import {
   createContext,
   useContext,
-  useState,
-  useCallback,
-  useEffect,
   useMemo,
   type ReactNode,
 } from 'react';
-import { apiV1, type AISettings as SettingsAISettings, type ApiProvider as SettingsApiProvider } from '@/lib/client';
-import { createComponentLogger } from '@/lib/utils/client-logger';
-
-const logger = createComponentLogger('SettingsContext');
-
-// ============================================================================
-// Types
-// ============================================================================
-
-type ApiProvider = SettingsApiProvider;
-
-type AISettings = SettingsAISettings;
+import { type AISettings, type ApiProvider } from '@/lib/actions/types';
+import { useSettingsManager } from '@/hooks/useSettingsManager';
+import { ConfigurationError } from "@/lib/errors";
 
 interface SettingsContextValue {
   // API Providers
@@ -79,101 +67,14 @@ export function SettingsProvider({
   children,
   autoFetch = true,
 }: SettingsProviderProps) {
-  // Providers state
-  const [providers, setProviders] = useState<ApiProvider[]>([]);
-  const [isLoadingProviders, setIsLoadingProviders] = useState(false);
-  const [providersError, setProvidersError] = useState<string | null>(null);
-
-  // AI Settings state
-  const [aiSettings, setAISettings] = useState<AISettings | null>(null);
-  const [isLoadingAISettings, setIsLoadingAISettings] = useState(false);
-  const [aiSettingsError, setAISettingsError] = useState<string | null>(null);
-
-  /**
-   * Fetch API providers
-   */
-  const refreshProviders = useCallback(async () => {
-    try {
-      setIsLoadingProviders(true);
-      setProvidersError(null);
-
-      const result = await apiV1.SETTINGS.API_PROVIDERS.get<SettingsApiProvider[]>();
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      setProviders(result.data ?? []);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch providers';
-      setProvidersError(message);
-      logger.error('Failed to fetch API providers', err);
-    } finally {
-      setIsLoadingProviders(false);
-    }
-  }, []);
-
-  /**
-   * Fetch AI settings
-   */
-  const refreshAISettings = useCallback(async () => {
-    try {
-      setIsLoadingAISettings(true);
-      setAISettingsError(null);
-
-      const result = await apiV1.SETTINGS.AI_MODELS.get<SettingsAISettings>();
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      setAISettings(result.data);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch AI settings';
-      setAISettingsError(message);
-      logger.error('Failed to fetch AI settings', err);
-    } finally {
-      setIsLoadingAISettings(false);
-    }
-  }, []);
-
-  // Auto-fetch on mount
-  useEffect(() => {
-    if (autoFetch) {
-      refreshProviders();
-      refreshAISettings();
-    }
-  }, [autoFetch, refreshProviders, refreshAISettings]);
+  const settingsManager = useSettingsManager({ autoFetch });
 
   // Memoized context value
   const value = useMemo<SettingsContextValue>(
     () => ({
-      // Providers
-      providers,
-      isLoadingProviders,
-      providersError,
-      hasProviders: providers.length > 0,
-      refreshProviders,
-      
-      // AI Settings
-      aiSettings,
-      isLoadingAISettings,
-      aiSettingsError,
-      refreshAISettings,
-      
-      // Combined loading
-      isLoading: isLoadingProviders || isLoadingAISettings,
+      ...settingsManager,
     }),
-    [
-      providers,
-      isLoadingProviders,
-      providersError,
-      refreshProviders,
-      aiSettings,
-      isLoadingAISettings,
-      aiSettingsError,
-      refreshAISettings,
-    ]
+    [settingsManager]
   );
 
   return (
@@ -195,7 +96,7 @@ export function useSettings(): SettingsContextValue {
   const context = useContext(SettingsContext);
   
   if (context === undefined) {
-    throw new Error('useSettings must be used within a SettingsProvider');
+    throw new ConfigurationError('useSettings must be used within a SettingsProvider');
   }
   
   return context;

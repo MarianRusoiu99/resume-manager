@@ -5,40 +5,40 @@
 
 'use client';
 
+import { memo } from 'react';
 import { Edit, Eye, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import type { GalleryCardAction } from "@/components/shared/GalleryCard";
-import { useToastAction } from '@/hooks';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { useCardPreview, useExportPdf } from '@/hooks/useCardPreview';
-import { deleteResume } from '@/app/actions/resume';
-import { formatDate } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
+import { useResumeOperations } from '@/hooks/features/useResumeOperations';
 
 interface ResumeCardProps {
   id: string;
   jobTitle: string | null;
   companyName: string | null;
+  jobDescription: string | null;
   content: Resume;
   templateId: string | null;
-  createdAt: string;
+  createdAt?: string;
   onView: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export function ResumeCard({
+export const ResumeCard = memo(function ResumeCard({
   id,
   jobTitle,
   companyName,
+  jobDescription,
   content,
   templateId,
-  createdAt,
   onView,
   onEdit,
   onDelete,
 }: Readonly<ResumeCardProps>) {
-  const { runWithToast } = useToastAction();
+  const { handleDelete: handleDeleteOp } = useResumeOperations();
 
   const title = jobTitle || 'Untitled Resume';
   const subtitle = companyName || 'No company specified';
@@ -57,28 +57,12 @@ export function ResumeCard({
   });
 
   const handleExport = async () => {
-    await runWithToast(
-      async () => {
-        await exportPdf();
-        return true;
-      },
-      {
-        successMessage: 'PDF exported successfully',
-        errorMessage: 'Failed to export PDF',
-      },
-    );
+    await exportPdf();
   };
 
   const handleDelete = async () => {
-    const result = await runWithToast(
-      () => deleteResume(id),
-      {
-        successMessage: 'Resume deleted successfully',
-        errorMessage: 'Failed to delete resume',
-      },
-    );
-
-    if (result?.success) {
+    const success = await handleDeleteOp(id, title);
+    if (success) {
       onDelete(id);
     }
   };
@@ -93,13 +77,10 @@ export function ResumeCard({
     <EntityCard
       id={id}
       title={title}
-      subtitle={subtitle}
+      subtitle={jobDescription || subtitle}
       href={ROUTES.RESUME(id)}
       previewHtml={previewHtml}
       isPreviewLoading={isLoadingPreview}
-      metadata={[
-        { label: 'Created', value: formatDate(createdAt) },
-      ]}
       actions={actions}
       onDelete={handleDelete}
       deleteDialog={{
@@ -108,4 +89,4 @@ export function ResumeCard({
       }}
     />
   );
-}
+});

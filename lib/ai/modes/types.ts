@@ -81,6 +81,12 @@ export interface AIMode<TOutput = unknown> {
    * Maximum tokens for response (if different from default)
    */
   maxTokens?: number;
+
+  /**
+   * Primary key in the output JSON that contains the main result.
+   * Useful for UI hooks to automatically extract the relevant data.
+   */
+  primaryResultKey?: string;
 }
 
 /**
@@ -130,7 +136,6 @@ export interface CoverLetterOutput {
  */
 export interface TemplateGenerationOutput {
   htmlTemplate: string;
-  cssStyles: string;
   name?: string;
   description?: string;
   category?: string;
@@ -141,7 +146,6 @@ export interface TemplateGenerationOutput {
  */
 export interface TemplateEnhancementOutput {
   htmlTemplate: string;
-  cssStyles: string;
   changes?: string[];
 }
 

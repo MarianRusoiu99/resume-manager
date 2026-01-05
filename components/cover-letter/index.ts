@@ -3,3 +3,4 @@
  */
 
 export { CoverLetterEditor } from './CoverLetterEditor';
+export type { CoverLetterEditorRef } from './CoverLetterEditor';

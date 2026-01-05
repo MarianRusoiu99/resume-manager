@@ -25,10 +25,16 @@ import { FileAttachmentList } from './FileAttachment';
 import { PromptPresets } from './PromptPresets';
 import type { InstructionPreset } from '../types';
 
+interface FileAttachment {
+  type: string;
+  content: string;
+  name: string;
+}
+
 interface PromptInputProps {
   value: string;
   onChange: (value: string) => void;
-  onSubmit: (attachments?: any[]) => void;
+  onSubmit: (attachments?: FileAttachment[]) => void;
   placeholder?: string;
   presets?: InstructionPreset[];
   isLoading?: boolean;
@@ -61,7 +67,6 @@ export function PromptInput({
     error: fileError,
     addFiles,
     removeFile,
-    getAttachmentsAsContext,
   } = useFileAttachments();
 
   const handleFileSelect = useCallback(() => {
@@ -82,7 +87,8 @@ export function PromptInput({
   const handleSubmit = useCallback(() => {
     if (!value.trim() && attachments.length === 0) return;
     onSubmit(attachments);
-  }, [onSubmit, attachments, value]);
+    onChange(''); // Clear input after submission to keep it "session aware" like ChatGPT
+  }, [onSubmit, attachments, value, onChange]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -119,7 +125,7 @@ export function PromptInput({
       )}
 
       {/* Main input card - ChatGPT style */}
-      <Card className="shadow-sm border-2 focus-within:border-primary/50 transition-colors">
+      <Card className="shadow-lg shadow-black/5 border-muted/30 focus-within:border-primary/40 focus-within:ring-1 focus-within:ring-primary/10 transition-all duration-300 overflow-hidden rounded-2xl bg-background/50 backdrop-blur-sm">
         <CardContent className="p-0">
           {/* Attachments inside the card */}
           {attachments.length > 0 && (

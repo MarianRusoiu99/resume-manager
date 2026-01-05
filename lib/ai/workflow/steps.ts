@@ -5,6 +5,7 @@
  */
 
 import type { WorkflowStep, WorkflowContext, WorkflowResults } from './types';
+import { ValidationError } from "@/lib/errors";
 import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
@@ -79,7 +80,7 @@ export const validateResumeStep: WorkflowStep = {
     const { resumeSchema } = await import('@/lib/validations/jsonresume');
     
     if (!context.results.resume) {
-      throw new Error('No resume to validate');
+      throw new ValidationError('No resume to validate');
     }
 
     // Validate against schema

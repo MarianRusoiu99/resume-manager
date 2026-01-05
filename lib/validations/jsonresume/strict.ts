@@ -1,39 +1,24 @@
 /**
- * Strict JSON Resume Schema
- * 
- * Use this schema for validating AI-generated resume output
- * where all fields should be properly filled.
- * 
- * The main resumeSchema is lenient (allows empty strings) for editing,
- * but this strict version ensures data quality for generation output.
- * 
- * @example
- * ```typescript
- * import { strictResumeSchema, validateResumeStrict } from '@/lib/validations/jsonresume/strict';
- * 
- * // Validate AI-generated resume
- * const result = validateResumeStrict(generatedResume);
- * if (!result.success) {
- *   console.log(result.errors);
- * }
- * ```
+ * Strict Resume Validation
+ *
+ * Provides strict validation for AI-generated resume output.
+ * Uses the same Resume type as base schema but with runtime validation
+ * that ensures data quality.
  */
 
 import { z } from 'zod';
+import { type Resume } from './schema';
 
-// Strict date schema - requires valid ISO8601 format (YYYY, YYYY-MM, or YYYY-MM-DD)
 const strictIso8601Schema = z.string().regex(
   /^([1-2]\d{3}(-((0[1-9]|1[0-2])(-([0-2]\d|3[0-1]))?))?)$/,
   'Date must be in YYYY, YYYY-MM, or YYYY-MM-DD format'
 );
 
-// Strict URL schema - requires valid URL format
 const strictUrlSchema = z.string().regex(
   /^https?:\/\/[^\s/$.?#].[^\s]*$/i,
   'Must be a valid URL starting with http:// or https://'
 );
 
-// Strict email schema - requires valid email format
 const strictEmailSchema = z.string().regex(
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   'Must be a valid email address'
@@ -154,16 +139,6 @@ const strictMetaSchema = z.object({
   lastModified: z.string().optional(),
 }).catchall(z.unknown());
 
-/**
- * Strict Resume Schema
- * 
- * Use for validating AI-generated resumes where data quality is critical.
- * Requires:
- * - basics.name and basics.email
- * - All dates in proper ISO8601 format
- * - URLs and emails in valid format
- * - Minimum lengths for text fields
- */
 export const strictResumeSchema = z.object({
   $schema: strictUrlSchema.optional(),
   basics: strictBasicsSchema,
@@ -181,40 +156,14 @@ export const strictResumeSchema = z.object({
   meta: strictMetaSchema.optional(),
 });
 
-export type StrictResume = z.infer<typeof strictResumeSchema>;
-
-/**
- * Partial strict schema for validating individual sections
- */
-export const strictSectionSchemas = {
-  basics: strictBasicsSchema,
-  work: strictWorkSchema,
-  volunteer: strictVolunteerSchema,
-  education: strictEducationSchema,
-  award: strictAwardSchema,
-  certificate: strictCertificateSchema,
-  publication: strictPublicationSchema,
-  skill: strictSkillSchema,
-  language: strictLanguageSchema,
-  interest: strictInterestSchema,
-  reference: strictReferenceSchema,
-  project: strictProjectSchema,
-};
-
-/**
- * Validation error item
- */
 export interface ValidationError {
   path: string;
   message: string;
 }
 
-/**
- * Validate a resume with detailed error messages
- */
 export function validateResumeStrict(data: unknown): {
   success: boolean;
-  data?: StrictResume;
+  data?: Resume;
   errors?: ValidationError[];
 } {
   const result = strictResumeSchema.safeParse(data);
@@ -223,7 +172,6 @@ export function validateResumeStrict(data: unknown): {
     return { success: true, data: result.data };
   }
   
-  // Transform Zod issues to our ValidationError format
   const errors: ValidationError[] = result.error.issues.map((issue) => ({
     path: issue.path.join('.'),
     message: issue.message,
@@ -232,9 +180,6 @@ export function validateResumeStrict(data: unknown): {
   return { success: false, errors };
 }
 
-/**
- * Get human-readable validation summary
- */
 export function getValidationSummary(errors: ValidationError[]): string[] {
   return errors.map((error) => `${error.path}: ${error.message}`);
 }

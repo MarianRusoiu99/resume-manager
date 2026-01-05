@@ -2,25 +2,49 @@
  * useFileAttachments Hook
  * 
  * Manages file attachments for AI enhancement context.
- * Supports reading file content for text-based files (txt, pdf, docx, md).
+ * Supports reading file content for text-based files (txt, pdf, docx, md)
+ * and images (png, jpg, webp) - similar to ChatGPT file handling.
  */
 
+import { parseDocumentAction } from '@/app/actions/document-parser';
 import { useState, useCallback } from 'react';
 import type { FileAttachment } from '../types';
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const MAX_FILES = 5;
-const ALLOWED_TYPES = new Set([
-  'text/plain',
-  'text/markdown',
-  'text/html',
-  'text/css',
-  'application/json',
+/** Maximum number of files that can be attached */
+const MAX_FILES = 3;
+
+/** Maximum file size in bytes (10MB for PDFs, 5MB for others) */
+const MAX_FILE_SIZE_DEFAULT = 5 * 1024 * 1024;
+const MAX_FILE_SIZE_PDF = 10 * 1024 * 1024;
+
+/** 
+ * Allowed MIME types for upload
+ * Includes documents, images, and text-based files
+ */
+const ALLOWED_TYPES: Record<string, { label: string; maxSize: number }> = {
+  // Documents
+  'application/pdf': { label: 'PDF', maxSize: MAX_FILE_SIZE_PDF },
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': { label: 'Word Document', maxSize: MAX_FILE_SIZE_DEFAULT },
+  'application/msword': { label: 'Word Document', maxSize: MAX_FILE_SIZE_DEFAULT },
+  // Text files
+  'text/plain': { label: 'Text file', maxSize: MAX_FILE_SIZE_DEFAULT },
+  'text/markdown': { label: 'Markdown', maxSize: MAX_FILE_SIZE_DEFAULT },
+  'text/html': { label: 'HTML', maxSize: MAX_FILE_SIZE_DEFAULT },
+  'text/css': { label: 'CSS', maxSize: MAX_FILE_SIZE_DEFAULT },
+  'application/json': { label: 'JSON', maxSize: MAX_FILE_SIZE_DEFAULT },
+  // Images
+  'image/png': { label: 'PNG Image', maxSize: MAX_FILE_SIZE_DEFAULT },
+  'image/jpeg': { label: 'JPEG Image', maxSize: MAX_FILE_SIZE_DEFAULT },
+  'image/webp': { label: 'WebP Image', maxSize: MAX_FILE_SIZE_DEFAULT },
+  'image/gif': { label: 'GIF Image', maxSize: MAX_FILE_SIZE_DEFAULT },
+};
+
+/** Types that need server-side parsing */
+const SERVER_PARSED_TYPES = new Set([
   'application/pdf',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'image/png',
-  'image/jpeg',
-  'image/webp',
+  'application/msword',
+  'text/html',
 ]);
 
 interface UseFileAttachmentsReturn {
@@ -31,6 +55,16 @@ interface UseFileAttachmentsReturn {
   removeFile: (id: string) => void;
   clearAll: () => void;
   getAttachmentsAsContext: () => string;
+  /** Get image attachments for vision API */
+  getImageAttachments: () => FileAttachment[];
+  /** Get text attachments for context */
+  getTextAttachments: () => FileAttachment[];
+  /** Check if we have any images (for vision API) */
+  hasImages: boolean;
+  /** Maximum allowed files */
+  maxFiles: number;
+  /** Remaining slots available */
+  remainingSlots: number;
 }
 
 /**
@@ -41,49 +75,105 @@ function generateId(): string {
 }
 
 /**
- * Read file content as text or base64
+ * Format file size for display
  */
-async function readFileContent(file: File): Promise<string> {
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Read file content based on type
+ */
+async function readFileContent(file: File): Promise<{ content: string; error?: string }> {
+  const mimeType = file.type || 'application/octet-stream';
+  
   // For images, use FileReader to get base64 data URL
-  if (file.type.startsWith('image/')) {
-    return new Promise((resolve, reject) => {
+  if (mimeType.startsWith('image/')) {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+      reader.onload = () => resolve({ content: reader.result as string });
+      reader.onerror = () => resolve({ 
+        content: '', 
+        error: `Failed to read image: ${file.name}` 
+      });
       reader.readAsDataURL(file);
     });
   }
 
-  // PDFs/DOCX/HTML are binary or need parsing; use server-side parsing
-  if (
-    file.type === 'application/pdf' ||
-    file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    file.type === 'application/msword' ||
-    file.type === 'text/html'
-  ) {
-    const formData = new FormData();
-    formData.append('file', file);
+  // For server-parsed types (PDF, DOCX, HTML), use server action
+  if (SERVER_PARSED_TYPES.has(mimeType)) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const response = await fetch('/api/v1/parse-document', {
-      method: 'POST',
-      body: formData,
-    });
+      const result = await parseDocumentAction(formData);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `Failed to parse ${file.name}`);
+      if (!result.success) {
+        return { 
+          content: '', 
+          error: result.error || `Failed to parse ${file.name}` 
+        };
+      }
+
+      return { content: result.data.text };
+    } catch (err) {
+      return { 
+        content: '', 
+        error: err instanceof Error ? err.message : `Failed to parse ${file.name}` 
+      };
     }
-
-    const { data } = await response.json();
-    return data.text;
   }
 
   // For text-like formats, use Blob.text()
   try {
-    return await file.text();
+    const content = await file.text();
+    return { content };
   } catch {
-    throw new Error(`Failed to read file: ${file.name}`);
+    return { 
+      content: '', 
+      error: `Failed to read ${file.name}` 
+    };
   }
+}
+
+/**
+ * Validate a file before processing
+ */
+function validateFile(
+  file: File, 
+  currentCount: number
+): { valid: boolean; error?: string } {
+  // Check file count
+  if (currentCount >= MAX_FILES) {
+    return { 
+      valid: false, 
+      error: `Maximum ${MAX_FILES} files allowed. Remove a file before adding more.` 
+    };
+  }
+
+  const mimeType = file.type || 'application/octet-stream';
+  const typeConfig = ALLOWED_TYPES[mimeType];
+
+  // Check file type
+  if (!typeConfig && !mimeType.startsWith('text/')) {
+    return { 
+      valid: false, 
+      error: `File type "${mimeType}" is not supported. Supported: PDF, Word, images, and text files.` 
+    };
+  }
+
+  // Check file size
+  const maxSize = typeConfig?.maxSize || MAX_FILE_SIZE_DEFAULT;
+  if (file.size > maxSize) {
+    return { 
+      valid: false, 
+      error: `"${file.name}" (${formatFileSize(file.size)}) exceeds ${formatFileSize(maxSize)} limit` 
+    };
+  }
+
+  return { valid: true };
 }
 
 /**
@@ -100,50 +190,67 @@ export function useFileAttachments(): UseFileAttachmentsReturn {
   const addFiles = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
     
-    // Check file count limit
+    if (fileArray.length === 0) return;
+
+    // Check total file count
     if (attachments.length + fileArray.length > MAX_FILES) {
-      setError(`Maximum ${MAX_FILES} files allowed`);
+      setError(
+        `Cannot add ${fileArray.length} file(s). Maximum ${MAX_FILES} files allowed. ` +
+        `You have ${MAX_FILES - attachments.length} slot(s) remaining.`
+      );
       return;
     }
 
     setIsProcessing(true);
     setError(null);
 
-    try {
-      const newAttachments: FileAttachment[] = [];
+    const newAttachments: FileAttachment[] = [];
+    const errors: string[] = [];
 
-      for (const file of fileArray) {
-        // Check file size
-        if (file.size > MAX_FILE_SIZE) {
-          setError(`File "${file.name}" exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`);
-          continue;
-        }
-
-        // Check file type
-        if (!ALLOWED_TYPES.has(file.type) && !file.type.startsWith('text/')) {
-          setError(`File type "${file.type}" is not supported`);
-          continue;
-        }
-
-        const content = await readFileContent(file);
-        const attachment: FileAttachment = {
-          id: generateId(),
-          name: file.name,
-          type: file.type,
-          size: file.size,
-          content,
-          previewUrl: file.type.startsWith('image/') ? content : undefined,
-        };
-
-        newAttachments.push(attachment);
+    for (const file of fileArray) {
+      // Validate each file
+      const validation = validateFile(file, attachments.length + newAttachments.length);
+      if (!validation.valid) {
+        errors.push(validation.error!);
+        continue;
       }
 
-      setAttachments(prev => [...prev, ...newAttachments]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process files');
-    } finally {
-      setIsProcessing(false);
+      // Read file content
+      const { content, error: readError } = await readFileContent(file);
+      
+      if (readError) {
+        errors.push(readError);
+        continue;
+      }
+
+      if (!content) {
+        errors.push(`No content extracted from "${file.name}"`);
+        continue;
+      }
+
+      const attachment: FileAttachment = {
+        id: generateId(),
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        content,
+        previewUrl: file.type.startsWith('image/') ? content : undefined,
+      };
+
+      newAttachments.push(attachment);
     }
+
+    // Update state
+    if (newAttachments.length > 0) {
+      setAttachments(prev => [...prev, ...newAttachments]);
+    }
+
+    // Set error if any files failed
+    if (errors.length > 0) {
+      setError(errors.join('. '));
+    }
+
+    setIsProcessing(false);
   }, [attachments.length]);
 
   /**
@@ -163,25 +270,43 @@ export function useFileAttachments(): UseFileAttachmentsReturn {
   }, []);
 
   /**
+   * Get image attachments for vision API
+   */
+  const getImageAttachments = useCallback(() => {
+    return attachments.filter(a => a.type.startsWith('image/'));
+  }, [attachments]);
+
+  /**
+   * Get text attachments (non-image files)
+   */
+  const getTextAttachments = useCallback(() => {
+    return attachments.filter(a => !a.type.startsWith('image/'));
+  }, [attachments]);
+
+  /**
    * Get attachments formatted as context for AI
    */
   const getAttachmentsAsContext = useCallback(() => {
-    if (attachments.length === 0) return '';
+    const textAttachments = attachments.filter(a => !a.type.startsWith('image/'));
+    
+    if (textAttachments.length === 0) return '';
 
-    const contextParts = attachments
-      .filter(a => !a.type.startsWith('image/'))
-      .map(a => {
-        const MAX_CHARS_PER_FILE = 8000;
-        const content = a.content.length > MAX_CHARS_PER_FILE
-          ? `${a.content.slice(0, MAX_CHARS_PER_FILE)}\n...[truncated]`
-          : a.content;
-        return `--- File: ${a.name} ---\n${content}`;
-      });
+    const contextParts = textAttachments.map(a => {
+      // Truncate very long content
+      const MAX_CHARS_PER_FILE = 15000;
+      const content = a.content.length > MAX_CHARS_PER_FILE
+        ? `${a.content.slice(0, MAX_CHARS_PER_FILE)}\n...[content truncated at ${MAX_CHARS_PER_FILE} characters]`
+        : a.content;
+      
+      return `--- ATTACHED FILE: ${a.name} ---\n${content}`;
+    });
 
-    return contextParts.length > 0
-      ? `\n\nATTACHED FILES:\n${contextParts.join('\n\n')}`
-      : '';
+    return `\n\n### ATTACHED FILES ###\n${contextParts.join('\n\n')}`;
   }, [attachments]);
+
+  // Computed values
+  const hasImages = attachments.some(a => a.type.startsWith('image/'));
+  const remainingSlots = MAX_FILES - attachments.length;
 
   return {
     attachments,
@@ -191,5 +316,10 @@ export function useFileAttachments(): UseFileAttachmentsReturn {
     removeFile,
     clearAll,
     getAttachmentsAsContext,
+    getImageAttachments,
+    getTextAttachments,
+    hasImages,
+    maxFiles: MAX_FILES,
+    remainingSlots,
   };
 }

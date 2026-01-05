@@ -15,6 +15,7 @@ export const templateGenerationMode = defineMode({
   description: 'Generate HTML/CSS resume templates from design images',
 
   outputSchema: templateGenerationOutputSchema,
+  primaryResultKey: 'htmlTemplate',
 
   useStructuredOutput: true,
   requiresVision: true,
@@ -35,8 +36,14 @@ export const templateGenerationMode = defineMode({
       '1. Match the visual design as closely as possible',
       '2. Use Handlebars syntax for all dynamic content',
       '3. Create print-friendly CSS (A4 page size)',
-      '4. Ensure proper structure for all JSON Resume sections',
-      '5. Make it responsive and accessible',
+      '4. Ensure proper structure for all JSON Resume sections (basics, work, education, skills, projects, etc.)',
+      '5. Use Handlebars loops ({{#each section}}) for lists like work experience and skills',
+      '6. Make it responsive and accessible',
+      '',
+      '### HANDLEBARS BEST PRACTICES',
+      '- Use {{#if basics.summary}} to conditionally render sections',
+      '- For dates, use {{startDate}} and {{endDate}}',
+      '- For skills, iterate through keywords if available: {{#each keywords}}{{this}}{{/each}}',
       '',
       '### STRUCTURE GUIDELINES',
       '- Use semantic HTML5 elements',
@@ -72,7 +79,6 @@ export const templateGenerationMode = defineMode({
   },
 
   validateOutput(output) {
-    const errors: Array<{ path: string; message: string }> = [];
     const warnings: string[] = [];
 
     // Validate HTML has Handlebars placeholders
@@ -89,10 +95,9 @@ export const templateGenerationMode = defineMode({
       }
     }
 
-    // Validate CSS exists
-    if (!output.cssStyles || output.cssStyles.length < 50) {
-      // Don't error out, just warn.
-      warnings.push('CSS styles are very short or missing');
+    // Validate HTML has style tag
+    if (!output.htmlTemplate.includes('<style>')) {
+      warnings.push('HTML template is missing a <style> tag. Styles should be embedded in the HTML.');
     }
 
     return {

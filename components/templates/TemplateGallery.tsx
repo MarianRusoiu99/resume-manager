@@ -39,8 +39,8 @@ export function TemplateGallery({ templates, showAdminActions = false }: Templat
       getItemKey={(template) => template.id}
       emptyState={{
         icon: FileText,
-        title: "No templates found",
-        description: "No templates are available",
+        title: "No Templates Found",
+        description: "No templates are currently available. Check back later or create one if you are an admin.",
         action: showAdminActions
           ? {
             label: "Create Template",

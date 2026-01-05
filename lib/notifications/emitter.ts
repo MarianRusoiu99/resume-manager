@@ -9,7 +9,6 @@
 import { getPubSubProvider } from '@/lib/redis';
 import { logger } from '@/lib/utils/logger';
 import { SseHub, type SseController } from './sse-hub';
-export type { NotificationPayload } from './types';
 import type { NotificationPayload } from './types';
 
 const NOTIFICATION_CHANNEL_PREFIX = 'notifications:';
@@ -35,7 +34,8 @@ async function ensureSubscribed(userId: string): Promise<void> {
   const channel = getChannelName(userId);
   
   // Subscribe to Redis channel for this user
-  const unsubscribe = await pubsub.subscribe<NotificationPayload>(channel, (_, notification) => {
+  const unsubscribe = await pubsub.subscribe<NotificationPayload>(channel, (ch, notification) => {
+    console.log(`[SSE Emitter] Received message from PubSub on channel ${ch}`, notification);
     hub.broadcast(userId, 'notification', notification);
   });
   
@@ -88,7 +88,7 @@ export async function emitNotification(userId: string, notification: Notificatio
   // Publish to PubSub - all subscribed instances will receive this
   await pubsub.publish(channel, notification);
 
-  logger.debug('SSE published notification', { userId, channel });
+  logger.info('SSE published notification', { userId, channel, type: notification.type });
 }
 
 /**
@@ -117,6 +117,9 @@ export function getConnectionStats(): {
 /**
  * Graceful shutdown - clean up all connections and subscriptions
  */
+/**
+ * Graceful shutdown - clean up all connections and subscriptions
+ */
 export async function shutdown(): Promise<void> {
   // Unsubscribe from all PubSub channels
   for (const unsub of subscribedUsers.values()) {
@@ -128,3 +131,5 @@ export async function shutdown(): Promise<void> {
   
   logger.info('SSE shutdown complete');
 }
+
+export type { NotificationPayload } from './types';

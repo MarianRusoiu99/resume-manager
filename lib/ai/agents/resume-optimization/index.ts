@@ -12,8 +12,6 @@ export {
 // Agent
 export {
   optimizeResume,
-  optimizedResumeSchema,
-  type OptimizedResume,
   type OptimizeResumeInput,
   type OptimizeResumeResult,
 } from './agent';

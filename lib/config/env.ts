@@ -15,8 +15,8 @@
  */
 
 import { z } from 'zod';
-import { logger } from '@/lib/utils/logger';
-
+import { ConfigurationError } from '../errors';
+import { logger } from '../utils/logger';
 /**
  * Environment variable schema
  * Add all environment variables here with their expected types
@@ -52,6 +52,9 @@ const envSchema = z.object({
 
   // Feature flags
   ANALYZE: z.string().transform(v => v === 'true').optional(),
+
+  // Trusted hosts (comma-separated)
+  TRUSTED_HOSTS: z.string().optional(),
 });
 
 type EnvConfig = z.infer<typeof envSchema>;
@@ -87,6 +90,7 @@ function parseEnv(): EnvConfig {
         APP_NAME: process.env.APP_NAME || 'Resume Manager',
         ADMIN_EMAILS: process.env.ADMIN_EMAILS,
         ANALYZE: process.env.ANALYZE === 'true',
+        TRUSTED_HOSTS: process.env.TRUSTED_HOSTS,
       };
     }
 
@@ -97,7 +101,7 @@ function parseEnv(): EnvConfig {
         message: issue.message,
       })),
     });
-    throw new Error('Invalid environment configuration');
+    throw new ConfigurationError('Invalid environment configuration');
   }
 
   return parsed.data;
@@ -111,6 +115,69 @@ class EnvironmentConfig {
 
   constructor() {
     this.config = parseEnv();
+    this.validateProductionRequirements();
+  }
+
+  /**
+   * Validate production-specific requirements
+   */
+  private validateProductionRequirements(): void {
+    if (this.config.NODE_ENV !== 'production') {
+      return;
+    }
+
+    // Skip validation during build time (Next.js sets NEXT_PHASE during build)
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      return;
+    }
+
+    // Required variables in production
+    if (!this.config.DATABASE_URL) {
+      throw new ConfigurationError('DATABASE_URL is required in production');
+    }
+
+    if (!this.config.NEXTAUTH_SECRET) {
+      throw new ConfigurationError('NEXTAUTH_SECRET is required in production');
+    }
+
+    if (!this.config.ENCRYPTION_KEY) {
+      throw new ConfigurationError('ENCRYPTION_KEY is required in production');
+    }
+
+    // Check for default/weak secrets
+    const defaultSecrets = [
+      'your-nextauth-secret-key-here-min-32-chars',
+      'your-encryption-key-here-minimum-32-characters',
+      'changeme',
+      'secret',
+      'password',
+    ];
+
+    if (this.config.NEXTAUTH_SECRET && defaultSecrets.includes(this.config.NEXTAUTH_SECRET)) {
+      throw new ConfigurationError(
+        'NEXTAUTH_SECRET is using a default/weak value. Change it in production! ' +
+        'Generate a secure value with: openssl rand -base64 32'
+      );
+    }
+
+    if (this.config.ENCRYPTION_KEY && defaultSecrets.includes(this.config.ENCRYPTION_KEY)) {
+      throw new ConfigurationError(
+        'ENCRYPTION_KEY is using a default/weak value. Change it in production! ' +
+        'Generate a secure value with: openssl rand -hex 32'
+      );
+    }
+
+    // Warn about missing optional but recommended configs
+    if (!this.config.REDIS_URL) {
+      logger.warn(
+        'REDIS_URL not configured in production. ' +
+        'Using in-memory storage (not suitable for multi-instance deployments)'
+      );
+    }
+
+    if (!this.config.NEXTAUTH_URL) {
+      logger.warn('NEXTAUTH_URL not configured. This may cause authentication issues.');
+    }
   }
 
   // Node environment helpers
@@ -124,6 +191,7 @@ class EnvironmentConfig {
 
   // Authentication
   get NEXTAUTH_SECRET() { return this.config.NEXTAUTH_SECRET; }
+  get authSecret() { return this.config.NEXTAUTH_SECRET; }
   get NEXTAUTH_URL() { return this.config.NEXTAUTH_URL; }
 
   // Encryption
@@ -156,6 +224,16 @@ class EnvironmentConfig {
 
   // Feature flags
   get shouldAnalyze() { return this.config.ANALYZE ?? false; }
+
+  // Trusted hosts
+  get trustedHosts(): string[] {
+    const raw = this.config.TRUSTED_HOSTS;
+    if (!raw) return [];
+    return raw
+      .split(',')
+      .map((host) => host.trim())
+      .filter(Boolean);
+  }
 }
 
 /**

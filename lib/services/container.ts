@@ -6,24 +6,24 @@
  * easily testable with mock implementations.
  */
 
-import { ProfileRepository, profileRepository } from '@/lib/repositories/profile.repository';
-import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resume.repository';
-import { NotificationRepository, notificationRepository } from '@/lib/repositories/notification.repository';
-import { ApiProviderRepository, apiProviderRepository } from '@/lib/repositories/api-provider.repository';
-import { UserAISettingsRepository, userAISettingsRepository } from '@/lib/repositories/user-ai-settings.repository';
-import { CoverLetterRepository, coverLetterRepository } from '@/lib/repositories/cover-letter.repository';
-import { TemplateRepository, templateRepository } from '@/lib/repositories/template.repository';
+import { ProfileRepository, profileRepository } from '@/lib/repositories/profiles.repository';
+import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resumes.repository';
+import { NotificationRepository, notificationRepository } from '@/lib/repositories/notifications.repository';
+import { ApiProviderRepository, apiProviderRepository } from '@/lib/repositories/api-providers.repository';
+import { UserAISettingsRepository, userAISettingsRepository } from '@/lib/repositories/ai-settings.repository';
+import { CoverLetterRepository, coverLetterRepository } from '@/lib/repositories/cover-letters.repository';
+import { TemplateRepository, templateRepository } from '@/lib/repositories/templates.repository';
 
 import { AnalyticsService, analyticsService as analyticsServiceInstance } from './analytics/analytics.service';
-import { ProfileService } from './profile/profile.service';
-import { ResumeGenerationService } from './resume/generation/resume-generation.service';
-import { ResumeCrudService } from './resume/crud/resume-crud.service';
-import { NotificationService } from './notification/notification.service';
-import { ApiProviderService } from './api-provider/api-provider.service';
-import { UserAISettingsService } from './user-ai-settings/user-ai-settings.service';
+import { ProfileService } from './profiles/profiles.service';
+import { ResumeGenerationService } from './resumes/generation/resume-generation.service';
+import { ResumeCrudService } from './resumes/crud/resume-crud.workflow';
+import { NotificationService } from './notifications/notifications.service';
+import { ApiProviderService } from './api-providers/api-providers.workflow';
+import { UserAISettingsService } from './ai-settings/user-ai-settings.workflow';
 import { AIService, aiService as aiServiceInstance } from './ai';
-import { TemplateService } from './template/template.service';
-import { CoverLetterService } from './cover-letter';
+import { TemplateService } from './templates/templates.workflow';
+import { CoverLetterService } from './cover-letters';
 
 import { profileCache } from '@/lib/cache/simple-cache';
 import type { ICache } from '@/lib/repositories/interfaces';
@@ -82,14 +82,14 @@ export class ServiceContainer {
     // Initialize services with dependency injection
     this._profileService = new ProfileService(profileRepo, cache);
     this._analyticsService = analyticsServiceInstance;
-    this._resumeGenerationService = new ResumeGenerationService(generatedResumeRepo);
+    this._resumeGenerationService = new ResumeGenerationService(generatedResumeRepo, this._profileService, this._notificationService);
     this._resumeCrudService = new ResumeCrudService(generatedResumeRepo);
     this._notificationService = new NotificationService(notificationRepo);
     this._apiProviderService = new ApiProviderService(apiProviderRepo);
     this._userAISettingsService = new UserAISettingsService(userAISettingsRepo);
     this._aiService = aiServiceInstance;
     this._templateService = new TemplateService(templateRepo);
-    this._coverLetterService = new CoverLetterService(coverLetterRepo);
+    this._coverLetterService = new CoverLetterService(coverLetterRepo, this._notificationService);
     this._documentParserService = new DocumentParserService();
   }
 
@@ -162,7 +162,10 @@ export class ServiceContainer {
     }
     
     if (mocks.generatedResumeRepository) {
-      container._resumeGenerationService = new ResumeGenerationService(mocks.generatedResumeRepository);
+      container._resumeGenerationService = new ResumeGenerationService(
+        mocks.generatedResumeRepository,
+        container._profileService
+      );
       container._resumeCrudService = new ResumeCrudService(mocks.generatedResumeRepository);
     }
     
@@ -195,7 +198,7 @@ export class ServiceContainer {
  */
 export const serviceContainer = ServiceContainer.getInstance();
 
-import { auditLogService as auditLogServiceInstance, auditLog as auditLogInstance } from './audit-log';
+import { auditLogService as auditLogServiceInstance, auditLog as auditLogInstance } from './audit-logs';
 
 /**
  * Service exports for backward compatibility
@@ -216,7 +219,7 @@ export const auditLogService = auditLogServiceInstance;
 export const auditLog = auditLogInstance;
 
 // Combined resume service for backward compatibility
-import { ResumeService } from './resume';
+import { ResumeService } from './resumes';
 export const resumeService = new ResumeService(
   serviceContainer.resumeGenerationService,
   serviceContainer.resumeCrudService

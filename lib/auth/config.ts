@@ -80,8 +80,8 @@ export const authConfig: NextAuthConfig = {
     // Token expires same as session
     maxAge: 60 * 60 * 24, // 24 hours
   },
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
-  trustHost: true, // Required for NextAuth v5 to prevent CSRF errors
+  secret: env.authSecret,
+  trustHost: true, // Trusted because it's behind a proxy or running locally
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

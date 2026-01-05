@@ -2,7 +2,8 @@ import { verifySession } from '@/lib/auth/dal';
 import { cookies } from 'next/headers';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
-import { ProfileProvider, NotificationProvider } from '@/lib/contexts';
+import { ProfileProvider, NotificationProvider, SettingsProvider } from '@/lib/contexts';
+import { RouteErrorBoundary } from '@/components/error-boundaries';
 
 export default async function AuthenticatedLayout({
   children,
@@ -18,19 +19,23 @@ export default async function AuthenticatedLayout({
 
   return (
     <ProfileProvider>
-      <NotificationProvider>
-        <SidebarProvider defaultOpen={defaultOpen}>
-          <AppSidebar user={{ 
-            email: session.email, 
-            name: session.name 
-          }} />
-          <SidebarInset>
-            <main className="flex-1 overflow-y-auto">
-              {children}
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
-      </NotificationProvider>
+      <SettingsProvider>
+        <NotificationProvider>
+          <RouteErrorBoundary routeName="Dashboard">
+            <SidebarProvider defaultOpen={defaultOpen}>
+              <AppSidebar user={{
+                email: session.email,
+                name: session.name
+              }} />
+              <SidebarInset className="flex flex-col overflow-hidden">
+                <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                  {children}
+                </main>
+              </SidebarInset>
+            </SidebarProvider>
+          </RouteErrorBoundary>
+        </NotificationProvider>
+      </SettingsProvider>
     </ProfileProvider>
   );
 }

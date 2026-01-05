@@ -5,8 +5,35 @@
 
 import Handlebars from 'handlebars';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { renderPDFDocument } from '@/lib/templates/renderers/pdf';
-import { sanitizeTemplateCss, sanitizeTemplateHtml } from '@/lib/templates/utils/sanitizer';
+import { sanitizeTemplateHtml } from '@/lib/templates/utils/sanitizer';
+
+/**
+ * Renders the full HTML structure for PDF export
+ */
+function renderPDFDocument(html: string, css: string, resumeData: Resume): string {
+  const name = resumeData.basics?.name || 'Resume';
+  
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${name}</title>
+        <style>
+            ${css}
+            @media print {
+                body { margin: 0; padding: 0; }
+                @page { margin: 0.4in; }
+            }
+        </style>
+    </head>
+    <body>
+        ${html}
+    </body>
+    </html>
+  `;
+}
 
 /**
  * Register Handlebars helpers for common formatting tasks
@@ -71,26 +98,33 @@ registerHelpers();
  * @param htmlTemplate - HTML template string with {{placeholders}}
  * @param resumeData - JSON Resume format data
  * @returns Rendered HTML string
+ * 
+ * Security: Sanitizes BOTH the template AND the final output to prevent XSS.
+ * The template is sanitized first to remove malicious scripts in the template itself,
+ * then the final output is sanitized to prevent XSS from user-provided resume data
+ * (e.g., name, summary, etc.) that gets inserted via Handlebars placeholders.
  */
 export function renderTemplate(htmlTemplate: string, resumeData: Resume): string {
+  // First, sanitize the template to remove malicious scripts
   const safeHtmlTemplate = sanitizeTemplateHtml(htmlTemplate);
   const template = Handlebars.compile(safeHtmlTemplate);
-  return template(resumeData);
+  const renderedHtml = template(resumeData);
+  
+  // Sanitize the final output to prevent XSS from user-provided data
+  // This is critical because Handlebars inserts user data AFTER template sanitization
+  return sanitizeTemplateHtml(renderedHtml);
 }
 
 /**
  * Render complete HTML document with styles
- * @param htmlTemplate - HTML template for resume content
- * @param cssStyles - CSS styles for the template
+ * @param htmlTemplate - HTML template for resume content (including <style> blocks)
  * @param resumeData - JSON Resume format data
  * @returns Complete HTML document string
  */
 export function renderCompleteDocument(
   htmlTemplate: string,
-  cssStyles: string,
   resumeData: Resume
 ): string {
   const renderedContent = renderTemplate(htmlTemplate, resumeData);
-  const safeCss = sanitizeTemplateCss(cssStyles);
-  return renderPDFDocument(renderedContent, safeCss, resumeData);
+  return renderPDFDocument(renderedContent, '', resumeData);
 }

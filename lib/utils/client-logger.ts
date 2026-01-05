@@ -6,7 +6,12 @@
  * - Consistent formatting
  * - Error tracking integration support
  * - Log level filtering
+ * 
+ * NOTE: This file uses typeof window to check client-side environment
+ * and reads from public env vars that are available on both client and server.
  */
+
+import { clientEnv } from '@/lib/config/client-env';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -32,10 +37,13 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 };
 
-const isDevelopment = process.env.NODE_ENV === 'development';
+// Get log level from client environment config
+const getClientLogLevel = (): LogLevel => {
+  return clientEnv.NEXT_PUBLIC_LOG_LEVEL;
+};
 
 const defaultConfig: ClientLoggerConfig = {
-  minLevel: isDevelopment ? 'debug' : 'warn',
+  minLevel: getClientLogLevel(),
   enabled: true,
   prefix: '[App]',
 };
@@ -150,7 +158,7 @@ class ClientLogger {
       error: error instanceof Error ? {
         name: error.name,
         message: error.message,
-        stack: isDevelopment ? error.stack : undefined,
+        stack: clientEnv.isDevelopment ? error.stack : undefined,
       } : error,
     };
     

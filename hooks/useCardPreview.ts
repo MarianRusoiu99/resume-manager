@@ -5,7 +5,8 @@ import type { Resume } from "@/lib/validations/jsonresume";
 import type { Template } from "@/lib/types/template";
 import { useTemplatePreview } from "./useTemplatePreview";
 import { createComponentLogger } from "@/lib/utils/client-logger";
-import { apiV1, type TemplateListResponseDto } from '@/lib/client';
+import { getTemplate, getTemplates } from "@/app/actions/template";
+import { NotFoundError, ExternalServiceError } from "@/lib/errors";
 
 const logger = createComponentLogger('useCardPreview');
 
@@ -109,35 +110,34 @@ export function useExportPdf({
       let template: Template | null = null;
 
       if (templateId) {
-        const result = await apiV1.TEMPLATE.GET(templateId).get<Template>();
-        if (!result.error && result.data) {
-          template = result.data;
+        const result = await getTemplate(templateId);
+        if (result.success && result.data) {
+          template = result.data as unknown as Template;
         }
       }
 
       if (!template) {
-        const templatesResult = await apiV1.TEMPLATE.LIST.get<TemplateListResponseDto<Template>>();
-        const fallback = templatesResult.data?.templates?.[0] ?? null;
-        if (templatesResult.error || !fallback) {
-          throw new Error(templatesResult.error ?? 'No templates available');
+        const templatesResult = await getTemplates();
+        if (!templatesResult.success || !templatesResult.data?.length) {
+          throw new NotFoundError('Templates');
         }
-        template = fallback;
+        template = templatesResult.data[0] as unknown as Template;
       }
 
-      const response = await apiV1.EXPORT.PDF.postFetch(
-        {
+      const response = await fetch('/api/v1/export/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           resume: content,
           template: {
             htmlTemplate: template.htmlTemplate,
-            cssStyles: template.cssStyles,
           },
           fileName: `${fileName.replaceAll(/\s+/g, '_')}.pdf`,
-        },
-        { skipSessionCheck: true },
-      );
+        })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to export PDF');
+        throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
       }
 
       // Download the PDF

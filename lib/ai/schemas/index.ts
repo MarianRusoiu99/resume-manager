@@ -36,19 +36,22 @@ export type ResumeEnhancementOutput = z.infer<typeof resumeEnhancementOutputSche
 export const coverLetterOutputSchema = z.object({
   content: z.string().describe('The full cover letter content'),
   subject: z.string().optional().describe('Email subject line for the cover letter'),
-  recipientName: z.string().optional().describe('Name of the recipient if known'),
+  recipientName: z.string().optional().describe('Name of recipient'),
   companyName: z.string().optional().describe('Company name'),
   jobTitle: z.string().optional().describe('Job title being applied for'),
 });
 
 export type CoverLetterOutput = z.infer<typeof coverLetterOutputSchema>;
 
+export type GenerateCoverLetterResult = CoverLetterOutput & {
+  jobTitle: string;
+};
+
 /**
  * Template generation output schema
  */
 export const templateGenerationOutputSchema = z.object({
-  htmlTemplate: z.string().describe('The HTML template with Handlebars placeholders'),
-  cssStyles: z.string().describe('The CSS styles for the template'),
+  htmlTemplate: z.string().describe('The HTML template with Handlebars placeholders and inline <style> blocks'),
   name: z.string().optional().describe('Suggested name for the template'),
   description: z.string().optional().describe('Description of the template'),
 });
@@ -59,8 +62,7 @@ export type TemplateGenerationOutput = z.infer<typeof templateGenerationOutputSc
  * Template enhancement output schema
  */
 export const templateEnhancementOutputSchema = z.object({
-  htmlTemplate: z.string().describe('The enhanced HTML template'),
-  cssStyles: z.string().describe('The enhanced CSS styles'),
+  htmlTemplate: z.string().describe('The enhanced HTML template with inline <style> blocks'),
   changes: z.array(z.string()).optional().describe('List of changes made'),
 });
 

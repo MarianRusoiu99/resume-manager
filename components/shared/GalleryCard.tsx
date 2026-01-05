@@ -14,7 +14,6 @@
 
 import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { GalleryCardPreview } from '@/components/shared/GalleryCardPreview';
 import { GalleryCardActionsMenu } from '@/components/shared/GalleryCardActionsMenu';
@@ -95,7 +94,10 @@ export interface GalleryCardProps {
  */
 const log = createComponentLogger('GalleryCard');
 
-export function GalleryCard({
+import { BaseGalleryCard } from '@/components/shared/cards/BaseGalleryCard';
+import { memo, useCallback } from 'react';
+
+export const GalleryCard = memo(function GalleryCard({
   id,
   title,
   subtitle,
@@ -112,13 +114,13 @@ export function GalleryCard({
   const router = useRouter();
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     if (!disableNavigation) {
       router.push(href);
     }
-  };
+  }, [disableNavigation, href]);
 
-  const handleActionClick = async (action: GalleryCardAction) => {
+  const handleActionClick = useCallback(async (action: GalleryCardAction) => {
     if (action.disabled || isActionLoading) return;
 
     try {
@@ -129,53 +131,38 @@ export function GalleryCard({
     } finally {
       setIsActionLoading(false);
     }
-  };
+  }, [isActionLoading]);
 
-  // Square card with horizontal layout (preview left, content right)
   return (
-    <Card
-      className={`group hover:shadow-lg transition-shadow ${disableNavigation ? '' : 'cursor-pointer'
-        } relative overflow-hidden aspect-[3/2] flex ${className}`}
+    <BaseGalleryCard
       onClick={handleCardClick}
-    >
-      {/* Preview Area - Left Half (50%) */}
-      <div className="w-1/2  shrink-0">
+      prefetchUrls={[href]}
+      className={className}
+      variant="overlay"
+      header={
         <GalleryCardPreview
           htmlContent={previewHtml}
           isLoading={isPreviewLoading}
           fallbackIcon={previewFallbackIcon}
           altText={`Preview of ${title}`}
         />
-      </div>
-
-      {/* Content Area - Right Half (50%) */}
-      <div className="w-1/2 flex flex-col p-4 overflow-hidden">
-        {/* Header with Badges and Actions */}
-        <div className="flex items-start justify-between mb-2 gap-2">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-semibold truncate" title={title}>
-              {title}
-            </h3>
-            {subtitle && (
-              <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5" title={subtitle}>
-                {subtitle}
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Badges - show only first one */}
-            {badges.slice(0, 1).map((badge, index) => (
-              <Badge
-                key={`${id}-badge-${index}`}
-                variant={badge.variant || 'secondary'}
-                className="gap-1 text-xs"
-              >
-                {badge.icon}
-                {badge.label}
-              </Badge>
-            ))}
-
+      }
+      badge={badges.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5">
+          {badges.map((badge) => (
+            <Badge
+              key={`${id}-badge-${badge.label}`}
+              variant={badge.variant || "secondary"}
+              className="bg-primary/90 text-primary-foreground border-none py-0.5 px-2 rounded-lg uppercase font-bold tracking-wider text-[10px]"
+            >
+              {badge.icon && <span className="mr-1">{badge.icon}</span>}
+              {badge.label}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+    >
+       <div className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
             <GalleryCardActionsMenu
               id={id}
               actions={actions}
@@ -183,24 +170,15 @@ export function GalleryCard({
               onActionClick={handleActionClick}
             />
           </div>
-        </div>
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Metadata Section */}
-        {metadata.length > 0 && (
-          <div className="flex flex-col gap-2 pt-2 mt-auto border-t text-xs">
-            {metadata.slice(0, 3).map((item, index) => (
-              <div key={`${id}-metadata-${index}`} className="flex items-center gap-1">
-                {item.icon}
-                <span className="font-medium text-foreground">{item.value}</span>
-                <span className="text-muted-foreground">{item.label}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </Card>
+      <h3 className="text-lg font-bold leading-snug text-white" title={title}>
+        {title}
+      </h3>
+      
+      {subtitle && (
+        <p className="text-sm text-white/80 line-clamp-3 font-medium leading-relaxed" title={subtitle}>
+          {subtitle}
+        </p>
+      )}
+    </BaseGalleryCard>
   );
-}
+});

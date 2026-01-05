@@ -2,9 +2,6 @@
   "name": "resume-optimizer",
   "version": "0.1.0",
   "private": true,
-  "prisma": {
-    "seed": "node --experimental-strip-types prisma/seed.ts"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,6 +10,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "analyze": "ANALYZE=true next build",
     "db:seed": "node --experimental-strip-types prisma/seed.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
@@ -48,8 +46,7 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@radix-ui/react-tooltip": "^1.2.8",
-    "@tiptap/extensions": "^3.10.7",
-    "@types/pdf-parse": "^1.1.5",
+    "@tailwindcss/postcss": "^4.1.18",
     "ai": "^5.0.89",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
@@ -58,13 +55,13 @@
     "dotenv": "^17.2.3",
     "handlebars": "^4.7.8",
     "ioredis": "^5.8.2",
+    "isomorphic-dompurify": "^2.35.0",
     "lucide-react": "^0.548.0",
     "mammoth": "^1.11.0",
-    "nanoid": "^5.1.6",
-    "next": "^16.0.7",
+    "monaco-editor": "^0.55.1",
+    "next": "^16.0.9",
     "next-auth": "^5.0.0-beta.29",
     "next-themes": "^0.4.6",
-    "pdf-lib": "^1.17.1",
     "pdf-parse": "^2.4.5",
     "prisma": "^6.18.0",
     "puppeteer": "^24.32.0",
@@ -83,7 +80,6 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^16.0.0",
-    "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -96,12 +92,12 @@
     "@types/swagger-ui-react": "^5.18.0",
     "@vitejs/plugin-react": "^5.1.0",
     "@vitest/ui": "^4.0.3",
-    "baseline-browser-mapping": "^2.8.32",
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
     "jsdom": "^27.0.1",
     "tailwindcss": "^4",
     "typescript": "^5",
-    "vitest": "^4.0.3"
+    "vitest": "^4.0.3",
+    "vitest-mock-extended": "^3.1.0"
   }
 }

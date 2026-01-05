@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useTransition } from 'react';
+import { useTransition, memo } from 'react';
 import { Star, Edit, Copy, Check, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
 import type { GalleryCardAction } from "@/components/shared/GalleryCard";
@@ -26,7 +26,7 @@ interface ProfileCardProps {
   onSetDefault: (id: string) => void;
 }
 
-export function ProfileCard({
+export const ProfileCard = memo(function ProfileCard({
   id,
   name,
   isDefault,
@@ -53,9 +53,6 @@ export function ProfileCard({
   // Extract metadata from resume data
   const email = resumeData?.basics?.email || 'No email';
   const location = resumeData?.basics?.location?.city || 'No location';
-  const workExperienceCount = resumeData?.work?.length || 0;
-  const educationCount = resumeData?.education?.length || 0;
-  const skillsCount = resumeData?.skills?.length || 0;
 
   const handleExportPDF = async () => {
     await runWithToast(
@@ -130,26 +127,21 @@ export function ProfileCard({
     <EntityCard
       id={id}
       title={name}
-      subtitle={`${email} • ${location}`}
+      subtitle={resumeData?.basics?.summary || `${email} • ${location}`}
       href={ROUTES.PROFILE(id)}
       previewHtml={previewHtml}
       isPreviewLoading={isLoadingPreview}
       badges={
         isDefault
           ? [
-              {
-                label: 'Default',
-                variant: 'secondary',
-                icon: <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />,
-              },
-            ]
+            {
+              label: 'Default',
+              variant: 'secondary',
+              icon: <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />,
+            },
+          ]
           : []
       }
-      metadata={[
-        { label: 'Work', value: workExperienceCount },
-        { label: 'Education', value: educationCount },
-        { label: 'Skills', value: skillsCount },
-      ]}
       actions={actions}
       onDelete={handleDelete}
       deleteDialog={{
@@ -158,4 +150,4 @@ export function ProfileCard({
       }}
     />
   );
-}
+});

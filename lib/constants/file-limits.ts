@@ -1,0 +1,6 @@
+export const FILE_LIMITS = {
+  MAX_COUNT: 3,
+  MAX_SIZE_DEFAULT: 5 * 1024 * 1024,
+  MAX_SIZE_PDF: 10 * 1024 * 1024,
+  MAX_CHARS_PER_FILE: 15000,
+} as const;

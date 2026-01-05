@@ -5,38 +5,33 @@
 
 'use client';
 
-import { useTransition } from 'react';
+import { memo } from 'react';
 import { Download, FileText, Briefcase } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/shared/EntityCard";
-import { useToastAction } from '@/hooks';
-import { deleteCoverLetter } from '@/app/actions/cover-letter';
-import { formatDate } from '@/lib/utils';
+import { useExportPDF } from '@/hooks';
 import { ROUTES } from '@/lib/constants';
-import { apiV1 } from '@/lib/client';
 
 interface CoverLetterCardProps {
   id: string;
   jobTitle: string | null;
   companyName: string | null;
   content: string;
-  createdAt: string;
+  createdAt?: string;
   onView: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export function CoverLetterCard({
+export const CoverLetterCard = memo(function CoverLetterCard({
   id,
   jobTitle,
   companyName,
   content,
-  createdAt,
   onView,
   onEdit,
   onDelete,
 }: Readonly<CoverLetterCardProps>) {
-  const { runWithToast } = useToastAction();
-  const [, startTransition] = useTransition();
+  const { isExportingPDF, handleExportCoverLetter } = useExportPDF();
 
   const getDisplayTitle = (): string => {
     if (jobTitle && companyName) {
@@ -52,53 +47,7 @@ export function CoverLetterCard({
   };
 
   const handleExport = async () => {
-    await runWithToast(
-      async () => {
-        const response = await apiV1.COVER_LETTER.EXPORT(id).postFetch();
-
-        if (!response.ok) {
-          throw new Error('Failed to export cover letter');
-        }
-
-        const blob = await response.blob();
-        const url = globalThis.URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = `cover-letter-${jobTitle || companyName || 'download'}.pdf`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        globalThis.URL.revokeObjectURL(url);
-        anchor.remove();
-
-        return true;
-      },
-      {
-        successMessage: 'Cover letter exported successfully',
-        errorMessage: 'Failed to export cover letter',
-      },
-    );
-  };
-
-  const handleDelete = async () => {
-    return new Promise<void>((resolve, reject) => {
-      startTransition(async () => {
-        const result = await runWithToast(
-          () => deleteCoverLetter(id),
-          {
-            successMessage: 'Cover letter deleted successfully',
-            errorMessage: 'Failed to delete cover letter',
-          },
-        );
-
-        if (result?.success) {
-          onDelete(id);
-          resolve();
-          return;
-        }
-
-        reject(new Error('Failed to delete'));
-      });
-    });
+    await handleExportCoverLetter(id, jobTitle || companyName || 'download');
   };
 
   // Preview fallback for cover letters (no HTML template)
@@ -113,10 +62,9 @@ export function CoverLetterCard({
     <EntityCard
       id={id}
       title={getDisplayTitle()}
-      subtitle={content.substring(0, 100) + '...'}
+      subtitle={content}
       href={ROUTES.COVER_LETTER(id)}
       previewFallbackIcon={previewFallback}
-      metadata={[{ label: 'Created', value: formatDate(createdAt) }]}
       badges={[
         {
           label: 'Cover Letter',
@@ -131,13 +79,14 @@ export function CoverLetterCard({
           label: 'Export PDF',
           icon: <Download className="h-4 w-4" />,
           onClick: handleExport,
+          disabled: isExportingPDF,
         },
       ]}
-      onDelete={handleDelete}
+      onDelete={() => onDelete(id)}
       deleteDialog={{
         title: 'Delete Cover Letter',
         message: `Are you sure you want to delete the cover letter "${getDisplayTitle()}"? This action cannot be undone.`,
       }}
     />
   );
-}
+});
