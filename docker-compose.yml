@@ -64,7 +64,7 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data14:/var/lib/postgresql
     networks:
       - app-network
     healthcheck:
@@ -100,5 +100,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  postgres_data14:
   redis_data:
