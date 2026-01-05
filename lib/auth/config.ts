@@ -81,7 +81,7 @@ export const authConfig: NextAuthConfig = {
     maxAge: 60 * 60 * 24, // 24 hours
   },
   secret: env.authSecret,
-  trustHost: env.isDevelopment, // Only trust host in development to prevent CSRF attacks
+  trustHost: true, // Trusted because it's behind a proxy or running locally
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);

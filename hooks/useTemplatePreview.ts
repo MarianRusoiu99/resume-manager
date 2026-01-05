@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
 import type { Template } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { getTemplate, getTemplates } from '@/app/actions/template';
+import { getTemplate, getTemplates, renderTemplate } from '@/app/actions/template';
+import { NotFoundError } from '@/lib/errors';
 
 const logger = createComponentLogger('useTemplatePreview');
 
@@ -132,13 +132,14 @@ export function useTemplatePreview({
 
       setTemplate(fetchedTemplate);
 
-      // Render template client-side
-      const html = renderTemplateClientSide({
-        htmlTemplate: fetchedTemplate.htmlTemplate,
-        resumeData,
-      });
+      // Render template server-side to avoid CSP issues with Handlebars.compile()
+      const result = await renderTemplate(fetchedTemplate.htmlTemplate, resumeData);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to render template');
+      }
 
-      setHtmlContent(html);
+      setHtmlContent(result.data);
     } catch (err) {
       logger.error('Template preview error', err);
       setError(err instanceof Error ? err.message : 'Failed to load template');

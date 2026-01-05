@@ -1,4 +1,5 @@
 import { logger } from '@/lib/utils/logger';
+import { ValidationError, AIProviderError } from '@/lib/errors';
 import type { AIMode } from '../../modes/types';
 
 /**
@@ -109,7 +110,7 @@ export function parseOutput<T>(text: string, mode: AIMode): T {
       textPreview: trimmed.slice(0, 200),
     });
     
-    throw new AIProviderError(`AI service returned an invalid structure for mode ${mode.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new AIProviderError('AI Provider', `AI service returned an invalid structure for mode ${mode.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

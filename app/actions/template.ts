@@ -3,6 +3,8 @@
 import { templateService } from '@/lib/services';
 import { withServerAction } from '@/lib/actions/with-server-action';
 import type { CreateTemplateServiceInput, UpdateTemplateServiceInput } from '@/lib/services/interfaces/templates.service.interface';
+import { renderCompleteDocument } from '@/lib/templates/renderer';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Get all public templates
@@ -82,4 +84,16 @@ export const duplicateTemplate = withServerAction(
         resourceType: 'template',
         revalidatePaths: ['/templates'],
     }
+);
+
+/**
+ * Render a template with resume data server-side
+ * This avoids CSP issues with Handlebars.compile() requiring eval
+ */
+export const renderTemplate = withServerAction(
+    'renderTemplate',
+    async (_session, htmlTemplate: string, resumeData: Resume) => {
+        return renderCompleteDocument(htmlTemplate, resumeData);
+    },
+    { resourceType: 'template' }
 );

@@ -1,10 +1,10 @@
 /**
  * Client-Side Template Rendering Utility
- * Renders HTML templates with resume data on the client side
- * Eliminates unnecessary API calls for pure rendering operations
+ * Renders HTML templates with resume data via server action
+ * to avoid CSP issues with Handlebars.compile() requiring eval
  */
 
-import { renderCompleteDocument } from '@/lib/templates/renderer';
+import { renderTemplate } from '@/app/actions/template';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 interface RenderTemplateOptions {
@@ -13,14 +13,21 @@ interface RenderTemplateOptions {
 }
 
 /**
- * Render template on the client side
- * Pure function that doesn't require server round-trip
+ * Render template via server action
+ * This avoids CSP issues since Handlebars.compile() runs on the server
+ * @throws Error if rendering fails
  */
-export function renderTemplateClientSide({
+export async function renderTemplateServerSide({
   htmlTemplate,
   resumeData,
-}: RenderTemplateOptions): string {
-  return renderCompleteDocument(htmlTemplate, resumeData);
+}: RenderTemplateOptions): Promise<string> {
+  const result = await renderTemplate(htmlTemplate, resumeData);
+  
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to render template');
+  }
+  
+  return result.data;
 }
 
 /**

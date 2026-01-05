@@ -1,16 +1,6 @@
-/**
-import { NotFoundError } from '@/lib/errors';
- * Template Loader Utility
- * 
- * Loads template HTML and CSS from external files at build time.
- * This provides better maintainability with:
- * - Syntax highlighting in IDE
- * - Separate CSS files
- * - Shared base styles
- */
-
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { NotFoundError } from '@/lib/errors';
 
 /** Loaded template content */
 export interface TemplateContent {

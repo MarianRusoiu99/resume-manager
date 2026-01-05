@@ -5,8 +5,8 @@
 
 'use client';
 
-import { useRef, useMemo } from 'react';
-import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
+import { useRef, useState, useEffect } from 'react';
+import { renderTemplateServerSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useTemplatePreview } from '@/hooks/useTemplatePreview';
@@ -97,25 +97,52 @@ export function ResumePreview({
   };
 
   // HTML content rendering logic
-  const { htmlContent: fetchedHtmlContent, template, isLoading, error } = useTemplatePreview({
+  const { htmlContent: fetchedHtmlContent, template, isLoading: isFetchLoading, error } = useTemplatePreview({
     templateId: templateHtml ? null : selectedTemplateId,
     resumeData: resume,
   });
 
-  const customHtmlContent = useMemo(() => {
-    if (!templateHtml) return null;
-    try {
-      return renderTemplateClientSide({
-        htmlTemplate: templateHtml,
-        resumeData: resume,
-      });
-    } catch (err) {
-      logger.error('Error rendering custom template', err);
-      return null;
+  // Custom template HTML rendering (for live editing in TemplateEditor)
+  const [customHtmlContent, setCustomHtmlContent] = useState<string | null>(null);
+  const [isCustomLoading, setIsCustomLoading] = useState(false);
+
+  useEffect(() => {
+    if (!templateHtml) {
+      setCustomHtmlContent(null);
+      return;
     }
+
+    let cancelled = false;
+    setIsCustomLoading(true);
+
+    renderTemplateServerSide({
+      htmlTemplate: templateHtml,
+      resumeData: resume,
+    })
+      .then((html) => {
+        if (!cancelled) {
+          setCustomHtmlContent(html);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          logger.error('Error rendering custom template', err);
+          setCustomHtmlContent(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsCustomLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [templateHtml, resume]);
 
   const htmlContent = customHtmlContent || fetchedHtmlContent;
+  const isLoading = isCustomLoading || isFetchLoading;
 
   const {
     isFullscreen,

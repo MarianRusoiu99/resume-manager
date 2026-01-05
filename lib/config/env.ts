@@ -52,6 +52,9 @@ const envSchema = z.object({
 
   // Feature flags
   ANALYZE: z.string().transform(v => v === 'true').optional(),
+
+  // Trusted hosts (comma-separated)
+  TRUSTED_HOSTS: z.string().optional(),
 });
 
 type EnvConfig = z.infer<typeof envSchema>;
@@ -87,6 +90,7 @@ function parseEnv(): EnvConfig {
         APP_NAME: process.env.APP_NAME || 'Resume Manager',
         ADMIN_EMAILS: process.env.ADMIN_EMAILS,
         ANALYZE: process.env.ANALYZE === 'true',
+        TRUSTED_HOSTS: process.env.TRUSTED_HOSTS,
       };
     }
 
@@ -187,6 +191,7 @@ class EnvironmentConfig {
 
   // Authentication
   get NEXTAUTH_SECRET() { return this.config.NEXTAUTH_SECRET; }
+  get authSecret() { return this.config.NEXTAUTH_SECRET; }
   get NEXTAUTH_URL() { return this.config.NEXTAUTH_URL; }
 
   // Encryption
@@ -219,6 +224,16 @@ class EnvironmentConfig {
 
   // Feature flags
   get shouldAnalyze() { return this.config.ANALYZE ?? false; }
+
+  // Trusted hosts
+  get trustedHosts(): string[] {
+    const raw = this.config.TRUSTED_HOSTS;
+    if (!raw) return [];
+    return raw
+      .split(',')
+      .map((host) => host.trim())
+      .filter(Boolean);
+  }
 }
 
 /**

@@ -63,11 +63,11 @@ function GenericFormListComponent<T extends Record<string, unknown>>({
       onRemove={removeItem}
       addButtonText={schema.labels?.addButton || "Add Item"}
       emptyMessage={schema.labels?.emptyMessage || "No items yet."}
-      renderItem={(item, index) => (
+      renderItem={(item: any, index: number) => (
         <GenericForm
-          fields={schema.fields}
-          data={item}
-          onChange={(updatedItem) => handleItemChange(updatedItem, index, item)}
+          fields={schema.fields as any}
+          data={item as any}
+          onChange={(updatedItem: any) => handleItemChange(updatedItem, index, item)}
         />
       )}
     />

@@ -23,13 +23,13 @@ export function EditorContent() {
             }
             
             const data = resume[section.field as keyof Resume];
-            const formData = section.toForm ? section.toForm(data) : data;
+            const formData = (section.toForm ? section.toForm(data) : data) as Record<string, any>;
 
             return (
                 <ManagedForm
                     schema={section.schema}
                     defaultValues={formData}
-                    fields={section.fields || []}
+                    fields={section.fields as any || []}
                     onSubmit={() => {}}
                     onUpdate={(updatedFormData) => {
                         const updatedData = section.fromForm 
@@ -38,9 +38,9 @@ export function EditorContent() {
                         
                         // If it's a nested update (like summary in basics)
                         if (section.field === 'basics' && section.id === 'summary') {
-                            updateField('basics', { ...resume.basics, ...updatedData });
+                            updateField('basics', { ...(resume.basics || {}), ...(updatedData as any) } as any);
                         } else {
-                            updateField(section.field as keyof Resume, updatedData);
+                            updateField(section.field as keyof Resume, updatedData as any);
                         }
                     }}
                     autoSave

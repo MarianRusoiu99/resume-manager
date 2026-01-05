@@ -161,18 +161,8 @@ export const GalleryCard = memo(function GalleryCard({
           ))}
         </div>
       ) : null}
-      footer={
-        <div className="flex items-center justify-between w-full">
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {metadata.slice(0, 2).map((item) => (
-              <div key={`${id}-meta-${item.label}`} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/70">
-                {item.icon && <span className="opacity-70">{item.icon}</span>}
-                <span>{item.value} {item.label}</span>
-              </div>
-            ))}
-          </div>
-          
-          <div className="bg-white/10 hover:bg-white/20 rounded-lg transition-colors border border-white/10">
+    >
+       <div className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
             <GalleryCardActionsMenu
               id={id}
               actions={actions}
@@ -180,9 +170,6 @@ export const GalleryCard = memo(function GalleryCard({
               onActionClick={handleActionClick}
             />
           </div>
-        </div>
-      }
-    >
       <h3 className="text-lg font-bold leading-snug text-white" title={title}>
         {title}
       </h3>

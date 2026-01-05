@@ -34,15 +34,7 @@ interface ResourceGalleryProps<T extends Resource> {
   filterFn?: (item: T, searchTerm: string) => boolean;
 }
 
-/**
- * ResourceGallery - Managed gallery component for resources
- *
- * Automatically handles:
- * - Search filtering
- * - Optimistic deletions
- * - Consistency in search bar placement and empty states
- */
-export const ResourceGallery = memo(function ResourceGallery<T extends Resource>({
+const ResourceGalleryImpl = <T extends Resource>({
   initialItems,
   renderItem,
   getItemKey,
@@ -54,7 +46,7 @@ export const ResourceGallery = memo(function ResourceGallery<T extends Resource>
   headerActions,
   toolbar,
   filterFn,
-}: ResourceGalleryProps<T>) {
+}: ResourceGalleryProps<T>) => {
   const { items: optimisticItems, handleDelete } = useResourceCollection({
     initialItems,
     onDelete,
@@ -114,4 +106,16 @@ export const ResourceGallery = memo(function ResourceGallery<T extends Resource>
       />
     </div>
   );
-});
+};
+
+/**
+ * ResourceGallery - Managed gallery component for resources
+ *
+ * Automatically handles:
+ * - Search filtering
+ * - Optimistic deletions
+ * - Consistency in search bar placement and empty states
+ */
+export const ResourceGallery = memo(ResourceGalleryImpl) as <T extends Resource>(
+  props: ResourceGalleryProps<T>
+) => React.ReactElement;

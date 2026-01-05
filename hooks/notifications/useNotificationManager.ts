@@ -247,8 +247,11 @@ export function useNotificationManager() {
 
     eventSource.addEventListener('connected', (event) => {
       try {
-        sseLog.debug('Connected to notifications stream', { data: JSON.parse(event.data) });
+        const data = JSON.parse(event.data);
+        console.log('[SSE] Connected to notifications stream', data);
+        sseLog.debug('Connected to notifications stream', { data });
       } catch {
+        console.log('[SSE] Connected to notifications stream');
         sseLog.debug('Connected to notifications stream');
       }
     });
@@ -256,6 +259,7 @@ export function useNotificationManager() {
     eventSource.addEventListener('notification', (event) => {
       try {
         const notification = JSON.parse(event.data);
+        console.log('[SSE] Received notification event:', notification);
         // Transform SSE payload to match Notification interface
         const fullNotification: Notification = {
           id: notification.id,
@@ -285,6 +289,7 @@ export function useNotificationManager() {
       // Ignore disconnects caused by our own cleanup.
       if (isClosing || eventSource.readyState === EventSource.CLOSED) return;
 
+      console.error('[SSE] Connection error:', error);
       sseLog.error('Connection error', error);
       // EventSource will automatically try to reconnect
     };

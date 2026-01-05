@@ -8,6 +8,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { getAllAvailableModels } from '@/app/actions/api-provider';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { ExternalServiceError } from '@/lib/errors';
 
 const logger = createComponentLogger('useAIModels');
 

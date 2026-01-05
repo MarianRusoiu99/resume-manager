@@ -6,6 +6,7 @@ import type { Template } from "@/lib/types/template";
 import { useTemplatePreview } from "./useTemplatePreview";
 import { createComponentLogger } from "@/lib/utils/client-logger";
 import { getTemplate, getTemplates } from "@/app/actions/template";
+import { NotFoundError, ExternalServiceError } from "@/lib/errors";
 
 const logger = createComponentLogger('useCardPreview');
 

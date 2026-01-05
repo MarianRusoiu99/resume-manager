@@ -78,8 +78,8 @@ export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider', 
         provider: initialData?.provider || 'openai',
         apiKey: initialData?.apiKey || '',
       }}
-      fields={API_KEY_FIELDS}
-      onSubmit={onSubmit}
+      fields={API_KEY_FIELDS as any}
+      onSubmit={onSubmit as any}
     >
       {(form) => (
         <div className="flex justify-end gap-2 pt-4">

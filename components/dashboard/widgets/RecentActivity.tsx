@@ -96,11 +96,6 @@ export function RecentActivity({ data, loading }: RecentActivityProps) {
                 </div>
               </Link>
             ))}
-            <div className="pt-6 flex justify-center">
-              <Button variant="ghost" size="sm" className="text-[10px] px-4 font-bold uppercase tracking-widest text-primary hover:bg-primary/5 rounded-full" asChild>
-                <Link href={ROUTES.RESUMES}>View All Activity</Link>
-              </Button>
-            </div>
           </div>
         ) : (
           <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground text-center py-10 border border-dashed rounded-xl">

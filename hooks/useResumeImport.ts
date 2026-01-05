@@ -6,6 +6,7 @@ import { importResume } from '@/app/actions/resume';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { ValidationError, ExternalServiceError } from '@/lib/errors';
 
 const log = createComponentLogger('useResumeImport');
 

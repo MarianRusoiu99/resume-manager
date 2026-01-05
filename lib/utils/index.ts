@@ -12,7 +12,7 @@ export {
 export { clientLogger, createComponentLogger, ClientLogger } from './client-logger';
 export { cn } from './cn';
 export {
-    renderTemplateClientSide,
+    renderTemplateServerSide,
     generatePreviewDataUrl,
     revokePreviewDataUrl
 } from './client-renderer';

@@ -14,6 +14,8 @@ export async function GET() {
   
   const userId = session.user.id;
   
+  console.log(`[SSE] Opening connection for user: ${userId}`);
+  
   // Set up SSE response headers
   const headers = new Headers({
     'Content-Type': 'text/event-stream',
@@ -47,6 +49,7 @@ export async function GET() {
     },
     
     async cancel() {
+      console.log(`[SSE] Closing connection for user: ${userId}`);
       // Clean up when client disconnects
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);

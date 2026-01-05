@@ -14,7 +14,7 @@ import { TemplatePreviewModal } from './TemplatePreviewModal';
 import { deleteTemplate, duplicateTemplate } from '@/app/actions/template';
 import { useToastAction, useComponentLogger } from '@/hooks';
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
+import { renderTemplateServerSide } from '@/lib/utils/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 interface TemplateCardProps {
@@ -86,8 +86,8 @@ export const TemplateCard = memo(function TemplateCard({
       try {
         setIsLoadingPreview(true);
 
-        // Render preview client-side with sample data
-        const html = renderTemplateClientSide({
+        // Render preview server-side with sample data to avoid CSP issues
+        const html = await renderTemplateServerSide({
           htmlTemplate: template.htmlTemplate,
           resumeData: SAMPLE_RESUME,
         });

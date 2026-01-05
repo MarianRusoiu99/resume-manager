@@ -5,7 +5,7 @@
 
 'use client';
 
-import { RefObject } from 'react';
+import { RefObject, useState, useEffect } from 'react';
 import { A4_WIDTH, A4_HEIGHT } from '@/lib/utils/pagination';
 
 interface PreviewStateProps {
@@ -17,6 +17,18 @@ interface PreviewStateProps {
   containerRef: RefObject<HTMLDivElement | null>;
 }
 
+/**
+ * Wrapper div used consistently for all placeholder states
+ * to avoid hydration mismatches between server and client
+ */
+function PlaceholderState({ children, className = 'text-muted-foreground' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`absolute inset-0 flex items-center justify-center ${className}`}>
+      {children}
+    </div>
+  );
+}
+
 export function PreviewState({
   isLoading,
   error,
@@ -25,28 +37,29 @@ export function PreviewState({
   iframeRef,
   containerRef,
 }: Readonly<PreviewStateProps>) {
+  // Track if component has mounted to avoid hydration mismatch
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // During SSR and initial client render, show consistent loading state
+  // This ensures server HTML matches initial client render
+  if (!hasMounted) {
+    return <PlaceholderState>Loading template...</PlaceholderState>;
+  }
+
   if (isLoading) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-        Loading template...
-      </div>
-    );
+    return <PlaceholderState>Loading template...</PlaceholderState>;
   }
 
   if (error) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center text-destructive">
-        {error}
-      </div>
-    );
+    return <PlaceholderState className="text-destructive">{error}</PlaceholderState>;
   }
 
   if (!htmlContent) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-        No preview available
-      </div>
-    );
+    return <PlaceholderState>No preview available</PlaceholderState>;
   }
 
   return (

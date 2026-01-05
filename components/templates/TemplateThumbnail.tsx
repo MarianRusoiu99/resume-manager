@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
-import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
+import { useState, useEffect, useRef } from 'react';
+import { renderTemplateServerSide } from '@/lib/utils/client-renderer';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
 import { useIframeResize } from '@/components/preview/useIframeResize';
 import { cn } from '@/lib/utils';
@@ -22,16 +22,36 @@ export function TemplateThumbnail({
     className,
 }: TemplateThumbnailProps) {
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const [htmlContent, setHtmlContent] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(true);
 
-    const htmlContent = useMemo(() => {
-        try {
-            return renderTemplateClientSide({
-                htmlTemplate: templateHtml,
-                resumeData: sampleResume as Record<string, unknown>,
+    useEffect(() => {
+        let cancelled = false;
+        setIsLoading(true);
+
+        renderTemplateServerSide({
+            htmlTemplate: templateHtml,
+            resumeData: sampleResume as Record<string, unknown>,
+        })
+            .then((html) => {
+                if (!cancelled) {
+                    setHtmlContent(html);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setHtmlContent(`<div style="padding: 20px; text-align: center; color: #666;">Preview Error</div>`);
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
             });
-        } catch {
-            return `<div style="padding: 20px; text-align: center; color: #666;">Preview Error</div>`;
-        }
+
+        return () => {
+            cancelled = true;
+        };
     }, [templateHtml]);
 
     useIframeResize({
@@ -48,6 +68,13 @@ export function TemplateThumbnail({
                 className
             )}
         >
+            {/* Loading State */}
+            {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+            )}
+
             {/* Scaled Preview Surface */}
             <div className="absolute inset-0 pointer-events-none origin-top-left scale-[0.2] overflow-hidden"
                 style={{ width: '500%', height: '500%' }}>

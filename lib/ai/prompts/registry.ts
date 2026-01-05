@@ -1,3 +1,5 @@
+import { NotFoundError } from '@/lib/errors';
+
 export interface PromptDefinition {
   id: string;
   system: string;

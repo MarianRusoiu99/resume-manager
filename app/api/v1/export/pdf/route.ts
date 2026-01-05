@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pdfService } from '@/lib/services/pdf/pdf.service';
-import { renderTemplateClientSide } from '@/lib/utils/client-renderer';
+import { renderCompleteDocument } from '@/lib/templates/renderer';
 import { logger } from '@/lib/utils/logger';
 import { createApiHandler } from '@/lib/api/handler';
 import { pdfExportSchema } from '@/lib/validations/api-schemas';
@@ -9,11 +9,8 @@ export const POST = createApiHandler(
   async (request, context, session, body) => {
     const { resume, template, fileName } = body!;
 
-    // Render the final HTML
-    const html = renderTemplateClientSide({
-      htmlTemplate: template.htmlTemplate,
-      resumeData: resume,
-    });
+    // Render the final HTML (server-side, Handlebars compile is safe here)
+    const html = renderCompleteDocument(template.htmlTemplate, resume);
 
     // Generate PDF
     const pdfBuffer = await pdfService.generateFromHtml(html);

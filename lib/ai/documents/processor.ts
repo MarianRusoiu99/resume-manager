@@ -6,7 +6,7 @@
  */
 
 import { documentParserService } from '@/lib/services';
-import { ValidationError } from "@/lib/errors";
+import { ValidationError, ExternalServiceError } from "@/lib/errors";
 import { logger } from '@/lib/utils/logger';
 import type {
   DocumentInput,
