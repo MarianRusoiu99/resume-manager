@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
     '@mantine/hooks',
     '@tiptap/extension-gapcursor',
     '@tiptap/extension-history',
+    '@tiptap/extensions',
   ],
   serverExternalPackages: ['puppeteer', 'pdf-parse', 'pdfjs-dist', '@napi-rs/canvas'],
   experimental: {

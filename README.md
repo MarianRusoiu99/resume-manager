@@ -22,20 +22,14 @@ Resume Manager is a modern platform for creating, editing, and managing professi
 
 2. **Install dependencies**
    ```bash
-   npm install --legacy-peer-deps
+   npm install
    ```
 
 3. **Set up environment variables**
    ```bash
    cp .env.example .env
    ```
-   Edit `.env` and configure:
-   ```env
-   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/resume_optimizer"
-   NEXTAUTH_SECRET="your-secret-key-min-32-chars"  # Generate: openssl rand -base64 32
-   NEXTAUTH_URL="http://localhost:3000"
-   ENCRYPTION_KEY="your-encryption-key-32-chars"   # Generate: openssl rand -hex 32
-   ```
+   Edit `.env`
 
 4. **Run database migrations**
    ```bash
@@ -57,27 +51,13 @@ Resume Manager is a modern platform for creating, editing, and managing professi
    ```
 
 2. **Configure environment**
-   Create a `.env` file with your required secrets:
-   ```env
-   NEXTAUTH_SECRET="your-secret-key-min-32-chars"
-   ENCRYPTION_KEY="your-encryption-key-32-chars"
-   
-   # Optional overrides
-   POSTGRES_USER=postgres
-   POSTGRES_PASSWORD=postgres
-   POSTGRES_DB=resume_optimizer
-   ```
+   Create a `.env` file with your required secrets
 
 3. **Start with Docker Compose**
    ```bash
    docker-compose up -d
    ```
    The app will be available at [http://localhost:3000](http://localhost:3000).
-
-   Docker Compose includes:
-   - **app**: Next.js application (production build)
-   - **db**: PostgreSQL 15 database
-   - **migrate**: Automatic database migrations on startup
 
 ## ✨ Key Features
 
@@ -95,46 +75,6 @@ Resume Manager is a modern platform for creating, editing, and managing professi
 | **Custom Templates** | Choose from built-in templates or create your own with Handlebars |
 | **PDF Export** | Generate professional, print-ready PDF documents |
 | **JSON Resume Standard** | Import/export using the [JSON Resume](https://jsonresume.org/) format |
-
-### 🤖 AI Integrations (Optional)
-| Feature | Description |
-| :--- | :--- |
-| **Content Enhancement** | AI suggestions to improve bullet points and descriptions |
-| **Job Tailoring** | Optimize your resume for specific job descriptions |
-| **Cover Letter Generation** | Create matching cover letters with AI assistance |
-| **ATS Optimization** | Ensure compatibility with Applicant Tracking Systems |
-
-### 🔐 Security & Privacy
-| Feature | Description |
-| :--- | :--- |
-| **Your Data, Your Control** | All data stored securely in your own database |
-| **Encrypted API Keys** | AI provider keys encrypted at rest |
-| **No Data Sharing** | Your resume content is never shared with third parties |
-
-## 🛠️ Tech Stack
-
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | Next.js 16 (App Router), React 19, Tailwind CSS v4, shadcn/ui, BlockNote Editor |
-| **Backend** | Next.js API Routes, Server Actions, Prisma ORM |
-| **Database** | PostgreSQL |
-| **AI/LLM** | OpenAI API via Vercel AI SDK (optional) |
-| **Auth** | NextAuth.js v5 (credentials provider) |
-| **PDF** | pdf-lib, Handlebars templates |
-| **Testing** | Vitest (unit), Playwright (E2E) |
-
-
-
-## ⚙️ Environment Variables
-
-| Variable | Description | Required |
-| :--- | :--- | :--- |
-| `DATABASE_URL` | PostgreSQL connection string | Yes |
-| `NEXTAUTH_SECRET` | Secret for session encryption (min 32 chars) | Yes |
-| `NEXTAUTH_URL` | Base URL (e.g., `http://localhost:3000`) | Yes |
-| `ENCRYPTION_KEY` | 32+ char key for encrypting API keys at rest | Yes |
-
-> **Note**: AI features are optional. If you want to use AI integrations, configure your API keys through the in-app **Settings → API Keys** page.
 
 
 ## 📜 Available Scripts
