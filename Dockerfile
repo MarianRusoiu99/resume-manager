@@ -7,7 +7,7 @@ FROM node:20-alpine AS base
 
 # Install dependencies:
 # - OpenSSL/libc6-compat: for Prisma
-# - Chromium & fonts: for Puppeteer
+# - Chromium & fonts: for Puppeteer PDF generation
 # - Tini: for proper process signal handling
 RUN apk add --no-cache \
     libc6-compat \
@@ -20,6 +20,10 @@ RUN apk add --no-cache \
     ttf-freefont \
     tini
 
+# Puppeteer configuration - use system Chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # =============================================================================
 # Dependencies Stage - Install npm packages
 # =============================================================================
@@ -31,12 +35,9 @@ COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 
 # Install all dependencies (including devDependencies for build)
-# Use --legacy-peer-deps to handle React 19 peer dependency conflicts
-# Skip Puppeteer Chromium download as we use the system installed one
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 RUN npm install --legacy-peer-deps
 
-# Generate Prisma Client with correct binary target
+# Generate Prisma Client
 RUN npx prisma generate
 
 # =============================================================================
@@ -61,9 +62,10 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
-# Set production environment
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
@@ -79,7 +81,7 @@ RUN mkdir .next && chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema and generated client (critical for runtime)
+# Copy Prisma schema and generated client
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
@@ -87,21 +89,12 @@ COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_m
 # Switch to non-root user
 USER nextjs
 
-# Expose application port
 EXPOSE 3000
 
-# Environment configuration
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-# Puppeteer configuration for Alpine
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-
-# Health check endpoint
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start the application via Tini for better signal handling
+# Start application
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "server.js"]

@@ -1,11 +1,10 @@
 # =============================================================================
 # Resume Manager - Docker Compose Configuration
-# Production deployment with PostgreSQL database
 # =============================================================================
 
 services:
   # ---------------------------------------------------------------------------
-  # Application Service
+  # Application
   # ---------------------------------------------------------------------------
   app:
     build:
@@ -19,16 +18,22 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-resume_optimizer}
       - REDIS_URL=redis://redis:6379
+      - REDIS_KEY_PREFIX=${REDIS_KEY_PREFIX:-resume-optimizer:}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:?NEXTAUTH_SECRET is required}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+      - TRUSTED_HOSTS=${TRUSTED_HOSTS:-localhost:3000}
+      - APP_VERSION=${APP_VERSION:-1.0.0}
+      - APP_NAME=${APP_NAME:-Resume Manager}
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
-      - resume-net
+      - app-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -37,7 +42,7 @@ services:
       start_period: 40s
 
   # ---------------------------------------------------------------------------
-  # Database Migration Service (runs once on startup)
+  # Database Migration (runs once)
   # ---------------------------------------------------------------------------
   migrate:
     build:
@@ -51,15 +56,15 @@ services:
       db:
         condition: service_healthy
     networks:
-      - resume-net
+      - app-network
     command: npx prisma migrate deploy
     restart: "no"
 
   # ---------------------------------------------------------------------------
-  # PostgreSQL Database
+  # PostgreSQL
   # ---------------------------------------------------------------------------
   db:
-    image: postgres:18
+    image: postgres:16-alpine
     container_name: resume-optimizer-db
     restart: unless-stopped
     environment:
@@ -69,9 +74,9 @@ services:
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql
+      - postgres_data:/var/lib/postgresql/data
     networks:
-      - resume-net
+      - app-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-resume_optimizer}"]
       interval: 10s
@@ -80,10 +85,10 @@ services:
       start_period: 10s
 
   # ---------------------------------------------------------------------------
-  # Redis Cache & PubSub
+  # Redis
   # ---------------------------------------------------------------------------
   redis:
-    image: redis:8.4
+    image: redis:7-alpine
     container_name: resume-optimizer-redis
     restart: unless-stopped
     ports:
@@ -91,7 +96,7 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - resume-net
+      - app-network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -101,7 +106,7 @@ services:
     command: redis-server --appendonly yes
 
 networks:
-  resume-net:
+  app-network:
     driver: bridge
 
 volumes:
