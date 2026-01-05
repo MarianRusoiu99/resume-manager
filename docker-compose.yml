@@ -25,13 +25,6 @@ services:
       - TRUSTED_HOSTS=${TRUSTED_HOSTS:-localhost:3000}
       - APP_VERSION=${APP_VERSION:-1.0.0}
       - APP_NAME=${APP_NAME:-Resume Manager}
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     networks:
       - app-network
     healthcheck:
@@ -52,9 +45,6 @@ services:
     container_name: resume-optimizer-migrate
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-resume_optimizer}
-    depends_on:
-      db:
-        condition: service_healthy
     networks:
       - app-network
     command: npx prisma migrate deploy
