@@ -6,6 +6,7 @@
 import { prisma } from '@/lib/db/index';
 import { PrismaClient, ProviderType, ApiProvider } from '@prisma/client';
 import { GenericUserOwnedRepository } from './generic.repository';
+import { RecordNotFoundError } from '@/lib/errors/database';
 import type { 
   IApiProviderRepository, 
   CreateApiProviderInput, 
@@ -148,7 +149,9 @@ export class ApiProviderRepository
    */
   override async delete(id: string, userId?: string): Promise<ApiProviderWithModels> {
     const provider = await this.findById(id, userId);
-    if (!provider) throw new Error('API Provider not found');
+    if (!provider) {
+      throw new RecordNotFoundError('ApiProvider', id, 'delete');
+    }
 
     await this.db.apiProvider.delete({
       where: {

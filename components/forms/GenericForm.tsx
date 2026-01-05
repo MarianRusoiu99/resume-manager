@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, memo } from "react";
 import { SimpleFormField, SimpleFormFieldList } from "@/components/ui/simple-form-field";
 import type { FieldConfig } from "@/lib/forms/form-schema";
 import { isFullWidth } from "@/lib/forms/form-schema";
@@ -24,7 +25,7 @@ interface GenericFormProps<T> {
  * 
  * Similar to GenericFormList but for single objects.
  */
-export function GenericForm<T extends Record<string, unknown>>({
+function GenericFormComponent<T extends Record<string, unknown>>({
   fields,
   data,
   onChange,
@@ -33,12 +34,12 @@ export function GenericForm<T extends Record<string, unknown>>({
   disabled = false,
 }: GenericFormProps<T>) {
   
-  const updateField = (key: keyof T, value: T[keyof T]) => {
+  const updateField = useCallback((key: keyof T, value: T[keyof T]) => {
     onChange({
       ...data,
       [key]: value,
     });
-  };
+  }, [data, onChange]);
 
   return (
     <div className={className}>
@@ -60,6 +61,8 @@ export function GenericForm<T extends Record<string, unknown>>({
     </div>
   );
 }
+
+export const GenericForm = memo(GenericFormComponent) as typeof GenericFormComponent;
 
 interface FieldRendererProps<T> {
   field: FieldConfig<T>;

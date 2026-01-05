@@ -163,7 +163,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
 
         {/* Notification list */}
         <ScrollArea className="h-[500px] min-w-[500px]">
-          {isLoading && (
+          {isLoading && notifications.length === 0 && (
             <div className="flex items-center justify-center h-32 w-full">
               <Spinner size="sm" />
             </div>
@@ -179,7 +179,7 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
             </div>
           )}
 
-          {!isLoading && notifications.length > 0 && (
+          {(notifications.length > 0 || isLoading) && (
             <div>
               {notifications.map((notification) => (
                 <NotificationItem
@@ -190,25 +190,27 @@ export function NotificationDropdown({ className }: NotificationDropdownProps) {
                   onMarkRead={markAsRead}
                 />
               ))}
+              {isLoading && notifications.length > 0 && (
+                <div className="flex items-center justify-center py-4">
+                  <Spinner size="sm" />
+                </div>
+              )}
             </div>
           )}
         </ScrollArea>
 
         {/* Footer */}
         {notifications.length > 0 && (
-          <>
-            <Separator />
-            <div className="p-3 bg-muted/20">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="w-full text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                onClick={clearAllNotifications}
-              >
-                Clear all notifications
-              </Button>
-            </div>
-          </>
+          <div className="p-3 bg-muted/20 border-t">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              onClick={clearAllNotifications}
+            >
+              Clear all notifications
+            </Button>
+          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

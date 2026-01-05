@@ -127,7 +127,7 @@ export function useTemplatePreview({
       const fetchedTemplate = await fetchTemplate(templateId, useFallback);
 
       if (!fetchedTemplate) {
-        throw new Error('No template available');
+        throw new NotFoundError('Template');
       }
 
       setTemplate(fetchedTemplate);

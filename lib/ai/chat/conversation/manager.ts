@@ -11,7 +11,7 @@ import type { ConversationContext } from '../context';
 import { createEmptyContext, mergeContext } from '../context';
 import { Conversation, ConversationSnapshot, ConversationMode } from './types';
 import { conversationStore } from './store';
-
+import { NotFoundError } from '@/lib/errors';
 /**
  * Options for creating a new conversation
  */
@@ -94,7 +94,7 @@ export class ConversationManager {
   ): Message {
     const conversation = conversationStore.get(conversationId);
     if (!conversation) {
-      throw new Error(`Conversation ${conversationId} not found`);
+      throw new NotFoundError(`Conversation ${conversationId}`);
     }
 
     // Save snapshot before adding message (for undo)
@@ -126,7 +126,7 @@ export class ConversationManager {
   ): Message {
     const conversation = conversationStore.get(conversationId);
     if (!conversation) {
-      throw new Error(`Conversation ${conversationId} not found`);
+      throw new NotFoundError(`Conversation ${conversationId}`);
     }
 
     const message = createAssistantMessage(content);
@@ -148,7 +148,7 @@ export class ConversationManager {
   static setOutput(conversationId: string, output: unknown): void {
     const conversation = conversationStore.get(conversationId);
     if (!conversation) {
-      throw new Error(`Conversation ${conversationId} not found`);
+      throw new NotFoundError(`Conversation ${conversationId}`);
     }
 
     conversation.output = output;
@@ -164,7 +164,7 @@ export class ConversationManager {
   ): void {
     const conversation = conversationStore.get(conversationId);
     if (!conversation) {
-      throw new Error(`Conversation ${conversationId} not found`);
+      throw new NotFoundError(`Conversation ${conversationId}`);
     }
 
     conversation.context = mergeContext(conversation.context, contextUpdates);

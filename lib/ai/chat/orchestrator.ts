@@ -5,6 +5,7 @@
  */
 
 import { generateText, generateObject, type Tool } from 'ai';
+import type { z } from 'zod';
 import { logger } from '@/lib/utils/logger';
 import { ConversationManager, type Conversation } from './conversation';
 import { hasImageAttachments } from './message';
@@ -149,11 +150,12 @@ export class AIOrchestrator {
 
   /**
    * Builds tools for Vercel AI SDK
+   * 
+   * Note: Using `unknown` type parameters as AI SDK Tool type uses flexible JSONValue schemas.
+   * The actual parameter validation happens via Zod schemas at runtime.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI SDK Tool type is complex and version-specific
-  private static buildTools(modeTools: AITool[]): Record<string, Tool<any, any>> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI SDK Tool type
-    const tools: Record<string, Tool<any, any>> = {};
+  private static buildTools(modeTools: AITool[]): Record<string, Tool<unknown, unknown>> {
+    const tools: Record<string, Tool<unknown, unknown>> = {};
 
     for (const tool of modeTools) {
       tools[tool.name] = {

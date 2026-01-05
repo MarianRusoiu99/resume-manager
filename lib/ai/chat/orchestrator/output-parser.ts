@@ -100,7 +100,7 @@ export function parseOutput<T>(text: string, mode: AIMode): T {
       const zodError = error as { issues: Array<{ path: string[]; message: string }> };
       const details = zodError.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
       logger.error('Zod Validation failed', { details });
-      throw new Error(`AI response did not match schema: ${details}`);
+      throw new ValidationError(`AI response did not match schema: ${details}`);
     }
 
     logger.error('Failed to parse AI output', {
@@ -109,7 +109,7 @@ export function parseOutput<T>(text: string, mode: AIMode): T {
       textPreview: trimmed.slice(0, 200),
     });
     
-    throw new Error(`AI service returned an invalid structure for mode ${mode.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new AIProviderError(`AI service returned an invalid structure for mode ${mode.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 

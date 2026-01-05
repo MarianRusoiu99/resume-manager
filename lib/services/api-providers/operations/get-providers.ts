@@ -21,9 +21,14 @@ export async function getUserProvidersWithModels(
     for (const provider of providers) {
       if (provider.revokedAt) continue;
 
-      try {
-        const apiKey = decryptApiKey(provider.encryptedKey);
-        const providerType = provider.provider.toLowerCase();
+        try {
+          const apiKey = decryptApiKey(provider.encryptedKey);
+
+          if (!apiKey) {
+            throw new Error(`Decrypted key for provider ${provider.id} is empty`);
+          }
+
+          const providerType = provider.provider.toLowerCase();
         const providerInstance = createProvider(providerType, apiKey);
 
         if (auditContext) {

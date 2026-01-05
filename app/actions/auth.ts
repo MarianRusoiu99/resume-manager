@@ -10,6 +10,7 @@
  */
 
 import { signIn, signOut } from '@/lib/auth/config';
+import { InvalidCredentialsError } from "@/lib/errors";
 import { userRepository } from '@/lib/repositories/users.repository';
 import { hashPassword } from '@/lib/auth/password';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
@@ -194,6 +195,6 @@ export async function loginAndRedirect(
     if (isRedirectError(error)) {
       throw error;
     }
-    throw new Error('Invalid credentials');
+    throw new InvalidCredentialsError();
   }
 }

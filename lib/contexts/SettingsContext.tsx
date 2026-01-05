@@ -27,6 +27,7 @@ import {
 } from 'react';
 import { type AISettings, type ApiProvider } from '@/lib/actions/types';
 import { useSettingsManager } from '@/hooks/useSettingsManager';
+import { ConfigurationError } from "@/lib/errors";
 
 interface SettingsContextValue {
   // API Providers
@@ -95,7 +96,7 @@ export function useSettings(): SettingsContextValue {
   const context = useContext(SettingsContext);
   
   if (context === undefined) {
-    throw new Error('useSettings must be used within a SettingsProvider');
+    throw new ConfigurationError('useSettings must be used within a SettingsProvider');
   }
   
   return context;

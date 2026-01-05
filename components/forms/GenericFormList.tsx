@@ -1,5 +1,6 @@
 "use client";
 
+import { memo, useCallback } from "react";
 import { useListForm } from "@/hooks/useListForm";
 import { FormList } from "@/components/ui/form-list";
 import type { FormSchema } from "@/lib/forms/form-schema";
@@ -22,7 +23,7 @@ interface GenericFormListProps<T> {
 /**
  * GenericFormList - Renders a dynamic list form from a schema
  */
-export function GenericFormList<T extends Record<string, unknown>>({
+function GenericFormListComponent<T extends Record<string, unknown>>({
   schema,
   items,
   onChange,
@@ -44,6 +45,17 @@ export function GenericFormList<T extends Record<string, unknown>>({
     delay: 1000,
   });
 
+  const handleItemChange = useCallback((updatedItem: T, index: number, item: T) => {
+    // Update each field to maintain the updateItem logic if needed, 
+    // but here we can just replace the whole item in the list
+    const keys = Object.keys(updatedItem) as (keyof T)[];
+    keys.forEach(key => {
+        if (updatedItem[key] !== item[key]) {
+            updateItem(index, key, updatedItem[key]);
+        }
+    });
+  }, [updateItem]);
+
   return (
     <FormList
       items={currentItems}
@@ -55,20 +67,13 @@ export function GenericFormList<T extends Record<string, unknown>>({
         <GenericForm
           fields={schema.fields}
           data={item}
-          onChange={(updatedItem) => {
-              // Update each field to maintain the updateItem logic if needed, 
-              // but here we can just replace the whole item in the list
-              const keys = Object.keys(updatedItem) as (keyof T)[];
-              keys.forEach(key => {
-                  if (updatedItem[key] !== item[key]) {
-                      updateItem(index, key, updatedItem[key]);
-                  }
-              });
-          }}
+          onChange={(updatedItem) => handleItemChange(updatedItem, index, item)}
         />
       )}
     />
   );
 }
+
+export const GenericFormList = memo(GenericFormListComponent) as typeof GenericFormListComponent;
 
 export default GenericFormList;

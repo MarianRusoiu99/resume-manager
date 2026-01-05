@@ -15,6 +15,7 @@ import {
 } from '@/lib/ai/providers';
 import { type ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, ValidationError } from '@/lib/services/utils';
+import { RecordNotFoundError } from '@/lib/errors/database';
 import { GenericUserOwnedCrudService } from '../utils/generic-crud.service';
 
 import type {
@@ -48,7 +49,7 @@ export class ApiProviderService
 
   async getUserProviders(userId: string): Promise<ServiceResult<ProviderListItem[]>> {
     return withServiceError('fetch user providers', async () => {
-      const providers = await apiProviderRepository.findByUserId(userId, true);
+      const providers = await this.repository.findByUserId(userId, true);
 
       return providers.map((p) => {
         const providerType = p.provider.toLowerCase();
@@ -74,7 +75,7 @@ export class ApiProviderService
       const result = await this.getUserProvidersWithModels(userId);
 
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ValidationError(result.error);
       }
 
       const activeProviders = result.data.filter((p) => p.isActive);
@@ -120,7 +121,9 @@ export class ApiProviderService
   ): Promise<ServiceResult<{ message: string }>> {
     return withServiceError('revoke provider', async () => {
       const provider = await this.repository.findById(providerId, userId);
-      if (!provider) throw new Error('Provider not found');
+      if (!provider) {
+        throw new RecordNotFoundError('ApiProvider', providerId, 'revokeProvider');
+      }
 
       if (provider.revokedAt) {
         throw new ValidationError('Provider is already revoked');

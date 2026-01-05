@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { GalleryCardAction } from '@/components/shared/GalleryCard';
 import { cn } from '@/lib/utils';
+import { memo } from 'react';
 
 interface GalleryCardActionsMenuProps {
   id: string;
@@ -19,7 +20,7 @@ interface GalleryCardActionsMenuProps {
   onActionClick: (action: GalleryCardAction) => void;
 }
 
-export function GalleryCardActionsMenu({
+export const GalleryCardActionsMenu = memo(function GalleryCardActionsMenu({
   id,
   actions,
   isActionLoading,
@@ -43,7 +44,7 @@ export function GalleryCardActionsMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
         {actions.map((action, index) => (
-          <div key={`${id}-action-${index}`}>
+          <div key={`${id}-action-${action.label}`}>
             {action.variant === 'destructive' && index > 0 && (
               <DropdownMenuSeparator />
             )}
@@ -65,4 +66,4 @@ export function GalleryCardActionsMenu({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+});

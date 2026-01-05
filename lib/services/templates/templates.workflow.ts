@@ -1,4 +1,5 @@
 import { TemplateRepository, templateRepository } from '@/lib/repositories/templates.repository';
+import { ExternalServiceError } from "@/lib/errors";
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { type ServiceResult, isFailure } from '@/lib/types/service-result';
 import { withServiceError, ConflictError } from '@/lib/services/utils';
@@ -100,7 +101,7 @@ export class TemplateService
   ): Promise<ServiceResult<ResumeTemplate>> {
     return withServiceError('update template', async () => {
       const existingResult = await this.getById(id);
-      if (isFailure(existingResult)) throw new Error(existingResult.error);
+      if (isFailure(existingResult)) throw new ExternalServiceError('Template Workflow', existingResult.error);
       const existing = existingResult.data;
 
       const validatedData = validateUpdateTemplateInput(input);
@@ -129,7 +130,7 @@ export class TemplateService
   async deleteTemplate(id: string): Promise<ServiceResult<void>> {
     return withServiceError('delete template', async () => {
       const existingResult = await this.getById(id);
-      if (isFailure(existingResult)) throw new Error(existingResult.error);
+      if (isFailure(existingResult)) throw new ExternalServiceError('Template Workflow', existingResult.error);
 
       const inUse = await this.repository.isInUse(id);
       if (inUse) {
@@ -150,7 +151,7 @@ export class TemplateService
   async duplicateTemplate(id: string): Promise<ServiceResult<ResumeTemplate>> {
     return withServiceError('duplicate template', async () => {
       const existingResult = await this.getById(id);
-      if (isFailure(existingResult)) throw new Error(existingResult.error);
+      if (isFailure(existingResult)) throw new ExternalServiceError('Template Workflow', existingResult.error);
       const existing = existingResult.data;
 
       return await this.repository.create({

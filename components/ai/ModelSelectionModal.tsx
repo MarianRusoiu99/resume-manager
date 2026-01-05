@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import Link from 'next/link';
 import {
     Search,
@@ -61,13 +61,13 @@ const PROVIDER_CONFIG: Record<string, { name: string; color: string; icon: React
     google: { name: 'Google', color: 'text-blue-500', icon: Zap },
 };
 
-export function ModelSelectionModal({
+export const ModelSelectionModal = memo(function ModelSelectionModal({
     open,
     onOpenChange,
     selectedModelId,
     onModelSelect,
-    requiresVision = false,
-    requiresStructuredOutput = false,
+    // requiresVision = false,
+    // requiresStructuredOutput = false,
 }: Readonly<ModelSelectionModalProps>) {
     const [providers, setProviders] = useState<ProviderWithModels[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -111,14 +111,6 @@ export function ModelSelectionModal({
 
             return provider.models
                 .filter(model => {
-                    // Only apply capability filters for OpenAI as requested
-                    if (provider.provider === 'openai') {
-                        // Ensure we have capabilities defined before filtering
-                        const caps = model.capabilities || {};
-                        if (requiresVision && caps.vision === false) return false;
-                        if (requiresStructuredOutput && caps.structuredOutput === false) return false;
-                    }
-
                     if (!searchQuery) return true;
                     const q = searchQuery.toLowerCase();
                     return (
@@ -128,7 +120,7 @@ export function ModelSelectionModal({
                 })
                 .map(model => ({ ...model, provider }));
         });
-    }, [providers, searchQuery, selectedProviderFilter, requiresVision, requiresStructuredOutput]);
+    }, [providers, searchQuery, selectedProviderFilter]);
 
     // Group by provider for display if showing all
     const groupedModels = useMemo(() => {
@@ -261,7 +253,16 @@ export function ModelSelectionModal({
                                                     return (
                                                         <button
                                                             key={item.id}
-                                                            onClick={() => onModelSelect(item.id, item.provider.id)}
+                                                            onClick={() => {
+                                                                logger.info('Model selected:', {
+                                                                    modelId: item.id,
+                                                                    modelKey: item.modelKey,
+                                                                    modelName: item.name,
+                                                                    providerId: item.provider.id,
+                                                                    providerName: item.provider.name
+                                                                });
+                                                                onModelSelect(item.id, item.provider.id);
+                                                            }}
                                                             className={cn(
                                                                 "group relative flex flex-col items-start gap-1 p-3 rounded-xl border text-left transition-all",
                                                                 "hover:border-primary/30 hover:bg-primary/5",
@@ -298,16 +299,6 @@ export function ModelSelectionModal({
                                                                             CTX: {Math.round(item.contextWindow / 1000)}k
                                                                         </Badge>
                                                                     )}
-                                                                    {item.capabilities?.vision && (
-                                                                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal bg-blue-500/10 text-blue-500 border-blue-500/20">
-                                                                            Vision
-                                                                        </Badge>
-                                                                    )}
-                                                                    {item.capabilities?.structuredOutput && (
-                                                                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal bg-green-500/10 text-green-500 border-green-500/20">
-                                                                            JSON
-                                                                        </Badge>
-                                                                    )}
                                                                 </div>
                                                             )}
                                                         </button>
@@ -324,4 +315,4 @@ export function ModelSelectionModal({
             </div>
         </BaseDialog>
     );
-}
+});

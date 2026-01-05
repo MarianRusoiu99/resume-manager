@@ -4,12 +4,13 @@ import { generateResume as runAIWorkflow } from '@/lib/ai/workflow/resume-genera
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
 import { success, failure, type ServiceResult } from '@/lib/types/service-result';
 import { logger } from '@/lib/utils/logger';
-import type { IProfileService } from '../../interfaces';
+import type { IProfileService, INotificationService } from '../../interfaces';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 export async function runResumeGenerationWorkflow(
   repository: GeneratedResumeRepository,
   profileService: IProfileService,
+  notificationService: INotificationService,
   input: GenerateResumeServiceInput
 ): Promise<ServiceResult<GeneratedResumeData>> {
   try {
@@ -59,6 +60,14 @@ export async function runResumeGenerationWorkflow(
       }
     });
 
+    // Notify user that resume is ready
+    await notificationService.notifyResumeGenerated(
+      input.userId,
+      saved.id,
+      result.jobTitle,
+      result.companyName
+    );
+
     return success({
       resumeId: saved.id,
       resume: {
@@ -80,10 +89,11 @@ export async function runResumeGenerationWorkflow(
 export async function runResumeGenerationWorkflowWithProgress(
   repository: GeneratedResumeRepository,
   profileService: IProfileService,
+  notificationService: INotificationService,
   input: GenerateResumeWithProgressInput
 ): Promise<ServiceResult<GeneratedResumeData>> {
     // Basic implementation for now to satisfy types - onProgress is in input but not used yet
-    return runResumeGenerationWorkflow(repository, profileService, input);
+    return runResumeGenerationWorkflow(repository, profileService, notificationService, input);
 }
 
 export async function runStandaloneCoverLetterWorkflow(_input: Record<string, unknown>): Promise<ServiceResult<never>> {

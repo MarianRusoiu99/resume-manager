@@ -4,6 +4,7 @@ import { apiKeyAuditService} from '../../api-key-management';
 import { createProvider } from '@/lib/ai/providers';
 import { type ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, ValidationError } from '@/lib/services/utils';
+import { RecordNotFoundError } from '@/lib/errors/database';
 import type { UpdateApiProviderInput } from '../types';
 
 /**
@@ -17,7 +18,9 @@ export async function updateProvider(
   return withServiceError('update provider', async () => {
     // We need to fetch the existing provider to get its type if rotated
     const provider = await apiProviderRepository.findById(providerId, userId);
-    if (!provider) throw new Error('Provider not found');
+    if (!provider) {
+      throw new RecordNotFoundError('ApiProvider', providerId, 'updateProvider');
+    }
 
     const updateData: Record<string, unknown> = {};
 

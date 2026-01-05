@@ -25,10 +25,13 @@ export const getAISettings = withServerAction(
 export const updateFeaturePreference = withServerAction(
     'updateFeaturePreference',
     async (session, data: FeaturePreferenceData) => {
-        return userAISettingsService.updateFeaturePreference({
+        
+        const result = await userAISettingsService.updateFeaturePreference({
             userId: session.user.id,
             ...data
         });
+        
+        return result;
     },
     {
         auditAction: 'SETTINGS_UPDATE',

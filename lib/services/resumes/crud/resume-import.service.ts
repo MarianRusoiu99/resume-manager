@@ -1,4 +1,5 @@
 import { resolveAIModelOrThrow, resolveVisionModelKey } from "@/lib/ai/runtime";
+import { ValidationError } from "@/lib/errors";
 import { parseResumeFromText, parseResumeFromImage } from "@/lib/ai/agents/resume-parsing";
 import mammoth from "mammoth";
 import { withServiceError } from '@/lib/services/utils';
@@ -74,7 +75,7 @@ export class ResumeImportService {
             modelKey: resolvedModel.modelKey,
           });
         } catch {
-          throw new Error(`Unsupported file type: ${fileType}`);
+          throw new ValidationError(`Unsupported file type: ${fileType}`);
         }
       }
 

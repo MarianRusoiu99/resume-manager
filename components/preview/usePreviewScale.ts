@@ -40,8 +40,8 @@ export function usePreviewScale({
       let newScale = Math.min(scaleWidth, scaleHeight);
 
       // Sanity bounds
-      if (newScale < 0.3) newScale = 0.3;
-      if (newScale > 1.2) newScale = 1.0; // Don't upscale past 100%
+      if (newScale < 0.1) newScale = 0.1; // Allow very small scales for small containers
+      // if (newScale > 1.2) newScale = 1.0; // Don't upscale past 100%
 
       return newScale;
     }

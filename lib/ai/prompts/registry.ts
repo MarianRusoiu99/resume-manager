@@ -20,7 +20,7 @@ export class PromptRegistry {
   static render(id: string, variables: Record<string, string>): { system: string; prompt: string } {
     const definition = this.get(id);
     if (!definition) {
-      throw new Error(`Prompt with ID "${id}" not found in registry.`);
+      throw new NotFoundError(`Prompt with ID "${id}"`);
     }
 
     let renderedPrompt = definition.template;

@@ -6,7 +6,7 @@ import { ZodType } from "zod";
 import { GenericForm } from "./GenericForm";
 import { FieldConfig } from "@/lib/forms/form-schema";
 import { cn } from "@/lib/utils";
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef, useCallback, memo } from "react";
 
 interface ManagedFormProps<T extends FieldValues> {
   /** Zod validation schema */
@@ -37,7 +37,7 @@ interface ManagedFormProps<T extends FieldValues> {
 /**
  * ManagedForm - Connects GenericForm with react-hook-form and Zod validation
  */
-export function ManagedForm<T extends FieldValues>({
+export const ManagedForm = memo(function ManagedForm<T extends FieldValues>({
   schema,
   defaultValues,
   fields,
@@ -62,7 +62,7 @@ export function ManagedForm<T extends FieldValues>({
   const prevValuesRef = useRef<T>(defaultValues);
   const prevDefaultValuesRef = useRef<T>(defaultValues);
 
-  // Sync form with external defaultValues changes (when not dirty)
+    // Sync form with external defaultValues changes (when not dirty)
   useEffect(() => {
     if (!isDirty && JSON.stringify(defaultValues) !== JSON.stringify(prevDefaultValuesRef.current)) {
       reset(defaultValues);
@@ -85,11 +85,11 @@ export function ManagedForm<T extends FieldValues>({
     }
   }, [values, isDirty, onUpdate, autoSave, debounceMs, getValues]);
 
-  const handleFormSubmit = form.handleSubmit(async (data) => {
+  const handleFormSubmit = useCallback(form.handleSubmit(async (data) => {
     await onSubmit(data);
-  });
+  }), [form, onSubmit]);
 
-  const handleFieldChange = (newData: T) => {
+  const handleFieldChange = useCallback((newData: T) => {
     Object.entries(newData).forEach(([key, value]) => {
       form.setValue(key as Path<T>, value as PathValue<T, Path<T>>, {
         shouldDirty: true,
@@ -101,7 +101,7 @@ export function ManagedForm<T extends FieldValues>({
     if (onUpdate && !autoSave) {
       onUpdate(newData);
     }
-  };
+  }, [form, onUpdate, autoSave]);
 
   return (
     <FormProvider {...form}>
@@ -118,9 +118,9 @@ export function ManagedForm<T extends FieldValues>({
         />
 
         {typeof children === "function" 
-          ? children(form) 
+          ? children(form)
           : children}
       </form>
     </FormProvider>
   );
-}
+});

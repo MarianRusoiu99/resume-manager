@@ -95,8 +95,9 @@ export interface GalleryCardProps {
 const log = createComponentLogger('GalleryCard');
 
 import { BaseGalleryCard } from '@/components/shared/cards/BaseGalleryCard';
+import { memo, useCallback } from 'react';
 
-export function GalleryCard({
+export const GalleryCard = memo(function GalleryCard({
   id,
   title,
   subtitle,
@@ -113,13 +114,13 @@ export function GalleryCard({
   const router = useRouter();
   const [isActionLoading, setIsActionLoading] = useState(false);
 
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     if (!disableNavigation) {
       router.push(href);
     }
-  };
+  }, [disableNavigation, href]);
 
-  const handleActionClick = async (action: GalleryCardAction) => {
+  const handleActionClick = useCallback(async (action: GalleryCardAction) => {
     if (action.disabled || isActionLoading) return;
 
     try {
@@ -130,7 +131,7 @@ export function GalleryCard({
     } finally {
       setIsActionLoading(false);
     }
-  };
+  }, [isActionLoading]);
 
   return (
     <BaseGalleryCard
@@ -148,9 +149,9 @@ export function GalleryCard({
       }
       badge={badges.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
-          {badges.map((badge, index) => (
+          {badges.map((badge) => (
             <Badge
-              key={`${id}-badge-${index}`}
+              key={`${id}-badge-${badge.label}`}
               variant={badge.variant || "secondary"}
               className="bg-primary/90 text-primary-foreground border-none py-0.5 px-2 rounded-lg uppercase font-bold tracking-wider text-[10px]"
             >
@@ -163,8 +164,8 @@ export function GalleryCard({
       footer={
         <div className="flex items-center justify-between w-full">
           <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {metadata.slice(0, 2).map((item, index) => (
-              <div key={index} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/70">
+            {metadata.slice(0, 2).map((item) => (
+              <div key={`${id}-meta-${item.label}`} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/70">
                 {item.icon && <span className="opacity-70">{item.icon}</span>}
                 <span>{item.value} {item.label}</span>
               </div>
@@ -193,4 +194,4 @@ export function GalleryCard({
       )}
     </BaseGalleryCard>
   );
-}
+});

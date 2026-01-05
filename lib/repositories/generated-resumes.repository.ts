@@ -2,6 +2,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/index';
 import type { Resume as JsonResume } from '@/lib/validations/jsonresume';
 import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
+import { RecordNotFoundError } from '@/lib/errors/database';
 import type { IGeneratedResumeRepository, GeneratedResumeData, CreateResumeInput, UpdateResumeInput } from './interfaces/generated-resumes.repository.interface';
 import { mapResumeToGeneratedData, ResumeWithIncludes } from './generated-resumes/mappers/resume.mapper';
 
@@ -192,7 +193,9 @@ export class GeneratedResumeRepository
    */
   override async delete(id: string, userId?: string): Promise<GeneratedResumeData> {
     const resume = await this.findById(id, userId);
-    if (!resume) throw new Error('Resume not found');
+    if (!resume) {
+      throw new RecordNotFoundError('Resume', id, 'delete');
+    }
 
     await this.db.resume.delete({ where: { id, ...(userId ? { userId } : {}) } });
     return resume;
@@ -233,7 +236,9 @@ export class GeneratedResumeRepository
       select: { jobPostingId: true, metadata: true },
     });
 
-    if (!resume) throw new Error('Resume not found');
+    if (!resume) {
+      throw new RecordNotFoundError('Resume', id, 'updateJobDetails');
+    }
 
     if (data.jobDescription !== undefined && resume.jobPostingId) {
       await this.db.jobPosting.update({

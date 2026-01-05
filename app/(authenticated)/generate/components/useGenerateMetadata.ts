@@ -6,6 +6,7 @@ import { getApiProviders } from '@/app/actions/api-provider';
 import { toast } from 'sonner';
 import { useComponentLogger } from '@/hooks';
 import type { ProfileListItem } from '@/lib/actions/types';
+import type { UserPreferences } from '@/lib/types';
 
 interface AIProvider {
   name: string;
@@ -19,9 +20,8 @@ export function useGenerateMetadata() {
   const [providers, setProviders] = useState<AIProvider[]>([]);
   const [hasAIProviders, setHasAIProviders] = useState(false);
   const [isLoadingMetadata, setIsLoadingMetadata] = useState(true);
-  const [defaultModelId, setDefaultModelId] = useState<string>('');
   const [defaultProfileId, setDefaultProfileId] = useState<string>('');
-  const [userPreferences, setUserPreferences] = useState<any>(null);
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
 
   useEffect(() => {
     const loadMetadata = async () => {
@@ -56,13 +56,6 @@ export function useGenerateMetadata() {
           setProviders(providerData);
           const activeProviders = providerData.filter((p) => p.isActive);
           setHasAIProviders(activeProviders.length > 0);
-
-          if (activeProviders.length > 0) {
-             // We'll let the ModelSelector handle its own specific feature default
-             // but we provide a sensible fallback here if needed
-            const firstModelId = activeProviders[0].models?.[0] || '';
-            setDefaultModelId(firstModelId);
-          }
         }
       } catch (err) {
         log.error('Failed to load metadata', err);
@@ -80,7 +73,6 @@ export function useGenerateMetadata() {
     providers,
     hasAIProviders,
     isLoadingMetadata,
-    defaultModelId,
     defaultProfileId,
     userPreferences,
     activeProviders: providers.filter(p => p.isActive)

@@ -5,7 +5,7 @@
 
 'use client';
 
-import { RefObject } from 'react';
+import { RefObject, memo } from 'react';
 
 // UI Components
 import { PreviewHeader } from './PreviewHeader';
@@ -34,7 +34,7 @@ interface PreviewContentProps {
   headerTitle?: React.ReactNode;
 }
 
-export function PreviewContent(props: Readonly<PreviewContentProps>) {
+export const PreviewContent = memo(function PreviewContent(props: Readonly<PreviewContentProps>) {
   const {
     showTemplateSelector,
     selectedTemplateId,
@@ -56,7 +56,7 @@ export function PreviewContent(props: Readonly<PreviewContentProps>) {
   } = props;
 
   return (
-    <div className="flex flex-col h-full relative group">
+    <div className="flex flex-col h-full w-full relative group min-h-0">
       <PreviewHeader
         showTemplateSelector={showTemplateSelector}
         selectedTemplateId={selectedTemplateId}
@@ -71,7 +71,7 @@ export function PreviewContent(props: Readonly<PreviewContentProps>) {
         title={headerTitle}
       />
 
-      <div className="flex-1 min-h-0 flex flex-col items-center w-full overflow-hidden bg-muted/5 relative">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full overflow-hidden bg-muted/30 relative">
         <PreviewState
           isLoading={isLoading}
           error={error}
@@ -83,4 +83,4 @@ export function PreviewContent(props: Readonly<PreviewContentProps>) {
       </div>
     </div>
   );
-}
+});

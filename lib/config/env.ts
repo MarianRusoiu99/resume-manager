@@ -15,8 +15,8 @@
  */
 
 import { z } from 'zod';
-import { logger } from '@/lib/utils/logger';
-
+import { ConfigurationError } from '../errors';
+import { logger } from '../utils/logger';
 /**
  * Environment variable schema
  * Add all environment variables here with their expected types
@@ -97,7 +97,7 @@ function parseEnv(): EnvConfig {
         message: issue.message,
       })),
     });
-    throw new Error('Invalid environment configuration');
+    throw new ConfigurationError('Invalid environment configuration');
   }
 
   return parsed.data;
@@ -129,15 +129,15 @@ class EnvironmentConfig {
 
     // Required variables in production
     if (!this.config.DATABASE_URL) {
-      throw new Error('DATABASE_URL is required in production');
+      throw new ConfigurationError('DATABASE_URL is required in production');
     }
 
     if (!this.config.NEXTAUTH_SECRET) {
-      throw new Error('NEXTAUTH_SECRET is required in production');
+      throw new ConfigurationError('NEXTAUTH_SECRET is required in production');
     }
 
     if (!this.config.ENCRYPTION_KEY) {
-      throw new Error('ENCRYPTION_KEY is required in production');
+      throw new ConfigurationError('ENCRYPTION_KEY is required in production');
     }
 
     // Check for default/weak secrets
@@ -150,14 +150,14 @@ class EnvironmentConfig {
     ];
 
     if (this.config.NEXTAUTH_SECRET && defaultSecrets.includes(this.config.NEXTAUTH_SECRET)) {
-      throw new Error(
+      throw new ConfigurationError(
         'NEXTAUTH_SECRET is using a default/weak value. Change it in production! ' +
         'Generate a secure value with: openssl rand -base64 32'
       );
     }
 
     if (this.config.ENCRYPTION_KEY && defaultSecrets.includes(this.config.ENCRYPTION_KEY)) {
-      throw new Error(
+      throw new ConfigurationError(
         'ENCRYPTION_KEY is using a default/weak value. Change it in production! ' +
         'Generate a secure value with: openssl rand -hex 32'
       );

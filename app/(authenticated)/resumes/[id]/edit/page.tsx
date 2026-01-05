@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { ExternalServiceError } from "@/lib/errors";
 import { ResumeEditor, type ResumeEditorRef } from "@/components/editor/ResumeEditor";
 import { EditorProvider } from "@/lib/contexts";
 import type { Resume } from "@/lib/validations/jsonresume";
@@ -46,7 +47,7 @@ export default function ResumeEditPage() {
       const result = await getResume(resumeId);
       if (!result.success || !result.data) {
         const errorResult = result as { error?: string };
-        throw new Error(errorResult.error || "Failed to load");
+        throw new ExternalServiceError('Resume API', errorResult.error || "Failed to load");
       }
       return result.data.content as Resume;
     } catch (error) {
@@ -58,7 +59,7 @@ export default function ResumeEditPage() {
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
       const result = await updateResumeContent(resumeId, resume);
-      if (!result.success) throw new Error(result.error);
+      if (!result.success) throw new ExternalServiceError('Resume API', result.error);
       return true;
     } catch (error) {
       log.error("Error saving resume", error);
@@ -73,7 +74,7 @@ export default function ResumeEditPage() {
     }
     try {
       const result = await updateResumeMetadata(resumeId, { jobTitle: newTitle });
-      if (!result.success) throw new Error(result.error);
+      if (!result.success) throw new ExternalServiceError('Resume API', result.error);
       setJobTitle(newTitle);
       setIsRenameModalOpen(false);
       toast.success("Resume renamed");

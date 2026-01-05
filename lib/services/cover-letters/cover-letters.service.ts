@@ -5,20 +5,34 @@ import {
 import type { CreateCoverLetterInput, UpdateCoverLetterInput, CoverLetterData, FindCoverLettersOptions } from '@/lib/repositories/interfaces/cover-letters.repository.interface';
 import { type ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, GenericUserOwnedCrudService } from '@/lib/services/utils';
-import type { ICoverLetterService } from '../interfaces';
+import type { ICoverLetterService, INotificationService } from '../interfaces';
+import { notificationService as defaultNotificationService } from '@/lib/services/notifications/notifications.service';
 
 export class CoverLetterService 
   extends GenericUserOwnedCrudService<CoverLetterData, CreateCoverLetterInput, UpdateCoverLetterInput, Record<string, unknown>, CoverLetterRepository>
   implements ICoverLetterService 
 {
-  constructor(repository: CoverLetterRepository = coverLetterRepository) {
+  constructor(
+    repository: CoverLetterRepository = coverLetterRepository,
+    private readonly notificationService: INotificationService = defaultNotificationService
+  ) {
     super(repository, 'CoverLetter');
   }
 
   async createCoverLetter(
     input: CreateCoverLetterInput
   ): Promise<ServiceResult<CoverLetterData>> {
-    return this.create(input);
+    const result = await this.create(input);
+    if (result.success) {
+      const metadata = input.metadata as Record<string, any>;
+      await this.notificationService.notifyCoverLetterGenerated(
+        input.userId,
+        result.data.id,
+        metadata?.jobTitle,
+        metadata?.companyName
+      );
+    }
+    return result;
   }
 
   async getCoverLetter(

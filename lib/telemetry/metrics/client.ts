@@ -1,65 +1,12 @@
 /**
- * Metrics Module
+ * Metrics Module - Client
  * 
- * Provides metrics collection for monitoring and alerting.
- * 
- * Current implementation: In-memory stub (logs metrics)
- * Production: Connect to Prometheus, Datadog, or CloudWatch
+ * In-memory metrics client implementation.
  */
 
 import { logger } from '@/lib/utils/logger';
+import type { MetricLabels, Counter, Gauge, Histogram, HistogramStats } from './types';
 
-/**
- * Labels for metric dimensions
- */
-export type MetricLabels = Record<string, string | number | boolean>;
-
-/**
- * Counter metric - monotonically increasing value
- */
-export interface Counter {
-  /** Increment counter by 1 */
-  inc(labels?: MetricLabels): void;
-  /** Add value to counter */
-  add(value: number, labels?: MetricLabels): void;
-}
-
-/**
- * Gauge metric - value that can go up and down
- */
-export interface Gauge {
-  /** Set gauge value */
-  set(value: number, labels?: MetricLabels): void;
-  /** Increment gauge by 1 */
-  inc(labels?: MetricLabels): void;
-  /** Decrement gauge by 1 */
-  dec(labels?: MetricLabels): void;
-  /** Add value to gauge */
-  add(value: number, labels?: MetricLabels): void;
-}
-
-/**
- * Histogram metric - distribution of values
- */
-export interface Histogram {
-  /** Observe a value */
-  observe(value: number, labels?: MetricLabels): void;
-  /** Start a timer, returns function to stop and record */
-  startTimer(labels?: MetricLabels): () => number;
-}
-
-/**
- * In-memory metrics client
- * 
- * This is a stub implementation that:
- * 1. Stores metrics in memory for debugging
- * 2. Logs metrics at debug level
- * 3. Exposes metrics for the /api/metrics endpoint
- * 
- * To integrate with a real metrics system:
- * 1. Implement the same interface
- * 2. Replace this with prom-client, datadog-metrics, etc.
- */
 export class MetricsClient {
   private readonly counters: Map<string, number> = new Map();
   private readonly gauges: Map<string, number> = new Map();
@@ -70,9 +17,6 @@ export class MetricsClient {
     this.enabled = enabled;
   }
 
-  /**
-   * Create a key from name and labels
-   */
   private createKey(name: string, labels?: MetricLabels): string {
     if (!labels || Object.keys(labels).length === 0) {
       return name;
@@ -84,9 +28,6 @@ export class MetricsClient {
     return `${name}{${labelStr}}`;
   }
 
-  /**
-   * Increment a counter
-   */
   increment(name: string, labels?: MetricLabels, value = 1): void {
     if (!this.enabled) return;
 
@@ -97,9 +38,6 @@ export class MetricsClient {
     logger.debug(`[Metric] ${key} += ${value} (total: ${current + value})`);
   }
 
-  /**
-   * Set a gauge value
-   */
   gauge(name: string, value: number, labels?: MetricLabels): void {
     if (!this.enabled) return;
 
@@ -109,9 +47,6 @@ export class MetricsClient {
     logger.debug(`[Metric] ${key} = ${value}`);
   }
 
-  /**
-   * Record a histogram observation
-   */
   histogram(name: string, value: number, labels?: MetricLabels): void {
     if (!this.enabled) return;
 
@@ -123,9 +58,6 @@ export class MetricsClient {
     logger.debug(`[Metric] ${key} observed ${value}`);
   }
 
-  /**
-   * Create a timer for measuring duration
-   */
   startTimer(name: string, labels?: MetricLabels): () => number {
     const start = performance.now();
     return () => {
@@ -135,9 +67,6 @@ export class MetricsClient {
     };
   }
 
-  /**
-   * Create a counter instance
-   */
   createCounter(name: string): Counter {
     return {
       inc: (labels?: MetricLabels) => this.increment(name, labels),
@@ -145,9 +74,6 @@ export class MetricsClient {
     };
   }
 
-  /**
-   * Create a gauge instance
-   */
   createGauge(name: string): Gauge {
     return {
       set: (value: number, labels?: MetricLabels) => this.gauge(name, value, labels),
@@ -169,9 +95,6 @@ export class MetricsClient {
     };
   }
 
-  /**
-   * Create a histogram instance
-   */
   createHistogram(name: string): Histogram {
     return {
       observe: (value: number, labels?: MetricLabels) => this.histogram(name, value, labels),
@@ -179,15 +102,12 @@ export class MetricsClient {
     };
   }
 
-  /**
-   * Get all metrics (for debugging/export)
-   */
   getMetrics(): {
     counters: Record<string, number>;
     gauges: Record<string, number>;
-    histograms: Record<string, { count: number; sum: number; avg: number; min: number; max: number }>;
+    histograms: Record<string, HistogramStats>;
   } {
-    const histogramStats: Record<string, { count: number; sum: number; avg: number; min: number; max: number }> = {};
+    const histogramStats: Record<string, HistogramStats> = {};
     
     for (const [key, values] of this.histograms) {
       if (values.length > 0) {
@@ -209,52 +129,9 @@ export class MetricsClient {
     };
   }
 
-  /**
-   * Reset all metrics
-   */
   reset(): void {
     this.counters.clear();
     this.gauges.clear();
     this.histograms.clear();
   }
 }
-
-/**
- * Global metrics instance
- */
-import { env } from '@/lib/config';
-
-export const metrics = new MetricsClient(!env.isTest);
-
-/**
- * Predefined metrics for the application
- */
-export const AppMetrics = {
-  // Request metrics
-  httpRequestsTotal: metrics.createCounter('http_requests_total'),
-  httpRequestDuration: metrics.createHistogram('http_request_duration_ms'),
-  httpRequestErrors: metrics.createCounter('http_request_errors_total'),
-
-  // AI metrics
-  aiGenerationsTotal: metrics.createCounter('ai_generations_total'),
-  aiGenerationDuration: metrics.createHistogram('ai_generation_duration_ms'),
-  aiTokensUsed: metrics.createCounter('ai_tokens_used_total'),
-  aiErrors: metrics.createCounter('ai_errors_total'),
-
-  // Resume metrics
-  resumesGenerated: metrics.createCounter('resumes_generated_total'),
-  coverLettersGenerated: metrics.createCounter('cover_letters_generated_total'),
-  pdfExports: metrics.createCounter('pdf_exports_total'),
-
-  // User metrics
-  activeUsers: metrics.createGauge('active_users'),
-  profilesCreated: metrics.createCounter('profiles_created_total'),
-
-  // Cache metrics
-  cacheHits: metrics.createCounter('cache_hits_total'),
-  cacheMisses: metrics.createCounter('cache_misses_total'),
-
-  // Circuit breaker metrics
-  circuitBreakerState: metrics.createGauge('circuit_breaker_state'),
-  circuitBreakerTrips: metrics.createCounter('circuit_breaker_trips_total'),
-};

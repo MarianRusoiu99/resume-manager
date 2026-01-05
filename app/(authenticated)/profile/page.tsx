@@ -10,6 +10,7 @@ import { verifySession } from "@/lib/auth/dal";
 import type { Resume } from "@/lib/validations/jsonresume";
 import type { ProfileDto } from "@/lib/actions/types";
 import { Suspense } from "react";
+import { ExternalServiceError, ValidationError } from "@/lib/errors";
 import { GallerySkeleton } from "@/components/shared/skeletons/GallerySkeleton";
 
 interface Props {
@@ -38,11 +39,11 @@ async function ProfilesContent({ userId, searchTerm }: { userId: string; searchT
   const result = await profileService.getProfiles(userId);
   
   if (!result.success) {
-    throw new Error(result.error);
+    throw new ExternalServiceError('Profile API', result.error);
   }
 
   if (!result.data || !Array.isArray(result.data)) {
-    throw new Error("Failed to load profiles");
+    throw new ValidationError("Failed to load profiles");
   }
 
   // Map to expected format with proper typing

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, memo, useCallback } from "react";
 import { GalleryCard, type GalleryCardProps, type GalleryCardAction } from "@/components/shared/GalleryCard";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
@@ -32,11 +32,11 @@ const DEFAULT_DELETE_DIALOG: DeleteDialogConfig = {
 
 /**
  * EntityCard - Wrapper around GalleryCard with built-in delete confirmation
- * 
- * Reduces boilerplate by handling the common pattern of:
+ *
+ * Reduces boilerplate by handling common pattern of:
  * - GalleryCard display
  * - Delete action with confirmation dialog
- * 
+ *
  * @example
  * ```tsx
  * <EntityCard
@@ -81,7 +81,7 @@ export function EntityCard({
     });
   }
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!onDelete) return;
 
     try {
@@ -91,7 +91,7 @@ export function EntityCard({
       setIsDeletePending(false);
       setShowDeleteDialog(false);
     }
-  };
+  }, [onDelete]);
 
   return (
     <>
@@ -114,6 +114,11 @@ export function EntityCard({
     </>
   );
 }
+
+export const MemoizedEntityCard = memo(EntityCard);
+
+// Also export EntityCard directly (the memo wrapper is optional)
+export default EntityCard;
 
 /**
  * Helper to create common card action configurations

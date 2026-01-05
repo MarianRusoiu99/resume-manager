@@ -6,6 +6,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { BaseAIProvider, type AIModel, type ProviderConfig } from './base';
 import type { LanguageModel } from 'ai';
 import { logger } from '@/lib/utils/logger';
+import { createAIErrorFromResponse, AIProviderError } from '@/lib/errors';
 
 interface OpenAIModelResponse {
   data: Array<{
@@ -53,7 +54,7 @@ export class OpenAIProvider extends BaseAIProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+        throw createAIErrorFromResponse('OpenAI', response.status, response.statusText);
       }
 
       const data = await response.json() as OpenAIModelResponse;
@@ -78,9 +79,7 @@ export class OpenAIProvider extends BaseAIProvider {
       return gptModels;
     } catch (error) {
       logger.error('Error fetching OpenAI models', error);
-      throw new Error(
-        `Failed to fetch models from OpenAI: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      throw new AIProviderError('OpenAI', `Failed to fetch models: ${error instanceof Error ? error.message : 'Unknown error'}`, undefined, error);
     }
   }
 

@@ -40,11 +40,11 @@ export function AIEnhanceTextModal({
   description = 'Use AI to improve, rephrase, or modify your content.',
   showModelSelector = true,
 }: Readonly<AIEnhanceTextModalProps>) {
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [instructions, setInstructions] = useState('');
 
-  const handleModelChange = useCallback((modelId: string) => {
-    setSelectedModel(modelId);
+  const handleModelChange = useCallback((newModelId: string, newProviderId: string) => {
+    setSelectedModelId(newModelId);
   }, []);
 
   const {
@@ -88,12 +88,12 @@ ${originalContent}`;
     runTask({
       message,
       attachments: mappedAttachments,
-      modelId: selectedModel,
+      modelId: selectedModelId,
       context: {
         personalInstructions: context,
       }
     });
-  }, [instructions, originalContent, runTask, selectedModel, context]);
+  }, [instructions, originalContent, runTask, selectedModelId, context]);
 
   const handleAccept = useCallback(() => {
     if (!enhancedContent) return;
@@ -133,12 +133,12 @@ ${originalContent}`;
   );
 
   const rightAction = showModelSelector && (
-    <ModelSelector
-      value={selectedModel}
-      onValueChange={handleModelChange}
-      feature="enhance"
-      className="h-9"
-    />
+      <ModelSelector
+        value={selectedModelId}
+        onValueChange={handleModelChange}
+        feature="enhance"
+        className="h-9"
+      />
   );
 
   return (

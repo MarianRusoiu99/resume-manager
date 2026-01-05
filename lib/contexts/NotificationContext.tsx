@@ -7,6 +7,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { useNotificationManager, Notification } from '@/hooks/notifications/useNotificationManager';
+import { ConfigurationError } from "@/lib/errors";
 
 export type { Notification };
 
@@ -78,7 +79,7 @@ export function useNotifications() {
   const context = useContext(NotificationContext);
 
   if (context === undefined) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    throw new ConfigurationError('useNotifications must be used within a NotificationProvider');
   }
 
   return context;

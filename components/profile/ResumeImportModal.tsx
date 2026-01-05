@@ -16,6 +16,7 @@ import { Upload, FileText, Loader2, AlertCircle, Settings2 } from 'lucide-react'
 import { useResumeImport } from '@/hooks/useResumeImport';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { ModelSelector } from '@/components/ai/ModelSelector';
+import { useFeatureModelPreference } from '@/hooks';
 
 interface ResumeImportModalProps {
   open: boolean;
@@ -28,7 +29,11 @@ export function ResumeImportModal({
   onOpenChange,
   onImportComplete,
 }: Readonly<ResumeImportModalProps>) {
-  const [selectedModelId, setSelectedModelId] = React.useState<string>('');
+  const { modelId, updatePreference } = useFeatureModelPreference('resume');
+
+  const handleModelChange = React.useCallback((newModelId: string, newProviderId: string) => {
+    updatePreference(newModelId, newProviderId);
+  }, [updatePreference]);
 
   const {
     selectedFile,
@@ -202,8 +207,8 @@ export function ResumeImportModal({
               <ModelSelector 
                 feature="resume"
                 requiresVision
-                value={selectedModelId}
-                onValueChange={(mid) => setSelectedModelId(mid)}
+                value={modelId}
+                onValueChange={handleModelChange}
                 className="w-[180px]"
               />
             </div>
@@ -219,13 +224,13 @@ export function ResumeImportModal({
               Cancel
             </Button>
             {selectedFile && !isLoading && !error && (
-              <Button onClick={() => handleImport(selectedModelId)} className="gap-2">
+              <Button onClick={() => handleImport(modelId)} className="gap-2">
                 <SparklesIcon className="h-4 w-4" />
                 Start Extraction
               </Button>
             )}
             {error && (
-               <Button onClick={() => handleImport(selectedModelId)}>
+               <Button onClick={() => handleImport(modelId)}>
                 Try Again
               </Button>
             )}

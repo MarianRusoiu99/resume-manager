@@ -1,4 +1,5 @@
 /**
+import { NotFoundError } from '@/lib/errors';
  * Template Loader Utility
  * 
  * Loads template HTML and CSS from external files at build time.
@@ -86,7 +87,7 @@ export function validateTemplateAssets(): void {
   try {
     readFileSync(baseCssPath, 'utf-8');
   } catch {
-    throw new Error(`Missing base CSS file: ${baseCssPath}`);
+    throw new NotFoundError(`Base CSS file: ${baseCssPath}`);
   }
   
   // Check each template
@@ -99,13 +100,13 @@ export function validateTemplateAssets(): void {
     try {
       readFileSync(htmlPath, 'utf-8');
     } catch {
-      throw new Error(`Missing HTML file for template "${template}": ${htmlPath}`);
+      throw new NotFoundError(`Template HTML file for "${template}": ${htmlPath}`);
     }
     
     try {
       readFileSync(cssPath, 'utf-8');
     } catch {
-      throw new Error(`Missing CSS file for template "${template}": ${cssPath}`);
+      throw new NotFoundError(`Template CSS file for "${template}": ${cssPath}`);
     }
   }
 }

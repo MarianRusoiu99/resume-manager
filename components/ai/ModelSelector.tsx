@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo, useCallback } from 'react';
 import { Cpu, ChevronRight, Sparkles, Box, Zap, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ModelSelectionModal } from './ModelSelectionModal';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { getAllAvailableModels } from '@/app/actions/api-provider';
-import { updateFeaturePreference, getAISettings } from '@/app/actions/ai-settings';
 import type { AIFeatureType } from '@/lib/repositories/interfaces';
-import type { ProviderWithModels, ConfiguredModelInfo } from '@/lib/services/api-providers/types';
+import type { ProviderWithModels } from '@/lib/services/api-providers/types';
 
 const logger = createComponentLogger('ModelSelector');
 
@@ -42,175 +41,95 @@ interface SimplifiedModelInfo {
     };
 }
 
-export function ModelSelector({
+export const ModelSelector = memo(function ModelSelector({
     value,
     onValueChange,
     feature,
-    requiresVision = false,
-    requiresStructuredOutput = false,
     className,
     showProvider = true,
-}: Readonly<ModelSelectorProps>) {
+    isLoading: externalLoading = false,
+}: Readonly<ModelSelectorProps & { isLoading?: boolean }>) {
     const [open, setOpen] = useState(false);
     const [modelName, setModelName] = useState<string>('');
     const [providerName, setProviderName] = useState<string>('');
     const [providerId, setProviderId] = useState<string>('');
-    const [isLoading, setIsLoading] = useState(true);
+    const [isResolving, setIsResolving] = useState(false);
 
-    // Initial load: fetch preferences and set defaults if needed
+    // Derived loading state
+    const isLoading = externalLoading || isResolving;
+
+    // Resolve model details when value changes
     useEffect(() => {
-        let cancelled = false;
+        logger.info('ModelSelector value changed:', { value, feature });
+        
+        if (!value) {
+            setModelName('');
+            setProviderName('');
+            setProviderId('');
+            return;
+        }
 
-        const initModel = async () => {
-            setIsLoading(true);
-            try {
-                const modelsResult = await getAllAvailableModels();
-                if (cancelled || !modelsResult.success || !modelsResult.data) return;
-
-                const { byProvider } = modelsResult.data;
-                let activeModelId = value;
-                let activeProviderId = '';
-
-                // If no value provided and we have a feature, load from preferences
-                if (!activeModelId && feature) {
-                    try {
-                        const res = await fetch('/api/v1/user/preferences');
-                        const pref = await res.json();
-                        if (pref.success && pref.data?.ai) {
-                            const featurePref = pref.data.ai.find((p: any) => p.feature === feature);
-                            if (featurePref?.modelId) {
-                                activeModelId = featurePref.modelId;
-                                activeProviderId = featurePref.providerId;
-                            }
-                        }
-                    } catch (e) {
-                        logger.error('Failed to fetch preferences from API', e);
-                        // Fallback to existing server action if API fails
-                        const settingsResult = await getAISettings();
-                        if (settingsResult.success && settingsResult.data) {
-                            const feat = settingsResult.data.features.find(f => f.feature.id === feature);
-                            if (feat?.modelId && feat?.providerId) {
-                                activeModelId = feat.modelId;
-                                activeProviderId = feat.providerId;
-                            }
-                        }
-                    }
-                }
-
-                // If still no model, find a smart default
-                if (!activeModelId) {
-                    const allModels: SimplifiedModelInfo[] = (byProvider as ProviderWithModels[]).flatMap((p) => 
-                        (p.models as ConfiguredModelInfo[]).map((m) => ({ 
-                            ...m, 
-                            providerId: p.id, 
-                            providerName: p.name, 
-                            providerType: p.provider 
-                        }))
-                    );
-                    
-                    const filtered = allModels.filter((m) => {
-                        // Only apply capability filters for OpenAI as requested
-                        if (m.providerType === 'openai') {
-                            const caps = m.capabilities || {};
-                            if (requiresVision && caps.vision === false) return false;
-                            if (requiresStructuredOutput && caps.structuredOutput === false) return false;
-                        }
-                        return true;
-                    });
-
-                    // Priority 1: GPT-4o
-                    let defaultModel = filtered.find((m) => m.modelKey === 'gpt-4o' || m.id === 'gpt-4o');
-                    // Priority 2: GPT-4o-mini
-                    if (!defaultModel) defaultModel = filtered.find((m) => m.modelKey === 'gpt-4o-mini' || m.id === 'gpt-4o-mini');
-                    // Priority 3: Any GPT-4
-                    if (!defaultModel) defaultModel = filtered.find((m) => m.id.includes('gpt-4'));
-                    // Priority 4: Claude 3.5 Sonnet
-                    if (!defaultModel) defaultModel = filtered.find((m) => m.id.includes('claude-3-5-sonnet'));
-                    // Priority 5: Gemini 1.5 Pro
-                    if (!defaultModel) defaultModel = filtered.find((m) => m.id.includes('gemini-1.5-pro'));
-                    // Fallback: First available
-                    if (!defaultModel) defaultModel = filtered[0];
-
-                    if (defaultModel) {
-                        activeModelId = defaultModel.id;
-                        activeProviderId = defaultModel.providerId;
-                    }
-                }
-
-                // Resolve display names
-                if (activeModelId) {
-                    for (const p of byProvider as ProviderWithModels[]) {
-                        const found = (p.models as ConfiguredModelInfo[]).find((m) => m.id === activeModelId || m.modelKey === activeModelId);
-                        if (found) {
-                            setModelName(found.name);
-                            setProviderName(p.name);
-                            setProviderId(p.provider);
-                            if (!activeProviderId) activeProviderId = p.id;
-                            break;
-                        }
-                    }
-                }
-
-                // Notify parent if we chose a default
-                if (activeModelId && activeModelId !== value) {
-                    onValueChange(activeModelId, activeProviderId);
-                }
-            } catch (error) {
-                logger.error('Failed to initialize model', error);
-            } finally {
-                if (!cancelled) setIsLoading(false);
-            }
-        };
-
-        initModel();
-        return () => { cancelled = true; };
-    }, [feature, requiresVision, requiresStructuredOutput, onValueChange, value]);
-
-    // Update details when value changes externally
-    useEffect(() => {
-        if (!value) return;
         let cancelled = false;
 
         const fetchDetails = async () => {
+            setIsResolving(true);
             try {
                 const result = await getAllAvailableModels();
-                if (cancelled || !result.success || !result.data) return;
+                if (cancelled || !result.success || !result.data) {
+                    if (!cancelled && !result.success) {
+                        logger.error('Failed to resolve model details', result.error);
+                    }
+                    return;
+                }
 
+                // Flatten all models to find the matching one
+                let found = false;
                 for (const p of (result.data.byProvider as ProviderWithModels[])) {
-                    const found = p.models?.find((m) => m.id === value);
-                    if (found) {
-                        setModelName(found.name);
+                    const model = p.models?.find((m) => m.id === value);
+                    if (model) {
+                        logger.info('Model resolved:', {
+                            modelId: model.id,
+                            modelKey: model.modelKey,
+                            modelName: model.name,
+                            providerId: p.id,
+                            providerName: p.name
+                        });
+                        setModelName(model.name);
                         setProviderName(p.name);
                         setProviderId(p.provider);
+                        found = true;
                         break;
                     }
                 }
+
+                if (!found && !cancelled) {
+                    logger.warn(`Model ${value} not found in available models`);
+                    setModelName('Unknown Model');
+                    setProviderName('');
+                    setProviderId('');
+                }
             } catch (error) {
-                logger.error('Failed to resolve model details', error);
+                if (!cancelled) {
+                    logger.error('Failed to resolve model details', error);
+                    setModelName('Error loading model');
+                    setProviderName('');
+                    setProviderId('');
+                }
+            } finally {
+                if (!cancelled) setIsResolving(false);
             }
         };
 
         fetchDetails();
         return () => { cancelled = true; };
-    }, [value, onValueChange]);
+    }, [value, feature]);
 
-    const handleModelSelect = async (mid: string, pid: string) => {
+    const handleModelSelect = useCallback(async (mid: string, pid: string) => {
+        logger.info('handleModelSelect called:', { modelId: mid, providerId: pid, feature });
+        // Update UI and notify parent
         onValueChange(mid, pid);
         setOpen(false);
-
-        // Persist preference if feature is provided
-        if (feature) {
-            try {
-                await updateFeaturePreference({
-                    feature,
-                    providerId: pid,
-                    modelId: mid
-                });
-            } catch (error) {
-                logger.error('Failed to persist model preference', error);
-            }
-        }
-    };
+    }, [onValueChange, feature]);
 
     const ProviderIcon = PROVIDER_ICONS[providerId] || Cpu;
 
@@ -220,6 +139,7 @@ export function ModelSelector({
                 variant="outline"
                 size="sm"
                 onClick={() => setOpen(true)}
+                disabled={isLoading}
                 className={cn(
                     "h-9 gap-2 bg-background/50 border-dashed hover:bg-background hover:border-primary/30 transition-all font-normal",
                     className
@@ -239,9 +159,9 @@ export function ModelSelector({
 
                 <div className="flex flex-col items-start text-xs leading-none gap-0.5">
                     <span className="font-medium text-foreground">
-                        {modelName || value || 'Select Model'}
+                        {isLoading ? 'Loading...' : (modelName || 'Select Model')}
                     </span>
-                    {showProvider && providerName && (
+                    {showProvider && providerName && !isLoading && (
                         <span className="text-[10px] text-muted-foreground">
                             {providerName}
                         </span>
@@ -256,9 +176,7 @@ export function ModelSelector({
                 onOpenChange={setOpen}
                 selectedModelId={value}
                 onModelSelect={handleModelSelect}
-                requiresVision={requiresVision}
-                requiresStructuredOutput={requiresStructuredOutput}
             />
         </>
     );
-}
+});

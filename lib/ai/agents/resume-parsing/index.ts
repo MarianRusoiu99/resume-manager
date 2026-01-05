@@ -5,6 +5,7 @@
 
 import { generateText } from "ai";
 import { extractJSON } from '@/lib/ai/agents/shared';
+import { ValidationError, AIProviderError } from '@/lib/errors';
 import type { Resume } from "@/lib/validations/jsonresume";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
@@ -156,7 +157,7 @@ export async function parseResumeFromText(input: ParseResumeFromTextInput): Prom
                 .map(issue => `${issue.path.join('.')}: ${issue.message}`)
                 .join(', ');
  
-            throw new Error(`Resume data validation failed: ${errorDetails}`);
+            throw new ValidationError(`Resume data validation failed: ${errorDetails}`);
         }
  
         return validation.data;
@@ -208,7 +209,7 @@ export async function parseResumeFromImage(input: ParseResumeFromImageInput): Pr
                 .map(issue => `${issue.path.join('.')}: ${issue.message}`)
                 .join(', ');
  
-            throw new Error(`Resume data validation failed: ${errorDetails}`);
+            throw new ValidationError(`Resume data validation failed: ${errorDetails}`);
         }
  
         return validation.data;

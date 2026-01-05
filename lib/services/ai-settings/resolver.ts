@@ -56,14 +56,8 @@ export async function resolveProviderForFeature(
     logger.warn(`User's preferred provider ${preference.providerId} is no longer valid`);
   }
 
-  const modelsResult = await apiProviderService.getAvailableModels(userId);
-  if (!modelsResult.success || modelsResult.data.allModels.length === 0) {
-    return null;
-  }
-
-  const firstModel = modelsResult.data.allModels[0];
-  return {
-    providerId: firstModel.providerId,
-    modelId: firstModel.id,
-  };
+  // NOTE: We deliberately do NOT fallback to the first available model.
+  // If the user hasn't explicitly set a preference, or their preference is invalid,
+  // we return null. This forces the UI/Application to prompt the user to select a model.
+  return null;
 }

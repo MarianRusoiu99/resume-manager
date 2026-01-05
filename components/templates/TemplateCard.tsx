@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useEffect, memo } from 'react';
+import { ExternalServiceError } from "@/lib/errors";
 import { Edit, Eye, Copy, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from '@/components/shared/EntityCard';
 import type { GalleryCardAction } from '@/components/shared/GalleryCard';
@@ -123,7 +124,7 @@ export const TemplateCard = memo(function TemplateCard({
         });
 
         if (!response.ok) {
-          throw new Error('Failed to export PDF');
+          throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
         }
 
         const blob = await response.blob();
@@ -150,7 +151,7 @@ export const TemplateCard = memo(function TemplateCard({
       async () => {
         const res = await deleteTemplate(template.id);
         if (!res.success) {
-          throw new Error(res.error);
+          throw new ExternalServiceError('Template API', res.error);
         }
         return true;
       },
@@ -170,7 +171,7 @@ export const TemplateCard = memo(function TemplateCard({
       async () => {
         const res = await duplicateTemplate(template.id);
         if (!res.success) {
-          throw new Error(res.error);
+          throw new ExternalServiceError('Template API', res.error);
         }
         return true;
       },

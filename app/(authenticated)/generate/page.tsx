@@ -22,7 +22,6 @@ export default function GeneratePage() {
     profiles,
     hasAIProviders,
     isLoadingMetadata,
-    defaultModelId,
     defaultProfileId,
   } = useGenerateMetadata();
 
@@ -52,7 +51,6 @@ export default function GeneratePage() {
               hasAIProviders={hasAIProviders}
               isLoadingMetadata={isLoadingMetadata}
               defaultProfileId={defaultProfileId}
-              defaultModelId={defaultModelId}
             />
           </TabsContent>
 
@@ -61,7 +59,6 @@ export default function GeneratePage() {
               profiles={profiles}
               hasAIProviders={hasAIProviders}
               defaultProfileId={defaultProfileId}
-              defaultModelId={defaultModelId}
             />
           </TabsContent>
         </div>

@@ -6,6 +6,7 @@
  */
 
 import mammoth from 'mammoth';
+import { ValidationError } from "@/lib/errors";
 import { IDocumentParserService } from '../interfaces/document-parser.service.interface';
 import { ServiceResult } from '@/lib/types/service-result';
 import { withServiceError, ServiceErrors } from '../utils/service-wrapper';
@@ -129,14 +130,19 @@ export class DocumentParserService implements IDocumentParserService {
     }
 
     try {
-      // Dynamic import for pdf-parse
+      // Dynamic import for pdf-parse (v2.x uses PDFParse class)
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const pdfParse = require('pdf-parse');
+      const { PDFParse } = require('pdf-parse');
       
-      const result = await pdfParse(buffer, {
-        // Limit to first 50 pages for security
-        max: 50,
+      // Convert Buffer to Uint8Array as required by pdf-parse v2
+      const uint8Array = new Uint8Array(buffer);
+      
+      const parser = new PDFParse(uint8Array, {
+        // Limit to first 50 pages for security (if supported by v2 options)
       });
+
+      // Call getText() instead of parse()
+      const result = await parser.getText();
 
       if (!result.text || result.text.trim().length === 0) {
         throw ServiceErrors.externalService(
@@ -145,7 +151,7 @@ export class DocumentParserService implements IDocumentParserService {
       }
 
       logger.info('PDF parsed successfully', {
-        pages: result.numpages,
+        pages: result.total || 0, // v2 returns 'total' for total pages
         textLength: result.text.length,
       });
 
@@ -178,7 +184,7 @@ export class DocumentParserService implements IDocumentParserService {
       const result = await mammoth.extractRawText({ buffer });
       
       if (!result.value || result.value.trim().length === 0) {
-        throw new Error('No text content extracted from DOCX');
+        throw new ValidationError('No text content extracted from DOCX');
       }
 
       // Log any warnings from mammoth

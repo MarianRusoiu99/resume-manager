@@ -118,7 +118,7 @@ export function useExportPdf({
       if (!template) {
         const templatesResult = await getTemplates();
         if (!templatesResult.success || !templatesResult.data?.length) {
-          throw new Error(templatesResult.success ? 'No templates available' : templatesResult.error);
+          throw new NotFoundError('Templates');
         }
         template = templatesResult.data[0] as unknown as Template;
       }
@@ -136,7 +136,7 @@ export function useExportPdf({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to export PDF');
+        throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
       }
 
       // Download the PDF

@@ -1,4 +1,5 @@
 import { LucideIcon } from "lucide-react";
+import { memo } from "react";
 
 interface SectionHeaderProps {
     icon: LucideIcon;
@@ -7,7 +8,7 @@ interface SectionHeaderProps {
     className?: string;
 }
 
-export function SectionHeader({ icon: Icon, title, description, className = "" }: SectionHeaderProps) {
+export const SectionHeader = memo(function SectionHeader({ icon: Icon, title, description, className = "" }: SectionHeaderProps) {
     return (
         <div className={`flex items-center gap-3 ${className}`}>
             <div className="p-2 bg-primary/10 rounded-lg">
@@ -21,4 +22,4 @@ export function SectionHeader({ icon: Icon, title, description, className = "" }
             </div>
         </div>
     );
-}
+});

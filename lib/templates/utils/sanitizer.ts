@@ -1,4 +1,5 @@
 import DOMPurify from 'isomorphic-dompurify';
+import { ValidationError } from '@/lib/errors';
 
 /**
  * Template Sanitization Utilities
@@ -19,7 +20,7 @@ const DANGEROUS_PROTOCOL_PATTERN = /^\s*javascript\s*:/i;
 
 function assertReasonableLength(value: string, label: string) {
   if (value.length > MAX_TEMPLATE_LENGTH) {
-    throw new Error(`${label} is too large`);
+    throw new ValidationError(`${label} exceeds maximum length`);
   }
 }
 

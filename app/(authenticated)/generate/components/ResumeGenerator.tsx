@@ -12,16 +12,15 @@ import { saveGeneratedResume } from '@/app/actions/resume';
 import type { ProfileListItem } from '@/lib/actions/types';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/constants';
-
 import { getProfile } from '@/app/actions/profile';
 import { useTemplateSelection } from '@/components/preview/useTemplateSelection';
+import { useFeatureModelPreference } from '@/hooks';
 
 interface ResumeGeneratorProps {
   profiles: ProfileListItem[];
   hasAIProviders: boolean;
   isLoadingMetadata: boolean;
   defaultProfileId: string;
-  defaultModelId: string;
 }
 
 export function ResumeGenerator({
@@ -29,12 +28,13 @@ export function ResumeGenerator({
   hasAIProviders,
   isLoadingMetadata,
   defaultProfileId,
-  defaultModelId,
 }: ResumeGeneratorProps) {
   const [selectedProfileId, setSelectedProfileId] = useState(() => defaultProfileId);
-  const [selectedModelId, setSelectedModelId] = useState(() => defaultModelId);
   const [jobDescription, setJobDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Use feature model preference hook for resume generation
+  const { modelId, providerId, isLoading: isModelLoading, updatePreference } = useFeatureModelPreference('resume');
 
   // Synchronize internal state with defaultProfileId when it changes (e.g. after loading)
   useEffect(() => {
@@ -43,15 +43,9 @@ export function ResumeGenerator({
     }
   }, [defaultProfileId, selectedProfileId]);
 
-  useEffect(() => {
-    if (defaultModelId && !selectedModelId) {
-      setSelectedModelId(defaultModelId);
-    }
-  }, [defaultModelId, selectedModelId]);
-
-  const handleModelChange = useCallback((modelId: string) => {
-    setSelectedModelId(modelId);
-  }, []);
+  const handleModelChange = useCallback((newModelId: string, newProviderId: string) => {
+    updatePreference(newModelId, newProviderId);
+  }, [updatePreference]);
 
   const {
     generate,
@@ -75,6 +69,11 @@ export function ResumeGenerator({
       return;
     }
 
+    if (!modelId) {
+      toast.error('Please select an AI model first');
+      return;
+    }
+
     // Fetch the full profile to get the resume data
     const profileResult = await getProfile(selectedProfileId);
     if (!profileResult.success || !profileResult.data) {
@@ -85,10 +84,10 @@ export function ResumeGenerator({
     await generate({
       jobDescription,
       personalInstructions: '',
-      overrideModelId: selectedModelId,
+      overrideModelId: modelId,
       profileResume: profileResult.data.resume,
     });
-  }, [generate, jobDescription, selectedModelId, selectedProfileId]);
+  }, [generate, jobDescription, modelId, selectedProfileId]);
 
   const { selectedTemplateId } = useTemplateSelection({
     profileId: selectedProfileId,
@@ -171,10 +170,11 @@ export function ResumeGenerator({
               <label htmlFor="ai-model-selector" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model Preference</label>
               <ModelSelector
                 data-test="ai-model-selector"
-                value={selectedModelId}
+                value={modelId}
                 onValueChange={handleModelChange}
                 feature="resume"
                 requiresStructuredOutput={true}
+                isLoading={isModelLoading}
                 className="w-full"
               />
             </div>
@@ -191,7 +191,7 @@ export function ResumeGenerator({
           <Button
             className="w-full rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all font-bold uppercase tracking-widest h-12"
             size="lg"
-            disabled={isGenerating || jobDescription.length < 50 || !hasAIProviders}
+            disabled={isGenerating || jobDescription.length < 50 || !hasAIProviders || !modelId}
             onClick={handleGenerate}
           >
             {isGenerating ? (
@@ -221,18 +221,19 @@ export function ResumeGenerator({
         )}
       </Card>
 
-      <Card className="bg-muted/30 p-8 flex flex-col min-h-[600px] rounded-2xl border-none shadow-inner">
+      <div className="bg-card rounded-2xl overflow-hidden shadow-sm flex flex-col h-[800px] min-h-[600px] border-none">
         {generatedResume ? (
           <ResumePreview
             resumeData={generatedResume}
             showTemplateSelector={true}
             showCard={false}
-            className="shadow-2xl rounded-xl overflow-hidden"
+            className="w-full h-full"
+            disableScaling={false}
             headerActions={
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 px-4 rounded-lg font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all"
+                className="h-8 px-4 rounded-lg font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all"
                 onClick={handleSave}
                 disabled={isSaving}
               >
@@ -252,7 +253,7 @@ export function ResumeGenerator({
             </p>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

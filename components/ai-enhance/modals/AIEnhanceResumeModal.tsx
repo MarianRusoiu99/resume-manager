@@ -24,6 +24,7 @@ import { RESUME_PRESETS } from '../types';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { ModelSelector } from '@/components/ai/ModelSelector';
 import type { ResumeEnhancementOutput } from '@/lib/ai/modes/types';
+import { useFeatureModelPreference } from '@/hooks';
 
 import type { ConversationAttachment } from '../hooks/useConversation';
 
@@ -58,17 +59,17 @@ export function AIEnhanceResumeModal({
   description = 'AI will improve your entire resume: better wording, stronger impact, and professional tone.',
 }: Readonly<AIEnhanceResumeModalProps>) {
   const [viewMode, setViewMode] = useState<ViewMode>('visual');
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const { modelId, updatePreference, isLoading: isPreferencesLoading } = useFeatureModelPreference('enhance');
   const [instructions, setInstructions] = useState('');
 
-  const handleModelChange = useCallback((modelId: string) => {
-    setSelectedModel(modelId);
-  }, []);
+  const handleModelChange = useCallback((newModelId: string, newProviderId: string) => {
+    updatePreference(newModelId, newProviderId);
+  }, [updatePreference]);
 
   // Use centralized enhancement hook
   const {
     runTask,
-    isLoading,
+    isLoading: isEnhancing,
     output,
   } = useAITask<ResumeEnhancementOutput>({
     mode: 'resume-enhancement',
@@ -105,12 +106,12 @@ export function AIEnhanceResumeModal({
     runTask({
       message: instructions,
       attachments: mappedAttachments,
-      modelId: selectedModel,
+      modelId: modelId,
       context: {
         currentResume: resume,
       }
     });
-  }, [instructions, runTask, resume, selectedModel]);
+  }, [instructions, runTask, resume, modelId]);
 
   const footer = (
     <>
@@ -118,7 +119,7 @@ export function AIEnhanceResumeModal({
         type="button"
         variant="ghost"
         onClick={handleCancel}
-        disabled={isLoading}
+        disabled={isEnhancing}
         className="h-9 px-4 text-muted-foreground hover:text-foreground"
       >
         <X className="h-4 w-4 mr-2" />
@@ -128,7 +129,7 @@ export function AIEnhanceResumeModal({
       <Button
         type="button"
         onClick={handleAccept}
-        disabled={!hasEnhancement || isLoading}
+        disabled={!hasEnhancement || isEnhancing}
         className="h-9 px-6 bg-primary shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all font-semibold"
       >
         <Check className="h-4 w-4 mr-2" />
@@ -154,10 +155,10 @@ export function AIEnhanceResumeModal({
 
   const rightAction = (
     <ModelSelector
-      value={selectedModel}
+      value={modelId}
       onValueChange={handleModelChange}
-      feature="enhance"
       requiresStructuredOutput={true}
+      isLoading={isPreferencesLoading}
       className="h-9"
     />
   );
@@ -180,7 +181,7 @@ export function AIEnhanceResumeModal({
           onChange={setInstructions}
           onSubmit={handleEnhance}
           presets={RESUME_PRESETS}
-          isLoading={isLoading}
+          isLoading={isEnhancing}
           hasExistingContent={hasEnhancement}
           showFileAttachment={true}
           className="flex-shrink-0"
@@ -194,14 +195,14 @@ export function AIEnhanceResumeModal({
               originalResume={resume}
               enhancedResume={enhancedResume as Resume}
               templateId={templateId}
-              isEnhancing={isLoading}
+              isEnhancing={isEnhancing}
               className="h-full"
             />
           ) : (
             <ResumeTextComparison
               originalResume={resume}
               enhancedResume={enhancedResume as Resume}
-              isEnhancing={isLoading}
+              isEnhancing={isEnhancing}
               className="h-full"
             />
           )}

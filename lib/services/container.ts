@@ -82,14 +82,14 @@ export class ServiceContainer {
     // Initialize services with dependency injection
     this._profileService = new ProfileService(profileRepo, cache);
     this._analyticsService = analyticsServiceInstance;
-    this._resumeGenerationService = new ResumeGenerationService(generatedResumeRepo, this._profileService);
+    this._resumeGenerationService = new ResumeGenerationService(generatedResumeRepo, this._profileService, this._notificationService);
     this._resumeCrudService = new ResumeCrudService(generatedResumeRepo);
     this._notificationService = new NotificationService(notificationRepo);
     this._apiProviderService = new ApiProviderService(apiProviderRepo);
     this._userAISettingsService = new UserAISettingsService(userAISettingsRepo);
     this._aiService = aiServiceInstance;
     this._templateService = new TemplateService(templateRepo);
-    this._coverLetterService = new CoverLetterService(coverLetterRepo);
+    this._coverLetterService = new CoverLetterService(coverLetterRepo, this._notificationService);
     this._documentParserService = new DocumentParserService();
   }
 

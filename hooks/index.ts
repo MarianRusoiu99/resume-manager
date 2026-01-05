@@ -43,6 +43,7 @@ export { useCoverLetterOperations } from './features/useCoverLetterOperations';
 export { useResumeOperations } from './features/useResumeOperations';
 export { useResourceOperations } from './features/useResourceOperations';
 export type { ResourceOperationsConfig, ResourceOperationsReturn } from './features/useResourceOperations';
+export { useFeatureModelPreference } from './useFeatureModelPreference';
 
 // ============================================================================
 // Preview Hooks - Resume preview-specific (re-exported from components/preview)

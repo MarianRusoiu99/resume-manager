@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ExternalServiceError } from "@/lib/errors";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -54,7 +55,7 @@ export function ResumeImportButton({ onImportSuccess }: Readonly<ResumeImportBut
                     const errorMessage = firstError
                         ? `Invalid field: ${firstError.path.join(".")} - ${firstError.message}`
                         : "JSON doesn't match Resume schema.";
-                    throw new Error(errorMessage);
+                    throw new ExternalServiceError('Resume Import', errorMessage);
                 }
 
                 return validation.data;

@@ -3,6 +3,7 @@ import * as schemas from "@/lib/forms/form-schema";
 import type { Resume } from "@/lib/validations/jsonresume";
 import type { FormSchema, FieldConfig } from "@/lib/forms/schemas/types";
 import type { ZodType } from "zod";
+import type { GenericFieldConfig, GenericFormSchema, DynamicDataTransformer } from "@/lib/types/form-config";
 
 export type EditorSectionType = 'object' | 'list';
 
@@ -12,7 +13,6 @@ export type EditorSectionType = 'object' | 'list';
  * Note: This config uses flexible typing because each section has different
  * data shapes. The consuming components should validate/cast as needed.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- EditorSection requires flexible typing for dynamic form configurations
 export interface EditorSection {
   id: string;
   label: string;
@@ -24,13 +24,13 @@ export interface EditorSection {
   /** Zod schema for validation (object sections) */
   schema?: ZodType;
   /** Field configurations for object sections */
-  fields?: FieldConfig<any>[];
+  fields?: GenericFieldConfig[];
   /** Form schema for list sections */
-  config?: FormSchema<any>;
-  /** Transform data to form format */
-  toForm?: (data: any) => any;
-  /** Transform form data back to resume format */
-  fromForm?: (data: any) => any;
+  config?: GenericFormSchema;
+  /** Transform data to form format - type is flexible to support various resume field types */
+  toForm?: (data: unknown) => unknown;
+  /** Transform form data back to resume format - type is flexible to support various resume field types */
+  fromForm?: (data: unknown) => unknown;
 }
 
 export const EDITOR_CONFIG: EditorSection[] = [
@@ -43,8 +43,8 @@ export const EDITOR_CONFIG: EditorSection[] = [
     field: 'basics',
     schema: schemas.personalInfoFormSchema,
     fields: schemas.personalInfoFields,
-    toForm: schemas.basicsToFormData,
-    fromForm: schemas.formDataToBasics,
+    toForm: schemas.basicsToFormData as (data: unknown) => unknown,
+    fromForm: schemas.formDataToBasics as (data: unknown) => unknown,
   },
   {
     id: "summary",
@@ -56,8 +56,8 @@ export const EDITOR_CONFIG: EditorSection[] = [
     schema: schemas.summaryFormSchema,
     fields: schemas.summaryFields,
     // Custom to/from to handle summary within basics
-    toForm: (basics: Resume['basics']) => ({ summary: basics?.summary || "" }),
-    fromForm: (data: { summary: string }) => ({ summary: data.summary }),
+    toForm: ((basics: Resume['basics']) => ({ summary: basics?.summary || "" })) as (data: unknown) => unknown,
+    fromForm: ((data: { summary: string }) => ({ summary: data.summary })) as (data: unknown) => unknown,
   },
   {
     id: "experience",

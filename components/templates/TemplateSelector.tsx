@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback, memo } from 'react';
+import { ExternalServiceError } from "@/lib/errors";
 import { toast } from 'sonner';
 import type { TemplateBase } from '@/lib/types/template';
 import { createComponentLogger } from '@/lib/utils/client-logger';
@@ -15,7 +16,7 @@ interface TemplateSelector {
   onTemplateChange: () => void;
 }
 
-export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange }: TemplateSelector) {
+export const TemplateSelector = memo(function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange }: TemplateSelector) {
   const [templates, setTemplates] = useState<TemplateBase[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(currentTemplateId);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,7 +29,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
         setIsLoading(true);
         const result = await getTemplates();
         if (!result.success) {
-          throw new Error(result.error);
+          throw new ExternalServiceError('Template API', result.error);
         }
 
         setTemplates((result.data as unknown as TemplateBase[]) ?? []);
@@ -45,7 +46,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     }
   }, [isOpen]);
 
-  const handleUpdateTemplate = async () => {
+  const handleUpdateTemplate = useCallback(async () => {
     if (!selectedTemplateId || selectedTemplateId === currentTemplateId) {
       setIsOpen(false);
       return;
@@ -58,7 +59,7 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
       });
 
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ExternalServiceError('Template API', result.error);
       }
 
       toast.success('Template updated successfully');
@@ -71,9 +72,12 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
     } finally {
       setIsUpdating(false);
     }
-  };
+  }, [selectedTemplateId, currentTemplateId, resumeId, onTemplateChange]);
 
-  const currentTemplate = templates.find(t => t.id === currentTemplateId);
+  const currentTemplate = useMemo(
+    () => templates.find(t => t.id === currentTemplateId),
+    [templates, currentTemplateId]
+  );
 
   if (!isOpen) {
     return (
@@ -161,4 +165,4 @@ export function TemplateSelector({ currentTemplateId, resumeId, onTemplateChange
       </div>
     </div>
   );
-}
+});

@@ -6,7 +6,7 @@
  * and live resume preview
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import type { ResumeTemplate } from '@/lib/templates/template';
@@ -68,7 +68,7 @@ interface TemplateEditorProps {
   readonly isNew?: boolean;
 }
 
-export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEditorProps>) {
+export const TemplateEditor = memo(function TemplateEditor({ template, isNew = false }: Readonly<TemplateEditorProps>) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -96,7 +96,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
   });
 
   // Handle imported template data
-  const handleImportComplete = (importedTemplate: {
+  const handleImportComplete = useCallback((importedTemplate: {
     htmlTemplate: string;
     name?: string;
     description?: string;
@@ -108,9 +108,9 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       description: importedTemplate.description || prev.description,
     }));
     setImportModalOpen(false);
-  };
+  }, [setFormData]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setSaving(true);
     try {
       const payload = {
@@ -142,7 +142,7 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     } finally {
       setSaving(false);
     }
-  };
+  }, [formData, isNew, template?.id, clearDraft, router]);
 
   // Add mount state to ensure editor loads on client
   const [mounted, setMounted] = useState(false);
@@ -150,12 +150,12 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
     setMounted(true);
   }, []);
 
-  const handleEditorDidMount: OnMount = (editor) => {
+  const handleEditorDidMount: OnMount = useCallback((editor) => {
     // Force a layout refresh after a short delay to ensure container is ready
     setTimeout(() => {
       editor.layout();
     }, 0);
-  };
+  }, []);
 
   return (
     <Page
@@ -280,4 +280,4 @@ export function TemplateEditor({ template, isNew = false }: Readonly<TemplateEdi
       />
     </Page>
   );
-}
+});

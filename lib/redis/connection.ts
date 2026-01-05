@@ -3,6 +3,7 @@
  */
 
 import { RedisOptions as IoRedisOptions } from 'ioredis';
+import { ValidationError } from '@/lib/errors';
 
 /**
  * Redis connection options
@@ -62,6 +63,6 @@ export function parseRedisUrl(url: string): Partial<IoRedisOptions> {
       tls: parsed.protocol === 'rediss:' ? {} : undefined,
     };
   } catch {
-    throw new Error(`Invalid Redis URL: ${url}`);
+    throw new ValidationError(`Invalid Redis URL: ${url}`);
   }
 }

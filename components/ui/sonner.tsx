@@ -15,6 +15,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       style={{
         '--width': '500px',
       } as React.CSSProperties}
+      duration={700}
       toastOptions={{
         classNames: {
           toast:

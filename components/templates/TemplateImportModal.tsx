@@ -24,6 +24,7 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import { ModelSelector } from '@/components/ai/ModelSelector';
 import { ResumePreview } from '../resume/ResumePreview';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
+import { useFeatureModelPreference } from '@/hooks';
 
 interface TemplateImportModalProps {
   open: boolean;
@@ -36,7 +37,11 @@ export function TemplateImportModal({
   onOpenChange,
   onImportComplete,
 }: Readonly<TemplateImportModalProps>) {
-  const [selectedModelId, setSelectedModelId] = React.useState<string>('');
+  const { modelId, updatePreference, isLoading: isPreferencesLoading } = useFeatureModelPreference('template');
+
+  const handleModelChange = React.useCallback((newModelId: string, newProviderId: string) => {
+    updatePreference(newModelId, newProviderId);
+  }, [updatePreference]);
 
   const {
     selectedFile,
@@ -84,8 +89,8 @@ export function TemplateImportModal({
   });
 
   const onExtract = useCallback(() => {
-    handleImport(selectedModelId);
-  }, [handleImport, selectedModelId]);
+    handleImport(modelId);
+  }, [handleImport, modelId]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -192,11 +197,11 @@ export function TemplateImportModal({
                 <CheckCircle className="h-5 w-5" />
                 Template extracted and refined successfully!
               </div>
-              
+
               <div className="border rounded-lg overflow-hidden bg-white shadow-sm h-[300px] relative">
                 <div className="absolute inset-0 overflow-auto p-4 origin-top scale-[0.6] w-[166.6%] h-[166.6%]">
-                    <ResumePreview 
-                    resumeData={sampleResume as Resume} 
+                  <ResumePreview
+                    resumeData={sampleResume as Resume}
                     templateHtml={template.htmlTemplate}
                     showTemplateSelector={false}
                     showCard={false}
@@ -226,12 +231,12 @@ export function TemplateImportModal({
                   <span className="text-sm font-medium">Model Selection</span>
                   <span className="text-xs text-muted-foreground">Select a vision-capable model</span>
                 </div>
-                <ModelSelector 
-                  feature="template"
+                <ModelSelector
                   requiresVision
                   requiresStructuredOutput
-                  value={selectedModelId}
-                  onValueChange={(mid) => setSelectedModelId(mid)}
+                  value={modelId}
+                  onValueChange={handleModelChange}
+                  isLoading={isPreferencesLoading}
                   className="w-[200px]"
                 />
               </div>

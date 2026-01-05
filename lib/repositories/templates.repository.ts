@@ -9,6 +9,7 @@ import { prisma } from '@/lib/db/index';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { GenericRepository } from './generic.repository';
+import { RecordNotFoundError } from '@/lib/errors/database';
 import type { ITemplateRepository, CreateTemplateInput, UpdateTemplateInput } from './interfaces/templates.repository.interface';
 
 /**
@@ -125,7 +126,9 @@ export class TemplateRepository
    */
   override async delete(id: string): Promise<ResumeTemplate> {
     const template = await this.findById(id);
-    if (!template) throw new Error('Template not found');
+    if (!template) {
+      throw new RecordNotFoundError('ResumeTemplate', id, 'delete');
+    }
 
     await this.delegate.delete({
       where: { id },

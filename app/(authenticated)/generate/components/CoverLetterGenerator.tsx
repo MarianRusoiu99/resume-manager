@@ -11,26 +11,27 @@ import { useCoverLetterGeneration } from '@/components/ai-enhance/hooks';
 import { createCoverLetter } from '@/app/actions/cover-letter';
 import type { ProfileListItem } from '@/lib/actions/types';
 import { getProfile } from '@/app/actions/profile';
+import { useFeatureModelPreference } from '@/hooks';
 
 interface CoverLetterGeneratorProps {
   profiles: ProfileListItem[];
   hasAIProviders: boolean;
   defaultProfileId: string;
-  defaultModelId: string;
 }
 
 export function CoverLetterGenerator({
   profiles,
   hasAIProviders,
   defaultProfileId,
-  defaultModelId,
 }: CoverLetterGeneratorProps) {
   // Initialize with defaults - use key pattern or controlled component for reset
   const [selectedProfileId, setSelectedProfileId] = useState(() => defaultProfileId);
-  const [selectedModelId, setSelectedModelId] = useState(() => defaultModelId);
   const [jobDescription, setJobDescription] = useState('');
   const [personalInstructions, setPersonalInstructions] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Use feature model preference hook for cover letter generation
+  const { modelId, providerId, isLoading: isModelLoading, updatePreference } = useFeatureModelPreference('coverLetter');
 
   // Synchronize internal state with defaultProfileId when it changes (e.g. after loading)
   useEffect(() => {
@@ -39,15 +40,9 @@ export function CoverLetterGenerator({
     }
   }, [defaultProfileId, selectedProfileId]);
 
-  useEffect(() => {
-    if (defaultModelId && !selectedModelId) {
-      setSelectedModelId(defaultModelId);
-    }
-  }, [defaultModelId, selectedModelId]);
-
-  const handleModelChange = useCallback((modelId: string) => {
-    setSelectedModelId(modelId);
-  }, []);
+  const handleModelChange = useCallback((newModelId: string, newProviderId: string) => {
+    updatePreference(newModelId, newProviderId);
+  }, [updatePreference]);
 
   const {
     generate,
@@ -70,6 +65,11 @@ export function CoverLetterGenerator({
       return;
     }
 
+    if (!modelId) {
+      toast.error('Please select an AI model first');
+      return;
+    }
+
     // Fetch the full profile to get the resume data
     const profileResult = await getProfile(selectedProfileId);
     if (!profileResult.success || !profileResult.data) {
@@ -81,10 +81,10 @@ export function CoverLetterGenerator({
       jobDescription,
       profileId: selectedProfileId,
       personalInstructions,
-      overrideModelId: selectedModelId,
+      overrideModelId: modelId,
       profileResume: profileResult.data.resume,
     });
-  }, [generate, jobDescription, personalInstructions, selectedModelId, selectedProfileId]);
+  }, [generate, jobDescription, personalInstructions, modelId, selectedProfileId]);
 
   const handleSave = async () => {
     if (!generatedCoverLetter) return;
@@ -167,10 +167,11 @@ export function CoverLetterGenerator({
               <label htmlFor="model-select" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model</label>
               <ModelSelector
                 data-test="model-select"
-                value={selectedModelId}
+                value={modelId}
                 onValueChange={handleModelChange}
                 feature="coverLetter"
                 requiresStructuredOutput={true}
+                isLoading={isModelLoading}
                 className="w-full"
               />
             </div>
@@ -182,7 +183,7 @@ export function CoverLetterGenerator({
             <Button
               className="flex-1 rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all font-bold uppercase tracking-widest h-12"
               size="lg"
-              disabled={isGenerating || jobDescription.length < 50 || !hasAIProviders}
+              disabled={isGenerating || jobDescription.length < 50 || !hasAIProviders || !modelId}
               onClick={handleGenerate}
             >
               {isGenerating ? (
@@ -196,14 +197,14 @@ export function CoverLetterGenerator({
         </div>
       </Card>
 
-      <Card className="bg-muted/30 p-8 flex flex-col min-h-[600px] rounded-2xl border-none shadow-inner relative overflow-hidden">
+      <div className="bg-card rounded-2xl overflow-hidden shadow-sm flex flex-col min-h-[600px] border-none relative h-[800px]">
         {generatedCoverLetter ? (
-          <div className="h-full flex flex-col shadow-2xl rounded-xl overflow-hidden border-none bg-background relative">
-            <div className="absolute top-4 right-4 z-10">
+          <div className="h-full flex flex-col relative">
+            <div className="absolute top-4 right-4 z-10 flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                className="h-9 px-4 rounded-lg font-bold uppercase tracking-widest text-[10px] bg-background/80 backdrop-blur-sm border-primary/10 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+                className="h-8 px-4 rounded-lg font-bold uppercase tracking-widest text-[10px] bg-background/80 backdrop-blur-sm border-primary/10 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
                 onClick={handleSave}
                 disabled={isSaving}
               >
@@ -211,29 +212,31 @@ export function CoverLetterGenerator({
                 Save to Library
               </Button>
             </div>
-            <div className="flex-1 overflow-auto">
-              <CoverLetterEditor
-                content={generatedCoverLetter}
-                editable={true}
-                onSave={async (content) => {
-                  const result = await createCoverLetter(
-                    content,
-                    jobDescription,
-                    aiJobTitle || '',
-                    aiCompanyName || '',
-                    {
-                      personalInstructions: personalInstructions,
-                      jobDescription: jobDescription,
+            <div className="flex-1 overflow-auto bg-muted/30 p-4 md:p-8">
+              <div className="max-w-4xl mx-auto h-full shadow-2xl rounded-xl overflow-hidden border-none bg-background">
+                <CoverLetterEditor
+                  content={generatedCoverLetter}
+                  editable={true}
+                  onSave={async (content) => {
+                    const result = await createCoverLetter(
+                      content,
+                      jobDescription,
+                      aiJobTitle || '',
+                      aiCompanyName || '',
+                      {
+                        personalInstructions: personalInstructions,
+                        jobDescription: jobDescription,
+                      }
+                    );
+                    if (result.success) {
+                      toast.success('Cover letter saved to library');
+                    } else {
+                      toast.error(result.error || 'Failed to save cover letter');
                     }
-                  );
-                  if (result.success) {
-                    toast.success('Cover letter saved to library');
-                  } else {
-                    toast.error(result.error || 'Failed to save cover letter');
-                  }
-                }}
-                className="h-full"
-              />
+                  }}
+                  className="h-full"
+                />
+              </div>
             </div>
           </div>
         ) : (
@@ -247,7 +250,7 @@ export function CoverLetterGenerator({
             </p>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 }

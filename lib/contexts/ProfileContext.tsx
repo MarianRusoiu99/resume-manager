@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { logger } from "@/lib/utils/logger";
 import { type ProfileDto } from "@/lib/actions/types";
+import { ConfigurationError, ExternalServiceError } from "@/lib/errors";
 // eslint-disable-next-line no-restricted-imports -- ProfileContext is a client boundary that needs this action
 import { getProfiles } from "@/app/actions/profile";
 
@@ -44,7 +45,7 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 
       const result = await getProfiles();
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ExternalServiceError('Profile API', result.error);
       }
 
       const profilesData = ((result.data as unknown as ProfileDto[]) ?? []).map((profile) => ({
@@ -111,7 +112,7 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
 export function useProfile() {
   const context = useContext(ProfileContext);
   if (context === undefined) {
-    throw new Error("useProfile must be used within a ProfileProvider");
+    throw new ConfigurationError("useProfile must be used within a ProfileProvider");
   }
   return context;
 }

@@ -90,18 +90,18 @@ export function useResumeImport({ onImportComplete, onClose }: UseResumeImportOp
 
 
       if (!result.success) {
-        throw new Error(result.error ?? 'Failed to import resume');
+        throw new ExternalServiceError('Resume Import', result.error ?? 'Failed to import resume');
       }
 
       if (!result.data?.resume) {
-        throw new Error('No resume data returned');
+        throw new ValidationError('No resume data returned');
       }
 
       // Validate the extracted resume data
       const validation = resumeSchema.safeParse(result.data.resume);
       if (!validation.success) {
         log.error('Validation errors', undefined, { issues: validation.error.issues });
-        throw new Error("Extracted data doesn't match resume schema. Please try again with a different document.");
+        throw new ValidationError("Extracted data doesn't match resume schema. Please try again with a different document.");
       }
 
       setProgress(100);

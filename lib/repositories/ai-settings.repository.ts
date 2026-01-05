@@ -184,6 +184,8 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
     providerId: string | null,
     modelId: string | null
   ): Promise<UserAISettingsData> {
+   
+
     // `UserAiPreference.providerId` is required in the new schema.
     // Clearing a preference is represented by deleting the row.
     if (!providerId) {
@@ -193,7 +195,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
       return (await this.findByUserId(userId)) ?? blankSettings(userId);
     }
 
-    await this.db.userAiPreference.upsert({
+    const result = await this.db.userAiPreference.upsert({
       where: { userId_feature: { userId, feature: toFeatureKey(feature) } },
       create: {
         userId,

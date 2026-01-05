@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { ConfigurationError } from "@/lib/errors";
 import { useIsMobile } from "@/hooks/useMobile"
 
 export const SIDEBAR_COOKIE_NAME = "sidebar_state"
@@ -25,7 +26,7 @@ export const SidebarContext = React.createContext<SidebarContextProps | null>(nu
 export function useSidebar() {
   const context = React.useContext(SidebarContext)
   if (!context) {
-    throw new Error("useSidebar must be used within a SidebarProvider.")
+    throw new ConfigurationError("useSidebar must be used within a SidebarProvider.");
   }
 
   return context

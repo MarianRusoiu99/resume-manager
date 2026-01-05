@@ -19,7 +19,7 @@ export interface SidebarMenuButtonProps extends React.ComponentProps<"button"> {
   isActive?: boolean;
   variant?: "default" | "outline";
   size?: "default" | "sm" | "lg";
-  tooltip?: string | React.ComponentProps<any>;
+  tooltip?: string;
 }
 
 export interface SidebarMenuActionProps extends React.ComponentProps<"button"> {

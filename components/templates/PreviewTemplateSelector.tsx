@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { ExternalServiceError } from "@/lib/errors";
 import { toast } from 'sonner';
 import { ChevronDown, Loader2 } from 'lucide-react';
 import { Search, Info } from 'lucide-react';
@@ -56,7 +57,7 @@ export function PreviewTemplateSelector({
         // We'll cast to ResumeTemplate[] since the API returns full objects
         const result = await getTemplates();
         if (!result.success) {
-          throw new Error(result.error);
+          throw new ExternalServiceError('Template API', result.error);
         }
 
         setTemplates((result.data as unknown as ResumeTemplate[]) ?? []);

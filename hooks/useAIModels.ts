@@ -63,7 +63,7 @@ export function useAIModels(options: UseAIModelsOptions = {}): UseAIModelsReturn
       const result = await getAllAvailableModels();
 
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ExternalServiceError('AI Models API', result.error);
       }
 
       const data = result.data as { allModels?: unknown[] };

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ExternalServiceError } from "@/lib/errors";
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { getResume, deleteResume, duplicateResume, updateResumeMetadata } from '@/app/actions/resume';
@@ -34,7 +35,7 @@ export function useResumeDetail(resumeId: string) {
 
       if (!result.success || !result.data) {
         const errorResult = result as { error?: string };
-        throw new Error(errorResult.error || 'Failed to fetch resume');
+        throw new ExternalServiceError('Resume API', errorResult.error || 'Failed to fetch resume');
       }
 
       setResume(result.data as ResumeData);
@@ -60,7 +61,7 @@ export function useResumeDetail(resumeId: string) {
 
       if (!result.success) {
         const errorResult = result as { error?: string };
-        throw new Error(errorResult.error || 'Failed to delete resume');
+        throw new ExternalServiceError('Resume API', errorResult.error || 'Failed to delete resume');
       }
 
       toast.success('Resume deleted successfully');
@@ -80,7 +81,7 @@ export function useResumeDetail(resumeId: string) {
 
       if (!result.success || !result.data) {
         const errorResult = result as { error?: string };
-        throw new Error(errorResult.error || 'Failed to duplicate resume');
+        throw new ExternalServiceError('Resume API', errorResult.error || 'Failed to duplicate resume');
       }
 
       toast.success('Resume duplicated successfully');
@@ -96,7 +97,7 @@ export function useResumeDetail(resumeId: string) {
   const updateMetadata = useCallback(async (metadata: { jobTitle?: string }) => {
     try {
       const result = await updateResumeMetadata(resumeId, metadata);
-      if (!result.success) throw new Error(result.error);
+      if (!result.success) throw new ExternalServiceError('Resume API', result.error);
       
       setResume(prev => prev ? { ...prev, ...metadata } : null);
       toast.success('Resume updated');

@@ -26,7 +26,7 @@ export function getMode(modeId: ConversationMode): AIMode | undefined {
 export function getModeOrThrow(modeId: ConversationMode): AIMode {
   const mode = modeRegistry.get(modeId);
   if (!mode) {
-    throw new Error(`Mode '${modeId}' not found in registry`);
+    throw new NotFoundError(`AI Mode '${modeId}'`);
   }
   return mode;
 }

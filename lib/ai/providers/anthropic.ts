@@ -7,6 +7,7 @@ import type { LanguageModel } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { BaseAIProvider, type AIModel, type ProviderConfig } from './base';
 import { logger } from '@/lib/utils/logger';
+import { createAIErrorFromResponse, AIProviderError } from '@/lib/errors';
 
 interface AnthropicModelResponse {
   data: Array<{
@@ -55,7 +56,7 @@ export class AnthropicProvider extends BaseAIProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`Anthropic API error: ${response.status} ${response.statusText}`);
+              throw createAIErrorFromResponse('Anthropic', response.status, response.statusText);
       }
 
       const data = await response.json() as AnthropicModelResponse;
@@ -72,9 +73,7 @@ export class AnthropicProvider extends BaseAIProvider {
       return models;
     } catch (error) {
       logger.error('Error fetching Anthropic models', error);
-      throw new Error(
-        `Failed to fetch models from Anthropic: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+      throw new AIProviderError('Anthropic', `Failed to fetch models: ${error instanceof Error ? error.message : 'Unknown error'}`, undefined, error);
     }
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useTransition } from 'react';
+import { useTransition, memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, Loader2 } from 'lucide-react';
 import { useDebouncedCallback } from '@mantine/hooks';
@@ -11,7 +11,7 @@ interface SearchInputProps {
   defaultValue?: string;
 }
 
-export function SearchInput({ 
+export const SearchInput = memo(function SearchInput({ 
   placeholder = "Search...", 
   defaultValue = "" 
 }: SearchInputProps) {
@@ -51,4 +51,4 @@ export function SearchInput({
       />
     </div>
   );
-}
+});

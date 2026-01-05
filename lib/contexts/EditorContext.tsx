@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useMemo, ReactNode } from "react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { useEditorPersistence } from "@/hooks/editor/useEditorPersistence";
+import { ConfigurationError } from "@/lib/errors";
 
 /**
  * Unified Editor Context Interface
@@ -93,7 +94,7 @@ export function EditorProvider({
 export function useEditor() {
   const context = useContext(EditorContext);
   if (context === undefined) {
-    throw new Error("useEditor must be used within an EditorProvider");
+    throw new ConfigurationError("useEditor must be used within an EditorProvider");
   }
   return context;
 }

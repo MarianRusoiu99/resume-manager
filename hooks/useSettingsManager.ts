@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { ExternalServiceError } from "@/lib/errors";
 import { type AISettings, type ApiProvider } from '@/lib/actions/types';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { getApiProviders } from '@/app/actions/api-provider';
@@ -34,7 +35,7 @@ export function useSettingsManager({ autoFetch = true }: UseSettingsManagerOptio
       const result = await getApiProviders();
 
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ExternalServiceError('Settings API', result.error);
       }
 
       setProviders((result.data as unknown as ApiProvider[]) ?? []);
@@ -58,7 +59,7 @@ export function useSettingsManager({ autoFetch = true }: UseSettingsManagerOptio
       const result = await getAISettings();
 
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ExternalServiceError('Settings API', result.error);
       }
 
       setAISettings(result.data as unknown as AISettings);

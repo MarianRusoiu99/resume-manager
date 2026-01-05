@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { type ReactNode, isValidElement } from "react";
+import { type ReactNode, isValidElement, memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, FolderOpen, type LucideIcon } from "lucide-react";
@@ -52,9 +52,9 @@ function isReactComponent(value: unknown): value is LucideIcon {
 
 /**
  * EmptyState - Standardized empty state component
- * 
+ *
  * Use this component to display empty states consistently across the app.
- * 
+ *
  * @example
  * ```tsx
  * if (items.length === 0) {
@@ -73,7 +73,7 @@ function isReactComponent(value: unknown): value is LucideIcon {
  * }
  * ```
  */
-export function EmptyState({
+export const EmptyState = memo(function EmptyState({
   icon: IconProp = FolderOpen,
   title,
   description,
@@ -124,9 +124,9 @@ export function EmptyState({
           {/* Custom secondary action (e.g., import button) */}
           {secondaryAction}
           {/* Array of secondary action buttons */}
-          {secondaryActions.map((sa, index) => (
+          {secondaryActions.map((sa) => (
             <Button
-              key={index}
+              key={sa.label}
               onClick={sa.onClick}
               variant={sa.variant || "outline"}
               disabled={sa.disabled}
@@ -145,7 +145,7 @@ export function EmptyState({
   }
 
   return content;
-}
+});
 
 /**
  * SearchEmptyState - Specialized empty state for search results

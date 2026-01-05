@@ -16,6 +16,7 @@ import { Trash2, Download, Copy, Sparkles, Edit, Save } from 'lucide-react';
 import { useExportPDF, useCoverLetterOperations } from '@/hooks';
 import { useCoverLetterDetail } from '@/hooks/features/useCoverLetterDetail';
 import { CoverLetterSidebar } from '@/components/cover-letter/detail/CoverLetterSidebar';
+import { FeatureErrorBoundary } from '@/components/error-boundaries';
 
 type CoverLetterMetadata = {
   model?: string;
@@ -134,138 +135,140 @@ export default function CoverLetterDetailPage() {
   }
 
   return (
-    <Page
-      title={getPageTitle()}
-      description="View and edit your cover letter"
-      scrollable={false}
-      breadcrumbs={[
-        { label: 'Cover Letters', href: '/cover-letters' },
-        { label: getPageTitle() },
-      ]}
-      actions={
-        <div className="flex gap-2">
-          {!isEditing ? (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setIsEditing(true);
-                  editorRef.current?.setIsEditing(true);
-                }}
-                className="h-8 rounded-none border-px"
-              >
-                <Edit className="w-3.5 h-3.5 mr-2" />
-                Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => editorRef.current?.copyToClipboard()}
-                className="h-8 rounded-none border-px"
-              >
-                <Copy className="w-3.5 h-3.5 mr-2" />
-                Copy
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => editorRef.current?.enhance()}
-                className="h-8 rounded-none border-px"
-              >
-                <Sparkles className="w-3.5 h-3.5 mr-2" />
-                AI Enhance
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExport}
-                disabled={isExportingPDF}
-                className="h-8 rounded-none border-px"
-              >
-                <Download className="w-3.5 h-3.5 mr-2" />
-                {isExportingPDF ? 'Exporting...' : 'Export PDF'}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDeleteDialogOpen(true)}
-                disabled={isDeleting}
-                className="h-8 rounded-none border-px text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="w-3.5 h-3.5 mr-2" />
-                Delete
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setIsEditing(false);
-                  editorRef.current?.setIsEditing(false);
-                }}
-                disabled={isSaving}
-                className="h-8 rounded-none border-px"
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => editorRef.current?.save()}
-                disabled={isSaving}
-                className="h-8 rounded-none border-px"
-              >
-                <Save className="w-3.5 h-3.5 mr-2" />
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </>
-          )}
-        </div>
-      }
-    >
-      <div className="flex flex-col h-full overflow-hidden bg-muted/20">
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] h-full gap-px bg-border border-b">
-            {/* Editor Pane */}
-            <div className="bg-background flex flex-col">
-              <div className="p-4 border-b bg-muted/10">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  Cover Letter Content
-                </span>
+    <FeatureErrorBoundary featureName="Cover Letter Editor">
+      <Page
+        title={getPageTitle()}
+        description="View and edit your cover letter"
+        scrollable={false}
+        breadcrumbs={[
+          { label: 'Cover Letters', href: '/cover-letters' },
+          { label: getPageTitle() },
+        ]}
+        actions={
+          <div className="flex gap-2">
+            {!isEditing ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsEditing(true);
+                    editorRef.current?.setIsEditing(true);
+                  }}
+                  className="h-8 rounded-none border-px"
+                >
+                  <Edit className="w-3.5 h-3.5 mr-2" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => editorRef.current?.copyToClipboard()}
+                  className="h-8 rounded-none border-px"
+                >
+                  <Copy className="w-3.5 h-3.5 mr-2" />
+                  Copy
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => editorRef.current?.enhance()}
+                  className="h-8 rounded-none border-px"
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-2" />
+                  AI Enhance
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                  disabled={isExportingPDF}
+                  className="h-8 rounded-none border-px"
+                >
+                  <Download className="w-3.5 h-3.5 mr-2" />
+                  {isExportingPDF ? 'Exporting...' : 'Export PDF'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={isDeleting}
+                  className="h-8 rounded-none border-px text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-2" />
+                  Delete
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsEditing(false);
+                    editorRef.current?.setIsEditing(false);
+                  }}
+                  disabled={isSaving}
+                  className="h-8 rounded-none border-px"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => editorRef.current?.save()}
+                  disabled={isSaving}
+                  className="h-8 rounded-none border-px"
+                >
+                  <Save className="w-3.5 h-3.5 mr-2" />
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </>
+            )}
+          </div>
+        }
+      >
+        <div className="flex flex-col h-full overflow-hidden bg-muted/20">
+          <div className="flex-1 overflow-y-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] h-full gap-px bg-border border-b">
+              {/* Editor Pane */}
+              <div className="bg-background flex flex-col">
+                <div className="p-4 border-b bg-muted/10">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Cover Letter Content
+                  </span>
+                </div>
+                <CoverLetterEditor
+                  ref={editorRef}
+                  content={coverLetter.content}
+                  contentJson={getMetadata().contentJson}
+                  editable={true}
+                  onSave={handleSaveCoverLetter}
+                  className="flex-1"
+                />
               </div>
-              <CoverLetterEditor
-                ref={editorRef}
-                content={coverLetter.content}
-                contentJson={getMetadata().contentJson}
-                editable={true}
-                onSave={handleSaveCoverLetter}
-                className="flex-1"
+
+              {/* Sidebar Pane */}
+              <CoverLetterSidebar
+                resumeId={coverLetter.resumeId}
+                jobDescription={coverLetter.jobPosting?.description ?? coverLetter.resume?.jobPosting?.description}
+                metadata={getMetadata()}
+                createdAt={coverLetter.createdAt}
               />
             </div>
-
-            {/* Sidebar Pane */}
-            <CoverLetterSidebar
-              resumeId={coverLetter.resumeId}
-              jobDescription={coverLetter.jobPosting?.description ?? coverLetter.resume?.jobPosting?.description}
-              metadata={getMetadata()}
-              createdAt={coverLetter.createdAt}
-            />
           </div>
         </div>
-      </div>
 
-      <ConfirmDialog
-        isOpen={deleteDialogOpen}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteDialogOpen(false)}
-        title="Delete Cover Letter"
-        message={`Are you sure you want to delete this cover letter? This action cannot be undone.`}
-        confirmText="Delete"
-        cancelText="Cancel"
-        variant="danger"
-      />
-    </Page>
+        <ConfirmDialog
+          isOpen={deleteDialogOpen}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleteDialogOpen(false)}
+          title="Delete Cover Letter"
+          message={`Are you sure you want to delete this cover letter? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          variant="danger"
+        />
+      </Page>
+    </FeatureErrorBoundary>
   );
 }

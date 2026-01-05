@@ -19,6 +19,7 @@ import {
   shouldSkipProxy,
   isPublicPath,
 } from '@/lib/auth/routes';
+import { env } from '@/lib/config/env';
 
 function buildStrictCsp(isDev: boolean): string {
   return [
@@ -75,7 +76,7 @@ function buildTemplateEditorCsp(isDev: boolean): string {
 }
 
 function applyCspHeader(request: NextRequest, response: NextResponse): NextResponse {
-  const isDev = process.env.NODE_ENV !== 'production';
+  const isDev = !env.isProduction;
   const pathname = request.nextUrl.pathname;
 
   const isTemplateEditorRoute = pathname === '/templates/new' || /^\/templates\/[^/]+$/.test(pathname);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { ExternalServiceError } from "@/lib/errors";
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { API_V1 } from '@/lib/constants';
@@ -45,7 +46,7 @@ export function useNotificationManager() {
       const result = await getNotifications({ includeRead: true });
 
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ExternalServiceError('Notification API', result.error);
       }
 
       setNotifications((result.data as unknown as Notification[]) ?? []);
@@ -83,7 +84,7 @@ export function useNotificationManager() {
     try {
       const result = await markAsReadAction(id);
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ExternalServiceError('Notification API', result.error);
       }
 
       // Update local state
@@ -103,7 +104,7 @@ export function useNotificationManager() {
     try {
       const result = await markAllAsReadAction();
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ExternalServiceError('Notification API', result.error);
       }
 
       // Update local state
@@ -121,7 +122,7 @@ export function useNotificationManager() {
     try {
       const result = await deleteNotificationAction(id);
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ExternalServiceError('Notification API', result.error);
       }
 
       // Update local state
@@ -148,7 +149,7 @@ export function useNotificationManager() {
       // Mark all read first (preserves current API behavior)
       const markResult = await markAllAsReadAction();
       if (!markResult.success) {
-        throw new Error(markResult.error);
+        throw new ExternalServiceError('Notification API', markResult.error);
       }
 
       await Promise.all(idsToDelete.map((id) => deleteNotificationAction(id)));
@@ -183,7 +184,11 @@ export function useNotificationManager() {
    * Add a notification to state (for real-time updates)
    */
   const addNotification = useCallback((notification: Notification) => {
-    setNotifications((prev) => [notification, ...prev]);
+    setNotifications((prev) => {
+      // Avoid duplicates from SSE if already in state
+      if (prev.some(n => n.id === notification.id)) return prev;
+      return [notification, ...prev];
+    });
     setUnreadCount((prev) => prev + 1);
 
     // Truncate title if too long (max 60 characters)
@@ -202,7 +207,7 @@ export function useNotificationManager() {
           },
         }
         : undefined,
-      duration: 5000,
+      duration: 700,
     });
   }, [router]);
 

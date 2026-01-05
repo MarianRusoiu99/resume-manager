@@ -32,27 +32,30 @@ export const GET = createApiHandler(async (req, ctx, session) => {
       select: { id: true, selectedTemplateId: true },
     });
 
-    return NextResponse.json({
+    const responseData = {
+      ai: aiPreferences.map(p => ({
+        feature: p.feature,
+        modelId: p.modelId,
+        modelKey: p.model?.modelKey,
+        providerId: p.providerId,
+        providerType: p.provider.provider,
+      })),
+      template: {
+        defaultProfileId: defaultProfile?.id,
+        defaultTemplateId: defaultProfile?.selectedTemplateId,
+      }
+    };
+    // Return ServiceResult - will be automatically wrapped by createApiHandler
+    return {
       success: true,
-      data: {
-        ai: aiPreferences.map(p => ({
-          feature: p.feature,
-          modelId: p.modelId,
-          modelKey: p.model?.modelKey,
-          providerId: p.providerId,
-          providerType: p.provider.provider,
-        })),
-        template: {
-          defaultProfileId: defaultProfile?.id,
-          defaultTemplateId: defaultProfile?.selectedTemplateId,
-        }
-      },
-    });
+      data: responseData
+    };
   } catch (error) {
     logger.error('Failed to fetch user preferences', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal Server Error' },
-      { status: 500 }
-    );
+    return {
+      success: false,
+      error: 'Failed to fetch preferences',
+      code: 'INTERNAL_ERROR'
+    };
   }
 });

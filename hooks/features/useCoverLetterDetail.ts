@@ -19,7 +19,7 @@ export function useCoverLetterDetail(coverLetterId: string) {
       const result = await getCoverLetter(coverLetterId);
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch cover letter');
+        throw new ExternalServiceError('Cover Letter API', result.error || 'Failed to fetch cover letter');
       }
 
       setCoverLetter(result.data as CoverLetterWithResume);
@@ -43,7 +43,7 @@ export function useCoverLetterDetail(coverLetterId: string) {
       });
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to save cover letter');
+        throw new ExternalServiceError('Cover Letter API', result.error || 'Failed to save cover letter');
       }
 
       setCoverLetter(result.data as CoverLetterWithResume);

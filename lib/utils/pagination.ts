@@ -4,6 +4,7 @@
  */
 
 import { clientLogger } from '@/lib/utils/client-logger';
+import { ValidationError, NotFoundError } from '@/lib/errors';
 
 const log = clientLogger.forComponent('pagination');
 
@@ -24,7 +25,7 @@ export function calculatePageScrollPosition(
   pageHeight: number = A4_HEIGHT
 ): number {
   if (pageNumber < 1) {
-    throw new Error('Page number must be at least 1');
+    throw new ValidationError('Page number must be at least 1');
   }
   return (pageNumber - 1) * pageHeight;
 }
@@ -53,7 +54,7 @@ export function calculateTotalPages(
 export function configureIframeScrolling(iframeDocument: Document): void {
   if (!iframeDocument?.documentElement) {
     log.error('configureIframeScrolling: Invalid iframe document');
-    throw new Error('Invalid iframe document');
+    throw new ValidationError('Invalid iframe document');
   }
 
   const { documentElement, body } = iframeDocument;

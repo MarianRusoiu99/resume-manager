@@ -52,7 +52,7 @@ export function PreviewState({
   return (
     <div
       ref={containerRef}
-      className="w-full h-full flex flex-col items-center overflow-hidden"
+      className="w-full h-full flex items-center justify-center overflow-auto p-4 md:p-8"
     >
       <div
         style={{
@@ -60,7 +60,7 @@ export function PreviewState({
           height: `${A4_HEIGHT * scale}px`,
           transition: 'width 0.2s ease-out, height 0.2s ease-out',
         }}
-        className="relative shrink-0"
+        className="relative shrink-0 shadow-2xl origin-center mb-auto mt-auto"
       >
         <div
           style={{
@@ -68,7 +68,6 @@ export function PreviewState({
             height: A4_HEIGHT,
             transform: `scale(${scale})`,
             transformOrigin: 'top left',
-            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
             position: 'absolute',
             top: 0,
             left: 0,

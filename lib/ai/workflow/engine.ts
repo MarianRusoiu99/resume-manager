@@ -1,6 +1,6 @@
 /**
  * Workflow Engine
- * 
+ *
  * Executes configurable AI workflows with progress tracking
  */
 
@@ -12,6 +12,7 @@ import type {
 } from './types';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { AIProvider } from '@/lib/ai/providers';
+import { ValidationError } from '@/lib/errors';
 import { logger } from '@/lib/utils/logger';
 
 export interface ExecuteWorkflowInput {
@@ -85,7 +86,7 @@ export async function executeWorkflow(
         logger.info('Workflow step complete', { workflow: config.name, stepId: step.id, stepName: step.name });
       } catch (stepError) {
         logger.error('Workflow step failed', stepError, { workflow: config.name, stepId: step.id, stepName: step.name });
-        throw new Error(
+        throw new ValidationError(
           `Step "${step.name}" failed: ${stepError instanceof Error ? stepError.message : 'Unknown error'}`
         );
       }

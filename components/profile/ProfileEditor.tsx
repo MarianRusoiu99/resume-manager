@@ -1,6 +1,7 @@
 "use client";
 
 import { EditorProvider } from "@/lib/contexts";
+import { ExternalServiceError, ValidationError } from "@/lib/errors";
 import { ResumeEditor, type ResumeEditorRef } from "@/components/editor/ResumeEditor";
 import { Button } from "@/components/ui";
 import { Page } from "@/components/layout/Page";
@@ -44,7 +45,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const loadProfile = useCallback(async () => {
     try {
       const result = await getProfile(profileId);
-      if (!result.success || !result.data) throw new Error(!result.success ? result.error : 'Failed to load profile');
+      if (!result.success || !result.data) throw !result.success ? new ExternalServiceError('Profile API', result.error) : new ValidationError('Failed to load profile');
       setProfile({
         id: result.data.id,
         name: result.data.name,
@@ -63,7 +64,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const handleLoad = async (): Promise<Resume | null> => {
     try {
       const result = await getProfile(profileId);
-      if (!result.success || !result.data) throw new Error(!result.success ? result.error : "Failed to load profile");
+      if (!result.success || !result.data) throw !result.success ? new ExternalServiceError('Profile API', result.error) : new ValidationError("Failed to load profile");
       return result.data.resume as unknown as Resume | null;
     } catch (error) {
       logger.error('Error loading profile', error);
@@ -74,7 +75,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const handleSave = async (resume: Resume): Promise<boolean> => {
     try {
       const result = await updateProfile(profileId, { resume });
-      if (!result.success) throw new Error(result.error);
+      if (!result.success) throw new ExternalServiceError('Profile API', result.error);
       setProfile((prev) => (prev ? { ...prev, resume } : prev));
       return true;
     } catch (error) {

@@ -8,6 +8,7 @@
 import { PrismaClient, User } from '@prisma/client';
 import { prisma } from '@/lib/db/index';
 import { GenericRepository } from './generic.repository';
+import { RecordNotFoundError } from '@/lib/errors/database';
 
 /**
  * Input for creating a new user
@@ -138,7 +139,9 @@ export class UserRepository extends GenericRepository<User, CreateUserInput, Upd
    */
   override async delete(id: string): Promise<User> {
     const user = await this.findById(id);
-    if (!user) throw new Error('User not found');
+    if (!user) {
+      throw new RecordNotFoundError('User', id, 'delete');
+    }
 
     await this.delegate.delete({
       where: { id },

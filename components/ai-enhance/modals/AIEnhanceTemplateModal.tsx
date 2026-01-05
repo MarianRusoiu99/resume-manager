@@ -22,6 +22,7 @@ import { TemplateCodeComparison } from '../preview/TemplateCodeComparison';
 import { useTemplateEnhancement } from '../hooks/useTemplateEnhancement';
 import { ModelSelector } from '@/components/ai/ModelSelector';
 import type { ConversationAttachment } from '../hooks/useConversation';
+import { useFeatureModelPreference } from '@/hooks';
 
 // Local file attachment type to match PromptInput's expected type
 interface PromptFileAttachment {
@@ -50,16 +51,16 @@ export function AIEnhanceTemplateModal({
   description = 'AI will enhance the HTML template and its styles to improve structure, styling, and consistency.',
 }: Readonly<AIEnhanceTemplateModalProps>) {
   const [viewMode, setViewMode] = useState<ViewMode>('visual');
-  const [selectedModel, setSelectedModel] = useState<string>('');
+  const { modelId, updatePreference, isLoading: isPreferencesLoading } = useFeatureModelPreference('template');
 
-  const handleModelChange = useCallback((modelId: string) => {
-    setSelectedModel(modelId);
-  }, []);
+  const handleModelChange = useCallback((newModelId: string, newProviderId: string) => {
+    updatePreference(newModelId, newProviderId);
+  }, [updatePreference]);
 
   // Use centralized enhancement hook
   const {
     enhancedContent,
-    isLoading,
+    isLoading: isEnhancing,
     enhance,
     reset,
     hasEnhancement,
@@ -75,8 +76,8 @@ export function AIEnhanceTemplateModal({
       name: a.name,
       mimeType: a.type,
     }));
-    enhance(mappedAttachments, selectedModel);
-  }, [enhance, selectedModel]);
+    enhance(mappedAttachments, modelId);
+  }, [enhance, modelId]);
 
   const handleOpenChange = useCallback((nextOpen: boolean) => {
     onOpenChange(nextOpen);
@@ -111,7 +112,7 @@ export function AIEnhanceTemplateModal({
         type="button"
         variant="ghost"
         onClick={handleCancel}
-        disabled={isLoading}
+        disabled={isEnhancing}
         className="h-9 px-4 text-muted-foreground hover:text-foreground"
       >
         <X className="h-4 w-4 mr-2" />
@@ -121,7 +122,7 @@ export function AIEnhanceTemplateModal({
       <Button
         type="button"
         onClick={handleAccept}
-        disabled={!hasEnhancement || isLoading}
+        disabled={!hasEnhancement || isEnhancing}
         className="h-9 px-6 bg-primary shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all font-semibold"
       >
         <Check className="h-4 w-4 mr-2" />
@@ -147,10 +148,10 @@ export function AIEnhanceTemplateModal({
 
   const rightAction = (
     <ModelSelector
-      value={selectedModel}
+      value={modelId}
       onValueChange={handleModelChange}
-      feature="template"
       requiresStructuredOutput={true}
+      isLoading={isPreferencesLoading}
       className="h-9"
     />
   );
@@ -172,7 +173,7 @@ export function AIEnhanceTemplateModal({
           value={instructions}
           onChange={setInstructions}
           onSubmit={handleEnhance}
-          isLoading={isLoading}
+          isLoading={isEnhancing}
           hasExistingContent={hasEnhancement}
           showFileAttachment={true}
           className="flex-shrink-0"
@@ -185,7 +186,7 @@ export function AIEnhanceTemplateModal({
             <TemplateVisualComparison
               originalHtml={originalHtml}
               enhancedHtml={enhancedContent?.html ?? null}
-              isEnhancing={isLoading}
+              isEnhancing={isEnhancing}
               className="h-full"
             />
           ) : (
@@ -193,7 +194,7 @@ export function AIEnhanceTemplateModal({
               originalCode={originalHtml}
               enhancedCode={enhancedContent?.html ?? null}
               codeType={'HTML'}
-              isEnhancing={isLoading}
+              isEnhancing={isEnhancing}
               className="h-full"
             />
           )}

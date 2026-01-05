@@ -5,15 +5,16 @@
  */
 
 import { encrypt, decrypt } from './crypto';
+import { ValidationError } from '@/lib/errors';
 
 /**
  * Encrypt an API key for secure storage
  */
 export function encryptApiKey(apiKey: string): string {
   if (!apiKey || apiKey.trim() === '') {
-    throw new Error('API key cannot be empty');
+    throw new ValidationError('API key cannot be empty');
   }
-  
+
   return encrypt(apiKey);
 }
 
@@ -26,9 +27,9 @@ export function encryptApiKey(apiKey: string): string {
  */
 export function decryptApiKey(encryptedKey: string): string {
   if (!encryptedKey || encryptedKey.trim() === '') {
-    throw new Error('Encrypted key cannot be empty');
+    throw new ValidationError('Encrypted key cannot be empty');
   }
-  
+
   return decrypt(encryptedKey);
 }
 

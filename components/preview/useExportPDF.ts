@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { ExternalServiceError, NotFoundError, ValidationError } from "@/lib/errors";
 import { toast } from 'sonner';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { createComponentLogger } from '@/lib/utils/client-logger';
@@ -48,7 +49,7 @@ export function useExportPDF() {
         });
 
         if (!response.ok) {
-          throw new Error('Failed to export PDF');
+          throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
         }
 
         await downloadPDF(response);
@@ -58,12 +59,12 @@ export function useExportPDF() {
 
       // Otherwise, fetch the template first
       if (!templateId) {
-        throw new Error('No template selected');
+        throw new ValidationError('No template selected');
       }
 
       const templateResult = await getTemplate(templateId);
       if (!templateResult.success || !templateResult.data) {
-        throw new Error(!templateResult.success ? templateResult.error : 'Failed to fetch template');
+        throw !templateResult.success ? new ExternalServiceError('Template API', templateResult.error) : new NotFoundError('Template');
       }
 
       const template = templateResult.data;
@@ -81,7 +82,7 @@ export function useExportPDF() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to export PDF');
+        throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
       }
 
       await downloadPDF(response);
@@ -127,7 +128,7 @@ export function useExportPDF() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to export cover letter');
+        throw new ExternalServiceError('PDF Export', 'Failed to export cover letter');
       }
 
       await downloadPDF(response, fileName ? `${fileName}.pdf` : 'cover-letter.pdf');

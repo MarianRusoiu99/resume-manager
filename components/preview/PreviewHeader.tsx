@@ -46,7 +46,7 @@ export function PreviewHeader({
   const templateName = templateHtml ? 'Custom Template' : (template?.name || 'Loading...');
 
   return (
-    <div className="px-6 py-2 bg-muted/20 flex items-center justify-between shrink-0">
+    <div className="px-6 py-3 bg-muted/40 border-b border-border/5 flex items-center justify-between shrink-0">
       <div className="flex items-center gap-2">
         {title ? (
           title

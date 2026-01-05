@@ -188,8 +188,7 @@ export class ResumeCrudService
 
       const duplicatedResume = await this.repository.create({
         userId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Resume type from DB may be null, needs cast
-        resume: existingResume.resume as any,
+        resume: existingResume.resume as Resume,
         jobDescription: existingResume.jobDescription || '',
         jobMetadata: {
           ...(existingResume.jobMetadata as Record<string, unknown>),

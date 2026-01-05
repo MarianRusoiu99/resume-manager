@@ -10,7 +10,7 @@ import type {
 } from '@/lib/repositories/interfaces';
 import { apiProviderService } from '../api-providers';
 import type { ServiceResult } from '@/lib/types/service-result';
-import { withServiceError, NotFoundError, ValidationError } from '../utils';
+import { withServiceError, NotFoundError, ValidationError, ExternalServiceError } from '../utils';
 import { AI_FEATURES } from './features';
 import type { FeatureModelSelection, ResolvedAISettings, UpdateFeaturePreferenceInput } from './types';
 import { extractPreference, resolveNames } from './mappers';
@@ -96,7 +96,7 @@ export class UserAISettingsService extends GenericUserOwnedCrudService<
         throw new NotFoundError('Provider');
       }
 
-      let normalizedModelId = modelId;
+      let normalizedModelId: string | null = modelId || null;
 
       if (modelId) {
         const model = provider.models.find((m) => {
@@ -141,7 +141,7 @@ export class UserAISettingsService extends GenericUserOwnedCrudService<
       await this.repository.upsert({ ...input, userId });
       const result = await this.getSettings(userId);
       if (!result.success) {
-        throw new Error(result.error);
+        throw new ExternalServiceError('AI Settings API', result.error);
       }
       return result.data;
     });

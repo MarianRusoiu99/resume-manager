@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import { ExternalServiceError } from "@/lib/errors";
 import { 
   type UseConversationOptions, 
   type UseConversationReturn, 
@@ -128,14 +129,14 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
               .join(', ');
             errorMessage = `${errorMessage} (${details})`;
           }
-          throw new Error(errorMessage);
+          throw new ExternalServiceError('AI Enhancement', errorMessage);
         }
 
         // Handle non-streaming response only
         const result = await response.json();
         
         if (!result.success || !result.data) {
-          throw new Error(result.error || 'Request failed');
+          throw new ExternalServiceError('AI Enhancement', result.error || 'Request failed');
         }
 
         const assistantMessage: ConversationMessage = {

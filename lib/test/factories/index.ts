@@ -108,3 +108,9 @@ export async function createFullTestContext() {
   
   return { user, profile, resume };
 }
+
+// Export mock factories (for unit tests without database)
+export * from './user-factory';
+export * from './resume-factory';
+export * from './cover-letter-factory';
+export * from './profile-factory';

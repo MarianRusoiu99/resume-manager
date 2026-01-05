@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { type ReactNode, memo, useMemo, useCallback } from "react";
 import { Gallery, type GalleryEmptyConfig, type GridConfig } from "@/components/shared/Gallery";
 import { SearchInput } from "@/components/shared/SearchInput";
 import { useResourceCollection } from "@/hooks/useResourceCollection";
@@ -36,13 +36,13 @@ interface ResourceGalleryProps<T extends Resource> {
 
 /**
  * ResourceGallery - Managed gallery component for resources
- * 
+ *
  * Automatically handles:
  * - Search filtering
  * - Optimistic deletions
  * - Consistency in search bar placement and empty states
  */
-export function ResourceGallery<T extends Resource>({
+export const ResourceGallery = memo(function ResourceGallery<T extends Resource>({
   initialItems,
   renderItem,
   getItemKey,
@@ -61,10 +61,10 @@ export function ResourceGallery<T extends Resource>({
     resourceName,
   });
 
-  const filteredItems = optimisticItems.filter((item) => {
+  const filteredItems = useMemo(() => optimisticItems.filter((item) => {
     if (!searchTerm) return true;
     if (filterFn) return filterFn(item, searchTerm);
-    
+
     // Default fallback filter (tries to match title/name if they exist)
     const searchLower = searchTerm.toLowerCase();
     const itemRecord = item as Record<string, unknown>;
@@ -72,14 +72,16 @@ export function ResourceGallery<T extends Resource>({
     const name = typeof itemRecord.name === 'string' ? itemRecord.name : '';
     const jobTitle = typeof itemRecord.jobTitle === 'string' ? itemRecord.jobTitle : '';
     const companyName = typeof itemRecord.companyName === 'string' ? itemRecord.companyName : '';
-    
+
     return (
       title.toLowerCase().includes(searchLower) ||
       name.toLowerCase().includes(searchLower) ||
       jobTitle.toLowerCase().includes(searchLower) ||
       companyName.toLowerCase().includes(searchLower)
     );
-  });
+  }), [optimisticItems, searchTerm, filterFn]);
+
+  const handleDeleteWithItemKey = useCallback((id: string) => handleDelete(id), [handleDelete]);
 
   return (
     <div className="space-y-6">
@@ -97,7 +99,7 @@ export function ResourceGallery<T extends Resource>({
 
       <Gallery
         items={filteredItems}
-        renderItem={(item) => renderItem(item, { onDelete: handleDelete })}
+        renderItem={(item) => renderItem(item, { onDelete: handleDeleteWithItemKey })}
         getItemKey={getItemKey}
         searchTerm={searchTerm}
         emptyState={emptyState}
@@ -112,4 +114,4 @@ export function ResourceGallery<T extends Resource>({
       />
     </div>
   );
-}
+});

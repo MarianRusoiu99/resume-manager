@@ -8,6 +8,7 @@
 
 import { ScaledIframePreview } from './ScaledIframePreview';
 import { Spinner } from '@/components/shared/Spinner';
+import { memo } from 'react';
 
 interface GalleryCardPreviewProps {
   /** HTML content to preview */
@@ -20,7 +21,7 @@ interface GalleryCardPreviewProps {
   isLoading?: boolean;
 }
 
-export function GalleryCardPreview({
+export const GalleryCardPreview = memo(function GalleryCardPreview({
   htmlContent,
   fallbackIcon,
   altText = 'Preview',
@@ -55,4 +56,4 @@ export function GalleryCardPreview({
       altText={altText}
     />
   );
-}
+});

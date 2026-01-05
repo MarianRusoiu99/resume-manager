@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 import bundleAnalyzer from '@next/bundle-analyzer';
+import { env } from './lib/config/env';
 
 // Bundle analyzer configuration
 const withBundleAnalyzer = bundleAnalyzer({
-  enabled: process.env.ANALYZE === 'true',
+  enabled: env.shouldAnalyze,
 });
 
 /**
@@ -58,7 +59,7 @@ const nextConfig: NextConfig = {
 
   // Avoid bundling large server-only dependencies into route chunks.
   // These are only needed at runtime in Node.js.
-  serverExternalPackages: ['puppeteer'],
+  serverExternalPackages: ['puppeteer', 'pdf-parse', 'pdfjs-dist', '@napi-rs/canvas'],
 
   experimental: {
     // Reduce import cost for packages with large export surfaces.
