@@ -101,7 +101,7 @@
         "Typecheck passes"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Blocker for US-008 through US-016. Use vitest mocking capabilities."
     },
     {

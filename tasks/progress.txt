@@ -4,6 +4,7 @@
 - TypeScript checks pass via `npx tsc --noEmit`; `npm run build` may fail on unrelated React/Next.js issues
 - Use `acquireLock`/`releaseLock` or `withLock` from `@/lib/cache/distributed-lock` for distributed locking
 - RedisCacheProvider exposes `getClient()` for low-level Redis operations like SET NX EX
+- Import test utilities from `@/__tests__/utils` or `@/lib/test` for factories and mocks
 
 ---
 
@@ -81,4 +82,19 @@ Thread: https://ampcode.com/threads/T-019bacab-1762-74ec-90e6-23cec8e1ab36
   - Profile cache invalidation is in `lib/services/profiles/cache.ts` (separate from main service file)
   - When making a sync function async, all call sites must be updated to await it
   - The `withLock` helper handles lock acquisition/release automatically with fallback behavior
+---
+
+## 2026-01-11 - US-007
+Thread: https://ampcode.com/threads/T-019bacac-e66d-71b9-ac7f-13948345c084
+- Created `__tests__/utils/test-factories.ts` with factory re-exports from `lib/test/factories/`
+- Created `__tests__/utils/mock-prisma.ts` with mockDeep PrismaClient re-export
+- Created `__tests__/utils/mock-redis.ts` with Redis mock re-exports
+- Created `__tests__/utils/index.ts` as central export for all test utilities
+- All files include comprehensive JSDoc documentation with usage examples
+- Files changed: `__tests__/utils/test-factories.ts`, `__tests__/utils/mock-prisma.ts`, `__tests__/utils/mock-redis.ts`, `__tests__/utils/index.ts` (all new)
+- **Learnings for future iterations:**
+  - Test infrastructure already exists in `lib/test/` with factories and mocks - `__tests__/utils/` provides convenient re-exports
+  - Use `createMockUser`, `createMockProfile`, etc. for unit tests (no DB required)
+  - Use `createTestUser`, `createTestProfile`, etc. for integration tests (requires DB)
+  - ESLint typed rules fail on some files due to parserOptions issue - use `npx tsc --noEmit` for type validation
 ---
