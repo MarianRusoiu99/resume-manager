@@ -118,7 +118,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
           });
         });
 
-        invalidateProfileCache({ cache: this.cache!, userId });
+        await invalidateProfileCache({ cache: this.cache!, userId });
         return this.mapToServiceData(this.mapPrismaProfile(profile));
       }
 
@@ -129,7 +129,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
         isDefault,
       });
 
-      invalidateProfileCache({ cache: this.cache!, userId });
+      await invalidateProfileCache({ cache: this.cache!, userId });
       return this.mapToServiceData(profile);
     });
   }
@@ -176,13 +176,13 @@ export class ProfileService extends GenericUserOwnedCrudService<
           });
         });
 
-        invalidateProfileCache({ cache: this.cache!, userId, profileId });
+        await invalidateProfileCache({ cache: this.cache!, userId, profileId });
         return this.mapToServiceData(this.mapPrismaProfile(profile));
       }
 
       const profile = await this.repository.update(profileId, data, userId);
 
-      invalidateProfileCache({ cache: this.cache!, userId, profileId });
+      await invalidateProfileCache({ cache: this.cache!, userId, profileId });
 
       return this.mapToServiceData(profile);
     });
@@ -216,7 +216,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
         });
       });
 
-      invalidateProfileCache({ cache: this.cache!, userId, profileId });
+      await invalidateProfileCache({ cache: this.cache!, userId, profileId });
     });
   }
 
@@ -236,7 +236,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
         });
       });
 
-      invalidateProfileCache({ cache: this.cache!, userId });
+      await invalidateProfileCache({ cache: this.cache!, userId });
     });
   }
 
@@ -258,7 +258,7 @@ export class ProfileService extends GenericUserOwnedCrudService<
         isDefault: false,
       });
 
-      invalidateProfileCache({ cache: this.cache!, userId });
+      await invalidateProfileCache({ cache: this.cache!, userId });
 
       return this.mapToServiceData(newProfile);
     });
