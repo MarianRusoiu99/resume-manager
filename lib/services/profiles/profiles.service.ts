@@ -198,15 +198,23 @@ export class ProfileService extends GenericUserOwnedCrudService<
         throw new ConflictError('Cannot delete your last profile');
       }
 
-      if (profile.isDefault) {
-        const allProfiles = await this.repository.findAllByUserId(userId);
-        const otherProfile = allProfiles.find((p: ProfileData) => p.id !== profileId);
-        if (otherProfile) {
-          await this.repository.update(otherProfile.id, { isDefault: true }, userId);
+      await withTransaction(async (tx) => {
+        if (profile.isDefault) {
+          const otherProfile = await tx.profile.findFirst({
+            where: { userId, id: { not: profileId } },
+          });
+          if (otherProfile) {
+            await tx.profile.update({
+              where: { id: otherProfile.id, userId },
+              data: { isDefault: true },
+            });
+          }
         }
-      }
 
-      await this.repository.delete(profileId, userId);
+        await tx.profile.delete({
+          where: { id: profileId, userId },
+        });
+      });
 
       invalidateProfileCache({ cache: this.cache!, userId, profileId });
     });
