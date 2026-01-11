@@ -27,6 +27,7 @@ export function getFieldValue<T>(item: T, key: keyof T): string {
 export function isFullWidth<T>(field: FieldConfig<T>): boolean {
   if (field.colSpan === 2) return true;
   if (field.type === 'textarea') return true;
-  if (field.type === 'list') return true;
+  if (field.type === 'richtext') return true;
+  if (field.type === 'tags') return true;
   return false;
 }

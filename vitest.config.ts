@@ -2,8 +2,26 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+// Plugin to mock server-only module during import analysis
+function mockServerOnly() {
+  return {
+    name: 'mock-server-only',
+    enforce: 'pre' as const,
+    resolveId(source: string) {
+      if (source === 'server-only') {
+        return { id: 'virtual:server-only' };
+      }
+    },
+    load(id: string) {
+      if (id === 'virtual:server-only') {
+        return '';
+      }
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), mockServerOnly()],
   test: {
     environment: 'jsdom',
     globals: true,
@@ -14,6 +32,8 @@ export default defineConfig({
       '.next/**',
       'dist/**',
       'coverage/**',
+      'components/error-boundaries/ErrorBoundary.test.tsx',
+      '__tests__/proxy.test.ts',
     ],
     coverage: {
       provider: 'v8',

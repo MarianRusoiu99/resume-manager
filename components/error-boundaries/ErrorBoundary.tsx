@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { logger } from '@/lib/utils/logger';
+import { createComponentLogger } from '@/lib/utils/client-logger';
 import { clientEnv } from '@/lib/config/client-env';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
@@ -18,6 +18,8 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
+  private clientLogger = createComponentLogger('ErrorBoundary');
+
   constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
@@ -28,12 +30,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to telemetry
-    logger.error('Error boundary caught error', error, {
+    this.clientLogger.error('Error boundary caught error', error, {
       componentStack: errorInfo.componentStack,
     });
 
-    // Call optional error handler
     this.props.onError?.(error, errorInfo);
   }
 
@@ -43,15 +43,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render(): ReactNode {
     if (this.state.hasError) {
-      // Use custom fallback if provided
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      // Check if we're in development mode (client-side check)
       const isDevelopment = clientEnv.isDevelopment;
 
-      // Default error UI
       return (
         <div className="flex min-h-screen items-center justify-center p-4">
           <div className="w-full max-w-md space-y-4 text-center">
@@ -69,8 +66,8 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
             <div className="flex gap-2 justify-center">
               <Button onClick={this.handleReset}>Try Again</Button>
-              <Button variant="outline" onClick={() => window.location.href = '/'}>
-                Go Home
+              <Button variant="outline" onClick={() => window.location.href = '/login'}>
+                Go to Login
               </Button>
             </div>
           </div>

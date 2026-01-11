@@ -7,6 +7,7 @@ import { BlockNoteView } from '@blocknote/mantine';
 import '@blocknote/mantine/style.css';
 import '@blocknote/core/fonts/inter.css';
 import { useComponentLogger } from '@/hooks';
+import { useTheme } from '@/lib/contexts';
 
 export interface BlockNoteEditorMethods {
   getMarkdown: () => Promise<string>;
@@ -31,6 +32,7 @@ interface BlockNoteEditorWrapperProps {
 const BlockNoteEditorWrapperComponent = forwardRef<BlockNoteEditorMethods, BlockNoteEditorWrapperProps>(
   ({ markdown: initialMarkdown, jsonContent, onChange, onJSONChange, className = '', placeholder = 'Type / for commands...', readOnly = false }, ref) => {
     const log = useComponentLogger('BlockNoteEditorWrapper');
+    const { resolvedTheme } = useTheme();
     
     // Track if initial content has been loaded to prevent re-initialization
     const hasInitialized = useRef(false);
@@ -182,7 +184,7 @@ const BlockNoteEditorWrapperComponent = forwardRef<BlockNoteEditorMethods, Block
         <BlockNoteView 
           editor={editor} 
           editable={!readOnly}
-          theme="light"
+          theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
           data-placeholder={placeholder}
         />
       </div>

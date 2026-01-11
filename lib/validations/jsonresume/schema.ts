@@ -41,6 +41,8 @@ const basicsSchema = z.object({
 
 const workSchema = z.object({
   name: z.string().optional(),
+  location: z.string().optional(),
+  description: z.string().optional(),
   position: z.string().optional(),
   url: urlSchema,
   startDate: iso8601Schema,
@@ -121,6 +123,9 @@ const projectSchema = z.object({
   startDate: iso8601Schema,
   endDate: iso8601Schema,
   url: urlSchema,
+  roles: z.array(z.string()).optional(),
+  entity: z.string().optional(),
+  type: z.string().optional(),
 });
 
 const metaSchema = z.object({

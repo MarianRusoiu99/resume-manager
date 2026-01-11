@@ -36,6 +36,15 @@ export interface TextareaFieldConfig<T> extends BaseFieldConfig<T> {
 }
 
 /**
+ * Rich text field configuration (uses BlockNote editor)
+ */
+export interface RichTextFieldConfig<T> extends BaseFieldConfig<T> {
+  type: 'richtext';
+  /** Minimum height in pixels */
+  minHeight?: number;
+}
+
+/**
  * Date/month input field configuration
  */
 export interface DateFieldConfig<T> extends BaseFieldConfig<T> {
@@ -51,13 +60,10 @@ export interface SelectFieldConfig<T> extends BaseFieldConfig<T> {
 }
 
 /**
- * List field configuration (for arrays like highlights, keywords)
+ * Tags field configuration (for tag-style input with visual chips)
  */
-export interface ListFieldConfig<T> extends BaseFieldConfig<T> {
-  type: 'list';
-  /** Separator between items when displayed as string */
-  separator?: 'newline' | 'comma';
-  rows?: number;
+export interface TagsFieldConfig<T> extends BaseFieldConfig<T> {
+  type: 'tags';
 }
 
 /**
@@ -66,9 +72,10 @@ export interface ListFieldConfig<T> extends BaseFieldConfig<T> {
 export type FieldConfig<T> =
   | TextFieldConfig<T>
   | TextareaFieldConfig<T>
+  | RichTextFieldConfig<T>
   | DateFieldConfig<T>
   | SelectFieldConfig<T>
-  | ListFieldConfig<T>;
+  | TagsFieldConfig<T>;
 
 /**
  * Form schema definition

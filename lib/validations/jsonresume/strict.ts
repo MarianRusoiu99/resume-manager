@@ -52,6 +52,8 @@ const strictBasicsSchema = z.object({
 
 const strictWorkSchema = z.object({
   name: z.string().min(1, 'Company name is required'),
+  location: z.string().optional(),
+  description: z.string().optional(),
   position: z.string().min(1, 'Position is required'),
   url: strictUrlSchema.optional(),
   startDate: strictIso8601Schema,
@@ -132,6 +134,9 @@ const strictProjectSchema = z.object({
   startDate: strictIso8601Schema.optional(),
   endDate: strictIso8601Schema.optional(),
   url: strictUrlSchema.optional(),
+  roles: z.array(z.string().min(1)).optional(),
+  entity: z.string().optional(),
+  type: z.string().optional(),
 });
 
 const strictMetaSchema = z.object({

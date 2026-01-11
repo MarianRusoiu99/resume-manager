@@ -1,9 +1,48 @@
 "use client";
 
-import { useCallback, memo } from "react";
-import { SimpleFormField, SimpleFormFieldList } from "@/components/ui/simple-form-field";
-import type { FieldConfig } from "@/lib/forms/form-schema";
+import { useCallback, memo, useMemo } from "react";
+import dynamic from "next/dynamic";
+import { SimpleFormField } from "@/components/ui/simple-form-field";
+import { TagInput } from "@/components/ui/tag-input";
+import type { FieldConfig, RichTextFieldConfig } from "@/lib/forms/form-schema";
 import { isFullWidth } from "@/lib/forms/form-schema";
+
+// Dynamically import RichTextField to avoid SSR issues with BlockNote
+const RichTextField = dynamic(
+  () => import("@/components/ui/rich-text-field").then((mod) => mod.RichTextField),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-[100px] p-3 flex items-center justify-center text-muted-foreground border rounded-md bg-muted/20">
+        Loading editor...
+      </div>
+    ),
+  }
+);
+
+/**
+ * Convert a string array to markdown bullet list
+ */
+function arrayToMarkdown(arr: string[]): string {
+  if (!arr || arr.length === 0) return '';
+  return arr.map(item => `- ${item}`).join('\n');
+}
+
+/**
+ * Convert markdown (potentially with bullet points) back to string array
+ * Handles both bullet lists and plain text (split by newlines)
+ */
+function markdownToArray(markdown: string): string[] {
+  if (!markdown || !markdown.trim()) return [];
+  
+  const lines = markdown.split('\n');
+  return lines
+    .map(line => {
+      // Remove bullet point markers (-, *, or numbered lists)
+      return line.replace(/^[\s]*[-*]\s*/, '').replace(/^[\s]*\d+\.\s*/, '').trim();
+    })
+    .filter(line => line.length > 0);
+}
 
 interface GenericFormProps<T> {
   /** Form fields configuration */
@@ -77,22 +116,55 @@ function FieldRenderer<T extends Record<string, unknown>>({
   onUpdate,
   disabled,
 }: FieldRendererProps<T>) {
-  const stringValue = value === null || value === undefined ? '' : String(value);
-  const arrayValue = Array.isArray(value) ? value : [];
+  const isArrayValue = Array.isArray(value);
+  const arrayValue = isArrayValue ? value : [];
+  
+  // For richtext fields, convert array to markdown if the value is an array
+  const stringValue = useMemo(() => {
+    if (value === null || value === undefined) return '';
+    if (isArrayValue) {
+      // Convert array to markdown bullet list for richtext editing
+      return arrayToMarkdown(arrayValue as string[]);
+    }
+    return String(value);
+  }, [value, isArrayValue, arrayValue]);
+
+  // Handle richtext change - convert back to array if original value was array
+  const handleRichtextChange = useCallback((newMarkdown: string) => {
+    if (isArrayValue) {
+      // Convert markdown back to array
+      onUpdate(markdownToArray(newMarkdown));
+    } else {
+      onUpdate(newMarkdown);
+    }
+  }, [isArrayValue, onUpdate]);
 
   switch (field.type) {
-    case 'list':
+    case 'richtext':
       return (
-        <SimpleFormFieldList
+        <RichTextField
+          id={String(field.key)}
+          label={field.label}
+          value={stringValue}
+          onChange={handleRichtextChange}
+          placeholder={field.placeholder}
+          description={field.description}
+          required={field.required}
+          minHeight={(field as RichTextFieldConfig<T>).minHeight}
+          disabled={disabled}
+        />
+      );
+
+    case 'tags':
+      return (
+        <TagInput
           id={String(field.key)}
           label={field.label}
           value={arrayValue as string[]}
-          onChange={onUpdate}
-          separator={field.separator || 'newline'}
-          type="textarea"
-          rows={field.rows || 3}
+          onChange={(tags) => onUpdate(tags)}
           placeholder={field.placeholder}
           description={field.description}
+          required={field.required}
           disabled={disabled}
         />
       );
@@ -102,7 +174,7 @@ function FieldRenderer<T extends Record<string, unknown>>({
         <SimpleFormField
           id={String(field.key)}
           label={field.label}
-          value={stringValue}
+          value={isArrayValue ? '' : stringValue}
           onChange={onUpdate}
           type="select"
           options={field.options}
@@ -117,7 +189,7 @@ function FieldRenderer<T extends Record<string, unknown>>({
         <SimpleFormField
           id={String(field.key)}
           label={field.label}
-          value={stringValue}
+          value={isArrayValue ? '' : stringValue}
           onChange={onUpdate}
           type="textarea"
           rows={field.rows || 3}
@@ -133,7 +205,7 @@ function FieldRenderer<T extends Record<string, unknown>>({
         <SimpleFormField
           id={String(field.key)}
           label={field.label}
-          value={stringValue}
+          value={isArrayValue ? '' : stringValue}
           onChange={onUpdate}
           type={field.type as "text" | "email" | "tel" | "url" | "password"}
           placeholder={field.placeholder}
