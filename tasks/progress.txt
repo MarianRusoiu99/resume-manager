@@ -1,0 +1,17 @@
+## Codebase Patterns
+- Use `withTransaction<T>()` from `@/lib/db/transaction` for atomic multi-step database operations
+- Prisma's interactive transaction pattern is: `prisma.$transaction(async (tx) => { ... })`
+- TypeScript checks pass via `npx tsc --noEmit`; `npm run build` may fail on unrelated React/Next.js issues
+
+---
+
+## 2026-01-11 - US-001
+Thread: https://ampcode.com/threads/T-019baca0-5c3d-717f-b83d-0e109661ef65
+- Created `lib/db/transaction.ts` with `withTransaction<T>()` helper
+- Exports `TransactionClient` type for typed transaction callbacks
+- Exports `TransactionOptions` interface for maxWait, timeout, isolationLevel
+- Files changed: `lib/db/transaction.ts` (new)
+- **Learnings for future iterations:**
+  - Prisma 6.x does not export `Prisma.TransactionOptions` - define it manually
+  - The build has pre-existing React key prop warnings and `_global-error` issues
+---
