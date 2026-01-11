@@ -69,3 +69,16 @@ Thread: https://ampcode.com/threads/T-019baca9-6e47-7211-ad41-42ffff2f0878
   - Redis SET command supports NX (only set if not exists) and EX (expiry in seconds) options
   - In-memory fallback is important for dev environments without Redis
 ---
+
+## 2026-01-11 - US-006
+Thread: https://ampcode.com/threads/T-019bacab-1762-74ec-90e6-23cec8e1ab36
+- Wrapped `invalidateProfileCache()` function with distributed lock using `withLock`
+- Changed function from sync to async: `Promise<void>` return type
+- Updated all call sites in `profiles.service.ts` to await the async function
+- Lock key pattern: `profile-cache-lock:${userId}`
+- Files changed: `lib/services/profiles/cache.ts`, `lib/services/profiles/profiles.service.ts`
+- **Learnings for future iterations:**
+  - Profile cache invalidation is in `lib/services/profiles/cache.ts` (separate from main service file)
+  - When making a sync function async, all call sites must be updated to await it
+  - The `withLock` helper handles lock acquisition/release automatically with fallback behavior
+---
