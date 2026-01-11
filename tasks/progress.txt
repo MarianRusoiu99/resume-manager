@@ -131,3 +131,21 @@ Thread: https://ampcode.com/threads/T-019bacb4-7ba2-757e-b1db-fe37d6a83737
   - Mock `findByIdForUser` for getById, `updateForUser` for update, `deleteForUser` for delete - not `findById`/`update`/`delete` with userId
   - NotificationService is injected via constructor and should be mocked in tests
 ---
+
+## 2026-01-11 - US-010
+Thread: https://ampcode.com/threads/T-019bacb8-567c-7663-a5cf-4d24050df652
+- Created `__tests__/lib/services/ai-settings.service.test.ts` with 29 comprehensive tests
+- Tests cover getSettings: resolved settings with providers, empty providers on API failure, null preferences
+- Tests cover getFeaturePreference: specific feature preference, null values, repository errors
+- Tests cover updateFeaturePreference: update and clear preferences, invalid feature, missing provider, model validation
+- Tests cover updateAllPreferences, clearSettings, resolveProviderForFeature
+- Tests cover error handling and edge cases: concurrent operations, special characters, multiple providers
+- All tests pass, typecheck passes
+- Files changed: `__tests__/lib/services/ai-settings.service.test.ts` (new)
+- **Learnings for future iterations:**
+  - UserAISettingsService is at `lib/services/ai-settings/user-ai-settings.workflow.ts`
+  - The service depends on `apiProviderService` which must be mocked via `vi.mock('@/lib/services/api-providers')`
+  - The `resolveProviderForFeature` function is imported from `./resolver` and requires separate mocking to avoid DB calls
+  - AI_FEATURES constant in `features.ts` defines: resume, coverLetter, enhance, template
+  - Model normalization happens by id, modelKey, or case-insensitive modelKey match
+---
