@@ -98,3 +98,36 @@ Thread: https://ampcode.com/threads/T-019bacac-e66d-71b9-ac7f-13948345c084
   - Use `createTestUser`, `createTestProfile`, etc. for integration tests (requires DB)
   - ESLint typed rules fail on some files due to parserOptions issue - use `npx tsc --noEmit` for type validation
 ---
+
+## 2026-01-11 - US-008
+Thread: https://ampcode.com/threads/T-019bacb0-b5a8-7668-843d-f200d6b48e5d
+- Created `__tests__/lib/services/resumes.service.test.ts` with 32 comprehensive tests
+- Tests cover CRUD operations: list, get, delete, update content, update template, update job details, duplicate
+- Tests cover validation failure scenarios: empty userId, null jobMetadata, undefined fields
+- Tests cover error handling paths: NOT_FOUND errors, generic errors, Prisma errors, INTERNAL_ERROR codes
+- Tests cover edge cases: long descriptions, special characters, concurrent operations
+- All tests pass, typecheck passes
+- Files changed: `__tests__/lib/services/resumes.service.test.ts` (new)
+- **Learnings for future iterations:**
+  - Resume service is at `lib/services/resumes/` with crud and generation subdirectories
+  - Use `mockDeep` from vitest-mock-extended to create type-safe repository mocks
+  - Service's `withServiceError` wrapper preserves original error message, doesn't add operation context to error text
+  - Error handling returns `{ success: false, error: string, code: ServiceErrorCode }` pattern
+  - Test factories available at `@/__tests__/utils/test-factories` - use `createMockResume`, `createMockResumes`
+---
+
+## 2026-01-11 - US-009
+Thread: https://ampcode.com/threads/T-019bacb4-7ba2-757e-b1db-fe37d6a83737
+- Created `__tests__/lib/services/cover-letters.service.test.ts` with 28 comprehensive tests
+- Tests cover CRUD operations: createCoverLetter, getCoverLetter, getUserCoverLetters, updateCoverLetter, deleteCoverLetter
+- Tests cover notification integration (notification sent on create, not sent on failure)
+- Tests cover validation and error handling scenarios: NOT_FOUND, INTERNAL_ERROR codes
+- Tests cover edge cases: long content, special characters, null resumeId, concurrent operations, pagination
+- All tests pass, typecheck passes
+- Files changed: `__tests__/lib/services/cover-letters.service.test.ts` (new)
+- **Learnings for future iterations:**
+  - CoverLetterService extends `GenericUserOwnedCrudService` which uses `findByIdForUser`, `updateForUser`, `deleteForUser` methods
+  - The base service doesn't check existence before update/delete - it directly calls repository methods that can fail
+  - Mock `findByIdForUser` for getById, `updateForUser` for update, `deleteForUser` for delete - not `findById`/`update`/`delete` with userId
+  - NotificationService is injected via constructor and should be mocked in tests
+---
