@@ -1,0 +1,151 @@
+## Codebase Patterns
+- Use `withTransaction<T>()` from `@/lib/db/transaction` for atomic multi-step database operations
+- Prisma's interactive transaction pattern is: `prisma.$transaction(async (tx) => { ... })`
+- TypeScript checks pass via `npx tsc --noEmit`; `npm run build` may fail on unrelated React/Next.js issues
+- Use `acquireLock`/`releaseLock` or `withLock` from `@/lib/cache/distributed-lock` for distributed locking
+- RedisCacheProvider exposes `getClient()` for low-level Redis operations like SET NX EX
+- Import test utilities from `@/__tests__/utils` or `@/lib/test` for factories and mocks
+
+---
+
+## 2026-01-11 - US-001
+Thread: https://ampcode.com/threads/T-019baca0-5c3d-717f-b83d-0e109661ef65
+- Created `lib/db/transaction.ts` with `withTransaction<T>()` helper
+- Exports `TransactionClient` type for typed transaction callbacks
+- Exports `TransactionOptions` interface for maxWait, timeout, isolationLevel
+- Files changed: `lib/db/transaction.ts` (new)
+- **Learnings for future iterations:**
+  - Prisma 6.x does not export `Prisma.TransactionOptions` - define it manually
+  - The build has pre-existing React key prop warnings and `_global-error` issues
+---
+
+## 2026-01-11 - US-002
+Thread: https://ampcode.com/threads/T-019baca4-2852-747c-9885-8d26a7e8ac1f
+- Wrapped `setDefaultProfile()` operations in a transaction to ensure atomicity
+- Wrapped `createProfile()` with `isDefault: true` in a transaction
+- Wrapped `updateProfile()` with `isDefault: true` in a transaction for completeness
+- Added `mapPrismaProfile()` helper to convert raw Prisma Profile results to ProfileData
+- Files changed: `lib/services/profiles/profiles.service.ts`
+- **Learnings for future iterations:**
+  - Profile service is in `lib/services/profiles/profiles.service.ts` (not `lib/services/profiles.service.ts`)
+  - When using transactions directly in service layer, must duplicate Prisma operations that exist in repository
+  - The `tx.profile` type matches the regular `prisma.profile` delegate for Prisma operations
+---
+
+## 2026-01-11 - US-003
+Thread: https://ampcode.com/threads/T-019baca6-e6b4-744d-b68a-59f4d4938042
+- Wrapped `deleteProfile()` logic in a transaction for atomicity
+- The transaction now handles: finding another profile to set as default (if deleting default), updating that profile, and deleting the target profile
+- Used `tx.profile.findFirst` with `{ not: profileId }` instead of fetching all profiles and filtering in memory
+- Files changed: `lib/services/profiles/profiles.service.ts`
+- **Learnings for future iterations:**
+  - Use Prisma's `{ not: value }` filter for exclusion queries instead of fetching all and filtering client-side
+  - Count check before transaction is acceptable since it's a read-only validation that doesn't need to be part of the atomic operation
+---
+
+## 2026-01-11 - US-004
+Thread: https://ampcode.com/threads/T-019baca8-1961-738f-a23e-12054633ab9d
+- Reviewed `lib/repositories/ai-settings.repository.ts` for multi-step operations
+- Found existing transaction at line 172 in `upsert()` method using batch pattern `$transaction(operations)`
+- No additional compound write operations found beyond line 172 that require wrapping
+- Other methods (`updateFeaturePreference`, `clearFeaturePreference`, `delete`) are single atomic operations
+- Files changed: none (audit only)
+- **Learnings for future iterations:**
+  - ai-settings.repository.ts uses batch transaction pattern `prisma.$transaction([...operations])` not interactive
+  - Single upsert/deleteMany operations are already atomic and don't need explicit transaction wrapping
+  - Write + read patterns (write then fetch result) don't require transactions since the read is just returning current state
+---
+
+## 2026-01-11 - US-005
+Thread: https://ampcode.com/threads/T-019baca9-6e47-7211-ad41-42ffff2f0878
+- Created `lib/cache/distributed-lock.ts` with distributed locking utilities
+- Implemented `acquireLock(key, ttlMs)` using Redis SET NX EX pattern
+- Implemented `releaseLock(key)` to delete lock keys
+- Added `withLock<T>(key, fn, options)` helper for automatic lock acquisition/release
+- Includes fallback to in-memory locking when Redis is unavailable
+- Default TTL of 5000ms as required
+- Files changed: `lib/cache/distributed-lock.ts` (new)
+- **Learnings for future iterations:**
+  - RedisCacheProvider has `getClient()` method for access to underlying ioredis client
+  - Redis SET command supports NX (only set if not exists) and EX (expiry in seconds) options
+  - In-memory fallback is important for dev environments without Redis
+---
+
+## 2026-01-11 - US-006
+Thread: https://ampcode.com/threads/T-019bacab-1762-74ec-90e6-23cec8e1ab36
+- Wrapped `invalidateProfileCache()` function with distributed lock using `withLock`
+- Changed function from sync to async: `Promise<void>` return type
+- Updated all call sites in `profiles.service.ts` to await the async function
+- Lock key pattern: `profile-cache-lock:${userId}`
+- Files changed: `lib/services/profiles/cache.ts`, `lib/services/profiles/profiles.service.ts`
+- **Learnings for future iterations:**
+  - Profile cache invalidation is in `lib/services/profiles/cache.ts` (separate from main service file)
+  - When making a sync function async, all call sites must be updated to await it
+  - The `withLock` helper handles lock acquisition/release automatically with fallback behavior
+---
+
+## 2026-01-11 - US-007
+Thread: https://ampcode.com/threads/T-019bacac-e66d-71b9-ac7f-13948345c084
+- Created `__tests__/utils/test-factories.ts` with factory re-exports from `lib/test/factories/`
+- Created `__tests__/utils/mock-prisma.ts` with mockDeep PrismaClient re-export
+- Created `__tests__/utils/mock-redis.ts` with Redis mock re-exports
+- Created `__tests__/utils/index.ts` as central export for all test utilities
+- All files include comprehensive JSDoc documentation with usage examples
+- Files changed: `__tests__/utils/test-factories.ts`, `__tests__/utils/mock-prisma.ts`, `__tests__/utils/mock-redis.ts`, `__tests__/utils/index.ts` (all new)
+- **Learnings for future iterations:**
+  - Test infrastructure already exists in `lib/test/` with factories and mocks - `__tests__/utils/` provides convenient re-exports
+  - Use `createMockUser`, `createMockProfile`, etc. for unit tests (no DB required)
+  - Use `createTestUser`, `createTestProfile`, etc. for integration tests (requires DB)
+  - ESLint typed rules fail on some files due to parserOptions issue - use `npx tsc --noEmit` for type validation
+---
+
+## 2026-01-11 - US-008
+Thread: https://ampcode.com/threads/T-019bacb0-b5a8-7668-843d-f200d6b48e5d
+- Created `__tests__/lib/services/resumes.service.test.ts` with 32 comprehensive tests
+- Tests cover CRUD operations: list, get, delete, update content, update template, update job details, duplicate
+- Tests cover validation failure scenarios: empty userId, null jobMetadata, undefined fields
+- Tests cover error handling paths: NOT_FOUND errors, generic errors, Prisma errors, INTERNAL_ERROR codes
+- Tests cover edge cases: long descriptions, special characters, concurrent operations
+- All tests pass, typecheck passes
+- Files changed: `__tests__/lib/services/resumes.service.test.ts` (new)
+- **Learnings for future iterations:**
+  - Resume service is at `lib/services/resumes/` with crud and generation subdirectories
+  - Use `mockDeep` from vitest-mock-extended to create type-safe repository mocks
+  - Service's `withServiceError` wrapper preserves original error message, doesn't add operation context to error text
+  - Error handling returns `{ success: false, error: string, code: ServiceErrorCode }` pattern
+  - Test factories available at `@/__tests__/utils/test-factories` - use `createMockResume`, `createMockResumes`
+---
+
+## 2026-01-11 - US-009
+Thread: https://ampcode.com/threads/T-019bacb4-7ba2-757e-b1db-fe37d6a83737
+- Created `__tests__/lib/services/cover-letters.service.test.ts` with 28 comprehensive tests
+- Tests cover CRUD operations: createCoverLetter, getCoverLetter, getUserCoverLetters, updateCoverLetter, deleteCoverLetter
+- Tests cover notification integration (notification sent on create, not sent on failure)
+- Tests cover validation and error handling scenarios: NOT_FOUND, INTERNAL_ERROR codes
+- Tests cover edge cases: long content, special characters, null resumeId, concurrent operations, pagination
+- All tests pass, typecheck passes
+- Files changed: `__tests__/lib/services/cover-letters.service.test.ts` (new)
+- **Learnings for future iterations:**
+  - CoverLetterService extends `GenericUserOwnedCrudService` which uses `findByIdForUser`, `updateForUser`, `deleteForUser` methods
+  - The base service doesn't check existence before update/delete - it directly calls repository methods that can fail
+  - Mock `findByIdForUser` for getById, `updateForUser` for update, `deleteForUser` for delete - not `findById`/`update`/`delete` with userId
+  - NotificationService is injected via constructor and should be mocked in tests
+---
+
+## 2026-01-11 - US-010
+Thread: https://ampcode.com/threads/T-019bacb8-567c-7663-a5cf-4d24050df652
+- Created `__tests__/lib/services/ai-settings.service.test.ts` with 29 comprehensive tests
+- Tests cover getSettings: resolved settings with providers, empty providers on API failure, null preferences
+- Tests cover getFeaturePreference: specific feature preference, null values, repository errors
+- Tests cover updateFeaturePreference: update and clear preferences, invalid feature, missing provider, model validation
+- Tests cover updateAllPreferences, clearSettings, resolveProviderForFeature
+- Tests cover error handling and edge cases: concurrent operations, special characters, multiple providers
+- All tests pass, typecheck passes
+- Files changed: `__tests__/lib/services/ai-settings.service.test.ts` (new)
+- **Learnings for future iterations:**
+  - UserAISettingsService is at `lib/services/ai-settings/user-ai-settings.workflow.ts`
+  - The service depends on `apiProviderService` which must be mocked via `vi.mock('@/lib/services/api-providers')`
+  - The `resolveProviderForFeature` function is imported from `./resolver` and requires separate mocking to avoid DB calls
+  - AI_FEATURES constant in `features.ts` defines: resume, coverLetter, enhance, template
+  - Model normalization happens by id, modelKey, or case-insensitive modelKey match
+---
