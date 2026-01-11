@@ -28,3 +28,27 @@ Thread: https://ampcode.com/threads/T-019baca4-2852-747c-9885-8d26a7e8ac1f
   - When using transactions directly in service layer, must duplicate Prisma operations that exist in repository
   - The `tx.profile` type matches the regular `prisma.profile` delegate for Prisma operations
 ---
+
+## 2026-01-11 - US-003
+Thread: https://ampcode.com/threads/T-019baca6-e6b4-744d-b68a-59f4d4938042
+- Wrapped `deleteProfile()` logic in a transaction for atomicity
+- The transaction now handles: finding another profile to set as default (if deleting default), updating that profile, and deleting the target profile
+- Used `tx.profile.findFirst` with `{ not: profileId }` instead of fetching all profiles and filtering in memory
+- Files changed: `lib/services/profiles/profiles.service.ts`
+- **Learnings for future iterations:**
+  - Use Prisma's `{ not: value }` filter for exclusion queries instead of fetching all and filtering client-side
+  - Count check before transaction is acceptable since it's a read-only validation that doesn't need to be part of the atomic operation
+---
+
+## 2026-01-11 - US-004
+Thread: https://ampcode.com/threads/T-019baca8-1961-738f-a23e-12054633ab9d
+- Reviewed `lib/repositories/ai-settings.repository.ts` for multi-step operations
+- Found existing transaction at line 172 in `upsert()` method using batch pattern `$transaction(operations)`
+- No additional compound write operations found beyond line 172 that require wrapping
+- Other methods (`updateFeaturePreference`, `clearFeaturePreference`, `delete`) are single atomic operations
+- Files changed: none (audit only)
+- **Learnings for future iterations:**
+  - ai-settings.repository.ts uses batch transaction pattern `prisma.$transaction([...operations])` not interactive
+  - Single upsert/deleteMany operations are already atomic and don't need explicit transaction wrapping
+  - Write + read patterns (write then fetch result) don't require transactions since the read is just returning current state
+---
