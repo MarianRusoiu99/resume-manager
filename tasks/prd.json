@@ -30,7 +30,7 @@
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Depends on US-001. Find setDefaultProfile and create methods in profiles.service.ts."
     },
     {

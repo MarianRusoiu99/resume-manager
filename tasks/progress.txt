@@ -15,3 +15,16 @@ Thread: https://ampcode.com/threads/T-019baca0-5c3d-717f-b83d-0e109661ef65
   - Prisma 6.x does not export `Prisma.TransactionOptions` - define it manually
   - The build has pre-existing React key prop warnings and `_global-error` issues
 ---
+
+## 2026-01-11 - US-002
+Thread: https://ampcode.com/threads/T-019baca4-2852-747c-9885-8d26a7e8ac1f
+- Wrapped `setDefaultProfile()` operations in a transaction to ensure atomicity
+- Wrapped `createProfile()` with `isDefault: true` in a transaction
+- Wrapped `updateProfile()` with `isDefault: true` in a transaction for completeness
+- Added `mapPrismaProfile()` helper to convert raw Prisma Profile results to ProfileData
+- Files changed: `lib/services/profiles/profiles.service.ts`
+- **Learnings for future iterations:**
+  - Profile service is in `lib/services/profiles/profiles.service.ts` (not `lib/services/profiles.service.ts`)
+  - When using transactions directly in service layer, must duplicate Prisma operations that exist in repository
+  - The `tx.profile` type matches the regular `prisma.profile` delegate for Prisma operations
+---
