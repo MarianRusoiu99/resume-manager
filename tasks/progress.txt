@@ -2,6 +2,8 @@
 - Use `withTransaction<T>()` from `@/lib/db/transaction` for atomic multi-step database operations
 - Prisma's interactive transaction pattern is: `prisma.$transaction(async (tx) => { ... })`
 - TypeScript checks pass via `npx tsc --noEmit`; `npm run build` may fail on unrelated React/Next.js issues
+- Use `acquireLock`/`releaseLock` or `withLock` from `@/lib/cache/distributed-lock` for distributed locking
+- RedisCacheProvider exposes `getClient()` for low-level Redis operations like SET NX EX
 
 ---
 
@@ -51,4 +53,19 @@ Thread: https://ampcode.com/threads/T-019baca8-1961-738f-a23e-12054633ab9d
   - ai-settings.repository.ts uses batch transaction pattern `prisma.$transaction([...operations])` not interactive
   - Single upsert/deleteMany operations are already atomic and don't need explicit transaction wrapping
   - Write + read patterns (write then fetch result) don't require transactions since the read is just returning current state
+---
+
+## 2026-01-11 - US-005
+Thread: https://ampcode.com/threads/T-019baca9-6e47-7211-ad41-42ffff2f0878
+- Created `lib/cache/distributed-lock.ts` with distributed locking utilities
+- Implemented `acquireLock(key, ttlMs)` using Redis SET NX EX pattern
+- Implemented `releaseLock(key)` to delete lock keys
+- Added `withLock<T>(key, fn, options)` helper for automatic lock acquisition/release
+- Includes fallback to in-memory locking when Redis is unavailable
+- Default TTL of 5000ms as required
+- Files changed: `lib/cache/distributed-lock.ts` (new)
+- **Learnings for future iterations:**
+  - RedisCacheProvider has `getClient()` method for access to underlying ioredis client
+  - Redis SET command supports NX (only set if not exists) and EX (expiry in seconds) options
+  - In-memory fallback is important for dev environments without Redis
 ---
