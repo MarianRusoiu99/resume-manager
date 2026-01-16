@@ -62,7 +62,7 @@ export function RichTextField({
   className,
   disabled = false,
   error,
-}: RichTextFieldProps) {
+}: Readonly<RichTextFieldProps>) {
   const editorRef = React.useRef<BlockNoteEditorMethods>(null);
   const displayLabel = required ? `${label} *` : label;
   

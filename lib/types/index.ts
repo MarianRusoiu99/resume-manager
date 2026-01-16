@@ -14,3 +14,6 @@ export * from './ai-tools';
 export * from './form-config';
 export * from './preferences';
 export * from './react-component';
+export * from './profile';
+export * from './ai-settings';
+export * from './api-provider';

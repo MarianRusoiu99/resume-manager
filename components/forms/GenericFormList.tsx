@@ -28,7 +28,7 @@ function GenericFormListComponent<T extends Record<string, unknown>>({
   items,
   onChange,
   autoSave = true,
-}: GenericFormListProps<T>) {
+}: Readonly<GenericFormListProps<T>>) {
   const { items: currentItems, addItem, removeItem, updateItem } = useListForm<T>({
     initialItems: items,
     onChange,

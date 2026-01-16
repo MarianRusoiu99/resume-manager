@@ -83,7 +83,7 @@ export function SimpleFormField({
   disabled = false,
   error,
   options = [],
-}: SimpleFormFieldProps) {
+}: Readonly<SimpleFormFieldProps>) {
   const [showPassword, setShowPassword] = React.useState(false);
 
   const handleChange = React.useCallback(

@@ -82,7 +82,7 @@ export const EmptyState = memo(function EmptyState({
   secondaryActions = [],
   withCard = true,
   className,
-}: EmptyStateProps) {
+}: Readonly<EmptyStateProps>) {
   // Handle both LucideIcon components and ReactNode icons
   const renderIcon = () => {
     // Check if it's already a valid React element (JSX)

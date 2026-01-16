@@ -326,6 +326,30 @@ Thread: https://ampcode.com/threads/T-019bacc4-d8d7-7c22-b880-c6a4-4e22a8bb697e
 
 ---
 
+## 2026-01-16 - US-018
+Thread: https://ampcode.com/threads/T-019bacc4-d8d7-7c22-b880-c6a4-4e22a8bb697e
+- Standardized import patterns across the codebase using `@/` alias for cross-module imports
+- Added ESLint rule `no-restricted-imports` to prevent deep relative imports (`../../`)
+- Fixed over 25 files with non-standard import patterns
+- Verified changes with typecheck
+- Files changed: 25+ files including services, repositories, and UI components
+- **Learnings for future iterations:**
+  - Automated lint rules are the only way to reliably enforce import patterns in a growing codebase
+  - Absolute imports with aliases make refactoring and directory moving much safer
+
+---
+
+## 2026-01-16 - US-019
+Thread: https://ampcode.com/threads/T-019bacc4-d8d7-7c22-b880-c6a4-4e22a8bb697e
+- Completed adding `Readonly<Props>` to component definitions across the codebase.
+- Updated components in: `components/ui/`, `components/forms/`, `components/profile/`, `components/resume/`, and `components/templates/`.
+- Verified changes with `npx tsc --noEmit`.
+- **Learnings for future iterations:**
+  - `Readonly<Props>` is a best practice in React/TypeScript to prevent accidental prop mutations.
+  - Automated lint rules could potentially enforce this pattern in the future.
+
+---
+
 ## Summary of Completed Work
 
 **Phase 1: Critical Fixes (US-001 through US-006)** - All Completed
