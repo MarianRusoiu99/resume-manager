@@ -4,7 +4,7 @@ import { generateResume as runAIWorkflow } from '@/lib/ai/workflow/resume-genera
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
 import { success, failure, type ServiceResult } from '@/lib/types/service-result';
 import { logger } from '@/lib/utils/logger';
-import type { IProfileService, INotificationService } from '../../interfaces';
+import type { IProfileService, INotificationService } from '@/lib/services/interfaces';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 export async function runResumeGenerationWorkflow(

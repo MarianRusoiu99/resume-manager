@@ -8,7 +8,7 @@ interface PageSkeletonProps {
   className?: string;
 }
 
-export function PageSkeleton({ type = 'default', className }: PageSkeletonProps) {
+export function PageSkeleton({ type = 'default', className }: Readonly<PageSkeletonProps>) {
   return (
     <div className={cn("space-y-6 animate-in fade-in duration-500", className)}>
       {/* Dynamic Content based on type */}

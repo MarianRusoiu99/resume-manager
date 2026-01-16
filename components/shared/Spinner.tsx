@@ -20,7 +20,7 @@ const sizeClasses: Record<SpinnerSize, string> = {
   xl: 'h-16 w-16',
 };
 
-export function Spinner({ size = 'md', className, label }: SpinnerProps) {
+export function Spinner({ size = 'md', className, label }: Readonly<SpinnerProps>) {
   return (
     <div className="flex flex-col items-center justify-center gap-2">
       <Loader2

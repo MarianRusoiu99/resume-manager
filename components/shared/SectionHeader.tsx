@@ -8,7 +8,7 @@ interface SectionHeaderProps {
     className?: string;
 }
 
-export const SectionHeader = memo(function SectionHeader({ icon: Icon, title, description, className = "" }: SectionHeaderProps) {
+export const SectionHeader = memo(function SectionHeader({ icon: Icon, title, description, className = "" }: Readonly<SectionHeaderProps>) {
     return (
         <div className={`flex items-center gap-3 ${className}`}>
             <div className="p-2 bg-primary/10 rounded-lg">

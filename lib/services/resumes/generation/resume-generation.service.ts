@@ -2,7 +2,7 @@ import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repo
 import { profileService as defaultProfileService } from '@/lib/services/profiles';
 import { notificationService as defaultNotificationService } from '@/lib/services/notifications/notifications.service';
 
-import type { IResumeGenerationService, IProfileService, INotificationService } from '../../interfaces';
+import type { IResumeGenerationService, IProfileService, INotificationService } from '@/lib/services/interfaces';
 
 import type { GenerateResumeServiceInput, GenerateResumeWithProgressInput } from './types';
 import {

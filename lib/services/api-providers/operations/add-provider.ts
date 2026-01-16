@@ -1,6 +1,6 @@
 import { apiProviderRepository } from '@/lib/repositories/api-providers.repository';
 import { encryptApiKey, createKeyPreview } from '@/lib/encryption/api-key';
-import { apiKeyAuditService } from '../../api-key-management';
+import { apiKeyAuditService } from '@/lib/services/api-key-management';
 import {
   createProvider,
   getSupportedProviders,

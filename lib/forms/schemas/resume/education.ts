@@ -5,7 +5,7 @@
  * All fields from the Education schema in JSONResume are included.
  */
 
-import { createFormSchema } from '../../form-schema';
+import { createFormSchema } from '@/lib/forms/form-schema';
 import type { Education } from '@/lib/validations/jsonresume';
 
 /**

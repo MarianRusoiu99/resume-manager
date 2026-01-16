@@ -8,8 +8,8 @@
 import { z } from 'zod';
 import type { LanguageModel } from 'ai';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { ValidatedAIRunner } from '../../core/validated-runner';
-import { PromptRegistry } from '../../prompts';
+import { ValidatedAIRunner } from '@/lib/ai/core/validated-runner';
+import { PromptRegistry } from '@/lib/ai/prompts';
 import { logger } from '@/lib/utils/logger';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 

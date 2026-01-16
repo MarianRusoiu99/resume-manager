@@ -1,4 +1,4 @@
-import type { AIProvider } from '../../providers';
+import type { AIProvider } from '@/lib/ai/providers';
 
 /**
  * Chunk types for streaming

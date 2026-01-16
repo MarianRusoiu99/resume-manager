@@ -7,7 +7,7 @@ interface GlassCardProps {
     className?: string;
 }
 
-export const GlassCard = memo(function GlassCard({ children, className }: GlassCardProps) {
+export const GlassCard = memo(function GlassCard({ children, className }: Readonly<GlassCardProps>) {
     return (
         <Card className={cn(
             "rounded-xl border-none shadow-sm bg-card/50 backdrop-blur-sm overflow-hidden",

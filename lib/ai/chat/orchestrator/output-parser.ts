@@ -1,6 +1,6 @@
 import { logger } from '@/lib/utils/logger';
 import { ValidationError, AIProviderError } from '@/lib/errors';
-import type { AIMode } from '../../modes/types';
+import type { AIMode } from '@/lib/ai/modes/types';
 
 /**
  * Attempts to extract JSON from text, trying multiple strategies

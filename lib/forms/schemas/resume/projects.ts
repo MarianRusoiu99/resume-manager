@@ -5,7 +5,7 @@
  * All fields from the Project schema in JSONResume are included.
  */
 
-import { createFormSchema } from '../../form-schema';
+import { createFormSchema } from '@/lib/forms/form-schema';
 import type { Project } from '@/lib/validations/jsonresume';
 
 /**

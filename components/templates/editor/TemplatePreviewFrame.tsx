@@ -1,6 +1,6 @@
 'use client';
 
-import { ResumePreview } from '../../resume/ResumePreview';
+import { ResumePreview } from '@/components/resume/ResumePreview';
 import { type ProfileListItem } from '@/lib/actions/types';
 import type { Resume } from '@/lib/validations/jsonresume';
 

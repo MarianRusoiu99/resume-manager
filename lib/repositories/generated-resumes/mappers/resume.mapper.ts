@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { GeneratedResumeData } from '../../interfaces/generated-resumes.repository.interface';
+import { GeneratedResumeData } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 export type ResumeWithIncludes = Prisma.ResumeGetPayload<{

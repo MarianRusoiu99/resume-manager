@@ -26,7 +26,7 @@ export function LoadingState({
   size = "md",
   minHeight = "400px",
   className,
-}: LoadingStateProps) {
+}: Readonly<LoadingStateProps>) {
   return (
     <div
       className={cn(

@@ -1,6 +1,6 @@
 import type { CoreMessage } from 'ai';
 import type { Conversation } from '../conversation';
-import type { AIMode } from '../../modes/types';
+import type { AIMode } from '@/lib/ai/modes/types';
 import { formatAttachmentsAsContext, getImageAttachments, getTextAttachments } from '../message';
 import { formatContextForPrompt } from '../context';
 
