@@ -3,6 +3,7 @@ import { PrismaClient, Prisma } from '@prisma/client';
 import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
 import type { IProfileRepository, ProfileData, CreateProfileInput, UpdateProfileInput, ProfileWithTemplate } from './interfaces/profiles.repository.interface';
 import type { Resume } from '@/lib/validations/jsonresume';
+import { TransactionClient } from '@/lib/db/transaction';
 
 export interface ProfileFindOptions {
   limit?: number;
@@ -16,19 +17,6 @@ export interface ProfileFindOptions {
 type ProfileWithDocument = Prisma.ProfileGetPayload<{
   include: { document: { select: { document: true } } };
 }>;
-
-/**
- * Prisma delegate type for Profile model
- */
-type ProfilePrismaDelegate = {
-  findUnique(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
-  findFirst(args: { where: Record<string, unknown>; include?: unknown; select?: unknown; orderBy?: unknown }): Promise<unknown>;
-  findMany(args?: PrismaArgs): Promise<unknown[]>;
-  create(args: { data: CreateProfileInput; include?: unknown; select?: unknown }): Promise<unknown>;
-  update(args: { where: Record<string, unknown>; data: UpdateProfileInput; include?: unknown; select?: unknown }): Promise<unknown>;
-  delete(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
-  count(args?: { where?: Record<string, unknown> }): Promise<number>;
-};
 
 /**
  * Profile Repository
@@ -62,21 +50,21 @@ export class ProfileRepository extends GenericUserOwnedRepository<
     };
   }
 
-  async findAllByUserId(userId: string, options?: ProfileFindOptions): Promise<ProfileData[]> {
+  async findAllByUserId(userId: string, options?: ProfileFindOptions, tx?: TransactionClient): Promise<ProfileData[]> {
     const { limit = 100, offset = 0, includeDocument = true } = options || {};
-    
-    const profiles = await this.db.profile.findMany({
+
+    const profiles = await (this.getDelegate(tx) as any).findMany({
       where: { userId },
       include: includeDocument ? { document: { select: { document: true } } } : undefined,
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
       take: limit,
       skip: offset,
     });
-    return profiles.map(p => this.mapProfile(p as any));
+    return profiles.map((p: any) => this.mapProfile(p));
   }
 
-  override async findById(profileId: string, userId?: string): Promise<ProfileData | null> {
-    const profile = await this.db.profile.findFirst({
+  override async findById(profileId: string, userId?: string, tx?: TransactionClient): Promise<ProfileData | null> {
+    const profile = await (this.getDelegate(tx) as any).findFirst({
       where: { id: profileId, ...(userId ? { userId } : {}) },
       include: { document: { select: { document: true } } }
     });
@@ -84,21 +72,21 @@ export class ProfileRepository extends GenericUserOwnedRepository<
     return profile ? this.mapProfile(profile) : null;
   }
 
-  async findDefaultByUserId(userId: string): Promise<ProfileData | null> {
-    const profile = await this.db.profile.findFirst({
+  async findDefaultByUserId(userId: string, tx?: TransactionClient): Promise<ProfileData | null> {
+    const profile = await (this.getDelegate(tx) as any).findFirst({
       where: { userId, isDefault: true },
       include: { document: { select: { document: true } } }
     });
     return profile ? this.mapProfile(profile) : null;
   }
 
-  async findByUserId(userId: string): Promise<ProfileData | null> {
-    return this.findDefaultByUserId(userId);
+  async findByUserId(userId: string, tx?: TransactionClient): Promise<ProfileData | null> {
+    return this.findDefaultByUserId(userId, tx);
   }
 
   // Custom create to handle document relation
-  override async create(data: CreateProfileInput): Promise<ProfileData> {
-    const created = await this.db.profile.create({
+  override async create(data: CreateProfileInput, tx?: TransactionClient): Promise<ProfileData> {
+    const created = await (this.getDelegate(tx) as any).create({
       data: {
         userId: data.userId,
         name: data.name,
@@ -115,7 +103,7 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   }
 
   // Custom update to handle document relation
-  override async update(profileId: string, data: UpdateProfileInput, userId?: string): Promise<ProfileData> {
+  override async update(profileId: string, data: UpdateProfileInput, userId?: string, tx?: TransactionClient): Promise<ProfileData> {
     const updateData: Prisma.ProfileUpdateInput = {
       ...(data.name === undefined ? {} : { name: data.name }),
       ...(data.isDefault === undefined ? {} : { isDefault: data.isDefault }),
@@ -134,7 +122,7 @@ export class ProfileRepository extends GenericUserOwnedRepository<
           }),
     };
 
-    const updated = await this.db.profile.update({
+    const updated = await (this.getDelegate(tx) as any).update({
       where: { id: profileId, ...(userId ? { userId } : {}) },
       data: updateData,
       include: { document: { select: { document: true } } },
@@ -144,47 +132,37 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   }
 
   // Custom delete to include document
-  override async delete(profileId: string, userId?: string): Promise<ProfileData> {
-    const deleted = await this.db.profile.delete({
+  override async delete(profileId: string, userId?: string, tx?: TransactionClient): Promise<ProfileData> {
+    const deleted = await (this.getDelegate(tx) as any).delete({
       where: { id: profileId, ...(userId ? { userId } : {}) },
       include: { document: { select: { document: true } } },
     });
     return this.mapProfile(deleted);
   }
 
-  async unsetAllDefaults(userId: string) {
-    return this.db.profile.updateMany({
+  async unsetAllDefaults(userId: string, tx?: TransactionClient) {
+    return (this.getDelegate(tx) as any).updateMany({
       where: { userId, isDefault: true },
       data: { isDefault: false },
     });
   }
 
-  async profileExists(userId: string): Promise<boolean> {
-    const count = await this.db.profile.count({ where: { userId } });
+  // Implementation of IProfileRepository interface methods
+  async profileExists(userId: string, tx?: TransactionClient): Promise<boolean> {
+    const count = await this.count(userId, tx);
     return count > 0;
   }
 
-  async profileCount(userId: string): Promise<number> {
-    return this.db.profile.count({ where: { userId } });
+  async profileCount(userId: string, tx?: TransactionClient): Promise<number> {
+    return this.count(userId, tx);
   }
 
-  // Implementation of IProfileRepository interface methods
-  async exists(userId: string): Promise<boolean> {
-    return this.profileExists(userId);
+  override async count(whereOrUserId?: Record<string, unknown> | string, tx?: TransactionClient): Promise<number> {
+    return super.count(whereOrUserId, tx);
   }
 
-  // Note: This matches IProfileRepository.count(userId: string)
-  // but conflicts with GenericRepository.count(where?: Record<string, unknown>)
-  // We need to use a different name in the class or cast
-  override async count(whereOrUserId?: Record<string, unknown> | string): Promise<number> {
-    if (typeof whereOrUserId === 'string') {
-      return this.db.profile.count({ where: { userId: whereOrUserId } });
-    }
-    return super.count(whereOrUserId);
-  }
-
-  async findByPublicSlug(slug: string): Promise<ProfileWithTemplate | null> {
-    const profile = await this.db.profile.findUnique({
+  async findByPublicSlug(slug: string, tx?: TransactionClient): Promise<ProfileWithTemplate | null> {
+    const profile = await (this.getDelegate(tx) as any).findUnique({
       where: { publicSlug: slug },
       include: {
         document: { select: { document: true } },

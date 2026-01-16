@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/index';
 import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
+import { TransactionClient } from '@/lib/db/transaction';
 import type { INotificationRepository, NotificationData, CreateNotificationInput, FindNotificationsOptions } from './interfaces/notifications.repository.interface';
 
 /**
@@ -19,8 +20,8 @@ export class NotificationRepository
   /**
    * Create a new notification
    */
-  override async create(data: CreateNotificationInput): Promise<NotificationData> {
-    return this.db.notification.create({
+  override async create(data: CreateNotificationInput, tx?: TransactionClient): Promise<NotificationData> {
+    return this.getDelegate(tx).create({
       data: {
         userId: data.userId,
         type: data.type,
@@ -41,9 +42,10 @@ export class NotificationRepository
    */
   override async findAllForUser(
     userId: string,
-    args?: Omit<PrismaArgs, 'data'>
+    args?: Omit<PrismaArgs, 'data'>,
+    tx?: TransactionClient
   ): Promise<NotificationData[]> {
-    return this.db.notification.findMany({
+    return this.getDelegate(tx).findMany({
       ...args,
       where: {
         ...args?.where,
@@ -62,7 +64,8 @@ export class NotificationRepository
    */
   async findByUserId(
     userId: string,
-    options?: FindNotificationsOptions
+    options?: FindNotificationsOptions,
+    tx?: TransactionClient
   ): Promise<NotificationData[]> {
     const { limit = 50, includeRead = true } = options || {};
 
@@ -71,14 +74,14 @@ export class NotificationRepository
         ...(includeRead ? {} : { isRead: false }),
       },
       take: limit,
-    });
+    }, tx);
   }
 
   /**
    * Get unread count for a user
    */
-  async getUnreadCount(userId: string): Promise<number> {
-    return this.db.notification.count({
+  async getUnreadCount(userId: string, tx?: TransactionClient): Promise<number> {
+    return this.getDelegate(tx).count({
       where: {
         userId,
         isRead: false,
@@ -93,21 +96,21 @@ export class NotificationRepository
   /**
    * Mark a single notification as read
    */
-  async markAsRead(id: string, userId: string): Promise<NotificationData | null> {
-    const notification = await this.findById(id, userId);
+  async markAsRead(id: string, userId: string, tx?: TransactionClient): Promise<NotificationData | null> {
+    const notification = await this.findById(id, userId, tx);
 
     if (!notification) {
       return null;
     }
 
-    return this.update(id, { isRead: true }, userId);
+    return this.update(id, { isRead: true }, userId, tx);
   }
 
   /**
    * Mark all notifications as read for a user
    */
-  async markAllAsRead(userId: string): Promise<{ count: number }> {
-    const result = await this.db.notification.updateMany({
+  async markAllAsRead(userId: string, tx?: TransactionClient): Promise<{ count: number }> {
+    const result = await (this.getDelegate(tx) as any).updateMany({
       where: { userId, isRead: false },
       data: { isRead: true },
     });
@@ -118,8 +121,8 @@ export class NotificationRepository
   /**
    * Delete a notification
    */
-  override async delete(id: string, userId?: string): Promise<NotificationData> {
-    return this.db.notification.delete({
+  override async delete(id: string, userId?: string, tx?: TransactionClient): Promise<NotificationData> {
+    return this.getDelegate(tx).delete({
       where: { id, ...(userId ? { userId } : {}) },
     }) as Promise<NotificationData>;
   }
@@ -127,11 +130,11 @@ export class NotificationRepository
   /**
    * Delete all read notifications older than specified days
    */
-  async deleteOldNotifications(userId: string, daysOld: number = 30): Promise<{ count: number }> {
+  async deleteOldNotifications(userId: string, daysOld: number = 30, tx?: TransactionClient): Promise<{ count: number }> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 
-    const result = await this.db.notification.deleteMany({
+    const result = await (this.getDelegate(tx) as any).deleteMany({
       where: {
         userId,
         isRead: true,
@@ -145,8 +148,8 @@ export class NotificationRepository
   /**
    * Find notification by ID
    */
-  override async findById(id: string, userId?: string): Promise<NotificationData | null> {
-    return this.db.notification.findFirst({
+  override async findById(id: string, userId?: string, tx?: TransactionClient): Promise<NotificationData | null> {
+    return this.getDelegate(tx).findFirst({
       where: { id, ...(userId ? { userId } : {}) },
     }) as Promise<NotificationData | null>;
   }

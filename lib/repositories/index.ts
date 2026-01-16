@@ -31,9 +31,6 @@ export type { ICache } from './interfaces';
 export {
   createPaginatedResult,
   type PaginatedResult,
-} from './base.repository';
-
-export {
   GenericRepository,
   GenericUserOwnedRepository,
   type EntityWithId,
@@ -81,7 +78,7 @@ export {
 export type {
   CreateUserInput,
   UpdateUserInput,
-} from './users.repository';
+} from './interfaces';
 
 export {
   userAISettingsRepository,

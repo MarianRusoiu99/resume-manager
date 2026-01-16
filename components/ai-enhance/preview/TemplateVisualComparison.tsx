@@ -7,7 +7,7 @@
  */
 
 import { SideBySideComparison, PreviewIframe } from './SideBySideComparison';
-import { renderTemplateServerSide } from '@/lib/utils/client-renderer';
+import { renderTemplateServerSide } from '@/components/shared/rendering/client-renderer';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
 import { useState, useEffect } from 'react';
 

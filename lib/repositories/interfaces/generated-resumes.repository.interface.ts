@@ -6,6 +6,7 @@
 
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { PrismaArgs } from '../generic.repository';
+import { TransactionClient } from '@/lib/db/transaction';
 
 /**
  * Generated resume data structure
@@ -51,59 +52,60 @@ export interface IGeneratedResumeRepository {
   /**
    * Create a new generated resume
    */
-  create(data: CreateResumeInput): Promise<GeneratedResumeData>;
+  create(data: CreateResumeInput, tx?: TransactionClient): Promise<GeneratedResumeData>;
 
   /**
    * Find all resumes for a user
    */
-  findByUserId(userId: string): Promise<GeneratedResumeData[]>;
+  findByUserId(userId: string, tx?: TransactionClient): Promise<GeneratedResumeData[]>;
 
   /**
    * Find a resume by ID with optional user ownership check
    */
-  findById(id: string, userId?: string): Promise<GeneratedResumeData | null>;
+  findById(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData | null>;
 
   /**
    * Find all resumes for a user
    */
-  findAllForUser(userId: string, args?: PrismaArgs): Promise<GeneratedResumeData[]>;
+  findAllForUser(userId: string, args?: PrismaArgs, tx?: TransactionClient): Promise<GeneratedResumeData[]>;
 
   /**
    * Update a resume
    */
-  update(id: string, data: UpdateResumeInput, userId?: string): Promise<GeneratedResumeData>;
+  update(id: string, data: UpdateResumeInput, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData>;
 
   /**
    * Delete a resume
    */
-  delete(id: string, userId?: string): Promise<GeneratedResumeData>;
+  delete(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData>;
 
   /**
    * Check if resume exists and belongs to user
    */
-  exists(id: string, userId?: string): Promise<boolean>;
+  exists(id: string, userId?: string, tx?: TransactionClient): Promise<boolean>;
 
 
   /**
    * Count resumes for a user
    */
-  countByUserId(userId: string): Promise<number>;
+  countByUserId(userId: string, tx?: TransactionClient): Promise<number>;
 
   /**
    * Update resume template
    */
-  updateTemplate(id: string, templateId?: string): Promise<GeneratedResumeData>;
+  updateTemplate(id: string, templateId?: string, tx?: TransactionClient): Promise<GeneratedResumeData>;
 
   /**
    * Update job details
    */
   updateJobDetails(
     id: string,
-    data: { jobDescription?: string; jobMetadata?: Record<string, unknown> }
+    data: { jobDescription?: string; jobMetadata?: Record<string, unknown> },
+    tx?: TransactionClient
   ): Promise<GeneratedResumeData>;
 
   /**
    * Link a cover letter to a resume
    */
-  linkCoverLetter(id: string, coverLetterId: string | null): Promise<GeneratedResumeData>;
+  linkCoverLetter(id: string, coverLetterId: string | null, tx?: TransactionClient): Promise<GeneratedResumeData>;
 }

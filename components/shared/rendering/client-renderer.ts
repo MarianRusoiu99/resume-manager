@@ -1,8 +1,3 @@
-/**
- * Client-Side Template Rendering Utility
- * Renders HTML templates with resume data via server action
- * to avoid CSP issues with Handlebars.compile() requiring eval
- */
 
 import { renderTemplate } from '@/app/actions/template';
 import type { Resume } from '@/lib/validations/jsonresume';

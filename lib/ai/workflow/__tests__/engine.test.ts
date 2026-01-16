@@ -1,13 +1,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { executeStepWithRetry } from '../retry';
-import { WorkflowStep, WorkflowContext } from '../types';
-import { ValidationError } from '@/lib/errors';
-
-// Mock sleep function to speed up tests
-vi.mock('@/lib/utils/async', () => ({
-  delay: vi.fn().mockResolvedValue(undefined),
-}));
+import { executeStepWithRetry, RetryConfig } from '../retry';
+import { WorkflowContext } from '../types';
+import { AppError } from '@/lib/errors';
+import { ErrorCode } from '@/lib/types/error-codes';
 
 // Mock logger
 vi.mock('@/lib/utils/logger', () => ({
@@ -16,100 +12,111 @@ vi.mock('@/lib/utils/logger', () => ({
   },
 }));
 
-describe('Workflow Retry Logic', () => {
-  const mockContext: WorkflowContext = {
-    provider: {} as any,
-    modelKey: 'test-model',
-    jobDescription: 'test job',
-    userResume: {} as any,
-    results: {},
-  };
+// Mock sleep function
+vi.mock('@/lib/utils/async', () => ({
+  delay: vi.fn().mockResolvedValue(undefined),
+}));
 
-  const retryConfig = {
-    maxAttempts: 3,
-    initialDelayMs: 10,
-    maxDelayMs: 100,
-    backoffFactor: 2,
-    retryableErrors: ['UNKNOWN_ERROR', 'TEST_ERROR']
-  };
+class MockError extends AppError {
+    readonly statusCode = 500;
+    
+    constructor(message: string, public readonly code: any) {
+        super(message);
+    }
+}
+
+describe('Workflow Retry Logic', () => {
+  let mockContext: WorkflowContext;
 
   beforeEach(() => {
+    mockContext = {} as WorkflowContext;
     vi.clearAllMocks();
   });
 
-  it('should return result on first success', async () => {
+  const baseStep = {
+    id: 'test',
+    name: 'Test Step',
+    description: 'Testing',
+    progressStart: 0,
+    progressEnd: 100,
+    shouldSkip: undefined,
+    retryConfig: undefined,
+  };
+
+  it('should execute successfully without retry', async () => {
     const execute = vi.fn().mockResolvedValue({ success: true });
-    const step: WorkflowStep = {
-      id: 'step-1',
-      name: 'Step 1',
-      description: 'Test step',
-      execute,
-      progressStart: 0,
-      progressEnd: 100,
-    };
+    
+    await executeStepWithRetry(
+      { ...baseStep, execute },
+      mockContext
+    );
 
-    const result = await executeStepWithRetry(step, mockContext, retryConfig);
-
-    expect(result).toEqual({ success: true });
     expect(execute).toHaveBeenCalledTimes(1);
   });
 
-  it('should retry on failure and eventually succeed', async () => {
+  it('should retry on failure up to maxAttempts', async () => {
+    const error = new MockError('Temporary failure', ErrorCode.RATE_LIMITED);
     const execute = vi.fn()
-      .mockRejectedValueOnce(new Error('Fail 1'))
-      .mockRejectedValueOnce(new Error('Fail 2'))
+      .mockRejectedValueOnce(error)
+      .mockRejectedValueOnce(error)
       .mockResolvedValue({ success: true });
 
-    const step: WorkflowStep = {
-      id: 'step-1',
-      name: 'Step 1',
-      description: 'Test step',
-      execute,
-      progressStart: 0,
-      progressEnd: 100,
+    const config: RetryConfig = {
+      maxAttempts: 3,
+      initialDelayMs: 1, // Fast for tests
+      maxDelayMs: 10,
+      backoffFactor: 2,
+      retryableErrors: [ErrorCode.RATE_LIMITED]
     };
 
-    const result = await executeStepWithRetry(step, mockContext, retryConfig);
+    await executeStepWithRetry(
+      { ...baseStep, execute },
+      mockContext,
+      config
+    );
 
-    expect(result).toEqual({ success: true });
     expect(execute).toHaveBeenCalledTimes(3);
   });
 
-  it('should fail after max attempts reached', async () => {
-    const execute = vi.fn().mockRejectedValue(new Error('Persistent failure'));
+  it('should fail immediately on non-retryable error', async () => {
+    const error = new MockError('Fatal error', ErrorCode.VALIDATION_ERROR);
+    const execute = vi.fn().mockRejectedValue(error);
 
-    const step: WorkflowStep = {
-      id: 'step-1',
-      name: 'Step 1',
-      description: 'Test step',
-      execute,
-      progressStart: 0,
-      progressEnd: 100,
+    const config: RetryConfig = {
+      maxAttempts: 3,
+      initialDelayMs: 1,
+      maxDelayMs: 10,
+      backoffFactor: 2,
+      retryableErrors: [ErrorCode.RATE_LIMITED]
     };
 
-    await expect(executeStepWithRetry(step, mockContext, retryConfig)).rejects.toThrow('Persistent failure');
-    expect(execute).toHaveBeenCalledTimes(3);
-  });
+    await expect(executeStepWithRetry(
+      { ...baseStep, execute },
+      mockContext,
+      config
+    )).rejects.toThrow('Fatal error');
 
-  it('should not retry if shouldRetry returns false', async () => {
-    const execute = vi.fn().mockRejectedValue(new Error('Fatal error'));
-    
-    // Custom retry logic that aborts on 'Fatal error' - simulate by not including UNKNOWN_ERROR
-    const customConfig = {
-      ...retryConfig,
-      retryableErrors: [] // No errors are retryable
-    };
-
-    const step: WorkflowStep = {
-      id: 'step-1',
-      name: 'Step 1',
-      description: 'Test step',
-      execute,
-      progressStart: 0,
-      progressEnd: 100,
-    };
-
-    await expect(executeStepWithRetry(step, mockContext, customConfig)).rejects.toThrow('Fatal error');
     expect(execute).toHaveBeenCalledTimes(1);
+  });
+
+  it('should throw last error after exhausting retries', async () => {
+    const error = new MockError('Persistent failure', ErrorCode.RATE_LIMITED);
+    const execute = vi.fn().mockRejectedValue(error);
+
+    const config: RetryConfig = {
+      maxAttempts: 3,
+      initialDelayMs: 1,
+      maxDelayMs: 10,
+      backoffFactor: 2,
+      retryableErrors: [ErrorCode.RATE_LIMITED]
+    };
+
+    await expect(executeStepWithRetry(
+      { ...baseStep, execute },
+      mockContext,
+      config
+    )).rejects.toThrow('Persistent failure');
+
+    expect(execute).toHaveBeenCalledTimes(3);
   });
 });

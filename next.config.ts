@@ -21,8 +21,6 @@ const nextConfig: NextConfig = {
     '@blocknote/core',
     '@blocknote/react',
     '@blocknote/mantine',
-    '@mantine/core',
-    '@mantine/hooks',
     '@tiptap/extension-gapcursor',
     '@tiptap/extension-history',
     '@tiptap/extensions',

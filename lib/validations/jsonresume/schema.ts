@@ -19,13 +19,13 @@ const locationSchema = z.object({
   city: z.string().optional(),
   countryCode: z.string().optional(),
   region: z.string().optional(),
-});
+}).passthrough();
 
 const profileSchema = z.object({
   network: z.string().optional(),
   username: z.string().optional(),
   url: urlSchema,
-});
+}).passthrough();
 
 const basicsSchema = z.object({
   name: z.string().optional(),
@@ -37,7 +37,7 @@ const basicsSchema = z.object({
   summary: z.string().optional(),
   location: locationSchema.optional(),
   profiles: z.array(profileSchema).optional(),
-});
+}).passthrough();
 
 const workSchema = z.object({
   name: z.string().optional(),
@@ -49,7 +49,7 @@ const workSchema = z.object({
   endDate: iso8601Schema,
   summary: z.string().optional(),
   highlights: z.array(z.string()).optional(),
-});
+}).passthrough();
 
 const volunteerSchema = z.object({
   organization: z.string().optional(),
@@ -59,7 +59,7 @@ const volunteerSchema = z.object({
   endDate: iso8601Schema,
   summary: z.string().optional(),
   highlights: z.array(z.string()).optional(),
-});
+}).passthrough();
 
 const educationSchema = z.object({
   institution: z.string().optional(),
@@ -70,21 +70,21 @@ const educationSchema = z.object({
   endDate: iso8601Schema,
   score: z.string().optional(),
   courses: z.array(z.string()).optional(),
-});
+}).passthrough();
 
 const awardSchema = z.object({
   title: z.string().optional(),
   date: z.string().optional(),
   awarder: z.string().optional(),
   summary: z.string().optional(),
-});
+}).passthrough();
 
 const certificateSchema = z.object({
   name: z.string().optional(),
   date: z.string().optional(),
   issuer: z.string().optional(),
   url: urlSchema,
-});
+}).passthrough();
 
 const publicationSchema = z.object({
   name: z.string().optional(),
@@ -92,28 +92,28 @@ const publicationSchema = z.object({
   releaseDate: iso8601Schema,
   url: urlSchema,
   summary: z.string().optional(),
-});
+}).passthrough();
 
 const skillSchema = z.object({
   name: z.string().optional(),
   level: z.string().optional(),
   keywords: z.array(z.string()).optional(),
-});
+}).passthrough();
 
 const languageSchema = z.object({
   language: z.string().optional(),
   fluency: z.string().optional(),
-});
+}).passthrough();
 
 const interestSchema = z.object({
   name: z.string().optional(),
   keywords: z.array(z.string()).optional(),
-});
+}).passthrough();
 
 const referenceSchema = z.object({
   name: z.string().optional(),
   reference: z.string().optional(),
-});
+}).passthrough();
 
 const projectSchema = z.object({
   name: z.string().optional(),
@@ -126,12 +126,12 @@ const projectSchema = z.object({
   roles: z.array(z.string()).optional(),
   entity: z.string().optional(),
   type: z.string().optional(),
-});
+}).passthrough();
 
 const metaSchema = z.object({
   canonical: z.string().optional(),
   lastModified: z.string().optional(),
-}).catchall(z.unknown());
+}).catchall(z.unknown()).passthrough();
 
 export const resumeSchema = z.object({
   $schema: z.string().optional(),
@@ -148,7 +148,7 @@ export const resumeSchema = z.object({
   references: z.array(referenceSchema).optional(),
   projects: z.array(projectSchema).optional(),
   meta: metaSchema.optional(),
-});
+}).passthrough();
 
 export type Resume = z.infer<typeof resumeSchema>;
 export type Basics = z.infer<typeof basicsSchema>;

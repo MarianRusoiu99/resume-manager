@@ -1,4 +1,5 @@
 import { UserOwnedEntity } from '../generic.repository';
+import { TransactionClient } from '@/lib/db/transaction';
 
 export type AIFeatureType = 'resume' | 'coverLetter' | 'enhance' | 'template';
 
@@ -33,15 +34,16 @@ export interface UpsertAISettingsInput {
 }
 
 export interface IUserAISettingsRepository {
-  findByUserId(userId: string): Promise<UserAISettingsData | null>;
-  upsert(data: UpsertAISettingsInput): Promise<UserAISettingsData>;
+  findByUserId(userId: string, tx?: TransactionClient): Promise<UserAISettingsData | null>;
+  upsert(data: UpsertAISettingsInput, tx?: TransactionClient): Promise<UserAISettingsData>;
   updateFeaturePreference(
     userId: string,
     feature: AIFeatureType,
     providerId: string | null,
-    modelId: string | null
+    modelId: string | null,
+    tx?: TransactionClient
   ): Promise<UserAISettingsData>;
-  getFeaturePreference(userId: string, feature: AIFeatureType): Promise<ModelPreference>;
-  delete(userId: string): Promise<UserAISettingsData>;
-  clearFeaturePreference(userId: string, feature: AIFeatureType): Promise<UserAISettingsData | null>;
+  getFeaturePreference(userId: string, feature: AIFeatureType, tx?: TransactionClient): Promise<ModelPreference>;
+  delete(userId: string, tx?: TransactionClient): Promise<UserAISettingsData>;
+  clearFeaturePreference(userId: string, feature: AIFeatureType, tx?: TransactionClient): Promise<UserAISettingsData | null>;
 }

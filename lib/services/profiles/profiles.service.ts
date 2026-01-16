@@ -39,32 +39,6 @@ export class ProfileService extends GenericUserOwnedCrudService<
     };
   }
 
-  private mapPrismaProfile(profile: {
-    id: string;
-    userId: string;
-    name: string;
-    isDefault: boolean;
-    isPublic: boolean;
-    publicSlug: string | null;
-    selectedTemplateId: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    document: { document: Prisma.JsonValue } | null;
-  }): ProfileData {
-    return {
-      id: profile.id,
-      userId: profile.userId,
-      name: profile.name,
-      resume: (profile.document?.document as Resume) ?? null,
-      isDefault: profile.isDefault,
-      isPublic: profile.isPublic,
-      publicSlug: profile.publicSlug,
-      selectedTemplateId: profile.selectedTemplateId,
-      createdAt: profile.createdAt,
-      updatedAt: profile.updatedAt,
-    };
-  }
-
   async getProfiles(userId: string): Promise<ServiceResult<ProfileServiceData[]>> {
     return withServiceError('fetch profiles', async () => {
       const profiles = await this.repository.findAllByUserId(userId);
@@ -98,28 +72,18 @@ export class ProfileService extends GenericUserOwnedCrudService<
 
       if (isDefault) {
         const profile = await withTransaction(async (tx) => {
-          await tx.profile.updateMany({
-            where: { userId, isDefault: true },
-            data: { isDefault: false },
-          });
+          await this.repository.unsetAllDefaults(userId, tx);
 
-          return tx.profile.create({
-            data: {
-              userId,
-              name,
-              isDefault: true,
-              document: {
-                create: {
-                  document: data as Prisma.InputJsonValue,
-                },
-              },
-            },
-            include: { document: { select: { document: true } } },
-          });
+          return this.repository.create({
+            userId,
+            name,
+            resume: data,
+            isDefault: true,
+          }, tx);
         });
 
         await invalidateProfileCache({ cache: this.cache!, userId });
-        return this.mapToServiceData(this.mapPrismaProfile(profile));
+        return this.mapToServiceData(profile);
       }
 
       const profile = await this.repository.create({
@@ -146,38 +110,16 @@ export class ProfileService extends GenericUserOwnedCrudService<
 
       if (data.isDefault) {
         const profile = await withTransaction(async (tx) => {
-          await tx.profile.updateMany({
-            where: { userId, isDefault: true },
-            data: { isDefault: false },
-          });
+          await this.repository.unsetAllDefaults(userId, tx);
 
-          const updateData: Prisma.ProfileUpdateInput = {
-            ...(data.name === undefined ? {} : { name: data.name }),
+          return this.repository.update(profileId, {
+            ...data,
             isDefault: true,
-            ...(data.isPublic === undefined ? {} : { isPublic: data.isPublic }),
-            ...(data.publicSlug === undefined ? {} : { publicSlug: data.publicSlug }),
-            ...(data.selectedTemplateId === undefined ? {} : { selectedTemplateId: data.selectedTemplateId }),
-            ...(data.resume === undefined
-              ? {}
-              : {
-                  document: {
-                    upsert: {
-                      create: { document: data.resume as Prisma.InputJsonValue },
-                      update: { document: data.resume as Prisma.InputJsonValue, updatedAt: new Date() },
-                    },
-                  },
-                }),
-          };
-
-          return tx.profile.update({
-            where: { id: profileId, userId },
-            data: updateData,
-            include: { document: { select: { document: true } } },
-          });
+          }, userId, tx);
         });
 
         await invalidateProfileCache({ cache: this.cache!, userId, profileId });
-        return this.mapToServiceData(this.mapPrismaProfile(profile));
+        return this.mapToServiceData(profile);
       }
 
       const profile = await this.repository.update(profileId, data, userId);
@@ -200,20 +142,15 @@ export class ProfileService extends GenericUserOwnedCrudService<
 
       await withTransaction(async (tx) => {
         if (profile.isDefault) {
-          const otherProfile = await tx.profile.findFirst({
-            where: { userId, id: { not: profileId } },
-          });
+          const profiles = await this.repository.findAllByUserId(userId, { limit: 2 }, tx);
+          const otherProfile = profiles.find(p => p.id !== profileId);
+          
           if (otherProfile) {
-            await tx.profile.update({
-              where: { id: otherProfile.id, userId },
-              data: { isDefault: true },
-            });
+            await this.repository.update(otherProfile.id, { isDefault: true }, userId, tx);
           }
         }
 
-        await tx.profile.delete({
-          where: { id: profileId, userId },
-        });
+        await this.repository.delete(profileId, userId, tx);
       });
 
       await invalidateProfileCache({ cache: this.cache!, userId, profileId });
@@ -226,14 +163,8 @@ export class ProfileService extends GenericUserOwnedCrudService<
       if (!profile) throw new NotFoundError('Profile not found');
 
       await withTransaction(async (tx) => {
-        await tx.profile.updateMany({
-          where: { userId, isDefault: true },
-          data: { isDefault: false },
-        });
-        await tx.profile.update({
-          where: { id: profileId, userId },
-          data: { isDefault: true },
-        });
+        await this.repository.unsetAllDefaults(userId, tx);
+        await this.repository.update(profileId, { isDefault: true }, userId, tx);
       });
 
       await invalidateProfileCache({ cache: this.cache!, userId });

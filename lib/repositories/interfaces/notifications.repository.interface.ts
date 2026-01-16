@@ -5,6 +5,7 @@
  */
 
 import { NotificationType } from '@prisma/client';
+import { TransactionClient } from '@/lib/db/transaction';
 
 /**
  * Notification data structure
@@ -56,12 +57,12 @@ export interface INotificationRepository {
   /**
    * Create a new notification
    */
-  create(data: CreateNotificationInput): Promise<NotificationData>;
+  create(data: CreateNotificationInput, tx?: TransactionClient): Promise<NotificationData>;
 
   /**
    * Find a notification by ID with optional user ownership check
    */
-  findById(id: string, userId?: string): Promise<NotificationData | null>;
+  findById(id: string, userId?: string, tx?: TransactionClient): Promise<NotificationData | null>;
 
   /**
    * Find all notifications for a user
@@ -71,40 +72,40 @@ export interface INotificationRepository {
     orderBy?: Record<string, unknown>;
     take?: number;
     skip?: number;
-  }): Promise<NotificationData[]>;
+  }, tx?: TransactionClient): Promise<NotificationData[]>;
 
   /**
    * Update a notification
    */
-  update(id: string, data: Partial<Omit<NotificationData, 'id' | 'userId' | 'createdAt'>>, userId?: string): Promise<NotificationData>;
+  update(id: string, data: Partial<Omit<NotificationData, 'id' | 'userId' | 'createdAt'>>, userId?: string, tx?: TransactionClient): Promise<NotificationData>;
 
   /**
    * Delete a notification
    */
-  delete(id: string, userId?: string): Promise<NotificationData>;
+  delete(id: string, userId?: string, tx?: TransactionClient): Promise<NotificationData>;
 
   /**
    * Check if notification exists and belongs to user
    */
-  exists(id: string, userId?: string): Promise<boolean>;
+  exists(id: string, userId?: string, tx?: TransactionClient): Promise<boolean>;
 
   /**
    * Get unread count for a user
    */
-  getUnreadCount(userId: string): Promise<number>;
+  getUnreadCount(userId: string, tx?: TransactionClient): Promise<number>;
 
   /**
    * Mark a single notification as read
    */
-  markAsRead(id: string, userId: string): Promise<NotificationData | null>;
+  markAsRead(id: string, userId: string, tx?: TransactionClient): Promise<NotificationData | null>;
 
   /**
    * Mark all notifications as read for a user
    */
-  markAllAsRead(userId: string): Promise<{ count: number }>;
+  markAllAsRead(userId: string, tx?: TransactionClient): Promise<{ count: number }>;
 
   /**
    * Delete old read notifications
    */
-  deleteOldNotifications(userId: string, daysOld?: number): Promise<{ count: number }>;
+  deleteOldNotifications(userId: string, daysOld?: number, tx?: TransactionClient): Promise<{ count: number }>;
 }

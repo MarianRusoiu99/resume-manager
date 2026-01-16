@@ -9,7 +9,11 @@ export * from "./ThemeToggle";
 export * from "./EntityCard";
 export * from "./Gallery";
 export * from "./ResourceGallery";
+export * from "./ResourceList";
+export { GalleryGrid as SimpleGalleryGrid } from "./GalleryGrid";
 export * from "./states";
 export * from "./Callout";
 export * from "./Spinner";
 export * from "./SearchInput";
+
+

@@ -1,15 +1,18 @@
+
 'use client';
 
 import { useOptimistic } from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Plus } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { GalleryGrid } from './GalleryGrid';
+import { toast } from 'sonner';
 
 export interface ResourceListProps<T extends { id: string }> {
   items: T[];
-  renderItem: (item: T) => React.ReactNode;
+  renderItem: (item: T, onDelete?: (id: string) => void) => React.ReactNode;
+  onDelete?: (id: string) => Promise<void>;
   emptyState: {
     title: string;
     description: string;
@@ -19,12 +22,13 @@ export interface ResourceListProps<T extends { id: string }> {
   isLoading?: boolean;
   error?: string | null;
   className?: string;
-  gridCols?: 1 | 2 | 3 | 4;
+  gridCols?: number;
 }
 
 export function ResourceList<T extends { id: string }>({
   items,
   renderItem,
+  onDelete,
   emptyState,
   isLoading = false,
   error = null,
@@ -32,6 +36,24 @@ export function ResourceList<T extends { id: string }>({
   gridCols = 3,
 }: ResourceListProps<T>) {
   
+  const [optimisticItems, removeOptimisticItem] = useOptimistic(
+    items,
+    (state, idToRemove: string) => state.filter((item) => item.id !== idToRemove)
+  );
+
+  const handleDelete = async (id: string) => {
+    if (!onDelete) return;
+    
+    try {
+      removeOptimisticItem(id);
+      await onDelete(id);
+      toast.success('Item deleted successfully');
+    } catch (err) {
+      toast.error('Failed to delete item');
+      // Reversion handled by next server render
+    }
+  };
+
   if (error) {
     return (
       <Alert variant="destructive">
@@ -58,7 +80,7 @@ export function ResourceList<T extends { id: string }>({
     );
   }
 
-  if (!items || items.length === 0) {
+  if (!optimisticItems || optimisticItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center border-2 border-dashed rounded-xl bg-muted/20 min-h-[300px]">
         <h3 className="text-xl font-semibold mb-2">{emptyState.title}</h3>
@@ -74,12 +96,12 @@ export function ResourceList<T extends { id: string }>({
   }
 
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-${gridCols} gap-6 ${className}`}>
-      {items.map((item) => (
-        <div key={item.id}>
-          {renderItem(item)}
+    <GalleryGrid cols={gridCols} className={className}>
+      {optimisticItems.map((item) => (
+        <div key={item.id} className="h-full">
+          {renderItem(item, onDelete ? handleDelete : undefined)}
         </div>
       ))}
-    </div>
+    </GalleryGrid>
   );
 }

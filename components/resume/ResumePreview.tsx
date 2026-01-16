@@ -6,7 +6,7 @@
 'use client';
 
 import { useRef, useState, useEffect, useMemo } from 'react';
-import { renderTemplateServerSide } from '@/lib/utils/client-renderer';
+import { renderTemplateServerSide } from '@/components/shared/rendering/client-renderer';
 import type { DeepPartial } from '@/lib/types/utils';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { useTemplateSelection } from '@/components/preview/useTemplateSelection';

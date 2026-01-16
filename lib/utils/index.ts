@@ -15,7 +15,7 @@ export {
     renderTemplateServerSide,
     generatePreviewDataUrl,
     revokePreviewDataUrl
-} from './client-renderer';
+} from '../../components/shared/rendering/client-renderer';
 export {
     sanitizeTemplate,
     sanitizeTemplateHtml,

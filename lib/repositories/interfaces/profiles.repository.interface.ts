@@ -6,6 +6,7 @@
  */
 
 import type { Resume } from '@/lib/validations/jsonresume';
+import { TransactionClient } from '@/lib/db/transaction';
 
 /**
  * Profile data structure returned from repository
@@ -68,55 +69,55 @@ export interface IProfileRepository {
   /**
    * Find all profiles for a user
    */
-  findAllByUserId(userId: string): Promise<ProfileData[]>;
+  findAllByUserId(userId: string, options?: any, tx?: TransactionClient): Promise<ProfileData[]>;
 
   /**
    * Find a specific profile by ID with optional user ownership check
    */
-  findById(profileId: string, userId?: string): Promise<ProfileData | null>;
+  findById(profileId: string, userId?: string, tx?: TransactionClient): Promise<ProfileData | null>;
 
   /**
    * Find the default profile for a user
    */
-  findDefaultByUserId(userId: string): Promise<ProfileData | null>;
+  findDefaultByUserId(userId: string, tx?: TransactionClient): Promise<ProfileData | null>;
 
   /**
    * Find by userId (backward compatibility - returns default profile)
    */
-  findByUserId(userId: string): Promise<ProfileData | null>;
+  findByUserId(userId: string, tx?: TransactionClient): Promise<ProfileData | null>;
 
   /**
    * Create a new profile
    */
-  create(data: CreateProfileInput): Promise<ProfileData>;
+  create(data: CreateProfileInput, tx?: TransactionClient): Promise<ProfileData>;
 
   /**
    * Update a profile
    */
-  update(profileId: string, data: UpdateProfileInput, userId?: string): Promise<ProfileData>;
+  update(profileId: string, data: UpdateProfileInput, userId?: string, tx?: TransactionClient): Promise<ProfileData>;
 
   /**
    * Delete a profile
    */
-  delete(profileId: string, userId?: string): Promise<ProfileData>;
+  delete(profileId: string, userId?: string, tx?: TransactionClient): Promise<ProfileData>;
 
   /**
    * Unset all default flags for a user (used when setting a new default)
    */
-  unsetAllDefaults(userId: string): Promise<{ count: number }>;
+  unsetAllDefaults(userId: string, tx?: TransactionClient): Promise<{ count: number }>;
 
   /**
    * Check if user has any profiles
    */
-  exists(userId: string): Promise<boolean>;
+  profileExists(userId: string, tx?: TransactionClient): Promise<boolean>;
 
   /**
    * Get profile count for a user
    */
-  count(userId: string): Promise<number>;
+  profileCount(userId: string, tx?: TransactionClient): Promise<number>;
 
   /**
    * Find profile by public slug (for public sharing)
    */
-  findByPublicSlug(slug: string): Promise<ProfileWithTemplate | null>;
+  findByPublicSlug(slug: string, tx?: TransactionClient): Promise<ProfileWithTemplate | null>;
 }

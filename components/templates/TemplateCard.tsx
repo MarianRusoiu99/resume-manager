@@ -14,7 +14,7 @@ import { TemplatePreviewModal } from './TemplatePreviewModal';
 import { deleteTemplate, duplicateTemplate } from '@/app/actions/template';
 import { useToastAction, useComponentLogger } from '@/hooks';
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { renderTemplateServerSide } from '@/lib/utils/client-renderer';
+import { renderTemplateServerSide } from '@/components/shared/rendering/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 interface TemplateCardProps {

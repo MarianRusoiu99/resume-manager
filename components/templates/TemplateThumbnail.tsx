@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { renderTemplateServerSide } from '@/lib/utils/client-renderer';
+import { renderTemplateServerSide } from '@/components/shared/rendering/client-renderer';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
 import { useIframeResize } from '@/components/preview/useIframeResize';
 import { cn } from '@/lib/utils';

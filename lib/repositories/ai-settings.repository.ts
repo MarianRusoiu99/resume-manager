@@ -6,6 +6,7 @@
 import { prisma } from '@/lib/db/index';
 import { PrismaClient, Prisma, type AiFeatureKey } from '@prisma/client';
 import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
+import { TransactionClient } from '@/lib/db/transaction';
 import type { 
   IUserAISettingsRepository, 
   UserAISettingsData, 
@@ -75,8 +76,8 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
     super('userAiPreference', dbClient);
   }
 
-  private async getPreferenceRows(userId: string) {
-    return this.db.userAiPreference.findMany({
+  private async getPreferenceRows(userId: string, tx?: TransactionClient) {
+    return (this.getDelegate(tx) as any).findMany({
       where: { userId },
       select: {
         feature: true,
@@ -91,8 +92,8 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
   /**
    * Get AI settings for a user
    */
-  async findByUserId(userId: string): Promise<UserAISettingsData | null> {
-    const rows = await this.getPreferenceRows(userId);
+  async findByUserId(userId: string, tx?: TransactionClient): Promise<UserAISettingsData | null> {
+    const rows = await this.getPreferenceRows(userId, tx);
     if (rows.length === 0) return null;
 
     let settings = blankSettings(userId);
@@ -122,12 +123,11 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
    *
    * Upserts one row per feature that is present in `data`.
    */
-  async upsert(data: UpsertAISettingsInput): Promise<UserAISettingsData> {
+  async upsert(data: UpsertAISettingsInput, tx?: TransactionClient): Promise<UserAISettingsData> {
     const { userId, ...settings } = data;
 
-    const operations: Prisma.PrismaPromise<unknown>[] = [];
-
-    const upsertOrDeleteFeature = (
+    const delegate = this.getDelegate(tx) as any;
+    const upsertOrDeleteFeature = async (
       feature: AIFeatureType,
       providerId?: string | null,
       modelId?: string | null
@@ -137,42 +137,34 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
       // `UserAiPreference.providerId` is required in the new schema.
       // Treat clearing a preference as deleting the row.
       if (providerId === null || providerId === undefined) {
-        operations.push(
-          this.db.userAiPreference.deleteMany({
-            where: { userId, feature: toFeatureKey(feature) },
-          })
-        );
+        await delegate.deleteMany({
+          where: { userId, feature: toFeatureKey(feature) },
+        });
         return;
       }
 
-      operations.push(
-        this.db.userAiPreference.upsert({
-          where: { userId_feature: { userId, feature: toFeatureKey(feature) } },
-          create: {
-            userId,
-            feature: toFeatureKey(feature),
-            providerId,
-            modelId: modelId ?? null,
-          },
-          update: {
-            providerId,
-            modelId: modelId ?? null,
-            updatedAt: new Date(),
-          },
-        })
-      );
+      await delegate.upsert({
+        where: { userId_feature: { userId, feature: toFeatureKey(feature) } },
+        create: {
+          userId,
+          feature: toFeatureKey(feature),
+          providerId,
+          modelId: modelId ?? null,
+        },
+        update: {
+          providerId,
+          modelId: modelId ?? null,
+          updatedAt: new Date(),
+        },
+      });
     };
 
-    upsertOrDeleteFeature('resume', settings.resumeProviderId, settings.resumeModelId);
-    upsertOrDeleteFeature('coverLetter', settings.coverLetterProviderId, settings.coverLetterModelId);
-    upsertOrDeleteFeature('enhance', settings.enhanceProviderId, settings.enhanceModelId);
-    upsertOrDeleteFeature('template', settings.templateProviderId, settings.templateModelId);
+    await upsertOrDeleteFeature('resume', settings.resumeProviderId, settings.resumeModelId);
+    await upsertOrDeleteFeature('coverLetter', settings.coverLetterProviderId, settings.coverLetterModelId);
+    await upsertOrDeleteFeature('enhance', settings.enhanceProviderId, settings.enhanceModelId);
+    await upsertOrDeleteFeature('template', settings.templateProviderId, settings.templateModelId);
 
-    if (operations.length > 0) {
-      await this.db.$transaction(operations);
-    }
-
-    return (await this.findByUserId(userId)) ?? blankSettings(userId);
+    return (await this.findByUserId(userId, tx)) ?? blankSettings(userId);
   }
 
   /**
@@ -182,20 +174,21 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
     userId: string,
     feature: AIFeatureType,
     providerId: string | null,
-    modelId: string | null
+    modelId: string | null,
+    tx?: TransactionClient
   ): Promise<UserAISettingsData> {
-   
+    const delegate = this.getDelegate(tx) as any;
 
     // `UserAiPreference.providerId` is required in the new schema.
     // Clearing a preference is represented by deleting the row.
     if (!providerId) {
-      await this.db.userAiPreference.deleteMany({
+      await delegate.deleteMany({
         where: { userId, feature: toFeatureKey(feature) },
       });
-      return (await this.findByUserId(userId)) ?? blankSettings(userId);
+      return (await this.findByUserId(userId, tx)) ?? blankSettings(userId);
     }
 
-    const result = await this.db.userAiPreference.upsert({
+    await delegate.upsert({
       where: { userId_feature: { userId, feature: toFeatureKey(feature) } },
       create: {
         userId,
@@ -210,14 +203,14 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
       },
     });
 
-    return (await this.findByUserId(userId)) ?? blankSettings(userId);
+    return (await this.findByUserId(userId, tx)) ?? blankSettings(userId);
   }
 
   /**
    * Get preference for a specific feature
    */
-  async getFeaturePreference(userId: string, feature: AIFeatureType): Promise<ModelPreference> {
-    const preference = await this.db.userAiPreference.findUnique({
+  async getFeaturePreference(userId: string, feature: AIFeatureType, tx?: TransactionClient): Promise<ModelPreference> {
+    const preference = await (this.getDelegate(tx) as any).findUnique({
       where: { userId_feature: { userId, feature: toFeatureKey(feature) } },
       select: {
         providerId: true,
@@ -234,39 +227,44 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
   /**
    * Delete AI settings for a user
    */
-  override async delete(userId: string): Promise<UserAISettingsData> {
-    await this.db.userAiPreference.deleteMany({ where: { userId } });
+  override async delete(userId: string, tx_or_userId?: TransactionClient | string, maybe_tx?: TransactionClient): Promise<UserAISettingsData> {
+    // Handle overloaded signature from GenericRepository
+    const actualTx = typeof tx_or_userId !== 'string' ? tx_or_userId : maybe_tx;
+    const actualUserId = typeof tx_or_userId === 'string' ? tx_or_userId : userId;
+
+    await (this.getDelegate(actualTx) as any).deleteMany({ where: { userId: actualUserId } });
     // Return blank settings after deletion
-    return blankSettings(userId);
+    return blankSettings(actualUserId);
   }
 
   /**
    * Clear a specific feature's preference (set to null)
    */
-  async clearFeaturePreference(userId: string, feature: AIFeatureType): Promise<UserAISettingsData | null> {
-    await this.db.userAiPreference.deleteMany({
+  async clearFeaturePreference(userId: string, feature: AIFeatureType, tx?: TransactionClient): Promise<UserAISettingsData | null> {
+    await (this.getDelegate(tx) as any).deleteMany({
       where: { userId, feature: toFeatureKey(feature) },
     });
-    return this.findByUserId(userId);
+    return this.findByUserId(userId, tx);
   }
 
   // Implement required methods from GenericRepository that don't map directly
-  async findById(id: string, userId?: string): Promise<UserAISettingsData | null> {
-    return this.findByUserId(userId || id);
+  override async findById(id: string, userId?: string, tx?: TransactionClient): Promise<UserAISettingsData | null> {
+    return this.findByUserId(userId || id, tx);
   }
 
-  async findAll(_?: PrismaArgs): Promise<UserAISettingsData[]> {
+  async findAll(_?: PrismaArgs, tx?: TransactionClient): Promise<UserAISettingsData[]> {
     // This is not really used for this repository as it's user-centric
     return [];
   }
 
-  async create(data: UpsertAISettingsInput): Promise<UserAISettingsData> {
-    return this.upsert(data);
+  override async create(data: UpsertAISettingsInput, tx?: TransactionClient): Promise<UserAISettingsData> {
+    return this.upsert(data, tx);
   }
 
-  async update(id: string, data: UpsertAISettingsInput, userId?: string): Promise<UserAISettingsData> {
-    return this.upsert({ ...data, userId: userId || data.userId });
+  override async update(id: string, data: UpsertAISettingsInput, userId?: string, tx?: TransactionClient): Promise<UserAISettingsData> {
+    return this.upsert({ ...data, userId: userId || data.userId }, tx);
   }
+
 }
 
 export const userAISettingsRepository = new UserAISettingsRepository();

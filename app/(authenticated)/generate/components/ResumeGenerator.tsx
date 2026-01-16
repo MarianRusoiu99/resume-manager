@@ -1,20 +1,13 @@
-'use client';
-
-import { useCallback, useState, useEffect } from 'react';
-import { toast } from 'sonner';
 import { Sparkles, FileText, Save } from 'lucide-react';
-import { Button, Card, Textarea } from '@/components/ui';
+import { Card, Button } from '@/components/ui';
 import { Callout, Spinner } from '@/components/shared';
-import { ModelSelector } from '@/components/ai/ModelSelector';
 import { ResumePreview } from '@/components/resume/ResumePreview';
-import { useResumeGeneration } from '@/components/ai-enhance/hooks';
-import { saveGeneratedResume } from '@/app/actions/resume';
-import type { ProfileListItem } from '@/lib/actions/types';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/constants';
-import { getProfile } from '@/app/actions/profile';
-import { useTemplateSelection } from '@/components/preview/useTemplateSelection';
-import { useFeatureModelPreference } from '@/hooks';
+import { ProfileListItem } from '@/lib/actions/types';
+import { useResumeFlow } from './useResumeFlow';
+import { JobDescriptionInput } from './JobDescriptionInput';
+import { GenerationSettings } from './GenerationSettings';
 
 interface ResumeGeneratorProps {
   profiles: ProfileListItem[];
@@ -29,98 +22,23 @@ export function ResumeGenerator({
   isLoadingMetadata,
   defaultProfileId,
 }: ResumeGeneratorProps) {
-  const [selectedProfileId, setSelectedProfileId] = useState(() => defaultProfileId);
-  const [jobDescription, setJobDescription] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
-
-  // Use feature model preference hook for resume generation
-  const { modelId, providerId, isLoading: isModelLoading, updatePreference } = useFeatureModelPreference('resume');
-
-  // Synchronize internal state with defaultProfileId when it changes (e.g. after loading)
-  useEffect(() => {
-    if (defaultProfileId && !selectedProfileId) {
-      setSelectedProfileId(defaultProfileId);
-    }
-  }, [defaultProfileId, selectedProfileId]);
-
-  const handleModelChange = useCallback((newModelId: string, newProviderId: string) => {
-    updatePreference(newModelId, newProviderId);
-  }, [updatePreference]);
-
   const {
-    generate,
-    resume: generatedResume,
-    jobTitle: aiJobTitle,
-    companyName: aiCompanyName,
+    selectedProfileId,
+    setSelectedProfileId,
+    jobDescription,
+    setJobDescription,
+    isSaving,
+    modelId,
+    isModelLoading,
+    handleModelChange,
+    generatedResume,
+    isGenerating,
+    error,
     matchScore,
     suggestions,
-    isLoading: isGenerating,
-    error,
-  } = useResumeGeneration();
-
-  const handleGenerate = useCallback(async () => {
-    if (jobDescription.length < 50) {
-      toast.error('Job description must be at least 50 characters');
-      return;
-    }
-
-    if (!selectedProfileId) {
-      toast.error('Please select a profile first');
-      return;
-    }
-
-    if (!modelId) {
-      toast.error('Please select an AI model first');
-      return;
-    }
-
-    // Fetch the full profile to get the resume data
-    const profileResult = await getProfile(selectedProfileId);
-    if (!profileResult.success || !profileResult.data) {
-      toast.error('Failed to load selected profile data');
-      return;
-    }
-
-    await generate({
-      jobDescription,
-      personalInstructions: '',
-      overrideModelId: modelId,
-      profileResume: profileResult.data.resume,
-    });
-  }, [generate, jobDescription, modelId, selectedProfileId]);
-
-  const { selectedTemplateId } = useTemplateSelection({
-    profileId: selectedProfileId,
-  });
-
-  const handleSave = async () => {
-    if (!generatedResume) return;
-
-    setIsSaving(true);
-    try {
-      const result = await saveGeneratedResume({
-        resume: generatedResume,
-        jobDescription,
-        jobTitle: aiJobTitle || (generatedResume as { basics?: { label?: string } })?.basics?.label || 'Optimized Resume',
-        companyName: aiCompanyName || '',
-        templateId: selectedTemplateId || undefined,
-        metadata: {
-          matchScore,
-          suggestions,
-        }
-      });
-
-      if (result.success) {
-        toast.success('Resume saved to library');
-      } else {
-        toast.error(result.error || 'Failed to save resume');
-      }
-    } catch {
-      toast.error('Failed to save resume');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    handleGenerate,
+    handleSave,
+  } = useResumeFlow(defaultProfileId);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -135,50 +53,23 @@ export function ResumeGenerator({
         </div>
 
         <div className="space-y-6">
-          <div>
-            <label htmlFor="job-description" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Job Description</label>
-            <Textarea
-              id="job-description"
-              value={jobDescription}
-              onChange={(e) => setJobDescription(e.target.value)}
-              placeholder="Paste the job description here..."
-              rows={12}
-              className="font-mono text-xs resize-none rounded-xl bg-background/50 border-primary/5 focus-visible:ring-primary/20 transition-all p-4"
-            />
-            <div className="flex justify-between items-center mt-2 px-1">
-              <p className="text-[10px] text-muted-foreground font-medium">
-                {jobDescription.length}/50 min characters
-              </p>
-            </div>
-          </div>
+          <JobDescriptionInput
+            value={jobDescription}
+            onChange={setJobDescription}
+            isLoading={isGenerating}
+            isDisabled={isGenerating || jobDescription.length < 50 || !hasAIProviders || !modelId}
+            onGenerate={handleGenerate}
+            _hasAIProviders={hasAIProviders}
+          />
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2.5">
-              <label htmlFor="profile-source" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">Profile Source</label>
-              <select
-                id="profile-source"
-                className="w-full h-10 px-4 rounded-xl border border-primary/5 bg-background/50 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
-                value={selectedProfileId}
-                onChange={(e) => setSelectedProfileId(e.target.value)}
-              >
-                {profiles.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2.5">
-              <label htmlFor="ai-model-selector" className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">AI Model Preference</label>
-              <ModelSelector
-                data-test="ai-model-selector"
-                value={modelId}
-                onValueChange={handleModelChange}
-                feature="resume"
-                requiresStructuredOutput={true}
-                isLoading={isModelLoading}
-                className="w-full"
-              />
-            </div>
-          </div>
+          <GenerationSettings
+            profiles={profiles}
+            selectedProfileId={selectedProfileId}
+            onProfileChange={setSelectedProfileId}
+            modelId={modelId}
+            onModelChange={handleModelChange}
+            isModelLoading={isModelLoading}
+          />
 
           {!hasAIProviders && !isLoadingMetadata && (
             <Callout variant="warning" className="rounded-xl border-none bg-amber-500/10 text-amber-700">
@@ -187,19 +78,6 @@ export function ResumeGenerator({
           )}
 
           {error && <Callout variant="danger" className="rounded-xl border-none">{error}</Callout>}
-
-          <Button
-            className="w-full rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all font-bold uppercase tracking-widest h-12"
-            size="lg"
-            disabled={isGenerating || jobDescription.length < 50 || !hasAIProviders || !modelId}
-            onClick={handleGenerate}
-          >
-            {isGenerating ? (
-              <><Spinner size="sm" className="mr-2" />Tailoring...</>
-            ) : (
-              <><Sparkles className="w-4 h-4 mr-2" />Generate Resume</>
-            )}
-          </Button>
         </div>
 
         {matchScore !== null && (
@@ -208,7 +86,7 @@ export function ResumeGenerator({
               <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Match Score</span>
               <span className="text-3xl font-black text-primary">{matchScore}%</span>
             </div>
-            {suggestions.length > 0 && (
+            {suggestions && suggestions.length > 0 && (
               <ul className="text-xs space-y-2.5 ml-1">
                 {suggestions.slice(0, 3).map((s: string) => (
                   <li key={s} className="flex gap-2.5 items-start text-muted-foreground">

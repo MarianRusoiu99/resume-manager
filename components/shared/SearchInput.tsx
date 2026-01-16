@@ -4,7 +4,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTransition, memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, Loader2 } from 'lucide-react';
-import { useDebouncedCallback } from '@mantine/hooks';
+import { useDebouncedCallback } from '@/hooks/use-debounced-callback';
 
 interface SearchInputProps {
   placeholder?: string;

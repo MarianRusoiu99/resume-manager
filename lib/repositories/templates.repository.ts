@@ -10,6 +10,7 @@ import type { ResumeTemplate } from '@/lib/templates/template';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { GenericRepository } from './generic.repository';
 import { RecordNotFoundError } from '@/lib/errors/database';
+import { TransactionClient } from '@/lib/db/transaction';
 import type { ITemplateRepository, CreateTemplateInput, UpdateTemplateInput } from './interfaces/templates.repository.interface';
 
 /**
@@ -25,8 +26,8 @@ export class TemplateRepository
   /**
    * Get all public templates
    */
-  async findAllPublic(): Promise<ResumeTemplate[]> {
-    const templates = await this.delegate.findMany({
+  async findAllPublic(tx?: TransactionClient): Promise<ResumeTemplate[]> {
+    const templates = await this.getDelegate(tx).findMany({
       where: { isPublic: true },
       orderBy: [{ name: 'asc' }],
     });
@@ -46,8 +47,8 @@ export class TemplateRepository
   /**
    * Get template by ID
    */
-  override async findById(id: string): Promise<ResumeTemplate | null> {
-    const template = await this.delegate.findUnique({
+  override async findById(id: string, userId?: string, tx?: TransactionClient): Promise<ResumeTemplate | null> {
+    const template = await this.getDelegate(tx).findUnique({
       where: { id },
     });
 
@@ -66,8 +67,8 @@ export class TemplateRepository
   /**
    * Create a new template
    */
-  override async create(data: CreateTemplateInput): Promise<ResumeTemplate> {
-    const template = await this.delegate.create({
+  override async create(data: CreateTemplateInput, tx?: TransactionClient): Promise<ResumeTemplate> {
+    const template = await this.getDelegate(tx).create({
       data: {
         name: data.name,
         description: data.description,
@@ -94,7 +95,9 @@ export class TemplateRepository
    */
   override async update(
     id: string,
-    data: UpdateTemplateInput
+    data: UpdateTemplateInput,
+    userId?: string,
+    tx?: TransactionClient
   ): Promise<ResumeTemplate> {
     const updateData: Prisma.ResumeTemplateUpdateInput = {};
 
@@ -104,7 +107,7 @@ export class TemplateRepository
     if (data.previewUrl !== undefined) updateData.previewUrl = data.previewUrl;
     if (data.isPublic !== undefined) updateData.isPublic = data.isPublic;
 
-    const template = await this.delegate.update({
+    const template = await this.getDelegate(tx).update({
       where: { id },
       data: updateData,
     });
@@ -124,13 +127,13 @@ export class TemplateRepository
   /**
    * Delete template
    */
-  override async delete(id: string): Promise<ResumeTemplate> {
-    const template = await this.findById(id);
+  override async delete(id: string, userId?: string, tx?: TransactionClient): Promise<ResumeTemplate> {
+    const template = await this.findById(id, userId, tx);
     if (!template) {
       throw new RecordNotFoundError('ResumeTemplate', id, 'delete');
     }
 
-    await this.delegate.delete({
+    await this.getDelegate(tx).delete({
       where: { id },
     });
 
@@ -140,8 +143,9 @@ export class TemplateRepository
   /**
    * Check if a template is in use by any resumes
    */
-  async isInUse(templateId: string): Promise<boolean> {
-    const count = await this.db.resume.count({
+  async isInUse(templateId: string, tx?: TransactionClient): Promise<boolean> {
+    const client = tx || (this.db as unknown as TransactionClient);
+    const count = await (client as any).resume.count({
       where: { templateId },
     });
     return count > 0;

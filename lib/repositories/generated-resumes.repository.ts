@@ -3,19 +3,9 @@ import { prisma } from '@/lib/db/index';
 import type { Resume as JsonResume } from '@/lib/validations/jsonresume';
 import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
 import { RecordNotFoundError } from '@/lib/errors/database';
+import { TransactionClient } from '@/lib/db/transaction';
 import type { IGeneratedResumeRepository, GeneratedResumeData, CreateResumeInput, UpdateResumeInput } from './interfaces/generated-resumes.repository.interface';
 import { mapResumeToGeneratedData, ResumeWithIncludes } from './generated-resumes/mappers/resume.mapper';
-
-// Prisma delegate type for Resume model - simplified for generic repository compatibility
-type ResumePrismaDelegate = {
-  findUnique(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
-  findFirst(args: { where: Record<string, unknown>; include?: unknown; select?: unknown; orderBy?: unknown }): Promise<unknown>;
-  findMany(args?: PrismaArgs): Promise<unknown[]>;
-  create(args: { data: CreateResumeInput; include?: unknown; select?: unknown }): Promise<unknown>;
-  update(args: { where: Record<string, unknown>; data: UpdateResumeInput; include?: unknown; select?: unknown }): Promise<unknown>;
-  delete(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
-  count(args?: { where?: Record<string, unknown> }): Promise<number>;
-};
 
 /**
  * Repository for managing generated resumes in the database.
@@ -28,14 +18,15 @@ export class GeneratedResumeRepository
     super('resume', dbClient);
   }
 
-  private async findOrCreateCompanyId(companyName?: string) {
+  private async findOrCreateCompanyId(companyName?: string, tx?: TransactionClient) {
     const normalized = companyName?.trim();
     if (!normalized) return null;
 
-    const existing = await this.db.company.findFirst({ where: { name: normalized } });
+    const delegate = tx || (this.db as any);
+    const existing = await delegate.company.findFirst({ where: { name: normalized } });
     if (existing) return existing.id;
 
-    const created = await this.db.company.create({
+    const created = await delegate.company.create({
       data: { name: normalized },
       select: { id: true },
     });
@@ -44,23 +35,17 @@ export class GeneratedResumeRepository
   }
 
   /**
-   * Create a new generated resume (compat layer)
+   * Create a new generated resume
    */
-  async create(data: {
-    userId: string;
-    jobDescription: string;
-    jobMetadata?: Record<string, unknown>;
-    resume: JsonResume;
-    templateId?: string;
-    metadata: Record<string, unknown>;
-  }) {
+  override async create(data: CreateResumeInput, tx?: TransactionClient): Promise<GeneratedResumeData> {
     const companyName =
       typeof data.jobMetadata?.companyName === 'string' ? data.jobMetadata.companyName : undefined;
     const jobTitle = typeof data.jobMetadata?.jobTitle === 'string' ? data.jobMetadata.jobTitle : null;
 
-    const companyId = await this.findOrCreateCompanyId(companyName);
+    const companyId = await this.findOrCreateCompanyId(companyName, tx);
 
-    const jobPosting = await this.db.jobPosting.create({
+    const delegate = tx || (this.db as any);
+    const jobPosting = await delegate.jobPosting.create({
       data: {
         userId: data.userId,
         description: data.jobDescription,
@@ -75,7 +60,7 @@ export class GeneratedResumeRepository
       ...(data.jobMetadata ? { jobMetadata: data.jobMetadata } : {}),
     };
 
-    const created = await this.db.resume.create({
+    const created = await delegate.resume.create({
       data: {
         userId: data.userId,
         jobPostingId: jobPosting.id,
@@ -102,7 +87,8 @@ export class GeneratedResumeRepository
    */
   override async findAllForUser(
     userId: string, 
-    args?: PrismaArgs & { limit?: number; offset?: number }
+    args?: PrismaArgs & { limit?: number; offset?: number },
+    tx?: TransactionClient
   ): Promise<GeneratedResumeData[]> {
     const { where, orderBy, take, skip, limit, offset } = args || {};
     
@@ -110,7 +96,7 @@ export class GeneratedResumeRepository
     const effectiveLimit = limit ?? take ?? 100;
     const effectiveOffset = offset ?? skip ?? 0;
     
-    const resumes = await this.db.resume.findMany({
+    const resumes = await (this.getDelegate(tx) as any).findMany({
       where: { ...where, userId },
       orderBy: orderBy || { createdAt: 'desc' },
       take: effectiveLimit,
@@ -122,21 +108,21 @@ export class GeneratedResumeRepository
       },
     });
 
-    return resumes.map((resume) => mapResumeToGeneratedData(resume as ResumeWithIncludes));
+    return resumes.map((resume: any) => mapResumeToGeneratedData(resume as ResumeWithIncludes));
   }
 
   /**
-   * Find all resumes for a user (compat)
+   * Find all resumes for a user
    */
-  async findByUserId(userId: string): Promise<GeneratedResumeData[]> {
-    return this.findAllForUser(userId);
+  async findByUserId(userId: string, tx?: TransactionClient): Promise<GeneratedResumeData[]> {
+    return this.findAllForUser(userId, undefined, tx);
   }
 
   /**
    * Find a resume by ID
    */
-  override async findById(id: string, userId?: string): Promise<GeneratedResumeData | null> {
-    const resume = await this.db.resume.findFirst({
+  override async findById(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData | null> {
+    const resume = await (this.getDelegate(tx) as any).findFirst({
       where: { id, ...(userId ? { userId } : {}) },
       include: {
         document: { select: { document: true } },
@@ -149,33 +135,29 @@ export class GeneratedResumeRepository
   }
 
   /**
-   * Find a resume by ID and ensure it belongs to the user (compat)
-   */
-  async findByIdAndUserId(id: string, userId: string): Promise<GeneratedResumeData | null> {
-    return this.findById(id, userId);
-  }
-
-  /**
    * Update resume content
    */
-  override async update(id: string, data: UpdateResumeInput, userId?: string): Promise<GeneratedResumeData> {
-    // If data is just a resume (compat)
+  override async update(id: string, data: UpdateResumeInput, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData> {
     const resume = data.resume;
     
-    const updated = await this.db.resume.update({
+    const updated = await (this.getDelegate(tx) as any).update({
       where: { id, ...(userId ? { userId } : {}) },
       data: {
-        document: {
-          upsert: {
-            create: {
-              document: resume as Prisma.InputJsonValue,
-            },
-            update: {
-              document: resume as Prisma.InputJsonValue,
-              updatedAt: new Date(),
+        ...(resume ? {
+          document: {
+            upsert: {
+              create: {
+                document: resume as Prisma.InputJsonValue,
+              },
+              update: {
+                document: resume as Prisma.InputJsonValue,
+                updatedAt: new Date(),
+              },
             },
           },
-        },
+        } : {}),
+        ...(data.templateId !== undefined ? { templateId: data.templateId || null } : {}),
+        ...(data.metadata !== undefined ? { metadata: data.metadata as Prisma.InputJsonValue } : {}),
         updatedAt: new Date(),
       },
       include: {
@@ -191,37 +173,28 @@ export class GeneratedResumeRepository
   /**
    * Delete a resume
    */
-  override async delete(id: string, userId?: string): Promise<GeneratedResumeData> {
-    const resume = await this.findById(id, userId);
+  override async delete(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData> {
+    const resume = await this.findById(id, userId, tx);
     if (!resume) {
       throw new RecordNotFoundError('Resume', id, 'delete');
     }
 
-    await this.db.resume.delete({ where: { id, ...(userId ? { userId } : {}) } });
+    await (this.getDelegate(tx) as any).delete({ where: { id, ...(userId ? { userId } : {}) } });
     return resume;
   }
 
   /**
    * Count resumes for a user
    */
-  async countByUserId(userId: string): Promise<number> {
-    return this.db.resume.count({ where: { userId } });
+  async countByUserId(userId: string, tx?: TransactionClient): Promise<number> {
+    return this.count(userId, tx);
   }
 
   /**
    * Update resume template
    */
-  async updateTemplate(id: string, templateId?: string): Promise<GeneratedResumeData> {
-    const updated = await this.db.resume.update({
-      where: { id },
-      data: { templateId: templateId || null },
-      include: {
-        document: { select: { document: true } },
-        jobPosting: { include: { company: true } },
-        coverLetter: { select: { id: true } },
-      },
-    });
-    return mapResumeToGeneratedData(updated as ResumeWithIncludes);
+  async updateTemplate(id: string, templateId?: string, tx?: TransactionClient): Promise<GeneratedResumeData> {
+    return this.update(id, { templateId: templateId || undefined }, undefined, tx);
   }
 
   /**
@@ -229,9 +202,11 @@ export class GeneratedResumeRepository
    */
   async updateJobDetails(
     id: string,
-    data: { jobDescription?: string; jobMetadata?: Record<string, unknown> }
+    data: { jobDescription?: string; jobMetadata?: Record<string, unknown> },
+    tx?: TransactionClient
   ): Promise<GeneratedResumeData> {
-    const resume = await this.db.resume.findUnique({
+    const delegate = tx || (this.db as any);
+    const resume = await delegate.resume.findUnique({
       where: { id },
       select: { jobPostingId: true, metadata: true },
     });
@@ -241,7 +216,7 @@ export class GeneratedResumeRepository
     }
 
     if (data.jobDescription !== undefined && resume.jobPostingId) {
-      await this.db.jobPosting.update({
+      await delegate.jobPosting.update({
         where: { id: resume.jobPostingId },
         data: { description: data.jobDescription },
       });
@@ -253,7 +228,7 @@ export class GeneratedResumeRepository
       ...(data.jobMetadata ? { jobMetadata: data.jobMetadata } : {}),
     };
 
-    const updated = await this.db.resume.update({
+    const updated = await delegate.resume.update({
       where: { id },
       data: { metadata: updatedMetadata as Prisma.InputJsonValue },
       include: {
@@ -269,8 +244,9 @@ export class GeneratedResumeRepository
   /**
    * Link a cover letter to a resume
    */
-  async linkCoverLetter(id: string, coverLetterId: string | null): Promise<GeneratedResumeData> {
-    const updated = await this.db.resume.update({
+  async linkCoverLetter(id: string, coverLetterId: string | null, tx?: TransactionClient): Promise<GeneratedResumeData> {
+    const delegate = tx || (this.db as any);
+    const updated = await delegate.resume.update({
       where: { id },
       data: { 
         coverLetter: coverLetterId 

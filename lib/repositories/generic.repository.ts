@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { prisma } from '@/lib/db/index';
+import { TransactionClient } from '@/lib/db/transaction';
 
 export interface EntityWithId {
   id: string;
@@ -7,6 +8,38 @@ export interface EntityWithId {
 
 export interface UserOwnedEntity extends EntityWithId {
   userId: string;
+}
+
+/**
+ * Pagination result type
+ */
+export interface PaginatedResult<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+/**
+ * Create a paginated result object
+ */
+export function createPaginatedResult<T>(
+  items: T[],
+  total: number,
+  page: number,
+  limit: number
+): PaginatedResult<T> {
+  const totalPages = Math.ceil(total / limit);
+  return {
+    items,
+    total,
+    page,
+    limit,
+    totalPages,
+    hasMore: page < totalPages,
+  };
 }
 
 /**
@@ -24,7 +57,6 @@ export interface PrismaArgs {
 
 /**
  * Prisma delegate type constraint - base interface for type safety
- * Simplified from complex generics to enable better type inference
  */
 export type PrismaDelegate = {
   findUnique(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
@@ -38,9 +70,6 @@ export type PrismaDelegate = {
 
 /**
  * Generic Repository for Prisma entities
- * 
- * Uses a simplified PrismaDelegate type instead of complex generics.
- * This eliminates the need for `any` type parameters in repository implementations.
  */
 export abstract class GenericRepository<
   T extends EntityWithId,
@@ -56,42 +85,44 @@ export abstract class GenericRepository<
     this.db = dbClient;
   }
 
-  protected get delegate(): PrismaDelegate {
-    return (this.db as unknown as Record<string, PrismaDelegate>)[this.modelName];
+  protected getDelegate(tx?: TransactionClient): PrismaDelegate {
+    const client = tx || (this.db as unknown as TransactionClient);
+    return (client as unknown as Record<string, PrismaDelegate>)[this.modelName];
   }
 
-  async findById(id: string, userId?: string): Promise<T | null> {
+  async findById(id: string, userId?: string, tx?: TransactionClient): Promise<T | null> {
     const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
-    return this.delegate.findUnique({ where }) as Promise<T | null>;
+    return this.getDelegate(tx).findUnique({ where }) as Promise<T | null>;
   }
 
-  async findAll(args?: PrismaArgs): Promise<T[]> {
-    return this.delegate.findMany(args) as Promise<T[]>;
+  async findAll(args?: PrismaArgs, tx?: TransactionClient): Promise<T[]> {
+    return this.getDelegate(tx).findMany(args) as Promise<T[]>;
   }
 
-  async create(data: TCreateInput): Promise<T> {
-    return this.delegate.create({ data }) as Promise<T>;
+  async create(data: TCreateInput, tx?: TransactionClient): Promise<T> {
+    return this.getDelegate(tx).create({ data }) as Promise<T>;
   }
 
-  async update(id: string, data: TUpdateInput, userId?: string): Promise<T> {
+  async update(id: string, data: TUpdateInput, userId?: string, tx?: TransactionClient): Promise<T> {
     const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
-    return this.delegate.update({ where, data }) as Promise<T>;
+    return this.getDelegate(tx).update({ where, data }) as Promise<T>;
   }
 
-  async delete(id: string, userId?: string): Promise<T> {
+  async delete(id: string, userId?: string, tx?: TransactionClient): Promise<T> {
     const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
-    return this.delegate.delete({ where }) as Promise<T>;
+    return this.getDelegate(tx).delete({ where }) as Promise<T>;
   }
 
-  async count(where?: Record<string, unknown>): Promise<number> {
-    return this.delegate.count({ where });
+  async count(whereOrUserId?: Record<string, unknown> | string, tx?: TransactionClient): Promise<number> {
+    const where = typeof whereOrUserId === 'string' ? { userId: whereOrUserId } : whereOrUserId;
+    return this.getDelegate(tx).count({ where });
   }
 
-  async exists(id: string): Promise<boolean> {
-    const c = await this.count({ id });
+  async exists(id: string, userId?: string, tx?: TransactionClient): Promise<boolean> {
+    const c = await this.count({ id, ...(userId ? { userId } : {}) }, tx);
     return c > 0;
   }
 }
@@ -105,27 +136,26 @@ export abstract class GenericUserOwnedRepository<
   TUpdateInput
 > extends GenericRepository<T, TCreateInput, TUpdateInput> {
   
-  async findByIdForUser(id: string, userId: string): Promise<T | null> {
-    return this.findById(id, userId);
+  async findByIdForUser(id: string, userId: string, tx?: TransactionClient): Promise<T | null> {
+    return this.findById(id, userId, tx);
   }
 
-  async findAllForUser(userId: string, args?: PrismaArgs): Promise<T[]> {
+  async findAllForUser(userId: string, args?: PrismaArgs, tx?: TransactionClient): Promise<T[]> {
     return this.findAll({
       ...args,
       where: { ...args?.where, userId } as Record<string, unknown>,
-    });
+    }, tx);
   }
 
-  async updateForUser(id: string, userId: string, data: TUpdateInput): Promise<T> {
-    return this.update(id, data, userId);
+  async updateForUser(id: string, userId: string, data: TUpdateInput, tx?: TransactionClient): Promise<T> {
+    return this.update(id, data, userId, tx);
   }
 
-  async deleteForUser(id: string, userId: string): Promise<T> {
-    return this.delete(id, userId);
+  async deleteForUser(id: string, userId: string, tx?: TransactionClient): Promise<T> {
+    return this.delete(id, userId, tx);
   }
 
-  async existsForUser(id: string, userId: string): Promise<boolean> {
-    const c = await this.count({ id, userId } as Record<string, unknown>);
-    return c > 0;
+  async existsForUser(id: string, userId: string, tx?: TransactionClient): Promise<boolean> {
+    return this.exists(id, userId, tx);
   }
 }
