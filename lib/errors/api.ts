@@ -21,7 +21,7 @@ export abstract class ApiError extends AppError {
  * Thrown when API rate limit is exceeded
  */
 export class RateLimitError extends ApiError {
-  readonly code = 'RATE_LIMITED' as ServiceErrorCode;
+  readonly code = 'RATE_LIMITED' as const;
   readonly statusCode = 429;
 
   constructor(
@@ -38,7 +38,7 @@ export class RateLimitError extends ApiError {
  * Thrown when a service is temporarily unavailable
  */
 export class ServiceUnavailableError extends ApiError {
-  readonly code = 'EXTERNAL_SERVICE_ERROR' as ServiceErrorCode;
+  readonly code = 'EXTERNAL_SERVICE_ERROR' as const;
   readonly statusCode = 503;
 
   constructor(
@@ -55,7 +55,7 @@ export class ServiceUnavailableError extends ApiError {
  * Thrown when request is malformed or invalid
  */
 export class BadRequestError extends ApiError {
-  readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
+  readonly code = 'VALIDATION_ERROR' as const;
   readonly statusCode = 400;
 
   constructor(message: string = 'Bad request', cause?: unknown) {
@@ -68,7 +68,7 @@ export class BadRequestError extends ApiError {
  * Thrown when HTTP method is not supported for the endpoint
  */
 export class MethodNotAllowedError extends ApiError {
-  readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
+  readonly code = 'METHOD_NOT_ALLOWED' as const;
   readonly statusCode = 405;
 
   constructor(
@@ -88,7 +88,7 @@ export class MethodNotAllowedError extends ApiError {
  * Thrown when request takes too long to process
  */
 export class RequestTimeoutError extends ApiError {
-  readonly code = 'INTERNAL_ERROR' as ServiceErrorCode;
+  readonly code = 'REQUEST_TIMEOUT' as const;
   readonly statusCode = 408;
 
   constructor(
@@ -105,7 +105,7 @@ export class RequestTimeoutError extends ApiError {
  * Thrown when request payload exceeds size limit
  */
 export class PayloadTooLargeError extends ApiError {
-  readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
+  readonly code = 'PAYLOAD_TOO_LARGE' as const;
   readonly statusCode = 413;
 
   constructor(

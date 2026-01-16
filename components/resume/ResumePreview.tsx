@@ -98,24 +98,31 @@ export function ResumePreview({
 
   // Normalize partial data if streaming
   const normalizedResumeData = useMemo(() => {
-    if (!isStreaming) return resumeData as Resume;
+    // If streaming, ensure strict structure to prevent rendering crashes
+    if (isStreaming) {
+      const safeData: DeepPartial<Resume> = { ...resumeData };
+      
+      // Helper to ensure array existence
+      const ensureArray = <T,>(arr: T[] | undefined): T[] => Array.isArray(arr) ? arr : [];
+      
+      return {
+        ...safeData,
+        basics: safeData.basics || {},
+        work: ensureArray(safeData.work),
+        education: ensureArray(safeData.education),
+        skills: ensureArray(safeData.skills),
+        projects: ensureArray(safeData.projects),
+        awards: ensureArray(safeData.awards),
+        certificates: ensureArray(safeData.certificates),
+        publications: ensureArray(safeData.publications),
+        volunteer: ensureArray(safeData.volunteer),
+        languages: ensureArray(safeData.languages),
+        interests: ensureArray(safeData.interests),
+        references: ensureArray(safeData.references),
+      } as Resume;
+    }
     
-    // Ensure all sections exist with defaults for safe rendering
-    const safeData: DeepPartial<Resume> = { ...resumeData };
-    safeData.basics = safeData.basics || {};
-    safeData.work = safeData.work || [];
-    safeData.education = safeData.education || [];
-    safeData.skills = safeData.skills || [];
-    safeData.projects = safeData.projects || [];
-    safeData.awards = safeData.awards || [];
-    safeData.certificates = safeData.certificates || [];
-    safeData.publications = safeData.publications || [];
-    safeData.volunteer = safeData.volunteer || [];
-    safeData.languages = safeData.languages || [];
-    safeData.interests = safeData.interests || [];
-    safeData.references = safeData.references || [];
-    
-    return safeData as Resume;
+    return resumeData as Resume;
   }, [resumeData, isStreaming]);
 
   // Custom hooks for separated concerns

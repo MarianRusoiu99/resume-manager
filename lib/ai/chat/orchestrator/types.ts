@@ -1,4 +1,5 @@
 import type { AIProvider } from '@/lib/ai/providers';
+import type { DeepPartial } from '@/lib/types/utils';
 
 /**
  * Chunk types for streaming
@@ -67,10 +68,6 @@ export interface NormalizedUsage {
   completionTokens: number;
   totalTokens: number;
 }
-
-export type DeepPartial<T> = T extends object ? {
-  [P in keyof T]?: DeepPartial<T[P]>;
-} : T;
 
 export interface StreamChunkDelta<T> {
   type: 'delta';

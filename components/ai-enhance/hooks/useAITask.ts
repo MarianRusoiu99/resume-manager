@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useConversation, ConversationMode, ConversationAttachment } from './useConversation';
 import { createComponentLogger } from '@/lib/utils/client-logger';
+import { DeepPartial } from '@/lib/types/utils';
 
 const logger = createComponentLogger('useAITask');
 
@@ -28,7 +29,6 @@ export interface RunTaskOptions {
  */
 export function useAITask<T = unknown>(options: AITaskOptions<T>) {
   const { mode, onSuccess, onError, enableStreaming = true } = options;
-  // partialOutput state removed as it is now managed via state.output during streaming
 
   const { sendMessage, state, reset, abort } = useConversation<T>({
     mode,
@@ -69,7 +69,7 @@ export function useAITask<T = unknown>(options: AITaskOptions<T>) {
     isStreaming: state.isStreaming,
     error: state.error,
     output: state.output,
-    partialOutput: state.isStreaming ? state.output : null,
+    partialOutput: (state.isStreaming ? state.output : null) as DeepPartial<T> | null,
     messages: state.messages,
     hasOutput: !!state.output,
   };

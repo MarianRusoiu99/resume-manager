@@ -11,6 +11,35 @@ import {
   type ConversationMessage 
 } from './types';
 import { generateId } from './utils';
+import type { DeepPartial } from '@/lib/types/utils';
+
+// Helper type for deep merging partials
+function mergeDeep<T>(target: T, source: DeepPartial<T>): T {
+  if (typeof source !== 'object' || source === null) {
+    return source as unknown as T;
+  }
+  
+  if (Array.isArray(source)) {
+    // For arrays, we just replace for now or could implement append logic
+    // But typically in streaming we get replaced arrays or we need smarter diffing
+    // For simplicity, we'll replace if it's an array
+    return source as unknown as T;
+  }
+  
+  const result = { ...target } as any;
+  
+  for (const key in source) {
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      if (source[key] instanceof Object && key in result) {
+        result[key] = mergeDeep(result[key], source[key] as any);
+      } else {
+        result[key] = source[key];
+      }
+    }
+  }
+  
+  return result as T;
+}
 
 /**
  * Hook for managing AI conversations
@@ -36,7 +65,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
    */
   const handleStreamResponse = async <T>(
     response: Response, 
-    updateState: (delta: Partial<T>) => void,
+    updateState: (delta: DeepPartial<T>) => void,
     onComplete: (final: T) => void,
     onError: (error: string) => void
   ): Promise<T | null> => {
@@ -47,9 +76,6 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     
-    // Using a ref to accumulate the partial object if needed, 
-    // but in this case we're relying on the delta.partial structure
-    // from the backend which sends deep partials we can just set
     let finalOutput: T | null = null;
 
     try {
@@ -58,21 +84,29 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
         
         if (done) break;
         
-        const chunk = decoder.decode(value);
+        const chunk = decoder.decode(value, { stream: true });
         const lines = chunk.split('\n\n').filter(Boolean);
         
         for (const line of lines) {
           if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6));
-            
-            if (data.type === 'delta') {
-              updateState(data.partial);
-            } else if (data.type === 'complete') {
-              finalOutput = data.final;
-              onComplete(data.final);
-            } else if (data.type === 'error') {
-              onError(data.error);
-              throw new Error(data.error);
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === 'delta') {
+                updateState(data.partial);
+              } else if (data.type === 'complete') {
+                finalOutput = data.final;
+                onComplete(data.final);
+              } else if (data.type === 'error') {
+                throw new Error(data.error);
+              }
+            } catch (e) {
+               // If it was the error we threw, rethrow it
+               if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
+                 onError(e.message);
+                 throw e;
+               }
+               // Otherwise ignore JSON parse errors for partial chunks
             }
           }
         }
@@ -214,10 +248,18 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
           const result = await handleStreamResponse<T>(
             response,
             (partial) => {
-              setState(prev => ({
-                ...prev,
-                output: { ...prev.output, ...partial } as T, // Merge partial output
-              }));
+              setState(prev => {
+                // Merge partial output with current output
+                // If current output is null, start with partial
+                // Note: deeply merging partials is tricky but necessary for nested objects
+                const currentOutput = prev.output || {} as T;
+                const newOutput = mergeDeep(currentOutput, partial);
+                
+                return {
+                  ...prev,
+                  output: newOutput,
+                };
+              });
             },
             (final) => {
               // Complete handler

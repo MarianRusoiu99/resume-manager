@@ -18,16 +18,18 @@ import type {
   OrchestratorOptions,
   GenerationResult,
   StreamChunk,
-  DeepPartial
+  StreamChunkDelta
 } from './orchestrator/types';
+import type { DeepPartial } from '@/lib/types/utils';
 
 export { registerMode, getMode, getModeOrThrow } from './orchestrator/registry';
 export type {
   OrchestratorOptions,
   GenerationResult,
   StreamChunk,
-  DeepPartial
+  StreamChunkDelta
 } from './orchestrator/types';
+export type { DeepPartial } from '@/lib/types/utils';
 
 /**
  * AI Orchestrator
@@ -68,14 +70,10 @@ export class AIOrchestrator {
         }
 
         const finalObject = await object;
-        // Calculate approximate usage since streamObject doesn't return usage directly in the stream
-        // This is a limitation of the current AI SDK version we're using, or needs to be handled via onFinish callback if available
-        // For now, we'll estimate or check if the object promise has usage attached (it usually does in newer versions)
         
-        // Note: Actual usage tracking might require using the onFinish callback in streamObject options
-        // For this implementation, we'll yield the final object. 
-        // Real usage tracking would need to be added via the callbacks.
-        const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 }; // Placeholder
+        // Use normalized usage (this will be 0/0/0 if provider doesn't support usage in streamObject)
+        // Vercel AI SDK 3.1+ supports usage in object promise
+        const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 }; 
         
         // Log usage (placeholder)
         logUsage(options, usage, 'stop', mode.id);

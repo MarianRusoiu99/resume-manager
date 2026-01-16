@@ -58,7 +58,7 @@ export function AIEnhanceTextModal({
     mode: 'text-enhancement',
   });
 
-  const enhancedContent = output?.content || partialOutput;
+  const enhancedContent = (output?.content || (partialOutput as any)?.content) ?? '';
 
   // Handle open change with reset logic
   const handleOpenChange = useCallback((nextOpen: boolean) => {

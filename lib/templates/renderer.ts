@@ -6,11 +6,12 @@
 import Handlebars from 'handlebars';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { sanitizeTemplateHtml } from '@/lib/templates/utils/sanitizer';
+import type { DeepPartial } from '@/lib/types/utils';
 
 /**
  * Renders the full HTML structure for PDF export
  */
-function renderPDFDocument(html: string, css: string, resumeData: Resume): string {
+function renderPDFDocument(html: string, css: string, resumeData: Resume | DeepPartial<Resume>): string {
   const name = resumeData.basics?.name || 'Resume';
   
   return `
@@ -39,27 +40,64 @@ function renderPDFDocument(html: string, css: string, resumeData: Resume): strin
  * Register Handlebars helpers for common formatting tasks
  */
 function registerHelpers() {
+  // Safe array iterator
+  Handlebars.registerHelper('safeEach', function(this: unknown, context: unknown[], options: Handlebars.HelperOptions) {
+    if (!context || !Array.isArray(context) || context.length === 0) {
+      return options.inverse(this);
+    }
+    return context.map((item) => options.fn(item)).join('');
+  });
+
+  // Safe value checker
+  Handlebars.registerHelper('safeIf', function(this: unknown, value: unknown, options: Handlebars.HelperOptions) {
+    if (value !== undefined && value !== null && value !== '') {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
+  // Safe nested property access
+  Handlebars.registerHelper('safeGet', function(this: unknown, context: any, path: string, options: Handlebars.HelperOptions) {
+    if (!context || !path) return options.inverse(this);
+    
+    const value = path.split('.').reduce((acc, part) => {
+      return acc && acc[part];
+    }, context);
+    
+    if (value !== undefined && value !== null && value !== '') {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+
   // Format date helper
   Handlebars.registerHelper('formatDate', function(dateString: string | undefined) {
     if (!dateString) return 'Present';
-    
-    const parts = dateString.split('-');
-    if (parts.length === 1) return parts[0]; // Just year
-    
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = months[Number.parseInt(parts[1]) - 1];
-    return `${month} ${parts[0]}`;
+    try {
+      const parts = dateString.split('-');
+      if (parts.length === 1) return parts[0]; // Just year
+      
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = months[Number.parseInt(parts[1]) - 1];
+      return `${month} ${parts[0]}`;
+    } catch {
+      return dateString;
+    }
   });
 
   // Format date range helper
   Handlebars.registerHelper('dateRange', function(startDate: string | undefined, endDate: string | undefined) {
     const formatDate = (date: string | undefined) => {
       if (!date) return 'Present';
-      const parts = date.split('-');
-      if (parts.length === 1) return parts[0];
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const month = months[Number.parseInt(parts[1]) - 1];
-      return `${month} ${parts[0]}`;
+      try {
+        const parts = date.split('-');
+        if (parts.length === 1) return parts[0];
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const month = months[Number.parseInt(parts[1]) - 1];
+        return `${month} ${parts[0]}`;
+      } catch {
+        return date;
+      }
     };
     
     return `${formatDate(startDate)} - ${formatDate(endDate)}`;
@@ -104,7 +142,7 @@ registerHelpers();
  * then the final output is sanitized to prevent XSS from user-provided resume data
  * (e.g., name, summary, etc.) that gets inserted via Handlebars placeholders.
  */
-export function renderTemplate(htmlTemplate: string, resumeData: Resume): string {
+export function renderTemplate(htmlTemplate: string, resumeData: Resume | DeepPartial<Resume>): string {
   // First, sanitize the template to remove malicious scripts
   const safeHtmlTemplate = sanitizeTemplateHtml(htmlTemplate);
   const template = Handlebars.compile(safeHtmlTemplate);
@@ -123,7 +161,7 @@ export function renderTemplate(htmlTemplate: string, resumeData: Resume): string
  */
 export function renderCompleteDocument(
   htmlTemplate: string,
-  resumeData: Resume
+  resumeData: Resume | DeepPartial<Resume>
 ): string {
   const renderedContent = renderTemplate(htmlTemplate, resumeData);
   return renderPDFDocument(renderedContent, '', resumeData);
