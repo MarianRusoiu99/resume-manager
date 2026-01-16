@@ -11,10 +11,25 @@ import { ProviderType } from '@prisma/client';
  */
 export type ApiModel = {
   id: string;
+  name: string;
+  description?: string;
   modelKey: string;
   displayName: string | null;
-  description: string | null;
   isActive: boolean;
+};
+
+/**
+ * Complete API provider information including models (application boundary).
+ */
+export type ApiProvider = {
+  id: string;
+  name: string;
+  provider: string;
+  keyPreview: string;
+  models: ApiModel[];
+  isActive: boolean;
+  createdAt: string;
+  lastUsedAt: string | null;
 };
 
 /**

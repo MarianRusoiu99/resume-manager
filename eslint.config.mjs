@@ -27,6 +27,17 @@ const eslintConfig = defineConfig([
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/no-misused-promises": "error",
       "no-console": ["warn", { allow: ["warn", "error"] }],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["../../*"],
+              message: "Please use absolute imports with `@/` for cross-module imports (more than 1 level up).",
+            },
+          ],
+        },
+      ],
     },
   },
 

@@ -1,5 +1,7 @@
 import type { Resume } from '@/lib/validations/jsonresume';
 
+import type { ServiceResult } from './service-result';
+
 /**
  * Profile Domain Types
  *
@@ -11,14 +13,7 @@ import type { Resume } from '@/lib/validations/jsonresume';
  * This is an alias for ServiceResult to maintain semantic clarity
  * while avoiding type duplication.
  */
-export type ActionResult<T> = {
-  success: true;
-  data: T;
-} | {
-  success: false;
-  error: string;
-  code?: string;
-};
+export type ActionResult<T> = ServiceResult<T>;
 
 /**
  * Profile data transfer object (application boundary).

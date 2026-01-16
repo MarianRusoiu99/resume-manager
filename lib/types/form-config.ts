@@ -4,6 +4,7 @@
  * Proper type definitions for dynamic form configurations
  */
 
+export * from '@/lib/forms/schemas/types';
 import type { FieldConfig, FormSchema } from '@/lib/forms/schemas/types';
 import type { Resume } from '@/lib/validations/jsonresume';
 

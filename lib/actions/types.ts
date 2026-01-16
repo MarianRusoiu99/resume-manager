@@ -1,29 +1,13 @@
 /**
  * Shared types for Server Actions (application boundary).
+ * 
+ * @deprecated Use domain-specific types in '@/lib/types/' instead.
  */
 
-import type { ServiceResult } from '@/lib/types/service-result';
-import type { Resume } from '@/lib/validations/jsonresume';
+export * from '@/lib/types/profile';
+export * from '@/lib/types/ai-settings';
+export * from '@/lib/types/api-provider';
 
-/**
- * Standard result type for all Server Actions.
- * This is an alias for ServiceResult to maintain semantic clarity
- * while avoiding type duplication.
- */
-export type ActionResult<T> = ServiceResult<T>;
-
-export type ProfileDto = {
-  id: string;
-  userId: string;
-  name: string;
-  resume: Resume | null;
-  isDefault: boolean;
-  isPublic: boolean;
-  publicSlug: string | null;
-  selectedTemplateId: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
 
 // Shared types for UI components to avoid direct lib/client or lib/services imports
 

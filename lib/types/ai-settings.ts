@@ -1,10 +1,19 @@
 import { ProviderType } from '@prisma/client';
+import type { ApiModel } from './api-provider';
 
 /**
  * AI Settings Domain Types
  *
  * Type definitions related to AI provider and model preferences.
  */
+
+/**
+ * Complete AI settings (application boundary).
+ */
+export interface AISettings {
+  features: FeatureModelSelection[];
+  availableProviders: ProviderWithModels[];
+}
 
 /**
  * AI feature types
@@ -15,10 +24,11 @@ export type AIFeature = 'resume' | 'coverLetter' | 'enhance' | 'template';
  * Model selection for a feature
  */
 export interface FeatureModelSelection {
-  feature: AIFeature;
-  id: string;
-  name: string;
-  description: string;
+  feature: {
+    id: string;
+    name: string;
+    description: string;
+  };
   providerId: string | null;
   providerName: string | null;
   modelId: string | null;
@@ -26,7 +36,18 @@ export interface FeatureModelSelection {
 }
 
 /**
- * User's AI settings data
+ * Simplified provider info for UI settings.
+ */
+export type ProviderWithModels = {
+  id: string;
+  name: string;
+  provider: string;
+  models: ApiModel[];
+  isActive: boolean;
+};
+
+/**
+ * User's AI settings data (internal).
  */
 export interface UserAISettingsData {
   features: FeatureModelSelection[];
@@ -35,12 +56,6 @@ export interface UserAISettingsData {
     name: string;
     provider: ProviderType;
     isActive: boolean;
-    models: {
-      id: string;
-      modelKey: string;
-      displayName: string | null;
-      description: string | null;
-      isActive: boolean;
-    }[];
+    models: ApiModel[];
   }[];
 }

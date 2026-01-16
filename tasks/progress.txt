@@ -264,6 +264,68 @@ Thread: https://ampcode.com/threads/T-019bacc4-d8d7-7c22-b880-c6a4-4e22a8bb697e
 
 ---
 
+## 2026-01-11 - US-011
+Thread: https://ampcode.com/threads/T-019baccb9-04ed4-fd5d-5f08-7f5e8b626b6
+- Created `__tests__/lib/repositories/generated-resumes.repository.test.ts` with 26 comprehensive tests
+- Tests cover mapping from Prisma types to domain types
+- Tests cover query builder methods
+- All tests pass, typecheck passes
+- Files changed: `__tests__/lib/repositories/generated-resumes.repository.test.ts` (new)
+- **Learnings for future iterations:**
+  - Resume repository uses Company and JobPosting entities in create operations
+  - Use `findOrCreateCompanyId` pattern for existing company lookup
+  - JobPosting.create requires userId, description, optional companyId, title
+  - Prisma includes with `{ select: { id: true } }` pattern for returning only ID
+  - Mock database entities with all required fields for Prisma operations
+
+---
+
+## 2026-01-11 - US-012
+Thread: https://ampcode.com/threads/T-019bacbd-b7e4-744d-a614-7d88e2d5d9a0
+- Created `__tests__/lib/repositories/cover-letters.repository.test.ts` with 20 comprehensive tests
+- Tests cover CRUD operations with mocked Prisma
+- Tests cover relationship handling (company, job posting relations)
+- All tests pass, typecheck passes
+- Files changed: `__tests__/lib/repositories/cover-letters.repository.test.ts` (new)
+- **Learnings for future iterations:**
+  - CoverLetterRepository extends `GenericUserOwnedRepository` for basic CRUD operations
+  - Update methods use conditional updates based on which fields are provided
+  - findAllForUser supports limit, offset, orderBy, include, select parameters
+  - findAllForUserWithCount adds count to pagination results
+
+---
+
+## 2026-01-11 - US-013
+Thread: https://ampcode.com/threads/T-019bacc9-7390-687e-7814-795e4d3c3ea
+- Created `__tests__/lib/ai/workflow/engine.test.ts` with 13 comprehensive tests
+- Tests cover workflow execution flow with mocked AI providers
+- Tests cover progress tracking callbacks
+- Tests cover error handling and retry logic
+- Tests include step execution, result accumulation, context passing
+- All tests pass, typecheck passes
+- Files changed: `__tests__/lib/ai/workflow/engine.test.ts` (new)
+- **Learnings for future iterations:**
+  - Workflow engine at `lib/ai/workflow/engine.ts` - provides executeWorkflow and createConsoleProgress
+  - Workflow steps accept context object and return Partial<WorkflowResults>
+  - Steps can be skipped with `shouldSkip` callback
+  - Progress callback provides stepId, message, and progress percentage
+
+---
+
+## 2026-01-16 - US-017
+Thread: https://ampcode.com/threads/T-019bacc4-d8d7-7c22-b880-c6a4-4e22a8bb697e
+- Consolidated type definitions from `lib/actions/types.ts` into domain-specific files in `lib/types/`
+- Updated `lib/types/profile.ts`, `lib/types/ai-settings.ts`, and `lib/types/api-provider.ts` with complete application boundary types
+- Updated `lib/actions/types.ts` to re-export from new locations for backward compatibility
+- Verified changes with typecheck
+- Files changed: `lib/types/profile.ts`, `lib/types/ai-settings.ts`, `lib/types/api-provider.ts`, `lib/actions/types.ts`
+- **Learnings for future iterations:**
+  - When splitting types, maintain a transition period with re-exports to avoid breaking all call sites at once
+  - Domain-specific types should include both internal database-aligned types and application boundary DTOs
+  - Use `ApiModel` consistently across AI-related types to avoid duplication
+
+---
+
 ## Summary of Completed Work
 
 **Phase 1: Critical Fixes (US-001 through US-006)** - All Completed

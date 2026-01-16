@@ -162,8 +162,8 @@
         "Typecheck passes"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": "Depends on US-007. Use mock-prisma utilities."
+      "passes": true,
+      "notes": "26 comprehensive tests covering mapping and query builders."
     },
     {
       "id": "US-012",
@@ -177,8 +177,8 @@
         "Typecheck passes"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": "Depends on US-007."
+      "passes": true,
+      "notes": "20 tests covering CRUD and relationship handling."
     },
     {
       "id": "US-013",
@@ -193,8 +193,8 @@
         "Typecheck passes"
       ],
       "priority": 13,
-      "passes": false,
-      "notes": "Depends on US-007. Find workflow engine in lib/workflows/."
+      "passes": true,
+      "notes": "13 tests covering execution flow, progress tracking, and error handling."
     },
     {
       "id": "US-014",
@@ -254,8 +254,8 @@
         "Typecheck passes"
       ],
       "priority": 17,
-      "passes": false,
-      "notes": "In progress - Created domain-specific type files (profile.ts, api-provider.ts, ai-settings.ts). Import updates pending to fix TypeScript resolution issues."
+      "passes": true,
+      "notes": "Consolidated types for Profile, AI Settings, and API Providers. Backward compatibility maintained via re-exports."
     },
     {
       "id": "US-018",

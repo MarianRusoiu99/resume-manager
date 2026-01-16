@@ -3,7 +3,7 @@
  */
 
 import { z } from 'zod';
-import type { FieldConfig } from '../types';
+import type { FieldConfig } from '@/lib/types';
 import type { Basics } from '@/lib/validations/jsonresume';
 
 // --- Basics / Personal Info ---
