@@ -67,6 +67,13 @@ export interface TagsFieldConfig<T> extends BaseFieldConfig<T> {
 }
 
 /**
+ * Profile list field configuration
+ */
+export interface ProfileListFieldConfig<T> extends BaseFieldConfig<T> {
+  type: 'profiles';
+}
+
+/**
  * Union type for all field configurations
  */
 export type FieldConfig<T> =
@@ -75,7 +82,8 @@ export type FieldConfig<T> =
   | RichTextFieldConfig<T>
   | DateFieldConfig<T>
   | SelectFieldConfig<T>
-  | TagsFieldConfig<T>;
+  | TagsFieldConfig<T>
+  | ProfileListFieldConfig<T>;
 
 /**
  * Form schema definition

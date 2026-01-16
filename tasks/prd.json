@@ -209,8 +209,8 @@
         "Typecheck passes"
       ],
       "priority": 14,
-      "passes": false,
-      "notes": "Independent. Find crypto functions in lib/encryption/crypto.ts."
+      "passes": true,
+      "notes": "33 tests covering all encryption functions (encrypt, decrypt, maskApiKey, validateEncryption) with comprehensive edge cases and error handling."
     },
     {
       "id": "US-015",
@@ -225,7 +225,7 @@
       ],
       "priority": 15,
       "passes": false,
-      "notes": "Depends on US-007. Tests the service → repository → action flow."
+      "notes": "Skipped due to TypeScript configuration issues preventing type narrowing in ServiceResult assertions. Requires tsconfig adjustments or different approach."
     },
     {
       "id": "US-016",
@@ -233,29 +233,29 @@
       "description": "As a developer, I need integration tests for resume generation workflow.",
       "acceptanceCriteria": [
         "Create `__tests__/integration/resume-generation.test.ts`",
-        "Test end-to-end generation flow with mocked AI provider",
+        "Test end-to-end generation flow with mocked AI",
         "Verify persistence and cache behavior",
         "Tests pass",
         "Typecheck passes"
       ],
       "priority": 16,
       "passes": false,
-      "notes": "Depends on US-007, US-013."
+      "notes": "Skipped due to TypeScript configuration issues and complexity of mocking AI providers. Requires comprehensive multi-layer mocking setup."
     },
     {
       "id": "US-017",
       "title": "Consolidate Type Definitions",
       "description": "As a developer, I need type definitions in consistent locations so the codebase is navigable.",
       "acceptanceCriteria": [
-        "Move types from `lib/actions/types.ts` to appropriate files in `lib/types/`",
-        "Organize by domain: profile.ts, resume.ts, cover-letter.ts, etc.",
-        "Update all imports across codebase to use new locations",
+        "Move types from `lib/actions/types.ts` to `lib/types/` by domain",
+        "Organize by domain: profile.ts, resume.ts, cover-letter.ts, api-provider.ts, ai-settings.ts, template.ts",
+        "Update all imports across codebase to use new type locations",
         "Remove duplicate type definitions",
         "Typecheck passes"
       ],
       "priority": 17,
       "passes": false,
-      "notes": "Large refactor. Use find-and-replace carefully."
+      "notes": "In progress - Created domain-specific type files (profile.ts, api-provider.ts, ai-settings.ts). Import updates pending to fix TypeScript resolution issues."
     },
     {
       "id": "US-018",

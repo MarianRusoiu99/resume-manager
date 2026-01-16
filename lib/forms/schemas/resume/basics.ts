@@ -20,8 +20,12 @@ export const personalInfoFormSchema = z.object({
   region: z.string().optional(),
   postalCode: z.string().optional(),
   countryCode: z.string().optional(),
-  linkedin: z.string().optional(),
-  github: z.string().optional(),
+  summary: z.string().optional(),
+  profiles: z.array(z.object({
+    network: z.string().min(1, "Network is required"),
+    username: z.string().optional(),
+    url: z.string().url("Invalid URL").or(z.literal("")),
+  })).optional(),
 });
 
 export type PersonalInfoFormData = z.infer<typeof personalInfoFormSchema>;
@@ -38,14 +42,11 @@ export const personalInfoFields: FieldConfig<PersonalInfoFormData>[] = [
   { key: 'region', label: 'Region / State', type: 'text' },
   { key: 'postalCode', label: 'Postal Code', type: 'text' },
   { key: 'countryCode', label: 'Country Code', type: 'text', placeholder: 'e.g. US, GB' },
-  { key: 'linkedin', label: 'LinkedIn URL', type: 'url', placeholder: 'https://linkedin.com/in/username' },
-  { key: 'github', label: 'GitHub URL', type: 'url', placeholder: 'https://github.com/username' },
+  { key: 'profiles', label: 'Social Profiles', type: 'profiles', colSpan: 2 },
+  { key: 'summary', label: 'Professional Summary', type: 'richtext', colSpan: 2, description: 'Briefly describe your professional background and key strengths.' },
 ];
 
 export function basicsToFormData(basics?: Basics): PersonalInfoFormData {
-  const linkedinProfile = basics?.profiles?.find(p => p?.network?.toLowerCase() === 'linkedin');
-  const githubProfile = basics?.profiles?.find(p => p?.network?.toLowerCase() === 'github');
-
   return {
     name: basics?.name || "",
     label: basics?.label || "",
@@ -58,16 +59,16 @@ export function basicsToFormData(basics?: Basics): PersonalInfoFormData {
     region: basics?.location?.region || "",
     postalCode: basics?.location?.postalCode || "",
     countryCode: basics?.location?.countryCode || "",
-    linkedin: linkedinProfile?.url || "",
-    github: githubProfile?.url || "",
+    summary: basics?.summary || "",
+    profiles: basics?.profiles?.map(p => ({
+      network: p.network || "",
+      username: p.username || "",
+      url: p.url || "",
+    })) || [],
   };
 }
 
 export function formDataToBasics(formData: PersonalInfoFormData): Basics {
-  const profiles = [];
-  if (formData.linkedin) profiles.push({ network: "LinkedIn", url: formData.linkedin });
-  if (formData.github) profiles.push({ network: "GitHub", url: formData.github });
-
   return {
     name: formData.name,
     label: formData.label,
@@ -75,6 +76,7 @@ export function formDataToBasics(formData: PersonalInfoFormData): Basics {
     phone: formData.phone,
     url: formData.url,
     image: formData.image,
+    summary: formData.summary,
     location: {
       address: formData.address,
       city: formData.city,
@@ -82,7 +84,11 @@ export function formDataToBasics(formData: PersonalInfoFormData): Basics {
       postalCode: formData.postalCode,
       countryCode: formData.countryCode,
     },
-    profiles,
+    profiles: formData.profiles?.map(p => ({
+      network: p.network,
+      username: p.username,
+      url: p.url,
+    })) || [],
   };
 }
 
