@@ -4,6 +4,12 @@ import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
 import type { IProfileRepository, ProfileData, CreateProfileInput, UpdateProfileInput, ProfileWithTemplate } from './interfaces/profiles.repository.interface';
 import type { Resume } from '@/lib/validations/jsonresume';
 
+export interface ProfileFindOptions {
+  limit?: number;
+  offset?: number;
+  includeDocument?: boolean;
+}
+
 /**
  * Profile with document relation from Prisma
  */
@@ -39,12 +45,14 @@ export class ProfileRepository extends GenericUserOwnedRepository<
     super('profile', dbClient);
   }
 
-  private mapProfile(profile: ProfileWithDocument): ProfileData {
+  private mapProfile(profile: ProfileWithDocument | Prisma.ProfileGetPayload<{}>): ProfileData {
+    const hasDocument = 'document' in profile && profile.document;
+    
     return {
       id: profile.id,
       userId: profile.userId,
       name: profile.name,
-      resume: (profile.document?.document as Resume) ?? null,
+      resume: hasDocument ? ((profile.document?.document as unknown) as Resume) : null,
       isDefault: profile.isDefault,
       isPublic: profile.isPublic,
       publicSlug: profile.publicSlug,
@@ -54,17 +62,17 @@ export class ProfileRepository extends GenericUserOwnedRepository<
     };
   }
 
-  async findAllByUserId(userId: string, options?: { limit?: number; offset?: number }): Promise<ProfileData[]> {
-    const { limit = 100, offset = 0 } = options || {};
+  async findAllByUserId(userId: string, options?: ProfileFindOptions): Promise<ProfileData[]> {
+    const { limit = 100, offset = 0, includeDocument = true } = options || {};
     
     const profiles = await this.db.profile.findMany({
       where: { userId },
-      include: { document: { select: { document: true } } },
+      include: includeDocument ? { document: { select: { document: true } } } : undefined,
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
       take: limit,
       skip: offset,
     });
-    return profiles.map(p => this.mapProfile(p));
+    return profiles.map(p => this.mapProfile(p as any));
   }
 
   override async findById(profileId: string, userId?: string): Promise<ProfileData | null> {

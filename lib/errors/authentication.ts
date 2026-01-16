@@ -24,8 +24,8 @@ export class UnauthorizedError extends AuthenticationError {
   readonly code = 'UNAUTHORIZED' as ServiceErrorCode;
   readonly statusCode = 401;
 
-  constructor(message: string = 'Authentication required') {
-    super(message);
+  constructor(message: string = 'Authentication required', cause?: unknown) {
+    super(message, cause);
   }
 }
 
@@ -37,8 +37,8 @@ export class ForbiddenError extends AuthenticationError {
   readonly code = 'FORBIDDEN' as ServiceErrorCode;
   readonly statusCode = 403;
 
-  constructor(message: string = 'Access denied') {
-    super(message);
+  constructor(message: string = 'Access denied', cause?: unknown) {
+    super(message, cause);
   }
 }
 
@@ -50,8 +50,8 @@ export class InvalidCredentialsError extends AuthenticationError {
   readonly code = 'UNAUTHORIZED' as ServiceErrorCode;
   readonly statusCode = 401;
 
-  constructor(message: string = 'Invalid email or password') {
-    super(message);
+  constructor(message: string = 'Invalid email or password', cause?: unknown) {
+    super(message, cause);
   }
 }
 
@@ -63,8 +63,8 @@ export class SessionExpiredError extends AuthenticationError {
   readonly code = 'UNAUTHORIZED' as ServiceErrorCode;
   readonly statusCode = 401;
 
-  constructor(message: string = 'Session expired. Please log in again.') {
-    super(message);
+  constructor(message: string = 'Session expired. Please log in again.', cause?: unknown) {
+    super(message, cause);
   }
 }
 
@@ -76,8 +76,8 @@ export class InvalidTokenError extends AuthenticationError {
   readonly code = 'UNAUTHORIZED' as ServiceErrorCode;
   readonly statusCode = 401;
 
-  constructor(message: string = 'Invalid authentication token') {
-    super(message);
+  constructor(message: string = 'Invalid authentication token', cause?: unknown) {
+    super(message, cause);
   }
 }
 
@@ -91,9 +91,10 @@ export class AccountLockedError extends AuthenticationError {
 
   constructor(
     message: string = 'Account is locked',
-    public readonly unlockTime?: Date
+    public readonly unlockTime?: Date,
+    cause?: unknown
   ) {
-    super(message);
+    super(message, cause);
   }
 }
 

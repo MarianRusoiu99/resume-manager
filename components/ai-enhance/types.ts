@@ -126,3 +126,25 @@ export interface EnhancementResult {
     contentType: ContentType;
   };
 }
+
+/**
+ * Attachment input for API requests
+ */
+export interface AttachmentInput {
+  type: 'document' | 'image' | 'resume' | 'job-description' | 'template';
+  name: string;
+  content: string;
+  mimeType: string;
+}
+
+/**
+ * Helper to convert file attachment to API format
+ */
+export function toApiAttachment(file: FileAttachment, type: AttachmentInput['type'] = 'document'): AttachmentInput {
+  return {
+    type,
+    name: file.name,
+    content: file.content,
+    mimeType: file.type,
+  };
+}

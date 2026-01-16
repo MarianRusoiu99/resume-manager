@@ -26,8 +26,8 @@ export class NotFoundError extends AppError {
   readonly code = 'NOT_FOUND' as const;
   readonly statusCode = 404;
 
-  constructor(resource: string = 'Resource') {
-    super(`${resource} not found`);
+  constructor(resource: string = 'Resource', cause?: unknown) {
+    super(`${resource} not found`, cause);
   }
 }
 
@@ -41,33 +41,10 @@ export class ValidationError extends AppError {
   constructor(
     message: string,
     public readonly field?: string,
-    public readonly details?: Record<string, string>[]
+    public readonly details?: Record<string, string>[],
+    cause?: unknown
   ) {
-    super(message);
-  }
-}
-
-/**
- * Authentication error (401)
- */
-export class UnauthorizedError extends AppError {
-  readonly code = 'UNAUTHORIZED' as const;
-  readonly statusCode = 401;
-
-  constructor(message: string = 'Authentication required') {
-    super(message);
-  }
-}
-
-/**
- * Authorization/permission error (403)
- */
-export class ForbiddenError extends AppError {
-  readonly code = 'FORBIDDEN' as const;
-  readonly statusCode = 403;
-
-  constructor(message: string = 'Access denied') {
-    super(message);
+    super(message, cause);
   }
 }
 
@@ -78,23 +55,8 @@ export class ConflictError extends AppError {
   readonly code = 'CONFLICT' as const;
   readonly statusCode = 409;
 
-  constructor(message: string = 'Conflict') {
-    super(message);
-  }
-}
-
-/**
- * Rate limit exceeded error (429)
- */
-export class RateLimitError extends AppError {
-  readonly code = 'RATE_LIMITED' as const;
-  readonly statusCode = 429;
-
-  constructor(
-    message: string = 'Too many requests',
-    public readonly retryAfter?: number
-  ) {
-    super(message);
+  constructor(message: string = 'Conflict', cause?: unknown) {
+    super(message, cause);
   }
 }
 
@@ -115,7 +77,7 @@ export class ExternalServiceError extends AppError {
 }
 
 /**
- * Internal server error (500)
+ * Configuration error (500)
  */
 export class ConfigurationError extends AppError {
   readonly code = 'CONFIGURATION_ERROR' as const;
@@ -208,8 +170,8 @@ export {
 // Re-export authentication errors
 export {
   AuthenticationError,
-  UnauthorizedError as AuthUnauthorizedError,
-  ForbiddenError as AuthForbiddenError,
+  UnauthorizedError,
+  ForbiddenError,
   InvalidCredentialsError,
   SessionExpiredError,
   InvalidTokenError,
@@ -220,7 +182,7 @@ export {
 // Re-export API errors
 export {
   ApiError,
-  RateLimitError as ApiRateLimitError,
+  RateLimitError,
   ServiceUnavailableError,
   BadRequestError,
   MethodNotAllowedError,

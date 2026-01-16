@@ -27,6 +27,9 @@ export {
   ExternalServiceError 
 };
 
+/**
+ * @deprecated Use specific AppError subclasses instead. This class will be removed in a future version.
+ */
 export class ServiceOperationError extends Error {
   constructor(
     message: string,

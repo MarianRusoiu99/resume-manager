@@ -1,207 +1,207 @@
 <main>
 <header>
   <h1>{{basics.name}}</h1>
-  {{#if basics.label}}<h2>{{basics.label}}</h2>{{/if}}
+  {{#safeIf basics.label}}<h2>{{basics.label}}</h2>{{/safeIf}}
   <div class="contact">
-    {{#if basics.phone}}<span class="contact-item">{{basics.phone}}</span>{{/if}}
-    {{#if basics.email}}<span class="contact-item"><a href="mailto:{{basics.email}}">{{basics.email}}</a></span>{{/if}}
-    {{#if basics.url}}<span class="contact-item"><a href="{{basics.url}}">{{basics.url}}</a></span>{{/if}}
-    {{#if basics.profiles}}
-      {{#each basics.profiles}}<span class="contact-item"><a href="{{url}}">{{network}}{{#if username}} ({{username}}){{/if}}</a></span>{{/each}}
-    {{/if}}
+    {{#safeIf basics.phone}}<span class="contact-item">{{basics.phone}}</span>{{/safeIf}}
+    {{#safeIf basics.email}}<span class="contact-item"><a href="mailto:{{basics.email}}">{{basics.email}}</a></span>{{/safeIf}}
+    {{#safeIf basics.url}}<span class="contact-item"><a href="{{basics.url}}">{{basics.url}}</a></span>{{/safeIf}}
+    {{#safeIf basics.profiles}}
+      {{#safeEach basics.profiles}}<span class="contact-item"><a href="{{url}}">{{network}}{{#safeIf username}} ({{username}}){{/safeIf}}</a></span>{{/safeEach}}
+    {{/safeIf}}
   </div>
 </header>
 
-{{#if basics.summary}}
+{{#safeIf basics.summary}}
 <section>
   <h3>Summary</h3>
   <article>
     <p>{{basics.summary}}</p>
   </article>
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if work}}
+{{#safeIf work}}
 <section>
   <h3>Experience</h3>
-  {{#each work}}
+  {{#safeEach work}}
   <article>
     <div class="article-header">
       <div class="title-company">
         <strong>{{position}}</strong>
         <span class="company">{{name}}</span>
       </div>
-      {{#if startDate}}
-        <time>{{startDate}}{{#if endDate}} – {{endDate}}{{else}} – Present{{/if}}</time>
-      {{/if}}
+      {{#safeIf startDate}}
+        <time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{else}} – Present{{/safeIf}}</time>
+      {{/safeIf}}
     </div>
-    {{#if summary}}<p>{{summary}}</p>{{/if}}
-    {{#if highlights}}
+    {{#safeIf summary}}<p>{{summary}}</p>{{/safeIf}}
+    {{#safeIf highlights}}
       <ul>
-        {{#each highlights}}<li>{{this}}</li>{{/each}}
+        {{#safeEach highlights}}<li>{{this}}</li>{{/safeEach}}
       </ul>
-    {{/if}}
+    {{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if volunteer}}
+{{#safeIf volunteer}}
 <section>
   <h3>Volunteer</h3>
-  {{#each volunteer}}
+  {{#safeEach volunteer}}
   <article>
     <div class="article-header">
       <div class="title-company">
         <strong>{{position}}</strong>
         <span class="company">{{organization}}</span>
       </div>
-      {{#if startDate}}<time>{{startDate}}{{#if endDate}} – {{endDate}}{{else}} – Present{{/if}}</time>{{/if}}
+      {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{else}} – Present{{/safeIf}}</time>{{/safeIf}}
     </div>
-    {{#if summary}}<p>{{summary}}</p>{{/if}}
-    {{#if highlights}}
-      <ul>{{#each highlights}}<li>{{this}}</li>{{/each}}</ul>
-    {{/if}}
+    {{#safeIf summary}}<p>{{summary}}</p>{{/safeIf}}
+    {{#safeIf highlights}}
+      <ul>{{#safeEach highlights}}<li>{{this}}</li>{{/safeEach}}</ul>
+    {{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if projects}}
+{{#safeIf projects}}
 <section>
   <h3>Projects</h3>
-  {{#each projects}}
+  {{#safeEach projects}}
   <article>
     <div class="article-header">
-      <strong>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/if}}</strong>
-      {{#if startDate}}<time>{{startDate}}{{#if endDate}} – {{endDate}}{{/if}}</time>{{/if}}
+      <strong>{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</strong>
+      {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{/safeIf}}</time>{{/safeIf}}
     </div>
-    {{#if description}}<p>{{description}}</p>{{/if}}
-    {{#if highlights}}
-      <ul>{{#each highlights}}<li>{{this}}</li>{{/each}}</ul>
-    {{/if}}
+    {{#safeIf description}}<p>{{description}}</p>{{/safeIf}}
+    {{#safeIf highlights}}
+      <ul>{{#safeEach highlights}}<li>{{this}}</li>{{/safeEach}}</ul>
+    {{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if education}}
+{{#safeIf education}}
 <section>
   <h3>Education</h3>
-  {{#each education}}
+  {{#safeEach education}}
   <article>
     <div class="article-header">
       <div class="title-company">
-        <strong>{{studyType}}{{#if area}} in {{area}}{{/if}}</strong>
+        <strong>{{studyType}}{{#safeIf area}} in {{area}}{{/safeIf}}</strong>
         <span class="company">{{institution}}</span>
       </div>
-      {{#if startDate}}<time>{{startDate}}{{#if endDate}} – {{endDate}}{{/if}}</time>{{/if}}
+      {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{/safeIf}}</time>{{/safeIf}}
     </div>
-    {{#if score}}<div class="meta">GPA: {{score}}</div>{{/if}}
-    {{#if courses}}
-      <ul>{{#each courses}}<li>{{this}}</li>{{/each}}</ul>
-    {{/if}}
+    {{#safeIf score}}<div class="meta">GPA: {{score}}</div>{{/safeIf}}
+    {{#safeIf courses}}
+      <ul>{{#safeEach courses}}<li>{{this}}</li>{{/safeEach}}</ul>
+    {{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if skills}}
+{{#safeIf skills}}
 <section>
   <h3>Skills</h3>
   <article class="skills-grid">
-    {{#each skills}}
+    {{#safeEach skills}}
       <div class="skill-group">
-        <strong>{{name}}</strong>{{#if level}} <span class="level">{{level}}</span>{{/if}}
-        {{#if keywords}}
+        <strong>{{name}}</strong>{{#safeIf level}} <span class="level">{{level}}</span>{{/safeIf}}
+        {{#safeIf keywords}}
           <div class="keywords">
-            {{#each keywords}}<span class="keyword">{{this}}</span>{{/each}}
+            {{#safeEach keywords}}<span class="keyword">{{this}}</span>{{/safeEach}}
           </div>
-        {{/if}}
+        {{/safeIf}}
       </div>
-    {{/each}}
+    {{/safeEach}}
   </article>
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if languages}}
+{{#safeIf languages}}
 <section>
   <h3>Languages</h3>
   <article>
     <div class="inline-list">
-      {{#each languages}}<span class="inline-item">{{language}}{{#if fluency}} <span class="level">({{fluency}})</span>{{/if}}</span>{{/each}}
+      {{#safeEach languages}}<span class="inline-item">{{language}}{{#safeIf fluency}} <span class="level">({{fluency}})</span>{{/safeIf}}</span>{{/safeEach}}
     </div>
   </article>
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if interests}}
+{{#safeIf interests}}
 <section>
   <h3>Interests</h3>
   <article>
     <div class="inline-list">
-      {{#each interests}}<span class="inline-item">{{name}}</span>{{/each}}
+      {{#safeEach interests}}<span class="inline-item">{{name}}</span>{{/safeEach}}
     </div>
   </article>
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if awards}}
+{{#safeIf awards}}
 <section>
   <h3>Awards</h3>
-  {{#each awards}}
+  {{#safeEach awards}}
   <article>
     <div class="article-header">
       <strong>{{title}}</strong>
       <time>{{date}}</time>
     </div>
-    {{#if awarder}}<div class="meta">{{awarder}}</div>{{/if}}
-    {{#if summary}}<p>{{summary}}</p>{{/if}}
+    {{#safeIf awarder}}<div class="meta">{{awarder}}</div>{{/safeIf}}
+    {{#safeIf summary}}<p>{{summary}}</p>{{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if certificates}}
+{{#safeIf certificates}}
 <section>
   <h3>Certificates</h3>
-  {{#each certificates}}
+  {{#safeEach certificates}}
   <article>
     <div class="article-header">
-      <strong>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/if}}</strong>
+      <strong>{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</strong>
       <time>{{date}}</time>
     </div>
-    {{#if issuer}}<div class="meta">{{issuer}}</div>{{/if}}
+    {{#safeIf issuer}}<div class="meta">{{issuer}}</div>{{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if publications}}
+{{#safeIf publications}}
 <section>
   <h3>Publications</h3>
-  {{#each publications}}
+  {{#safeEach publications}}
   <article>
     <div class="article-header">
-      <strong>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/if}}</strong>
-      {{#if releaseDate}}<time>{{releaseDate}}</time>{{/if}}
+      <strong>{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</strong>
+      {{#safeIf releaseDate}}<time>{{releaseDate}}</time>{{/safeIf}}
     </div>
-    {{#if publisher}}<div class="meta">{{publisher}}</div>{{/if}}
+    {{#safeIf publisher}}<div class="meta">{{publisher}}</div>{{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if references}}
+{{#safeIf references}}
 <section>
   <h3>References</h3>
-  {{#each references}}
+  {{#safeEach references}}
   <article>
     <strong>{{name}}</strong>
-    {{#if reference}}<p class="quote">{{reference}}</p>{{/if}}
+    {{#safeIf reference}}<p class="quote">{{reference}}</p>{{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
 </main>

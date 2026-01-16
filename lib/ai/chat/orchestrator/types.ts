@@ -58,11 +58,7 @@ export interface OrchestratorOptions {
 export interface GenerationResult<T> {
   output: T;
   text: string;
-  usage: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
+  usage: NormalizedUsage;
   finishReason: string;
 }
 
@@ -71,3 +67,21 @@ export interface NormalizedUsage {
   completionTokens: number;
   totalTokens: number;
 }
+
+export type DeepPartial<T> = T extends object ? {
+  [P in keyof T]?: DeepPartial<T[P]>;
+} : T;
+
+export interface StreamChunkDelta<T> {
+  type: 'delta';
+  partial: DeepPartial<T>;
+  timestamp: number;
+}
+
+export interface StreamChunkComplete<T> {
+  type: 'complete';
+  final: T;
+  usage: NormalizedUsage;
+}
+
+export type StreamChunk<T> = StreamChunkDelta<T> | StreamChunkComplete<T>;

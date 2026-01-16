@@ -11,6 +11,8 @@ export interface AITaskOptions<T = unknown> {
   mode: ConversationMode;
   onSuccess?: (output: T) => void;
   onError?: (error: string) => void;
+  /** Enable streaming response */
+  enableStreaming?: boolean;
 }
 
 export interface RunTaskOptions {
@@ -25,8 +27,8 @@ export interface RunTaskOptions {
  * Wraps useConversation and provides a consistent interface for the UI.
  */
 export function useAITask<T = unknown>(options: AITaskOptions<T>) {
-  const { mode, onSuccess, onError } = options;
-  const [partialOutput] = useState<string>('');
+  const { mode, onSuccess, onError, enableStreaming = true } = options;
+  // partialOutput state removed as it is now managed via state.output during streaming
 
   const { sendMessage, state, reset, abort } = useConversation<T>({
     mode,
@@ -48,13 +50,14 @@ export function useAITask<T = unknown>(options: AITaskOptions<T>) {
           modelId,
           // Pass context directly to avoid race condition with setState
           contextOverride: context as Record<string, unknown> | undefined,
+          stream: enableStreaming,
         });
       } catch (err) {
         logger.error(`AI Task Error (${mode})`, err);
         return null;
       }
     },
-    [sendMessage, mode]
+    [sendMessage, mode, enableStreaming]
   );
 
 
@@ -62,11 +65,12 @@ export function useAITask<T = unknown>(options: AITaskOptions<T>) {
     runTask,
     reset,
     abort,
-    partialOutput,
     isLoading: state.isLoading,
+    isStreaming: state.isStreaming,
     error: state.error,
     output: state.output,
+    partialOutput: state.isStreaming ? state.output : null,
     messages: state.messages,
-    hasOutput: !!state.output || !!partialOutput,
+    hasOutput: !!state.output,
   };
 }

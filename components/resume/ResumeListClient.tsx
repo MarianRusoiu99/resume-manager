@@ -1,24 +1,40 @@
 'use client';
 
+import { useMemo } from 'react';
 import { ResumeCard } from '@/components/resume/ResumeCard';
-import { FileText } from 'lucide-react';
+import { FileText, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ROUTES } from '@/lib/constants';
 import type { ResumeListItem } from './ResumeList';
+import { deleteResume } from '@/app/actions/resume';
+import { ResourceList } from '@/components/shared/ResourceList';
+import { useResourceCollection } from '@/hooks/useResourceCollection';
 
 interface ResumeListClientProps {
     resumes: ResumeListItem[];
     searchTerm?: string;
 }
 
-import { ResourceGallery } from '@/components/shared/ResourceGallery';
-import { deleteResume } from '@/app/actions/resume';
-
 export function ResumeListClient({
     resumes,
-    searchTerm
+    searchTerm = ''
 }: ResumeListClientProps) {
     const router = useRouter();
+
+    const { items: optimisticResumes, handleDelete } = useResourceCollection({
+        initialItems: resumes,
+        onDelete: deleteResume,
+        resourceName: "Resume"
+    });
+
+    const filteredResumes = useMemo(() => {
+        if (!searchTerm) return optimisticResumes;
+        const lowerTerm = searchTerm.toLowerCase();
+        return optimisticResumes.filter(resume => 
+            (resume.jobTitle?.toLowerCase().includes(lowerTerm)) ||
+            (resume.companyName?.toLowerCase().includes(lowerTerm))
+        );
+    }, [optimisticResumes, searchTerm]);
 
     const handleView = (id: string) => {
         router.push(`/resumes/${id}`);
@@ -33,23 +49,17 @@ export function ResumeListClient({
     };
 
     return (
-        <ResourceGallery
-            initialItems={resumes}
-            resourceName="Resume"
-            onDelete={deleteResume}
-            searchTerm={searchTerm}
-            getItemKey={(resume) => resume.id}
+        <ResourceList
+            items={filteredResumes}
             emptyState={{
-                icon: FileText,
                 title: "No Resumes Yet",
-                description: "Generate your first AI-optimized resume to start your job application",
-                action: {
-                    label: "Generate Resume",
-                    onClick: handleGenerate,
-                    icon: <FileText className="w-4 h-4" />,
-                },
+                description: searchTerm 
+                    ? `No resumes match "${searchTerm}"`
+                    : "Generate your first AI-optimized resume to start your job application",
+                actionLabel: searchTerm ? undefined : "Generate Resume",
+                onAction: searchTerm ? undefined : handleGenerate
             }}
-            renderItem={(resume, { onDelete }) => (
+            renderItem={(resume) => (
                 <ResumeCard
                     key={resume.id}
                     id={resume.id}
@@ -61,7 +71,7 @@ export function ResumeListClient({
                     createdAt={resume.createdAt}
                     onView={handleView}
                     onEdit={handleEdit}
-                    onDelete={onDelete}
+                    onDelete={handleDelete}
                 />
             )}
         />

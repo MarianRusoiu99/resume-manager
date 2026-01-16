@@ -25,10 +25,64 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
     context: initialContext,
     output: null,
     isLoading: false,
+    isStreaming: false,
     error: null,
   });
 
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  /**
+   * Helper function to parse streaming response
+   */
+  const handleStreamResponse = async <T>(
+    response: Response, 
+    updateState: (delta: Partial<T>) => void,
+    onComplete: (final: T) => void,
+    onError: (error: string) => void
+  ): Promise<T | null> => {
+    if (!response.body) {
+      throw new Error('Response body is missing');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    
+    // Using a ref to accumulate the partial object if needed, 
+    // but in this case we're relying on the delta.partial structure
+    // from the backend which sends deep partials we can just set
+    let finalOutput: T | null = null;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n\n').filter(Boolean);
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+            
+            if (data.type === 'delta') {
+              updateState(data.partial);
+            } else if (data.type === 'complete') {
+              finalOutput = data.final;
+              onComplete(data.final);
+            } else if (data.type === 'error') {
+              onError(data.error);
+              throw new Error(data.error);
+            }
+          }
+        }
+      }
+      
+      return finalOutput;
+    } finally {
+      reader.releaseLock();
+    }
+  };
 
   /**
    * Update context
@@ -55,6 +109,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
       context: initialContext,
       output: null,
       isLoading: false,
+      isStreaming: false,
       error: null,
     });
   }, [mode, initialContext]);
@@ -67,6 +122,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
     setState((prev) => ({
       ...prev,
       isLoading: false,
+      isStreaming: false,
     }));
   }, []);
 
@@ -74,7 +130,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
    * Send a message
    */
   const sendMessage = useCallback(
-    async ({ message, attachments, modelId, contextOverride }: SendMessageOptions): Promise<T | null> => {
+    async ({ message, attachments, modelId, contextOverride, stream = false }: SendMessageOptions): Promise<T | null> => {
       // Abort any existing request
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
@@ -98,6 +154,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
         messages: [...prev.messages, userMessage],
         context: mergedContext,
         isLoading: true,
+        isStreaming: stream,
         error: null,
       }));
 
@@ -115,6 +172,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
             context: mergedContext,
             // Only include modelId if it's a non-empty string
             ...(modelId && { modelId }),
+            stream,
           }),
           signal: abortControllerRef.current.signal,
         });
@@ -132,7 +190,64 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
           throw new ExternalServiceError('AI Enhancement', errorMessage);
         }
 
-        // Handle non-streaming response only
+        // Handle streaming response
+        if (stream && response.headers.get('Content-Type')?.includes('text/event-stream')) {
+          // Streaming implementation
+          const conversationId = response.headers.get('X-Conversation-Id');
+          
+          if (conversationId) {
+             setState(prev => ({ ...prev, id: conversationId }));
+          }
+
+          // Initial empty assistant message placeholder
+          const assistantMessageId = generateId();
+          setState(prev => ({
+            ...prev,
+            messages: [...prev.messages, {
+              id: assistantMessageId,
+              role: 'assistant',
+              content: '',
+              timestamp: new Date(),
+            }]
+          }));
+
+          const result = await handleStreamResponse<T>(
+            response,
+            (partial) => {
+              setState(prev => ({
+                ...prev,
+                output: { ...prev.output, ...partial } as T, // Merge partial output
+              }));
+            },
+            (final) => {
+              // Complete handler
+              setState(prev => {
+                // Update the assistant message with final content
+                const updatedMessages = prev.messages.map(msg => 
+                  msg.id === assistantMessageId 
+                    ? { ...msg, output: final, content: JSON.stringify(final, null, 2) } 
+                    : msg
+                );
+                
+                return {
+                  ...prev,
+                  messages: updatedMessages,
+                  output: final,
+                  isLoading: false,
+                  isStreaming: false
+                };
+              });
+              onComplete?.(final);
+            },
+            (error) => {
+               throw new Error(error);
+            }
+          );
+          
+          return result;
+        }
+
+        // Handle non-streaming response
         const result = await response.json();
         
         if (!result.success || !result.data) {
@@ -153,6 +268,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
           messages: [...prev.messages, assistantMessage],
           output: result.data.output as T,
           isLoading: false,
+          isStreaming: false,
         }));
 
         onComplete?.(result.data.output as T);
@@ -166,6 +282,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
         setState((prev) => ({
           ...prev,
           isLoading: false,
+          isStreaming: false,
           error: errorMessage,
         }));
         onError?.(errorMessage);

@@ -17,9 +17,10 @@ export class ValidationError extends AppError {
   constructor(
     message: string,
     public readonly field?: string,
-    public readonly details?: Record<string, unknown>
+    public readonly details?: Record<string, unknown>,
+    cause?: unknown
   ) {
-    super(message);
+    super(message, cause);
   }
 }
 
@@ -31,9 +32,10 @@ export class SchemaValidationError extends ValidationError {
   constructor(
     message: string,
     public readonly schema: string,
-    public readonly errors?: Array<{ field: string; message: string }>
+    public readonly errors?: Array<{ field: string; message: string }>,
+    cause?: unknown
   ) {
-    super(message, undefined, { schema, errors });
+    super(message, undefined, { schema, errors }, cause);
   }
 }
 
@@ -42,8 +44,8 @@ export class SchemaValidationError extends ValidationError {
  * Thrown when a required field is not provided
  */
 export class RequiredFieldError extends ValidationError {
-  constructor(field: string) {
-    super(`Required field '${field}' is missing`, field);
+  constructor(field: string, cause?: unknown) {
+    super(`Required field '${field}' is missing`, field, undefined, cause);
   }
 }
 
@@ -55,9 +57,10 @@ export class InvalidFieldError extends ValidationError {
   constructor(
     field: string,
     reason: string,
-    public readonly value?: unknown
+    public readonly value?: unknown,
+    cause?: unknown
   ) {
-    super(`Invalid value for field '${field}': ${reason}`, field, { value });
+    super(`Invalid value for field '${field}': ${reason}`, field, { value }, cause);
   }
 }
 
@@ -70,7 +73,8 @@ export class FieldLengthError extends ValidationError {
     field: string,
     public readonly min?: number,
     public readonly max?: number,
-    public readonly actual?: number
+    public readonly actual?: number,
+    cause?: unknown
   ) {
     let message = `Invalid length for field '${field}'`;
     if (min !== undefined && max !== undefined) {
@@ -83,7 +87,7 @@ export class FieldLengthError extends ValidationError {
     if (actual !== undefined) {
       message += `. Got ${actual} characters`;
     }
-    super(message, field, { min, max, actual });
+    super(message, field, { min, max, actual }, cause);
   }
 }
 
@@ -95,12 +99,14 @@ export class InvalidFormatError extends ValidationError {
   constructor(
     field: string,
     public readonly expectedFormat: string,
-    public readonly value?: unknown
+    public readonly value?: unknown,
+    cause?: unknown
   ) {
     super(
       `Invalid format for field '${field}' (expected ${expectedFormat})`,
       field,
-      { expectedFormat, value }
+      { expectedFormat, value },
+      cause
     );
   }
 }

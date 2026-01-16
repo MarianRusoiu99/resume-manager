@@ -52,6 +52,8 @@ export interface WorkflowResults {
   [key: string]: unknown;
 }
 
+import { RetryConfig } from './retry';
+
 /**
  * A single workflow step
  */
@@ -70,6 +72,8 @@ export interface WorkflowStep {
   execute: (context: WorkflowContext) => Promise<Partial<WorkflowResults>>;
   /** Optional: Skip this step based on context */
   shouldSkip?: (context: WorkflowContext) => boolean;
+  /** Optional: Retry configuration */
+  retryConfig?: RetryConfig;
 }
 
 /**

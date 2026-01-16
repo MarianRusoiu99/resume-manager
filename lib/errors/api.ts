@@ -26,9 +26,10 @@ export class RateLimitError extends ApiError {
 
   constructor(
     message: string = 'Too many requests. Please try again later.',
-    public readonly retryAfterMs?: number
+    public readonly retryAfterMs?: number,
+    cause?: unknown
   ) {
-    super(message);
+    super(message, cause);
   }
 }
 
@@ -42,9 +43,10 @@ export class ServiceUnavailableError extends ApiError {
 
   constructor(
     public readonly service: string,
-    message?: string
+    message?: string,
+    cause?: unknown
   ) {
-    super(message || `${service} is temporarily unavailable`);
+    super(message || `${service} is temporarily unavailable`, cause);
   }
 }
 
@@ -56,8 +58,8 @@ export class BadRequestError extends ApiError {
   readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
   readonly statusCode = 400;
 
-  constructor(message: string = 'Bad request') {
-    super(message);
+  constructor(message: string = 'Bad request', cause?: unknown) {
+    super(message, cause);
   }
 }
 
@@ -71,12 +73,13 @@ export class MethodNotAllowedError extends ApiError {
 
   constructor(
     public readonly method: string,
-    public readonly allowedMethods: string[] = []
+    public readonly allowedMethods: string[] = [],
+    cause?: unknown
   ) {
     const allowed = allowedMethods.length > 0 
       ? ` Allowed methods: ${allowedMethods.join(', ')}`
       : '';
-    super(`Method ${method} not allowed.${allowed}`);
+    super(`Method ${method} not allowed.${allowed}`, cause);
   }
 }
 
@@ -90,9 +93,10 @@ export class RequestTimeoutError extends ApiError {
 
   constructor(
     public readonly timeoutMs: number,
-    message?: string
+    message?: string,
+    cause?: unknown
   ) {
-    super(message || `Request timeout after ${timeoutMs}ms`);
+    super(message || `Request timeout after ${timeoutMs}ms`, cause);
   }
 }
 
@@ -106,12 +110,13 @@ export class PayloadTooLargeError extends ApiError {
 
   constructor(
     public readonly maxSize: number,
-    public readonly actualSize?: number
+    public readonly actualSize?: number,
+    cause?: unknown
   ) {
     const sizeInfo = actualSize 
       ? `Payload size ${actualSize} bytes exceeds maximum of ${maxSize} bytes`
       : `Payload exceeds maximum size of ${maxSize} bytes`;
-    super(sizeInfo);
+    super(sizeInfo, cause);
   }
 }
 

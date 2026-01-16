@@ -58,6 +58,9 @@ const chatRequestSchema = z.object({
   
   /** Override model ID */
   modelId: z.string().optional(),
+  
+  /** Enable streaming response */
+  stream: z.boolean().optional().default(false),
 });
 
 type ChatRequest = z.infer<typeof chatRequestSchema>;
@@ -215,6 +218,41 @@ export const POST = createApiHandler<unknown, ChatRequest>(
         modelId: resolvedModel.modelId,
         userId,
       };
+
+      const { stream = false } = body;
+
+      if (stream) {
+        const stream = new ReadableStream({
+          async start(controller) {
+            try {
+              const generator = AIOrchestrator.streamGenerate(conversation, orchestratorOptions);
+              
+              for await (const chunk of generator) {
+                controller.enqueue(
+                  new TextEncoder().encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                );
+              }
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              logger.error('Streaming error', { error, requestId, userId });
+              controller.enqueue(
+                new TextEncoder().encode(`data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`)
+              );
+            } finally {
+              controller.close();
+            }
+          }
+        });
+
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Conversation-Id': conversation.id,
+          },
+        });
+      }
 
       // Non-streaming response only
       const result = needsVision

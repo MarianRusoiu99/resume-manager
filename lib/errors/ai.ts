@@ -60,10 +60,11 @@ export class UnsupportedProviderError extends AIError {
   readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
   readonly statusCode = 400;
 
-  constructor(provider: string, supportedProviders: string[]) {
+  constructor(provider: string, supportedProviders: string[], cause?: unknown) {
     super(
       `Unsupported AI provider: ${provider}. Supported providers: ${supportedProviders.join(', ')}`,
-      provider
+      provider,
+      cause
     );
   }
 }
@@ -76,12 +77,13 @@ export class InvalidAPIKeyError extends AIError {
   readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
   readonly statusCode = 400;
 
-  constructor(provider: string, reason?: string) {
+  constructor(provider: string, reason?: string, cause?: unknown) {
     super(
       reason 
         ? `Invalid API key for ${provider}: ${reason}`
         : `Invalid API key format for ${provider}`,
-      provider
+      provider,
+      cause
     );
   }
 }
@@ -94,12 +96,13 @@ export class ModelNotFoundError extends AIError {
   readonly code = 'NOT_FOUND' as ServiceErrorCode;
   readonly statusCode = 404;
 
-  constructor(modelId: string, provider?: string) {
+  constructor(modelId: string, provider?: string, cause?: unknown) {
     super(
       provider
         ? `Model ${modelId} not found for provider ${provider}`
         : `Model ${modelId} not found in your configured providers`,
-      provider
+      provider,
+      cause
     );
   }
 }
@@ -114,13 +117,15 @@ export class AIRateLimitError extends AIError {
 
   constructor(
     provider: string,
-    public readonly retryAfterMs?: number
+    public readonly retryAfterMs?: number,
+    cause?: unknown
   ) {
     super(
       retryAfterMs
         ? `${provider} rate limit exceeded. Please try again in ${Math.ceil(retryAfterMs / 1000)} seconds.`
         : `${provider} rate limit exceeded. Please try again later.`,
-      provider
+      provider,
+      cause
     );
   }
 }
@@ -135,12 +140,15 @@ export class AIContextLengthError extends AIError {
 
   constructor(
     public readonly maxTokens: number,
-    public readonly actualTokens?: number
+    public readonly actualTokens?: number,
+    cause?: unknown
   ) {
     super(
       actualTokens
         ? `Content too long: ${actualTokens} tokens exceeds maximum of ${maxTokens} tokens`
-        : `Content exceeds the maximum context length of ${maxTokens} tokens`
+        : `Content exceeds the maximum context length of ${maxTokens} tokens`,
+      undefined,
+      cause
     );
   }
 }
@@ -153,10 +161,11 @@ export class AIQuotaExceededError extends AIError {
   readonly code = 'FORBIDDEN' as ServiceErrorCode;
   readonly statusCode = 403;
 
-  constructor(provider: string) {
+  constructor(provider: string, cause?: unknown) {
     super(
       `${provider} quota exceeded. Please check your billing settings or upgrade your plan.`,
-      provider
+      provider,
+      cause
     );
   }
 }

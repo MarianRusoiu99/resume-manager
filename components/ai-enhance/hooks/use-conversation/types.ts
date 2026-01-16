@@ -64,6 +64,7 @@ export interface ConversationState<T = unknown> {
   context: ConversationContext;
   output: T | null;
   isLoading: boolean;
+  isStreaming: boolean;
   error: string | null;
 }
 
@@ -77,6 +78,8 @@ export interface SendMessageOptions {
   modelId?: string;
   /** Context override for this message (merged with existing context) */
   contextOverride?: Partial<ConversationContext>;
+  /** Enable streaming response */
+  stream?: boolean;
 }
 
 /**

@@ -8,6 +8,25 @@ import { renderCompleteDocument } from '@/lib/templates/renderer';
 import { templateRepository } from '@/lib/repositories/templates.repository';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { ResumeTemplate } from '@/lib/templates/template';
+import Handlebars from 'handlebars';
+
+// Register Handlebars helpers for safe data access
+if (typeof Handlebars !== 'undefined') {
+  Handlebars.registerHelper('safeEach', function(this: unknown, context: unknown[], options: Handlebars.HelperOptions) {
+    if (!context || !Array.isArray(context) || context.length === 0) {
+      return options.inverse(this);
+    }
+    
+    return context.map((item) => options.fn(item)).join('');
+  });
+
+  Handlebars.registerHelper('safeIf', function(this: unknown, value: unknown, options: Handlebars.HelperOptions) {
+    if (value !== undefined && value !== null && value !== '') {
+      return options.fn(this);
+    }
+    return options.inverse(this);
+  });
+}
 
 /**
  * Options for server-side template rendering

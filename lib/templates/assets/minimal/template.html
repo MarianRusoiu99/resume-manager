@@ -1,192 +1,192 @@
 <main>
 <header>
   <h1>{{basics.name}}</h1>
-  {{#if basics.label}}<p class="label">{{basics.label}}</p>{{/if}}
+  {{#safeIf basics.label}}<p class="label">{{basics.label}}</p>{{/safeIf}}
   <div class="contact">
-    {{#if basics.email}}<a href="mailto:{{basics.email}}">{{basics.email}}</a>{{/if}}
-    {{#if basics.phone}}<span>{{basics.phone}}</span>{{/if}}
-    {{#if basics.url}}<a href="{{basics.url}}">Portfolio</a>{{/if}}
-    {{#if basics.profiles}}
-      {{#each basics.profiles}}<a href="{{url}}">{{network}}</a>{{/each}}
-    {{/if}}
+    {{#safeIf basics.email}}<a href="mailto:{{basics.email}}">{{basics.email}}</a>{{/safeIf}}
+    {{#safeIf basics.phone}}<span>{{basics.phone}}</span>{{/safeIf}}
+    {{#safeIf basics.url}}<a href="{{basics.url}}">Portfolio</a>{{/safeIf}}
+    {{#safeIf basics.profiles}}
+      {{#safeEach basics.profiles}}<a href="{{url}}">{{network}}</a>{{/safeEach}}
+    {{/safeIf}}
   </div>
 </header>
 
-{{#if basics.summary}}
+{{#safeIf basics.summary}}
 <section class="summary">
   <p>{{basics.summary}}</p>
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if work}}
+{{#safeIf work}}
 <section>
   <h3>Experience</h3>
-  {{#each work}}
+  {{#safeEach work}}
   <article>
     <div class="row">
       <div class="left">
         <strong>{{position}}</strong>
         <span class="org">{{name}}</span>
       </div>
-      {{#if startDate}}<time>{{startDate}} — {{#if endDate}}{{endDate}}{{else}}Present{{/if}}</time>{{/if}}
+      {{#safeIf startDate}}<time>{{startDate}} — {{#safeIf endDate}}{{endDate}}{{else}}Present{{/safeIf}}</time>{{/safeIf}}
     </div>
-    {{#if summary}}<p>{{summary}}</p>{{/if}}
-    {{#if highlights}}
+    {{#safeIf summary}}<p>{{summary}}</p>{{/safeIf}}
+    {{#safeIf highlights}}
       <ul>
-        {{#each highlights}}<li>{{this}}</li>{{/each}}
+        {{#safeEach highlights}}<li>{{this}}</li>{{/safeEach}}
       </ul>
-    {{/if}}
+    {{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if volunteer}}
+{{#safeIf volunteer}}
 <section>
   <h3>Volunteer</h3>
-  {{#each volunteer}}
+  {{#safeEach volunteer}}
   <article>
     <div class="row">
       <div class="left">
         <strong>{{position}}</strong>
         <span class="org">{{organization}}</span>
       </div>
-      {{#if startDate}}<time>{{startDate}} — {{#if endDate}}{{endDate}}{{else}}Present{{/if}}</time>{{/if}}
+      {{#safeIf startDate}}<time>{{startDate}} — {{#safeIf endDate}}{{endDate}}{{else}}Present{{/safeIf}}</time>{{/safeIf}}
     </div>
-    {{#if summary}}<p>{{summary}}</p>{{/if}}
-    {{#if highlights}}
-      <ul>{{#each highlights}}<li>{{this}}</li>{{/each}}</ul>
-    {{/if}}
+    {{#safeIf summary}}<p>{{summary}}</p>{{/safeIf}}
+    {{#safeIf highlights}}
+      <ul>{{#safeEach highlights}}<li>{{this}}</li>{{/safeEach}}</ul>
+    {{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if projects}}
+{{#safeIf projects}}
 <section>
   <h3>Projects</h3>
-  {{#each projects}}
+  {{#safeEach projects}}
   <article>
     <div class="row">
-      <strong>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/if}}</strong>
-      {{#if startDate}}<time>{{startDate}}{{#if endDate}} — {{endDate}}{{/if}}</time>{{/if}}
+      <strong>{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</strong>
+      {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} — {{endDate}}{{/safeIf}}</time>{{/safeIf}}
     </div>
-    {{#if description}}<p>{{description}}</p>{{/if}}
-    {{#if highlights}}
-      <ul>{{#each highlights}}<li>{{this}}</li>{{/each}}</ul>
-    {{/if}}
+    {{#safeIf description}}<p>{{description}}</p>{{/safeIf}}
+    {{#safeIf highlights}}
+      <ul>{{#safeEach highlights}}<li>{{this}}</li>{{/safeEach}}</ul>
+    {{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if education}}
+{{#safeIf education}}
 <section>
   <h3>Education</h3>
-  {{#each education}}
+  {{#safeEach education}}
   <article>
     <div class="row">
       <div class="left">
-        <strong>{{studyType}}{{#if area}}, {{area}}{{/if}}</strong>
+        <strong>{{studyType}}{{#safeIf area}}, {{area}}{{/safeIf}}</strong>
         <span class="org">{{institution}}</span>
       </div>
-      {{#if startDate}}<time>{{startDate}} — {{#if endDate}}{{endDate}}{{else}}Present{{/if}}</time>{{/if}}
+      {{#safeIf startDate}}<time>{{startDate}} — {{#safeIf endDate}}{{endDate}}{{else}}Present{{/safeIf}}</time>{{/safeIf}}
     </div>
-    {{#if score}}<p class="small">GPA: {{score}}</p>{{/if}}
+    {{#safeIf score}}<p class="small">GPA: {{score}}</p>{{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if skills}}
+{{#safeIf skills}}
 <section>
   <h3>Skills</h3>
   <div class="skills">
-    {{#each skills}}
+    {{#safeEach skills}}
       <div class="skill">
         <span class="skill-name">{{name}}</span>
-        {{#if keywords}}
-          <span class="skill-keywords">{{#each keywords}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</span>
-        {{/if}}
+        {{#safeIf keywords}}
+          <span class="skill-keywords">{{#safeEach keywords}}{{this}}{{#unless @last}}, {{/unless}}{{/safeEach}}</span>
+        {{/safeIf}}
       </div>
-    {{/each}}
+    {{/safeEach}}
   </div>
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if languages}}
+{{#safeIf languages}}
 <section>
   <h3>Languages</h3>
   <div class="tags">
-    {{#each languages}}<span class="tag">{{language}}{{#if fluency}} · {{fluency}}{{/if}}</span>{{/each}}
+    {{#safeEach languages}}<span class="tag">{{language}}{{#safeIf fluency}} · {{fluency}}{{/safeIf}}</span>{{/safeEach}}
   </div>
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if interests}}
+{{#safeIf interests}}
 <section>
   <h3>Interests</h3>
   <div class="tags">
-    {{#each interests}}<span class="tag">{{name}}</span>{{/each}}
+    {{#safeEach interests}}<span class="tag">{{name}}</span>{{/safeEach}}
   </div>
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if awards}}
+{{#safeIf awards}}
 <section>
   <h3>Awards</h3>
-  {{#each awards}}
+  {{#safeEach awards}}
   <article>
     <div class="row">
       <strong>{{title}}</strong>
       <time>{{date}}</time>
     </div>
-    {{#if awarder}}<p class="small">{{awarder}}</p>{{/if}}
+    {{#safeIf awarder}}<p class="small">{{awarder}}</p>{{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if certificates}}
+{{#safeIf certificates}}
 <section>
   <h3>Certificates</h3>
-  {{#each certificates}}
+  {{#safeEach certificates}}
   <article>
     <div class="row">
-      <strong>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/if}}</strong>
+      <strong>{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</strong>
       <time>{{date}}</time>
     </div>
-    {{#if issuer}}<p class="small">{{issuer}}</p>{{/if}}
+    {{#safeIf issuer}}<p class="small">{{issuer}}</p>{{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if publications}}
+{{#safeIf publications}}
 <section>
   <h3>Publications</h3>
-  {{#each publications}}
+  {{#safeEach publications}}
   <article>
     <div class="row">
-      <strong>{{#if url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/if}}</strong>
-      {{#if releaseDate}}<time>{{releaseDate}}</time>{{/if}}
+      <strong>{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</strong>
+      {{#safeIf releaseDate}}<time>{{releaseDate}}</time>{{/safeIf}}
     </div>
-    {{#if publisher}}<p class="small">{{publisher}}</p>{{/if}}
+    {{#safeIf publisher}}<p class="small">{{publisher}}</p>{{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
-{{#if references}}
+{{#safeIf references}}
 <section>
   <h3>References</h3>
-  {{#each references}}
+  {{#safeEach references}}
   <article>
     <strong>{{name}}</strong>
-    {{#if reference}}<p class="reference">{{reference}}</p>{{/if}}
+    {{#safeIf reference}}<p class="reference">{{reference}}</p>{{/safeIf}}
   </article>
-  {{/each}}
+  {{/safeEach}}
 </section>
-{{/if}}
+{{/safeIf}}
 
 </main>
