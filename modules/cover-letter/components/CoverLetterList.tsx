@@ -1,0 +1,61 @@
+import { CoverLetterCard } from './CoverLetterCard';
+import { Gallery } from '@/components/core/data-display/Gallery';
+import { FileText } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ROUTES } from '@/lib/constants';
+
+export interface CoverLetterListItem {
+    id: string;
+    content: string;
+    jobPosting?: { title: string | null; company?: { name: string } | null } | null;
+    createdAt: string;
+}
+
+interface CoverLetterListProps {
+    coverLetters: CoverLetterListItem[];
+    isLoading?: boolean;
+    onDelete: (id: string) => void;
+    onGenerate: () => void;
+    emptyMessage?: string;
+}
+
+export function CoverLetterList({
+    coverLetters,
+    isLoading,
+    onDelete,
+    onGenerate,
+}: CoverLetterListProps) {
+    const router = useRouter();
+
+    return (
+        <Gallery
+            items={coverLetters}
+            getItemKey={(coverLetter) => coverLetter.id}
+            isLoading={isLoading}
+            loadingMessage="Loading your cover letters..."
+            emptyState={{
+                icon: FileText,
+                title: "No Cover Letters Yet",
+                description: "Start by generating your first cover letter for a job application",
+                action: {
+                    label: "Generate Cover Letter",
+                    onClick: onGenerate,
+                    icon: <FileText className="w-4 h-4" />,
+                },
+            }}
+            renderItem={(coverLetter) => (
+                <CoverLetterCard
+                    key={coverLetter.id}
+                    id={coverLetter.id}
+                    jobTitle={coverLetter.jobPosting?.title ?? null}
+                    companyName={coverLetter.jobPosting?.company?.name ?? null}
+                    content={coverLetter.content}
+                    createdAt={coverLetter.createdAt}
+                    onView={(id) => router.push(ROUTES.COVER_LETTER(id))}
+                    onEdit={(id) => router.push(ROUTES.COVER_LETTER(id))}
+                    onDelete={onDelete}
+                />
+            )}
+        />
+    );
+}

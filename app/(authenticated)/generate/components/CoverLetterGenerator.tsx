@@ -2,8 +2,9 @@
 
 import { Send, Save } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
-import { Callout, Spinner } from '@/components/shared';
-import { CoverLetterEditor } from '@/components/cover-letter';
+import { Callout } from '@/components/core/feedback/Callout';
+import { Spinner } from '@/components/core/feedback/Spinner';
+import { CoverLetterEditor } from '@/modules/cover-letter/components/CoverLetterEditor';
 import { ProfileListItem } from '@/lib/actions/types';
 import { useCoverLetterFlow } from './useCoverLetterFlow';
 import { CoverLetterInput } from './CoverLetterInput';

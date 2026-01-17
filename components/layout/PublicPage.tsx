@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { ThemeToggle } from "@/components/core/navigation/ThemeToggle";
 import { PageContainer } from "./PageContainer";
 import { cn } from "@/lib/utils";
 

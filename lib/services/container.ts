@@ -16,8 +16,7 @@ import { TemplateRepository, templateRepository } from '@/lib/repositories/templ
 
 import { AnalyticsService, analyticsService as analyticsServiceInstance } from './analytics/analytics.service';
 import { ProfileService } from './profiles/profiles.service';
-import { ResumeGenerationService } from './resumes/generation/resume-generation.service';
-import { ResumeCrudService } from './resumes/crud/resume-crud.workflow';
+import { ResumeService } from './resumes/resume.service';
 import { NotificationService } from './notifications/notifications.service';
 import { ApiProviderService } from './api-providers/api-providers.workflow';
 import { UserAISettingsService } from './ai-settings/user-ai-settings.workflow';
@@ -42,8 +41,7 @@ export class ServiceContainer {
   // Service instances - initialized in constructor
   private _profileService!: ProfileService;
   private _analyticsService!: AnalyticsService;
-  private _resumeGenerationService!: ResumeGenerationService;
-  private _resumeCrudService!: ResumeCrudService;
+  private _resumeService!: ResumeService;
   private _notificationService!: NotificationService;
   private _apiProviderService!: ApiProviderService;
   private _userAISettingsService!: UserAISettingsService;
@@ -82,9 +80,8 @@ export class ServiceContainer {
     // Initialize services with dependency injection
     this._profileService = new ProfileService(profileRepo, cache);
     this._analyticsService = analyticsServiceInstance;
-    this._resumeGenerationService = new ResumeGenerationService(generatedResumeRepo, this._profileService, this._notificationService);
-    this._resumeCrudService = new ResumeCrudService(generatedResumeRepo);
     this._notificationService = new NotificationService(notificationRepo);
+    this._resumeService = new ResumeService(generatedResumeRepo, this._profileService, this._notificationService);
     this._apiProviderService = new ApiProviderService(apiProviderRepo);
     this._userAISettingsService = new UserAISettingsService(userAISettingsRepo);
     this._aiService = aiServiceInstance;
@@ -102,12 +99,8 @@ export class ServiceContainer {
     return this._analyticsService;
   }
 
-  get resumeGenerationService(): ResumeGenerationService {
-    return this._resumeGenerationService;
-  }
-
-  get resumeCrudService(): ResumeCrudService {
-    return this._resumeCrudService;
+  get resumeService(): ResumeService {
+    return this._resumeService;
   }
 
   get notificationService(): NotificationService {
@@ -162,11 +155,11 @@ export class ServiceContainer {
     }
     
     if (mocks.generatedResumeRepository) {
-      container._resumeGenerationService = new ResumeGenerationService(
+      container._resumeService = new ResumeService(
         mocks.generatedResumeRepository,
-        container._profileService
+        container._profileService,
+        container._notificationService
       );
-      container._resumeCrudService = new ResumeCrudService(mocks.generatedResumeRepository);
     }
     
     if (mocks.notificationRepository) {
@@ -200,14 +193,11 @@ export const serviceContainer = ServiceContainer.getInstance();
 
 import { auditLogService as auditLogServiceInstance, auditLog as auditLogInstance } from './audit-logs';
 
-/**
- * Service exports for backward compatibility
- * These delegate to the container instances
- */
+// Service exports for backward compatibility
+// These delegate to the container instances
 export const profileService = serviceContainer.profileService;
 export const analyticsService = serviceContainer.analyticsService;
-export const resumeGenerationService = serviceContainer.resumeGenerationService;
-export const resumeCrudService = serviceContainer.resumeCrudService;
+export const resumeService = serviceContainer.resumeService;
 export const notificationService = serviceContainer.notificationService;
 export const apiProviderService = serviceContainer.apiProviderService;
 export const userAISettingsService = serviceContainer.userAISettingsService;
@@ -217,10 +207,3 @@ export const coverLetterService = serviceContainer.coverLetterService;
 export const documentParserService = serviceContainer.documentParserService;
 export const auditLogService = auditLogServiceInstance;
 export const auditLog = auditLogInstance;
-
-// Combined resume service for backward compatibility
-import { ResumeService } from './resumes';
-export const resumeService = new ResumeService(
-  serviceContainer.resumeGenerationService,
-  serviceContainer.resumeCrudService
-);

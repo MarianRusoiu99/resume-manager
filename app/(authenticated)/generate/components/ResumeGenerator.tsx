@@ -1,7 +1,9 @@
 import { Sparkles, Save, FileSearch } from 'lucide-react';
 import { Card, Button } from '@/components/ui';
-import { Callout, Spinner, EmptyState } from '@/components/shared';
-import { ResumePreview } from '@/components/resume/ResumePreview';
+import { Callout } from '@/components/core/feedback/Callout';
+import { Spinner } from '@/components/core/feedback/Spinner';
+import { EmptyState } from '@/components/core/feedback/states/EmptyState';
+import { ResumePreview } from '@/modules/resume/components/ResumePreview';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/constants';
 import { ProfileListItem } from '@/lib/actions/types';

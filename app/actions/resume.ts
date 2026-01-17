@@ -2,7 +2,7 @@
 
 import { resumeService } from '@/lib/services';
 import { withServerAction } from '@/lib/actions/with-server-action';
-import type { GenerateResumeServiceInput } from '@/lib/services/resumes';
+import type { GenerateResumeInput as GenerateResumeServiceInput } from '@/lib/types';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 /**

@@ -4,7 +4,7 @@ import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "./PageHeader";
 import { PageContainer } from "./PageContainer";
-import { PageSkeleton } from "@/components/shared/skeletons/PageSkeleton";
+import { PageSkeleton } from "@/components/core/data-display/skeletons/PageSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoBreadcrumbs, type BreadcrumbItem } from "@/hooks/useAutoBreadcrumbs";
 import { usePathname } from "next/navigation";

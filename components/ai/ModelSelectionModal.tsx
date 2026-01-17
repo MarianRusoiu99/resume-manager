@@ -10,7 +10,7 @@ import {
     Zap,
     Box
 } from 'lucide-react';
-import { BaseDialog } from '@/components/shared/dialogs/BaseDialog';
+import { BaseDialog } from '@/components/core/feedback/dialogs/BaseDialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

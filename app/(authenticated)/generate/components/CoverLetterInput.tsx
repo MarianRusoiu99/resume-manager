@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles } from "lucide-react";
-import { Spinner } from "@/components/shared/Spinner";
+import { Spinner } from "@/components/core/feedback/Spinner";
 
 interface CoverLetterInputProps {
   jobDescription: string;

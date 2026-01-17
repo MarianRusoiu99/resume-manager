@@ -3,7 +3,6 @@ import { profileCache } from '@/lib/cache/simple-cache';
 import { type Resume, resumeSchema } from '@/lib/validations/jsonresume';
 import { type ServiceResult } from '@/lib/types';
 import { withServiceError, NotFoundError, ConflictError, GenericUserOwnedCrudService } from '@/lib/services/utils';
-import type { IProfileService, ProfileServiceData, UpdateProfileServiceInput } from '../interfaces';
 import { invalidateProfileCache } from './cache';
 import { withTransaction } from '@/lib/db/transaction';
 import { Prisma } from '@prisma/client';
@@ -11,9 +10,54 @@ import { Prisma } from '@prisma/client';
 import type { ProfileData, CreateProfileInput, UpdateProfileInput, ICache } from '@/lib/repositories/interfaces';
 
 /**
+ * Profile data returned from service operations
+ */
+export interface ProfileServiceData {
+  id: string;
+  userId: string;
+  name: string;
+  resume: Resume;
+  templateId: string | null;
+  /**
+   * Backward-compatible alias for `templateId`.
+   * Used by client hooks/components.
+   */
+  selectedTemplateId: string | null;
+  isDefault: boolean;
+  isPublic: boolean;
+  publicSlug: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * Profile update input
+ */
+export interface UpdateProfileServiceInput {
+  name?: string;
+  resume?: Resume;
+  isDefault?: boolean;
+  isPublic?: boolean;
+  publicSlug?: string | null;
+  selectedTemplateId?: string | null;
+}
+
+/**
+ * Profile Service Interface
+ */
+export interface IProfileService {
+  getProfiles(userId: string): Promise<ServiceResult<ProfileServiceData[]>>;
+  getProfileById(profileId: string, userId: string): Promise<ServiceResult<ProfileServiceData>>;
+  getProfile(userId: string): Promise<ServiceResult<ProfileServiceData | null>>;
+  createProfile(userId: string, name: string, data: Resume, isDefault?: boolean): Promise<ServiceResult<ProfileServiceData>>;
+  updateProfile(profileId: string, userId: string, data: UpdateProfileServiceInput): Promise<ServiceResult<ProfileServiceData>>;
+  deleteProfile(profileId: string, userId: string): Promise<ServiceResult<void>>;
+  setDefaultProfile(profileId: string, userId: string): Promise<ServiceResult<void>>;
+  duplicateProfile(profileId: string, userId: string, newName?: string): Promise<ServiceResult<ProfileServiceData>>;
+}
+
+/**
  * Profile Service
- *
- * Refactored to use GenericUserOwnedCrudService.
  */
 export class ProfileService extends GenericUserOwnedCrudService<
   ProfileData,

@@ -19,8 +19,8 @@ import {
   SelectItem, 
   Badge 
 } from '@/components/ui';
-import { SectionHeader } from '@/components/shared/SectionHeader';
-import { GlassCard } from '@/components/shared/GlassCard';
+import { SectionHeader } from '@/components/core/data-display/SectionHeader';
+import { GlassCard } from '@/components/core/surfaces/GlassCard';
 import type { ApiProvider } from '@/lib/actions/types';
 
 const PROVIDERS = [

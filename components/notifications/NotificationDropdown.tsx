@@ -15,7 +15,7 @@ import { useNotifications, type Notification } from '@/lib/contexts';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from './NotificationBell';
 import { getNotificationIcon } from './notification-ui';
-import { Spinner } from "@/components/shared/Spinner";
+import { Spinner } from "@/components/core/feedback/Spinner";
 
 interface NotificationItemProps {
   readonly notification: Notification;

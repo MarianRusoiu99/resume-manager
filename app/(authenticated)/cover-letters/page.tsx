@@ -2,11 +2,11 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui';
-import { CoverLetterListClient } from '@/components/cover-letter/CoverLetterListClient';
-import { ErrorState } from '@/components/shared/states';
+import { CoverLetterListClient } from '@/modules/cover-letter/components/CoverLetterListClient';
+import { ErrorState } from '@/components/core/feedback/states';
 import { ROUTES } from '@/lib/constants';
 import { getCoverLetters } from '@/app/actions/cover-letter';
-import { GallerySkeleton } from '@/components/shared/skeletons/GallerySkeleton';
+import { GallerySkeleton } from '@/components/core/data-display/skeletons/GallerySkeleton';
 import { FileText } from 'lucide-react';
 
 interface Props {

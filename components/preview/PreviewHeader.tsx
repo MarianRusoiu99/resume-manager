@@ -6,7 +6,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { PreviewTemplateSelector } from '@/components/templates/PreviewTemplateSelector';
+import { PreviewTemplateSelector } from '@/modules/templates/components/PreviewTemplateSelector';
 import { Download, Loader2, LayoutGrid, Maximize2, Minimize2, X } from 'lucide-react';
 import type { Template } from '@/lib/types';
 import {

@@ -1,6 +1,6 @@
 import type { NotificationType } from '@prisma/client';
 import type { NotificationPayload } from '@/lib/notifications/emitter';
-import type { NotificationServiceData } from '@/lib/services/interfaces/notifications.service.interface';
+import type { NotificationServiceData } from '@/lib/services/types';
 
 export type DbNotification = {
   id: string;

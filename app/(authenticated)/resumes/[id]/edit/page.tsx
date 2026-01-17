@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ExternalServiceError } from "@/lib/errors";
-import { ResumeEditor, type ResumeEditorRef } from "@/components/editor/ResumeEditor";
+import { ResumeEditor, type ResumeEditorRef } from "@/modules/editor/components/ResumeEditor";
 import { EditorProvider } from "@/lib/contexts";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { Button } from "@/components/ui/button";

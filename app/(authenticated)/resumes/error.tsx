@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { FileText } from 'lucide-react';
-import { RouteErrorCard } from '@/components/shared/RouteErrorCard';
+import { RouteErrorCard } from '@/components/core/feedback/RouteErrorCard';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 
 interface ErrorProps {

@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { getTemplate } from '@/app/actions/template';
-import { renderTemplateServerSide } from '@/components/shared/rendering/client-renderer';
+import { renderTemplateServerSide } from '@/components/core/data-display/rendering/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { DeepPartial } from '@/lib/types';
 import { clientLogger } from '@/lib/utils/client-logger';

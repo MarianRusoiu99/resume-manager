@@ -9,13 +9,13 @@ import { useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui';
-import { ErrorState, LoadingState } from '@/components/shared/states';
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { CoverLetterEditor, type CoverLetterEditorRef } from '@/components/cover-letter';
+import { ErrorState, LoadingState } from '@/components/core/feedback/states';
+import { ConfirmDialog } from "@/components/core/feedback/ConfirmDialog";
+import { CoverLetterEditor, type CoverLetterEditorRef } from '@/modules/cover-letter/components/CoverLetterEditor';
 import { Trash2, Download, Copy, Sparkles, Edit, Save } from 'lucide-react';
 import { useExportPDF, useCoverLetterOperations } from '@/hooks';
-import { useCoverLetterDetail } from '@/hooks/features/useCoverLetterDetail';
-import { CoverLetterSidebar } from '@/components/cover-letter/detail/CoverLetterSidebar';
+import { useCoverLetterDetail } from '@/modules/cover-letter/hooks/useCoverLetterDetail';
+import { CoverLetterSidebar } from '@/modules/cover-letter/components/detail/CoverLetterSidebar';
 import { FeatureErrorBoundary } from '@/components/error-boundaries';
 
 type CoverLetterMetadata = {

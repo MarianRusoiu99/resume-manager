@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { useResumeGeneration } from '@/components/ai-enhance/hooks';
+import { useResumeGeneration } from '@/modules/ai-enhance/hooks/useResumeGeneration';
 import { saveGeneratedResume } from '@/app/actions/resume';
 import { getProfile } from '@/app/actions/profile';
 import { useTemplateSelection } from '@/components/preview/useTemplateSelection';

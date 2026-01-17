@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useMemo, ReactNode } from "react";
 import type { Resume } from "@/lib/validations/jsonresume";
-import { useEditorPersistence } from "@/hooks/editor/useEditorPersistence";
+import { useEditorPersistence } from "@/modules/editor/hooks/useEditorPersistence";
 import { ConfigurationError } from "@/lib/errors";
 
 /**

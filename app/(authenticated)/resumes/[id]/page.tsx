@@ -6,17 +6,17 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui';
-import { ErrorState, LoadingState } from '@/components/shared/states';
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { ErrorState, LoadingState } from '@/components/core/feedback/states';
+import { ConfirmDialog } from "@/components/core/feedback/ConfirmDialog";
 import { Edit2, Info } from 'lucide-react';
 import { getResume, updateResumeContent } from '@/app/actions/resume';
 import { ExternalServiceError } from "@/lib/errors";
 import type { Resume } from '@/lib/validations/jsonresume';
-import { ResumeEditor, type ResumeEditorRef } from "@/components/editor/ResumeEditor";
+import { ResumeEditor, type ResumeEditorRef } from "@/modules/editor/components/ResumeEditor";
 import { EditorProvider } from "@/lib/contexts";
-import { useResumeDetail } from '@/hooks/features/useResumeDetail';
-import { ResumeDetailActions } from '@/components/resume/ResumeDetailActions';
-import { ResumeMetadataModals } from '@/components/resume/ResumeMetadataModals';
+import { useResumeDetail } from '@/modules/resume/hooks/useResumeDetail';
+import { ResumeDetailActions } from '@/modules/resume/components/ResumeDetailActions';
+import { ResumeMetadataModals } from '@/modules/resume/components/ResumeMetadataModals';
 import { FeatureErrorBoundary } from '@/components/error-boundaries';
 
 export default function ResumeDetailPage() {

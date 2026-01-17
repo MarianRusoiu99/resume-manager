@@ -7,10 +7,18 @@
 
 import mammoth from 'mammoth';
 import { ValidationError } from "@/lib/errors";
-import { IDocumentParserService } from '../interfaces/document-parser.service.interface';
 import { ServiceResult } from '@/lib/types';
 import { withServiceError, ServiceErrors } from '../utils/service-wrapper';
 import { logger } from '@/lib/utils/logger';
+
+export interface IDocumentParserService {
+  /**
+   * Parses a PDF or DOCX file and returns the extracted text.
+   * @param buffer The file content as a Buffer
+   * @param mimeType The MIME type of the file
+   */
+  parseDocument(buffer: Buffer, mimeType: string): Promise<ServiceResult<string>>;
+}
 
 /**
  * Supported MIME types for document parsing

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { DashboardHeader } from "@/components/dashboard/server/DashboardHeader";
-import { DashboardContent } from "@/components/dashboard/client/DashboardContent";
+import { DashboardHeader } from "./components/DashboardHeader";
+import { DashboardContent } from "./components/DashboardContent";
 import { getDashboardData } from "@/app/actions/analytics";
 import { FeatureErrorBoundary } from "@/components/error-boundaries";
 

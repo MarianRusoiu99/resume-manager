@@ -6,17 +6,68 @@ import type { CreateNotificationInput, NotificationData } from '@/lib/repositori
 import { emitNotification } from '@/lib/notifications/emitter';
 import { type ServiceResult } from '@/lib/types';
 import { withServiceError, NotFoundError, GenericUserOwnedCrudService } from '@/lib/services/utils';
-import type {
-  INotificationService,
-  NotificationServiceData,
-} from '@/lib/services/interfaces/notifications.service.interface';
 import { toNotificationData, toNotificationPayload, type DbNotification } from './transform';
+import { NotificationType } from '@prisma/client';
+
+/**
+ * Notification data for API responses
+ */
+export interface NotificationServiceData {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  isRead: boolean;
+  actionUrl: string | null;
+  actionLabel: string | null;
+  resourceType: string | null;
+  resourceId: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+/**
+ * Input for creating a notification
+ */
+export interface CreateNotificationServiceInput {
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  actionUrl?: string;
+  actionLabel?: string;
+  resourceType?: string;
+  resourceId?: string;
+  metadata?: Record<string, unknown>;
+  expiresAt?: Date;
+}
+
+/**
+ * Options for fetching notifications
+ */
+export interface GetNotificationsOptions {
+  limit?: number;
+  includeRead?: boolean;
+}
+
+/**
+ * Notification Service Interface
+ */
+export interface INotificationService {
+  createNotification(input: CreateNotificationServiceInput): Promise<ServiceResult<NotificationServiceData>>;
+  notifyResumeGenerated(userId: string, resumeId: string, jobTitle?: string, companyName?: string): Promise<ServiceResult<NotificationServiceData>>;
+  notifyCoverLetterGenerated(userId: string, coverLetterId: string, jobTitle?: string, companyName?: string): Promise<ServiceResult<NotificationServiceData>>;
+  notifySystem(userId: string, title: string, message: string, actionUrl?: string, actionLabel?: string): Promise<ServiceResult<NotificationServiceData>>;
+  getNotifications(userId: string, options?: GetNotificationsOptions): Promise<ServiceResult<NotificationServiceData[]>>;
+  getUnreadCount(userId: string): Promise<ServiceResult<{ count: number }>>;
+  markAsRead(id: string, userId: string): Promise<ServiceResult<NotificationServiceData>>;
+  markAllAsRead(userId: string): Promise<ServiceResult<{ count: number }>>;
+  deleteNotification(id: string, userId: string): Promise<ServiceResult<{ deleted: boolean }>>;
+  cleanupOldNotifications(userId: string, daysOld?: number): Promise<ServiceResult<{ count: number }>>;
+}
 
 /**
  * Notification service for handling business logic.
- *
- * Split into a dedicated module so the root `notification.service.ts` can be a
- * stable facade and avoid mixing transform + emit + CRUD details.
  */
 export class NotificationService 
   extends GenericUserOwnedCrudService<NotificationData, CreateNotificationInput, Partial<NotificationData>, Record<string, unknown>, NotificationRepository>

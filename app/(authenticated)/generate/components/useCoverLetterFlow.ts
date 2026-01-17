@@ -2,7 +2,7 @@
 
 import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { useCoverLetterGeneration } from '@/components/ai-enhance/hooks';
+import { useCoverLetterGeneration } from '@/modules/ai-enhance/hooks/useCoverLetterGeneration';
 import { createCoverLetter } from '@/app/actions/cover-letter';
 import { getProfile } from '@/app/actions/profile';
 import { useFeatureModelPreference } from '@/hooks';

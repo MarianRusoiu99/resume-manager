@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import { getProfiles } from '@/app/actions/profile';
 import { getApiProviders } from '@/app/actions/api-provider';
 import { GenerateContent } from './components/GenerateContent';
-import { PageSkeleton } from '@/components/shared/skeletons/PageSkeleton';
+import { PageSkeleton } from '@/components/core/data-display/skeletons/PageSkeleton';
 import type { ProfileListItem } from '@/lib/actions/types';
 
 async function GenerateDataWrapper() {
