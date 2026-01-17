@@ -50,6 +50,17 @@ export const markAllAsRead = withServerAction(
 );
 
 /**
+ * Delete a notification
+ */
+export const deleteNotification = withServerAction(
+    'deleteNotification',
+    async (session, notificationId: string) => {
+        return notificationService.deleteNotification(notificationId, session.user.id);
+    },
+    { resourceType: 'notification' }
+);
+
+/**
  * Create a new notification for the current user
  */
 export const sendNotification = withServerAction(
