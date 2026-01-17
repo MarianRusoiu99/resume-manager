@@ -54,6 +54,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
     messages: [],
     context: initialContext,
     output: null,
+    savedId: null,
     isLoading: false,
     isStreaming: false,
     error: null,
@@ -67,7 +68,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
   const handleStreamResponse = async <T>(
     response: Response, 
     updateState: (delta: DeepPartial<T>) => void,
-    onComplete: (final: T) => void,
+    onComplete: (final: T, savedId?: string | null) => void,
     onError: (error: string) => void
   ): Promise<T | null> => {
     if (!response.body) {
@@ -78,6 +79,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
     const decoder = new TextDecoder();
     
     let finalOutput: T | null = null;
+    let savedId: string | null = null;
 
     try {
       while (true) {
@@ -97,7 +99,8 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
                 updateState(data.partial);
               } else if (data.type === 'complete') {
                 finalOutput = data.final;
-                onComplete(data.final);
+              } else if (data.type === 'saved') {
+                savedId = data.id;
               } else if (data.type === 'error') {
                 throw new Error(data.error);
               }
@@ -111,6 +114,10 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
             }
           }
         }
+      }
+      
+      if (finalOutput) {
+        onComplete(finalOutput, savedId);
       }
       
       return finalOutput;
@@ -143,6 +150,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
       messages: [],
       context: initialContext,
       output: null,
+      savedId: null,
       isLoading: false,
       isStreaming: false,
       error: null,
@@ -262,7 +270,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
                 };
               });
             },
-            (final) => {
+            (final, savedId) => {
               // Complete handler
               setState(prev => {
                 // Update the assistant message with final content
@@ -276,11 +284,12 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
                   ...prev,
                   messages: updatedMessages,
                   output: final,
+                  savedId: savedId || null,
                   isLoading: false,
                   isStreaming: false
                 };
               });
-              onComplete?.(final);
+              onComplete?.(final, savedId);
             },
             (error) => {
                throw new Error(error);
@@ -310,11 +319,12 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
           id: result.data.conversationId,
           messages: [...prev.messages, assistantMessage],
           output: result.data.output as T,
+          savedId: result.data.savedId || null,
           isLoading: false,
           isStreaming: false,
         }));
 
-        onComplete?.(result.data.output as T);
+        onComplete?.(result.data.output as T, result.data.savedId);
         return result.data.output as T;
       } catch (error) {
         if ((error as Error).name === 'AbortError') {

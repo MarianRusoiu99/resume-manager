@@ -3,7 +3,7 @@
 import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useResumeGeneration } from '@/modules/ai-enhance/hooks/useResumeGeneration';
-import { saveGeneratedResume } from '@/app/actions/resume';
+import { deleteResume } from '@/app/actions/resume';
 import { getProfile } from '@/app/actions/profile';
 import { useTemplateSelection } from '@/components/preview/useTemplateSelection';
 import { useFeatureModelPreference } from '@/hooks';
@@ -34,9 +34,27 @@ export function useResumeFlow(defaultProfileId: string) {
     suggestions,
     isLoading: isGenerating,
     error,
+    savedId,
+    reset,
   } = useResumeGeneration();
 
-  const handleGenerate = useCallback(async () => {
+  const handleDiscard = useCallback(async () => {
+    if (!savedId) return;
+    
+    const result = await deleteResume(savedId);
+    if (result.success) {
+      toast.success('Draft discarded');
+      reset();
+    } else {
+      toast.error('Failed to discard draft');
+    }
+  }, [savedId, reset]);
+
+  const handleGenerate = useCallback(async (isConfirmed = false) => {
+    if (savedId && !isConfirmed) {
+      return 'confirm_overwrite';
+    }
+
     if (jobDescription.length < 50) {
       toast.error('Job description must be at least 50 characters');
       return;
@@ -64,40 +82,23 @@ export function useResumeFlow(defaultProfileId: string) {
       overrideModelId: modelId,
       profileResume: profileResult.data.resume,
     });
-  }, [generate, jobDescription, modelId, selectedProfileId]);
+  }, [generate, jobDescription, modelId, selectedProfileId, savedId]);
 
   const { selectedTemplateId } = useTemplateSelection({
     profileId: selectedProfileId,
   });
 
-  const handleSave = async () => {
-    if (!generatedResume) return;
+  const handleSave = useCallback(async (resume: any, title?: string, company?: string, score?: number | null, sug?: string[]) => {
+    // Auto-save is now handled on the server (api/v1/ai/chat)
+    // This client-side save is only for manual overrides or fallback
+    return;
+  }, []);
 
-    setIsSaving(true);
-    try {
-      const result = await saveGeneratedResume({
-        resume: generatedResume,
-        jobDescription,
-        jobTitle: aiJobTitle || (generatedResume as any).basics?.label || 'Optimized Resume',
-        companyName: aiCompanyName || '',
-        templateId: selectedTemplateId || undefined,
-        metadata: {
-          matchScore,
-          suggestions,
-        }
-      });
-
-      if (result.success) {
-        toast.success('Resume saved to library');
-      } else {
-        toast.error(result.error || 'Failed to save resume');
-      }
-    } catch {
-      toast.error('Failed to save resume');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // Handle auto-save when generation completes
+  useEffect(() => {
+    // Server handles auto-save for both streaming and non-streaming
+    // No need for client-side effect to trigger save
+  }, []);
 
   return {
     selectedProfileId,
@@ -115,6 +116,8 @@ export function useResumeFlow(defaultProfileId: string) {
     matchScore,
     suggestions,
     handleGenerate,
+    handleDiscard,
     handleSave,
+    savedId,
   };
 }

@@ -3,6 +3,8 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { useTemplateGeneration } from '@/modules/ai-enhance/hooks/useTemplateEnhancement';
+import { createTemplate } from '@/app/actions/template';
+import { sendNotification } from '@/app/actions/notification';
 
 interface UseTemplateImportOptions {
   onImportComplete: (template: { htmlTemplate: string; name?: string; description?: string }) => void;
@@ -51,24 +53,49 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
 
   // Handle completion
   useEffect(() => {
-    if (template) {
-      clearProgressInterval();
-      
-      toast.success('Template extracted and refined successfully!');
-      
-      const timer = setTimeout(() => {
-        // Convert string template to ExtractedTemplate structure
-        const extractedTemplate = {
+    const processResult = async () => {
+      if (template) {
+        clearProgressInterval();
+        
+        const templateName = selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'Imported Template';
+        
+        // Auto-persist to database
+        const result = await createTemplate({
+          name: templateName,
+          description: `Imported from ${selectedFile?.name || 'image'}`,
           htmlTemplate: template,
-          name: selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'Imported Template',
-        };
-        onImportComplete(extractedTemplate);
-        resetStates();
-        onClose();
-      }, 800);
-      
-      return () => clearTimeout(timer);
-    }
+          isPublic: true,
+        });
+
+        if (result.success && result.data) {
+          toast.success('Template imported and saved to library!');
+          
+          // Send system notification
+          await sendNotification({
+            title: 'Template Import Complete',
+            message: `Your template "${templateName}" is ready to use.`,
+            type: 'SYSTEM',
+            metadata: {
+              action: 'VIEW_TEMPLATE',
+              templateId: result.data.id,
+              url: `/templates/${result.data.id}`
+            }
+          });
+
+          const extractedTemplate = {
+            htmlTemplate: template,
+            name: templateName,
+          };
+          onImportComplete(extractedTemplate);
+          resetStates();
+          onClose();
+        } else {
+          toast.error('Failed to save imported template');
+        }
+      }
+    };
+
+    processResult();
   }, [template, onImportComplete, clearProgressInterval, onClose, resetStates, selectedFile]);
 
   // Handle errors - just clear the interval, state is computed

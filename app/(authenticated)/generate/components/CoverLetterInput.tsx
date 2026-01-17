@@ -11,7 +11,6 @@ interface CoverLetterInputProps {
   isLoading: boolean;
   isDisabled: boolean;
   onGenerate: () => void;
-  onReset: () => void;
 }
 
 export function CoverLetterInput({
@@ -21,8 +20,7 @@ export function CoverLetterInput({
   onPersonalInstructionsChange,
   isLoading,
   isDisabled,
-  onGenerate,
-  onReset
+  onGenerate
 }: CoverLetterInputProps) {
   return (
     <div className="space-y-6">
@@ -66,14 +64,6 @@ export function CoverLetterInput({
           ) : (
             <><Sparkles className="w-4 h-4 mr-2" />Generate Letter</>
           )}
-        </Button>
-        <Button 
-          variant="outline" 
-          size="lg" 
-          onClick={onReset} 
-          className="px-6 rounded-xl font-bold uppercase tracking-widest h-12 border-primary/10 hover:bg-primary/5 transition-all"
-        >
-          Reset
         </Button>
       </div>
     </div>

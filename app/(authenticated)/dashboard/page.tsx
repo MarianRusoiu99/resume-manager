@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import { DashboardHeader } from "./components/DashboardHeader";
 import { DashboardContent } from "./components/DashboardContent";
-import { getDashboardData } from "@/app/actions/analytics";
+import { getRecentActivity } from "@/app/actions/dashboard";
 import { FeatureErrorBoundary } from "@/components/error-boundaries";
 
 async function DashboardDataWrapper() {
-  const { stats, analytics } = await getDashboardData();
-  return <DashboardContent stats={stats} analyticsData={analytics} />;
+  const { activity } = await getRecentActivity();
+  return <DashboardContent activity={activity} />;
 }
 
 export default function DashboardPage() {
@@ -15,8 +15,8 @@ export default function DashboardPage() {
       title="Dashboard"
       description="Here's an overview of your resume optimization activity"
     >
-      <FeatureErrorBoundary featureName="Dashboard Stats">
-        <Suspense fallback={<DashboardContent stats={null} analyticsData={null} loading={true} />}>
+      <FeatureErrorBoundary featureName="Recent Activity">
+        <Suspense fallback={<DashboardContent activity={[]} loading={true} />}>
           <DashboardDataWrapper />
         </Suspense>
       </FeatureErrorBoundary>

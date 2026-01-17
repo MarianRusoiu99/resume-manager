@@ -14,7 +14,7 @@ interface CoverLetterOutput {
  * useCoverLetterGeneration - Specialized hook for cover letter generation using the unified AITask orchestrator.
  */
 export function useCoverLetterGeneration() {
-  const { runTask, isLoading, error, output, reset } = useAITask({
+  const { runTask, isLoading, error, output, reset, savedId } = useAITask({
     mode: 'cover-letter-generation',
   });
 
@@ -52,5 +52,6 @@ export function useCoverLetterGeneration() {
     isLoading,
     error,
     reset,
+    savedId,
   };
 }

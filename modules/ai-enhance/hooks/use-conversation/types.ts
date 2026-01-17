@@ -63,6 +63,7 @@ export interface ConversationState<T = unknown> {
   messages: ConversationMessage[];
   context: ConversationContext;
   output: T | null;
+  savedId: string | null;
   isLoading: boolean;
   isStreaming: boolean;
   error: string | null;
@@ -89,7 +90,7 @@ export interface UseConversationOptions<T = unknown> {
   mode: ConversationMode;
   initialContext?: ConversationContext;
   /** Called when generation completes */
-  onComplete?: (output: T) => void;
+  onComplete?: (output: T, savedId?: string | null) => void;
   /** Called on error */
   onError?: (error: string) => void;
 }

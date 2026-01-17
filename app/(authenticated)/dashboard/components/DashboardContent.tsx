@@ -1,24 +1,30 @@
 'use client';
 
-import type { DashboardStats, AnalyticsData } from "@/lib/services/analytics/analytics.service";
-import { ActivityChart } from "./widgets/ActivityChart";
-import { TopCompanies } from "./widgets/TopCompanies";
-import { UsageMetrics } from "./widgets/UsageMetrics";
 import { RecentActivity } from "./widgets/RecentActivity";
+import { QuickActions } from "./widgets/QuickActions";
+
+export interface DashboardActivityItem {
+  id: string;
+  type: 'RESUME' | 'COVER_LETTER' | 'PROFILE';
+  title: string;
+  date: Date;
+  status?: string;
+}
 
 interface DashboardContentProps {
-  stats: DashboardStats | null;
-  analyticsData: AnalyticsData | null;
+  activity: DashboardActivityItem[];
   loading?: boolean;
 }
 
-export function DashboardContent({ stats, analyticsData, loading = false }: DashboardContentProps) {
+export function DashboardContent({ activity, loading = false }: DashboardContentProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <ActivityChart data={analyticsData?.resumesOverTime} loading={loading} />
-      <TopCompanies data={analyticsData?.topCompanies} loading={loading} />
-      <UsageMetrics data={analyticsData?.aiUsage} loading={loading} />
-      <RecentActivity data={stats?.recentActivity} loading={loading} />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="lg:col-span-2">
+        <RecentActivity data={activity} loading={loading} />
+      </div>
+      <div>
+        <QuickActions />
+      </div>
     </div>
   );
 }

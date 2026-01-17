@@ -14,7 +14,6 @@ import { UserAISettingsRepository, userAISettingsRepository } from '@/lib/reposi
 import { CoverLetterRepository, coverLetterRepository } from '@/lib/repositories/cover-letters.repository';
 import { TemplateRepository, templateRepository } from '@/lib/repositories/templates.repository';
 
-import { AnalyticsService, analyticsService as analyticsServiceInstance } from './analytics/analytics.service';
 import { ProfileService } from './profiles/profiles.service';
 import { ResumeService } from './resumes/resume.service';
 import { NotificationService } from './notifications/notifications.service';
@@ -40,7 +39,6 @@ export class ServiceContainer {
   
   // Service instances - initialized in constructor
   private _profileService!: ProfileService;
-  private _analyticsService!: AnalyticsService;
   private _resumeService!: ResumeService;
   private _notificationService!: NotificationService;
   private _apiProviderService!: ApiProviderService;
@@ -79,7 +77,6 @@ export class ServiceContainer {
 
     // Initialize services with dependency injection
     this._profileService = new ProfileService(profileRepo, cache);
-    this._analyticsService = analyticsServiceInstance;
     this._notificationService = new NotificationService(notificationRepo);
     this._resumeService = new ResumeService(generatedResumeRepo, this._profileService, this._notificationService);
     this._apiProviderService = new ApiProviderService(apiProviderRepo);
@@ -93,10 +90,6 @@ export class ServiceContainer {
   // Service getters
   get profileService(): ProfileService {
     return this._profileService;
-  }
-
-  get analyticsService(): AnalyticsService {
-    return this._analyticsService;
   }
 
   get resumeService(): ResumeService {
@@ -196,7 +189,6 @@ import { auditLogService as auditLogServiceInstance, auditLog as auditLogInstanc
 // Service exports for backward compatibility
 // These delegate to the container instances
 export const profileService = serviceContainer.profileService;
-export const analyticsService = serviceContainer.analyticsService;
 export const resumeService = serviceContainer.resumeService;
 export const notificationService = serviceContainer.notificationService;
 export const apiProviderService = serviceContainer.apiProviderService;

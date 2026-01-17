@@ -101,6 +101,21 @@ export class ResumeService
     return runStandaloneCoverLetterWorkflow(input);
   }
 
+  async create(data: CreateResumeInput & { userId: string }): Promise<ServiceResult<RepoGeneratedResumeData>> {
+    const result = await super.create(data);
+    if (result.success) {
+      const jobMetadata = (data.jobMetadata ?? {}) as Record<string, any>;
+      // This is called in background, it emits to SSE hub which should work fine
+      this.notificationService.notifyResumeGenerated(
+        data.userId,
+        result.data.id,
+        jobMetadata?.jobTitle,
+        jobMetadata?.companyName
+      ).catch(err => console.error('Failed to notify resume generated', err));
+    }
+    return result;
+  }
+
   // --- CRUD Methods ---
 
   async listResumes(userId: string): Promise<ServiceResult<ResumeListItem[]>> {

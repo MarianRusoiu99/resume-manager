@@ -3,7 +3,7 @@
 import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useCoverLetterGeneration } from '@/modules/ai-enhance/hooks/useCoverLetterGeneration';
-import { createCoverLetter } from '@/app/actions/cover-letter';
+import { deleteCoverLetter } from '@/app/actions/cover-letter';
 import { getProfile } from '@/app/actions/profile';
 import { useFeatureModelPreference } from '@/hooks';
 
@@ -33,9 +33,26 @@ export function useCoverLetterFlow(defaultProfileId: string) {
     isLoading: isGenerating,
     error,
     reset,
+    savedId,
   } = useCoverLetterGeneration();
 
-  const handleGenerate = useCallback(async () => {
+  const handleDiscard = useCallback(async () => {
+    if (!savedId) return;
+    
+    const result = await deleteCoverLetter(savedId);
+    if (result.success) {
+      toast.success('Draft discarded');
+      reset();
+    } else {
+      toast.error('Failed to discard draft');
+    }
+  }, [savedId, reset]);
+
+  const handleGenerate = useCallback(async (isConfirmed = false) => {
+    if (savedId && !isConfirmed) {
+      return 'confirm_overwrite';
+    }
+
     if (jobDescription.length < 50) {
       toast.error('Job description must be at least 50 characters');
       return;
@@ -64,36 +81,19 @@ export function useCoverLetterFlow(defaultProfileId: string) {
       overrideModelId: modelId,
       profileResume: profileResult.data.resume,
     });
-  }, [generate, jobDescription, personalInstructions, modelId, selectedProfileId]);
+  }, [generate, jobDescription, personalInstructions, modelId, selectedProfileId, savedId]);
 
-  const handleSave = async (contentOverride?: string) => {
-    const content = contentOverride || generatedCoverLetter;
-    if (!content) return;
+  const handleSave = useCallback(async (contentOverride?: string, title?: string, company?: string) => {
+    // Auto-save is now handled on the server (api/v1/ai/chat)
+    // This client-side save is only for manual overrides or fallback
+    return;
+  }, []);
 
-    setIsSaving(true);
-    try {
-      const result = await createCoverLetter(
-        content,
-        jobDescription,
-        aiJobTitle || '',
-        aiCompanyName || '',
-        {
-          personalInstructions: personalInstructions,
-          jobDescription: jobDescription,
-        }
-      );
-
-      if (result.success) {
-        toast.success('Cover letter saved to library');
-      } else {
-        toast.error(result.error || 'Failed to save cover letter');
-      }
-    } catch {
-      toast.error('Failed to save cover letter');
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // Handle auto-save when generation completes
+  useEffect(() => {
+    // Server handles auto-save for both streaming and non-streaming
+    // No need for client-side effect to trigger save
+  }, []);
 
   return {
     selectedProfileId,
@@ -111,8 +111,10 @@ export function useCoverLetterFlow(defaultProfileId: string) {
     error,
     reset,
     handleGenerate,
+    handleDiscard,
     handleSave,
     aiJobTitle,
-    aiCompanyName
+    aiCompanyName,
+    savedId
   };
 }

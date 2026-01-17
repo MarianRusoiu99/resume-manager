@@ -17,7 +17,6 @@ export {
   profileService,
   resumeService,
   notificationService,
-  analyticsService,
   templateService,
   coverLetterService,
   apiProviderService,

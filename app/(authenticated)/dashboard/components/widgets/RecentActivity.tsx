@@ -4,18 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Clock, FileCheck, FileText, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import type { DashboardStats } from "@/lib/services/analytics/analytics.service";
+import type { DashboardActivityItem } from "../DashboardContent";
 
 import Link from "next/link";
 import { ROUTES } from "@/lib/constants";
 
 interface RecentActivityProps {
-  data: DashboardStats["recentActivity"] | undefined;
+  data: DashboardActivityItem[] | undefined;
   loading: boolean;
 }
 
 export function RecentActivity({ data, loading }: RecentActivityProps) {
-  const getItemIcon = (type: NonNullable<DashboardStats["recentActivity"]>[number]["type"]) => {
+  const getItemIcon = (type: DashboardActivityItem["type"]) => {
     switch (type) {
       case "RESUME":
         return <FileText className="h-4 w-4 text-primary" />;
@@ -28,7 +28,7 @@ export function RecentActivity({ data, loading }: RecentActivityProps) {
     }
   };
 
-  const getItemTypeLabel = (type: NonNullable<DashboardStats["recentActivity"]>[number]["type"]) => {
+  const getItemTypeLabel = (type: DashboardActivityItem["type"]) => {
     switch (type) {
       case "RESUME":
         return "Resume";
@@ -41,7 +41,7 @@ export function RecentActivity({ data, loading }: RecentActivityProps) {
     }
   };
 
-  const getItemHref = (item: NonNullable<RecentActivityProps["data"]>[number]) => {
+  const getItemHref = (item: DashboardActivityItem) => {
     switch (item.type) {
       case "RESUME":
         return ROUTES.RESUME(item.id);

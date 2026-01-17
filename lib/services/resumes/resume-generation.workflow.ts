@@ -61,12 +61,15 @@ export async function runResumeGenerationWorkflow(
     });
 
     // Notify user that resume is ready
+    /* Notification moved to resumeService.create to ensure it fires for all creations */
+    /*
     await notificationService.notifyResumeGenerated(
       input.userId,
       saved.id,
       result.jobTitle,
       result.companyName
     );
+    */
 
     return success({
       resumeId: saved.id,

@@ -32,7 +32,7 @@ export function useAITask<T = unknown>(options: AITaskOptions<T>) {
 
   const { sendMessage, state, reset, abort } = useConversation<T>({
     mode,
-    onComplete: (output: T) => {
+    onComplete: (output: T, savedId?: string | null) => {
       onSuccess?.(output);
     },
     onError: (err: string) => {
@@ -69,6 +69,7 @@ export function useAITask<T = unknown>(options: AITaskOptions<T>) {
     isStreaming: state.isStreaming,
     error: state.error,
     output: state.output,
+    savedId: state.savedId,
     partialOutput: (state.isStreaming ? state.output : null) as DeepPartial<T> | null,
     messages: state.messages,
     hasOutput: !!state.output,
