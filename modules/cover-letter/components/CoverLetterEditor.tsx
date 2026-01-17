@@ -145,7 +145,7 @@ export const CoverLetterEditor = forwardRef<CoverLetterEditorRef, CoverLetterEdi
     return (
       <MarkdownPreview
         content={content}
-        className="bg-muted/30 p-8 rounded-none border-none"
+        className="bg-transparent p-8 rounded-none border-none"
       />
     );
   };
@@ -168,7 +168,7 @@ export const CoverLetterEditor = forwardRef<CoverLetterEditorRef, CoverLetterEdi
 
   return (
     <>
-      <div className={cn('bg-background', className)}>
+      <div className={cn('bg-transparent', className)}>
         {isEditing && (
           <CoverLetterEditorToolbar
             isSaving={isSaving}
