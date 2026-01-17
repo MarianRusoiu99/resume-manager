@@ -43,13 +43,37 @@ export function useNotificationManager() {
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await getNotifications({ includeRead: true });
+      const result = await getNotifications({ includeRead: false });
 
       if (!result.success) {
         throw new ExternalServiceError('Notification API', result.error);
       }
 
-      setNotifications((result.data as unknown as Notification[]) ?? []);
+      const fetchedNotifications = (result.data as unknown as Notification[]) ?? [];
+      
+      setNotifications((prev) => {
+        // Merge new notifications, avoiding duplicates
+        const existingIds = new Set(prev.map(n => n.id));
+        const newNotifications = fetchedNotifications.filter(n => !existingIds.has(n.id));
+        
+        // Handle side effects for any newly fetched "EXPORT_COMPLETE" notifications
+        newNotifications.forEach(notification => {
+          if (notification.type === 'EXPORT_COMPLETE' && notification.metadata) {
+            const metadata = notification.metadata as any;
+            if (metadata.jobId) {
+              const lastDownloadedJob = sessionStorage.getItem('last_downloaded_job');
+              const wasStartedHere = sessionStorage.getItem(`pdf_job_started_${metadata.jobId}`) === 'true';
+
+              if (lastDownloadedJob !== metadata.jobId && wasStartedHere) {
+                sessionStorage.setItem('last_downloaded_job', metadata.jobId);
+                window.location.href = `/api/v1/export/pdf?jobId=${metadata.jobId}`;
+              }
+            }
+          }
+        });
+
+        return [...newNotifications, ...prev];
+      });
       
       const countResult = await getUnreadCount();
       if (countResult.success) {
@@ -245,14 +269,43 @@ export function useNotificationManager() {
 
     const sseLog = log.withContext({ action: 'notifications-sse' });
 
+    // Function to handle a single notification (reused for SSE and initial fetch)
+    const handleNotification = (fullNotification: Notification) => {
+      addNotification(fullNotification);
+
+      // Special handling for completed PDF exports
+      if (fullNotification.type === 'EXPORT_COMPLETE' && fullNotification.metadata) {
+        const metadata = fullNotification.metadata as any;
+        if (metadata.jobId) {
+          // Dismiss the "generating" toast if it exists
+          toast.dismiss(`pdf-gen-${metadata.jobId}`);
+          
+          // Check if we should auto-download (prevent repeat downloads on reconnect)
+          const lastDownloadedJob = sessionStorage.getItem('last_downloaded_job');
+          // ONLY auto-download if this specific browser session actually started the job
+          const wasStartedHere = sessionStorage.getItem(`pdf_job_started_${metadata.jobId}`) === 'true';
+          
+          if (lastDownloadedJob !== metadata.jobId && wasStartedHere) {
+            sessionStorage.setItem('last_downloaded_job', metadata.jobId);
+            const downloadUrl = `/api/v1/export/pdf?jobId=${metadata.jobId}`;
+            window.location.href = downloadUrl;
+          }
+        }
+      }
+    };
+
     eventSource.addEventListener('connected', (event) => {
       try {
         const data = JSON.parse(event.data);
         console.log('[SSE] Connected to notifications stream', data);
         sseLog.debug('Connected to notifications stream', { data });
+        
+        // When connected, fetch any unread notifications that might have been missed
+        fetchNotifications();
       } catch {
         console.log('[SSE] Connected to notifications stream');
         sseLog.debug('Connected to notifications stream');
+        fetchNotifications();
       }
     });
 
@@ -274,21 +327,8 @@ export function useNotificationManager() {
           metadata: notification.metadata ?? null,
           createdAt: notification.createdAt,
         };
-        addNotification(fullNotification);
-
-        // Special handling for completed PDF exports
-        if (fullNotification.type === 'EXPORT_COMPLETE' && fullNotification.metadata) {
-          const metadata = fullNotification.metadata as any;
-          if (metadata.jobId) {
-            // Dismiss the "generating" toast if it exists
-            toast.dismiss(`pdf-gen-${metadata.jobId}`);
-            
-            // Redirect to the download URL in the current tab instead of auto-downloading with a hidden link
-            // This allows the server to set the correct headers and handle the response naturally
-            const downloadUrl = `/api/v1/export/pdf?jobId=${metadata.jobId}`;
-            window.location.href = downloadUrl;
-          }
-        }
+        
+        handleNotification(fullNotification);
       } catch (error) {
         sseLog.error('Error parsing notification', error);
       }

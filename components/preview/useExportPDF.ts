@@ -87,6 +87,9 @@ export function useExportPDF() {
 
       if (response.status === 202) {
         const data = await response.json();
+        // Tag this job as started in session storage
+        sessionStorage.setItem(`pdf_job_started_${data.jobId}`, 'true');
+        
         toast.info('PDF generation started...', {
           id: `pdf-gen-${data.jobId}`,
           duration: Infinity,

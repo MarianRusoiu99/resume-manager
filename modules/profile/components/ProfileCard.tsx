@@ -55,16 +55,7 @@ export const ProfileCard = memo(function ProfileCard({
   const location = resumeData?.basics?.location?.city || 'No location';
 
   const handleExportPDF = async () => {
-    await runWithToast(
-      async () => {
-        await exportPdf();
-        return true;
-      },
-      {
-        successMessage: 'PDF exported successfully',
-        errorMessage: 'Failed to export PDF',
-      },
-    );
+    await exportPdf();
   };
 
   const handleDuplicate = () => {
