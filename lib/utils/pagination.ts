@@ -71,7 +71,7 @@ export function configureIframeScrolling(iframeDocument: Document): void {
     body.style.margin = '0';
     body.style.padding = '0';
     body.style.position = 'relative';
-    body.style.background = 'white';
+    body.style.background = 'transparent';
   }
 
   // Inject CSS for natural layout
@@ -84,7 +84,7 @@ export function configureIframeScrolling(iframeDocument: Document): void {
     body {
       font-family: inherit;
       line-height: 1.6;
-      background: white;
+      background: transparent;
       margin: 0;
       padding: 0;
     }
@@ -133,7 +133,7 @@ export function configureIframeScrolling(iframeDocument: Document): void {
     /* Print styles to preserve page breaks for PDF export */
     @media print {
       body {
-        background: white;
+        background: transparent;
       }
       .page-break {
         page-break-before: always;

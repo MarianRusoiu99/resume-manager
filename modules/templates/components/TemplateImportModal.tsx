@@ -61,10 +61,13 @@ export function TemplateImportModal({
   });
 
   const handleClose = useCallback(() => {
+    // If not loading, we can reset everything. 
+    // If it IS loading, we just close the modal but let the background process continue 
+    // (the user requested to be able to leave and receive a notification)
     if (!isLoading) {
       resetStates();
-      onOpenChange(false);
     }
+    onOpenChange(false);
   }, [isLoading, onOpenChange, resetStates]);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -226,41 +229,54 @@ export function TemplateImportModal({
           {/* Actions */}
           <div className="flex flex-col gap-4 pt-2">
             {!isLoading && selectedFile && !template && (
-              <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/10">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">Model Selection</span>
-                  <span className="text-xs text-muted-foreground">Select a vision-capable model</span>
+              <div className="flex flex-col gap-2 p-3 border rounded-lg bg-muted/5 border-primary/10 shadow-sm transition-all hover:bg-muted/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-primary/80">AI Model Settings</span>
+                    <span className="text-[11px] text-muted-foreground">Select a vision-capable model for extraction</span>
+                  </div>
+                  <ModelSelector
+                    requiresVision
+                    requiresStructuredOutput
+                    value={modelId}
+                    onValueChange={handleModelChange}
+                    isLoading={isPreferencesLoading}
+                    className="w-[180px] h-8 text-xs"
+                  />
                 </div>
-                <ModelSelector
-                  requiresVision
-                  requiresStructuredOutput
-                  value={modelId}
-                  onValueChange={handleModelChange}
-                  isLoading={isPreferencesLoading}
-                  className="w-[200px]"
-                />
               </div>
             )}
 
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={handleClose}
-                disabled={isLoading}
-              >
-                Cancel
-              </Button>
-              {!isLoading && selectedFile && !template && (
-                <Button onClick={onExtract}>
-                  <ImageIcon className="mr-2 h-4 w-4" />
-                  Extract Template
-                </Button>
+            <div className="flex flex-col gap-3">
+              {isLoading && (
+                <p className="text-[11px] text-center text-muted-foreground bg-muted/30 py-2 rounded-md border border-dashed">
+                  You can safely close this window. We'll notify you once your template is ready in the library.
+                </p>
               )}
-              {error && !isLoading && (
-                <Button onClick={onExtract}>
-                  Try Again
-                </Button>
-              )}
+              
+              <div className="flex justify-end gap-2">
+                {!isLoading && (
+                  <Button
+                    variant="outline"
+                    onClick={handleClose}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                
+                {!isLoading && selectedFile && !template && (
+                  <Button onClick={onExtract}>
+                    <ImageIcon className="mr-2 h-4 w-4" />
+                    Extract Template
+                  </Button>
+                )}
+                
+                {error && !isLoading && (
+                  <Button onClick={onExtract}>
+                    Try Again
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

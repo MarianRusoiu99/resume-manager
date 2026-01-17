@@ -57,7 +57,7 @@ function ResumePreviewIframe({
     <iframe
       ref={iframeRef}
       srcDoc={htmlContent}
-      className="w-full h-full bg-white"
+      className="w-full h-full bg-transparent"
       title="Resume Preview"
       sandbox="allow-same-origin"
     />
@@ -103,14 +103,14 @@ export function ResumePreviewComparison({
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="original" className="flex-1 mt-4 border rounded-lg overflow-hidden bg-white">
+      <TabsContent value="original" className="flex-1 mt-4 border rounded-lg overflow-hidden bg-transparent">
         <ResumePreviewIframe
           htmlContent={originalHtml}
           isLoading={originalLoading}
         />
       </TabsContent>
 
-      <TabsContent value="enhanced" className="flex-1 mt-4 border rounded-lg overflow-hidden bg-white">
+      <TabsContent value="enhanced" className="flex-1 mt-4 border rounded-lg overflow-hidden bg-transparent">
         <ResumePreviewIframe
           htmlContent={enhancedResume ? enhancedHtml : null}
           isLoading={showEnhancedLoading}
@@ -157,7 +157,7 @@ export function ResumePreviewSideBySide({
             Original Preview
           </Label>
         </div>
-        <div className="flex-1 bg-white">
+        <div className="flex-1 bg-transparent">
           <ResumePreviewIframe
             htmlContent={originalHtml}
             isLoading={originalLoading}
@@ -175,7 +175,7 @@ export function ResumePreviewSideBySide({
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           )}
         </div>
-        <div className="flex-1 bg-white">
+        <div className="flex-1 bg-transparent">
           <ResumePreviewIframe
             htmlContent={enhancedResume ? enhancedHtml : null}
             isLoading={isLoading || enhancedLoading}

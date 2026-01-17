@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useEffect, useRef, useState, memo, useCallback } from 'react';
+import { useEffect, useRef, useState, memo } from 'react';
 
 interface ScaledIframePreviewProps {
   /** HTML content to render in iframe */
@@ -73,9 +73,9 @@ export const ScaledIframePreview = memo(function ScaledIframePreview({
   useEffect(() => {
     const iframe = iframeRef.current;
     if (iframe && onLoad) {
-      const handleLoad = useCallback(() => {
+      const handleLoad = () => {
         onLoad();
-      }, [onLoad]);
+      };
       iframe.addEventListener('load', handleLoad);
       return () => iframe.removeEventListener('load', handleLoad);
     }
@@ -98,7 +98,7 @@ export const ScaledIframePreview = memo(function ScaledIframePreview({
         <iframe
           ref={iframeRef}
           srcDoc={htmlContent}
-          className="w-full h-full border-0 pointer-events-none bg-white shadow-lg"
+          className="w-full h-full border-0 pointer-events-none bg-transparent shadow-lg"
           title={altText}
           sandbox="allow-same-origin"
           style={{

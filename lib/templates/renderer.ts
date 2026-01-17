@@ -8,11 +8,14 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import { sanitizeTemplateHtml } from '@/lib/templates/utils/sanitizer';
 import type { DeepPartial } from '@/lib/types';
 
+import { loadBaseCss } from './loader';
+
 /**
  * Renders the full HTML structure for PDF export
  */
 function renderPDFDocument(html: string, css: string, resumeData: Resume | DeepPartial<Resume>): string {
   const name = resumeData.basics?.name || 'Resume';
+  const baseCss = loadBaseCss();
   
   return `
     <!DOCTYPE html>
@@ -22,10 +25,11 @@ function renderPDFDocument(html: string, css: string, resumeData: Resume | DeepP
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${name}</title>
         <style>
+            ${baseCss}
             ${css}
             @media print {
-                body { margin: 0; padding: 0; }
-                @page { margin: 0.4in; }
+                body { margin: 0; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                @page { margin: 0; }
             }
         </style>
     </head>
@@ -125,6 +129,16 @@ function registerHelpers() {
   Handlebars.registerHelper('join', function(array: string[], separator: string) {
     if (!Array.isArray(array)) return '';
     return array.join(separator);
+  });
+
+  // Logical OR helper
+  Handlebars.registerHelper('or', function(v1: unknown, v2: unknown) {
+    return !!v1 || !!v2;
+  });
+
+  // Logical AND helper
+  Handlebars.registerHelper('and', function(v1: unknown, v2: unknown) {
+    return !!v1 && !!v2;
   });
 }
 

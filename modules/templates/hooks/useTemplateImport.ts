@@ -18,7 +18,7 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
   const [manualLoadingStep, setManualLoadingStep] = useState<string>('');
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { generate, refine, template, isLoading, error, reset } = useTemplateGeneration();
+  const { generate, refine, template, isLoading, error, reset, abort } = useTemplateGeneration();
 
   // Compute progress based on state - avoid setState in effects
   const progress = useMemo(() => {
@@ -43,15 +43,24 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
 
   // Define resetStates BEFORE it's used in effects
   const resetStates = useCallback(() => {
+    abort(); // Cancel any ongoing AI requests
     reset();
     setSelectedFile(null);
     setPreview(null);
     setManualProgress(0);
     setManualLoadingStep('');
     clearProgressInterval();
-  }, [reset, clearProgressInterval]);
+    isProcessingRef.current = false;
+  }, [reset, abort, clearProgressInterval]);
 
   const isProcessingRef = useRef(false);
+  const isComponentMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isComponentMounted.current = false;
+    };
+  }, []);
 
   // Handle completion
   useEffect(() => {
@@ -89,9 +98,13 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
             htmlTemplate: template,
             name: templateName,
           };
-          onImportComplete(extractedTemplate);
-          resetStates();
-          onClose();
+          
+          // Only call callbacks if component is still mounted
+          if (isComponentMounted.current) {
+            onImportComplete(extractedTemplate);
+            resetStates();
+            onClose();
+          }
         } else {
           toast.error('Failed to save imported template');
           isProcessingRef.current = false;

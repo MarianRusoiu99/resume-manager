@@ -61,7 +61,7 @@ export function PreviewState({
           height: `${A4_HEIGHT * scale}px`,
           transition: 'width 0.2s ease-out, height 0.2s ease-out',
         }}
-        className="relative shrink-0 shadow-2xl origin-top mb-8 bg-white transition-opacity duration-300"
+        className="relative shrink-0 shadow-2xl origin-top mb-8 bg-transparent transition-opacity duration-300"
       >
         <div
           style={{
@@ -73,7 +73,7 @@ export function PreviewState({
             top: 0,
             left: 0,
           }}
-          className="bg-white overflow-hidden rounded-sm"
+          className="bg-transparent overflow-hidden rounded-sm"
         >
           {htmlContent ? (
             <iframe

@@ -1,33 +1,62 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPdfQueue } from '@/lib/queue/pdf-queue';
+import { NextResponse } from 'next/server';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
 import { logger } from '@/lib/utils/logger';
 import { createApiHandler } from '@/lib/api/handler';
 import { pdfExportSchema } from '@/lib/validations/api-schemas';
+import { pdfService } from '@/lib/services/pdf/pdf.service';
+
+/**
+ * Sanitizes a string for use as a filename
+ */
+function sanitizeFilename(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/[^a-z0-9]/gi, '_') // Replace non-alphanumeric with underscores
+    .replace(/_{2,}/g, '_') // Replace multiple underscores with one
+    .trim()
+    .replace(/^_+|_+$/g, ''); // Trim underscores from ends
+}
 
 export const POST = createApiHandler(
   async (request, context, session, body) => {
-    const { resume, template, fileName } = body!;
+    const { resume, template } = body!;
 
-    // Render the final HTML
-    const html = renderCompleteDocument(template.htmlTemplate, resume);
+    try {
+      // Render the final HTML
+      const html = renderCompleteDocument(template.htmlTemplate, resume);
 
-    // Instead of generating the PDF synchronously, we offload it to the queue
-    const queue = getPdfQueue();
-    const job = await queue.add('generate-pdf', {
-      resumeId: (resume as any).id || 'new-resume',
-      html,
-      userId: session.user.id,
-    });
+      // Generate the PDF buffer synchronously
+      const pdfBuffer = await pdfService.generateFromHtml(html);
 
-    logger.info(`Offloaded PDF generation to worker`, { jobId: job.id, userId: session.user.id });
+      // Determine dynamic filename
+      const personName = resume.basics?.name || 'Resume';
+      const jobTitle = resume.basics?.label || '';
+      
+      const baseName = jobTitle 
+        ? `${personName}_${jobTitle}`
+        : personName;
+      
+      const fileName = `${sanitizeFilename(baseName)}.pdf`;
 
-    // Return the jobId so the client can track progress
-    return NextResponse.json({ 
-      success: true, 
-      message: 'PDF generation started in background',
-      jobId: job.id 
-    });
+      logger.info(`Generated PDF for user ${session.user.id}`, { fileName });
+
+      // Return the PDF as a binary stream
+      return new NextResponse(pdfBuffer as any, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${fileName}"`,
+          'Content-Length': pdfBuffer.length.toString(),
+        },
+      });
+    } catch (error) {
+      logger.error('PDF generation failed in API route', error);
+      return NextResponse.json(
+        { error: 'Failed to generate PDF' },
+        { status: 500 }
+      );
+    }
   },
   {
     isPublic: false,

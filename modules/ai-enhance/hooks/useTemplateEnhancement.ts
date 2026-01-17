@@ -10,7 +10,7 @@ import { TEMPLATE_REFINEMENT_USER_MESSAGE, DUMMY_RESUME_DATA } from '@/lib/ai/pr
  * useTemplateEnhancement - Hook for generating or enhancing resume templates.
  */
 export function useTemplateEnhancement() {
-  const { runTask, isLoading, error, output, reset, hasOutput } = useAITask<TemplateEnhancementOutput>({
+  const { runTask, isLoading, error, output, reset, abort, hasOutput } = useAITask<TemplateEnhancementOutput>({
     mode: 'template-enhancement',
   });
 
@@ -82,6 +82,7 @@ export function useTemplateEnhancement() {
     generate,
     refine,
     reset,
+    abort,
     template: htmlTemplate || '',
     enhancedContent: htmlTemplate ? { html: htmlTemplate } : null,
     isLoading,
