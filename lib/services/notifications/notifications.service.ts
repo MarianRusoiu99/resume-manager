@@ -81,7 +81,11 @@ export class NotificationService
   async createNotification(
     input: CreateNotificationInput
   ): Promise<ServiceResult<NotificationServiceData>> {
-    const result = await this.create(input as CreateNotificationInput & { userId: string });
+    const dataToCreate = {
+      ...input,
+      actionUrl: input.actionUrl || (input.metadata as any)?.url || undefined,
+    };
+    const result = await this.create(dataToCreate as CreateNotificationInput & { userId: string });
     if (result.success) {
       const notification = result.data as unknown as DbNotification;
       await emitNotification(input.userId, toNotificationPayload(notification));
@@ -143,7 +147,8 @@ export class NotificationService
     title: string,
     message: string,
     actionUrl?: string,
-    actionLabel?: string
+    actionLabel?: string,
+    metadata?: Record<string, unknown>
   ): Promise<ServiceResult<NotificationServiceData>> {
     return this.createNotification({
       userId,
@@ -152,6 +157,7 @@ export class NotificationService
       message,
       actionUrl,
       actionLabel,
+      metadata,
     });
   }
 
