@@ -1,7 +1,7 @@
 import { profileRepository, ProfileRepository } from '@/lib/repositories/profiles.repository';
 import { profileCache } from '@/lib/cache/simple-cache';
 import { type Resume, resumeSchema } from '@/lib/validations/jsonresume';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 import { withServiceError, NotFoundError, ConflictError, GenericUserOwnedCrudService } from '@/lib/services/utils';
 import type { IProfileService, ProfileServiceData, UpdateProfileServiceInput } from '../interfaces';
 import { invalidateProfileCache } from './cache';

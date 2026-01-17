@@ -13,7 +13,7 @@ import {
   createProvider,
   isProviderSupported,
 } from '@/lib/ai/providers';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 import { withServiceError, ValidationError } from '@/lib/services/utils';
 import { RecordNotFoundError } from '@/lib/errors/database';
 import { GenericUserOwnedCrudService } from '../utils/generic-crud.service';

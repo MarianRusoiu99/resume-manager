@@ -4,7 +4,7 @@ import { createApiHandler } from '../index';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/dal';
 import { AppError } from '@/lib/errors/base';
-import { ServiceErrorCode } from '@/lib/types/service-result';
+import { ServiceErrorCode } from '@/lib/types';
 
 // Mock dependencies
 vi.mock('@/lib/auth/dal', () => ({

@@ -9,32 +9,34 @@
  * - `lib/services/resume-crud`
  */
 
-// Re-export types from generation service
+// Re-export types from centralized location
 export type {
-  GenerateResumeServiceInput,
+  GenerateResumeInput as GenerateResumeServiceInput,
   ProgressCallback,
   GenerateResumeWithProgressInput,
   ResumeData,
   GeneratedResumeData,
   CoverLetterGenerationData,
-} from './generation';
-
-// Re-export types from CRUD service
-export type { ResumeListItem, ResumeDetails, UpdatedResumeData } from './crud';
+  ResumeListItem,
+  ResumeDetails,
+  UpdatedResumeData,
+} from '@/lib/types';
 
 // Import services
 import { ResumeGenerationService, resumeGenerationService } from './generation';
 import { ResumeCrudService, resumeCrudService } from './crud';
 import type { IResumeService } from '../interfaces';
-import type { ServiceResult } from '@/lib/types/service-result';
+import type { ServiceResult } from '@/lib/types';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type {
-  GenerateResumeServiceInput,
+  GenerateResumeInput as GenerateResumeServiceInput,
   GenerateResumeWithProgressInput,
   GeneratedResumeData,
   CoverLetterGenerationData,
-} from './generation';
-import type { ResumeListItem, ResumeDetails, UpdatedResumeData } from './crud';
+  ResumeListItem,
+  ResumeDetails,
+  UpdatedResumeData,
+} from '@/lib/types';
 
 import type { CreateResumeInput, GeneratedResumeData as RepoGeneratedResumeData } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
 

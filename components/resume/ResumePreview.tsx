@@ -7,42 +7,18 @@
 
 import { useRef, useState, useEffect, useMemo } from 'react';
 import { renderTemplateServerSide } from '@/components/shared/rendering/client-renderer';
-import type { DeepPartial } from '@/lib/types/utils';
+import type { DeepPartial } from '@/lib/types';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { useTemplateSelection } from '@/components/preview/useTemplateSelection';
 import { useResumeData } from '@/components/preview/useResumeData';
 import { useExportPDF } from '@/components/preview/useExportPDF';
 import { usePreviewScale } from '@/components/preview/usePreviewScale';
 import { usePagination } from '@/components/preview/usePagination';
+import { useTemplatePreview } from '@/components/preview/useTemplatePreview';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PreviewContent } from '@/components/preview/PreviewContent';
 import { clientLogger } from '@/lib/utils/client-logger';
-
-// Custom hook implementation for useTemplatePreview since it was missing
-function useTemplatePreview({ templateId, resumeData }: { templateId: string | null, resumeData: Resume | DeepPartial<Resume> }) {
-    const [htmlContent, setHtmlContent] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [template, setTemplate] = useState<any>(null); // Placeholder type
-
-    useEffect(() => {
-        if (!templateId && !resumeData) return;
-        
-        // This is a placeholder implementation since the hook file was missing
-        // In a real implementation this would fetch from an API
-        setIsLoading(true);
-        // Simulating fetch
-        const timer = setTimeout(() => {
-             setIsLoading(false);
-        }, 100);
-        
-        return () => clearTimeout(timer);
-    }, [templateId, resumeData]);
-
-    return { htmlContent, template, isLoading, error };
-}
-
 
 const logger = clientLogger.forComponent('ResumePreview');
 
@@ -230,7 +206,7 @@ export function ResumePreview({
   return (
     <>
       {showCard ? (
-        <Card className={`relative ${className} ${isStreaming ? 'border-primary/50 ring-2 ring-primary/20' : ''}`}>
+        <Card className={`relative flex flex-col h-full overflow-hidden ${className} ${isStreaming ? 'border-primary/50 ring-2 ring-primary/20' : ''}`}>
            {isStreaming && (
             <div className="absolute -top-1 -right-1 flex h-3 w-3">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary/75 opacity-75"></span>
@@ -244,7 +220,7 @@ export function ResumePreview({
             </CardTitle>
             <CardDescription>See how your resume looks with different templates</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 min-h-0 p-0">
             <PreviewContent
               showTemplateSelector={showTemplateSelector}
               selectedTemplateId={selectedTemplateId}

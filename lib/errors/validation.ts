@@ -4,7 +4,7 @@
  * Error classes for input validation and schema validation operations.
  */
 
-import type { ServiceErrorCode } from '@/lib/types/service-result';
+import type { ServiceErrorCode } from '@/lib/types';
 import { AppError } from './base';
 
 /**

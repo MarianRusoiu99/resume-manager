@@ -20,3 +20,27 @@ export type CoverLetterWithResume = CoverLetter & {
     company?: { name: string } | null;
   } | null;
 };
+
+/**
+ * Result of cover letter generation
+ */
+export interface CoverLetterGenerationData {
+  coverLetterId: string;
+  coverLetter: string;
+  metadata: {
+    jobTitle: string;
+    companyName: string;
+    tokensUsed: number;
+  };
+}
+
+/**
+ * Input for standalone cover letter generation
+ */
+export interface GenerateCoverLetterInput {
+  userId: string;
+  jobDescription: string;
+  personalInstructions?: string;
+  modelId?: string;
+  profileId?: string;
+}

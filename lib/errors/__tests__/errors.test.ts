@@ -12,7 +12,7 @@ import {
   InternalError,
   AppError
 } from '../index';
-import { errorCodeToHttpStatus } from '@/lib/types/error-codes';
+import { errorCodeToHttpStatus } from '@/lib/types';
 
 describe('Error Classes', () => {
   describe('AppError', () => {

@@ -1,7 +1,8 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity } from "lucide-react";
+import { Activity, BarChart3 } from "lucide-react";
+import { EmptyState } from "@/components/shared";
 import type { AnalyticsData } from "@/lib/services/analytics/analytics.service";
 
 interface ActivityChartProps {
@@ -47,7 +48,13 @@ export function ActivityChart({ data, loading }: ActivityChartProps) {
             })()}
           </div>
         ) : (
-          <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg text-xs">No data available</div>
+          <EmptyState
+            icon={<BarChart3 className="w-8 h-8 text-primary/20" />}
+            title="No Activity"
+            description="Your resume optimization activity will appear here."
+            withCard={false}
+            className="py-6"
+          />
         )}
       </CardContent>
     </Card>

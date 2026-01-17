@@ -5,24 +5,12 @@
 
 FROM node:20-alpine AS base
 
-# Install dependencies:
-# - OpenSSL/libc6-compat: for Prisma
-# - Chromium & fonts: for Puppeteer PDF generation
-# - Tini: for proper process signal handling
+# Install base dependencies (shared between app and worker)
 RUN apk add --no-cache \
     libc6-compat \
     openssl \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
     ca-certificates \
-    ttf-freefont \
     tini
-
-# Puppeteer configuration - use system Chromium
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # =============================================================================
 # Dependencies Stage - Install npm packages
@@ -30,7 +18,6 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 FROM base AS deps
 WORKDIR /app
 
-# Copy package files for dependency installation
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 
@@ -57,7 +44,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # =============================================================================
-# Runner Stage - Production runtime
+# Runner Stage - Main Next.js App (No Chromium)
 # =============================================================================
 FROM base AS runner
 WORKDIR /app
@@ -95,6 +82,34 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start application
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "server.js"]
+
+# =============================================================================
+# Worker Stage - PDF Generation Worker (With Chromium)
+# =============================================================================
+FROM base AS worker
+WORKDIR /app
+
+# Install Chromium & fonts for Puppeteer
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ttf-freefont
+
+# Puppeteer configuration
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV NODE_ENV=production
+
+# Copy built code and dependencies
+COPY --from=builder /app/.next/standalone ./
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=builder /app/prisma ./prisma
+
+# Add a simple entrypoint for the worker
+# In a real setup, you might want to create a dedicated worker entrypoint script
+# For now, we assume the server.js can detect its role or we use a separate command
+CMD ["node", "lib/queue/worker/run-worker.js"]

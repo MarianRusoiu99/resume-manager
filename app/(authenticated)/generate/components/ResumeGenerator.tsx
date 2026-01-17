@@ -1,6 +1,6 @@
-import { Sparkles, FileText, Save } from 'lucide-react';
+import { Sparkles, Save, FileSearch } from 'lucide-react';
 import { Card, Button } from '@/components/ui';
-import { Callout, Spinner } from '@/components/shared';
+import { Callout, Spinner, EmptyState } from '@/components/shared';
 import { ResumePreview } from '@/components/resume/ResumePreview';
 import Link from 'next/link';
 import { ROUTES } from '@/lib/constants';
@@ -121,14 +121,13 @@ export function ResumeGenerator({
             }
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-center p-12">
-            <div className="w-20 h-20 bg-background/80 backdrop-blur rounded-[2rem] flex items-center justify-center mb-6 shadow-sm border border-primary/5">
-              <FileText className="w-10 h-10 text-primary/30" />
-            </div>
-            <h3 className="text-lg font-bold text-foreground mb-2">Ready to Transform?</h3>
-            <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
-              Your AI-tailored resume will appear here in high fidelity once you start the generation.
-            </p>
+          <div className="flex-1 flex flex-col items-center justify-center p-12">
+            <EmptyState
+              icon={<FileSearch className="w-12 h-12 text-primary/20" />}
+              title="Ready to Transform?"
+              description="Your AI-tailored resume will appear here in high fidelity once you start the generation."
+              withCard={false}
+            />
           </div>
         )}
       </div>

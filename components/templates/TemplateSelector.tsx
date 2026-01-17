@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, memo } from 'react';
 import { ExternalServiceError } from "@/lib/errors";
 import { toast } from 'sonner';
-import type { TemplateBase } from '@/lib/types/template';
+import type { TemplateBase } from '@/lib/types';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { getTemplates } from '@/app/actions/template';
 import { updateResumeMetadata } from '@/app/actions/resume';

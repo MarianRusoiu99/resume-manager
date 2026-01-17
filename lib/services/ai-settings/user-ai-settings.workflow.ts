@@ -9,7 +9,7 @@ import type {
   UpsertAISettingsInput,
 } from '@/lib/repositories/interfaces';
 import { apiProviderService } from '../api-providers';
-import type { ServiceResult } from '@/lib/types/service-result';
+import type { ServiceResult } from '@/lib/types';
 import { withServiceError, NotFoundError, ValidationError, ExternalServiceError } from '../utils';
 import { AI_FEATURES } from './features';
 import type { FeatureModelSelection, ResolvedAISettings, UpdateFeaturePreferenceInput } from './types';

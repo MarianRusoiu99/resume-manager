@@ -45,35 +45,23 @@ export function PreviewState({
   }, []);
 
   // During SSR and initial client render, show consistent loading state
-  // This ensures server HTML matches initial client render
   if (!hasMounted) {
-    return <PlaceholderState>Loading template...</PlaceholderState>;
-  }
-
-  if (isLoading) {
-    return <PlaceholderState>Loading template...</PlaceholderState>;
-  }
-
-  if (error) {
-    return <PlaceholderState className="text-destructive">{error}</PlaceholderState>;
-  }
-
-  if (!htmlContent) {
-    return <PlaceholderState>No preview available</PlaceholderState>;
+    return <PlaceholderState>Initializing preview...</PlaceholderState>;
   }
 
   return (
     <div
       ref={containerRef}
-      className="w-full h-full flex items-center justify-center overflow-auto p-4 md:p-8"
+      className="w-full h-full flex flex-col items-center justify-start overflow-auto relative"
     >
+      {/* Persistent A4 Container to prevent layout shifts */}
       <div
         style={{
           width: `${A4_WIDTH * scale}px`,
           height: `${A4_HEIGHT * scale}px`,
           transition: 'width 0.2s ease-out, height 0.2s ease-out',
         }}
-        className="relative shrink-0 shadow-2xl origin-center mb-auto mt-auto"
+        className="relative shrink-0 shadow-2xl origin-top mb-8 bg-white transition-opacity duration-300"
       >
         <div
           style={{
@@ -87,19 +75,44 @@ export function PreviewState({
           }}
           className="bg-white overflow-hidden rounded-sm"
         >
-          <iframe
-            ref={iframeRef}
-            srcDoc={htmlContent}
-            className="w-full h-full border-0"
-            title="Template Preview"
-            sandbox="allow-same-origin"
-            style={{
-              width: `${A4_WIDTH}px`,
-              height: `${A4_HEIGHT}px`,
-              pointerEvents: 'auto',
-            }}
-          />
+          {htmlContent ? (
+            <iframe
+              ref={iframeRef}
+              srcDoc={htmlContent}
+              className={`w-full h-full border-0 transition-opacity duration-300 ${isLoading ? 'opacity-50' : 'opacity-100'}`}
+              title="Template Preview"
+              sandbox="allow-same-origin"
+              style={{
+                width: `${A4_WIDTH}px`,
+                height: `${A4_HEIGHT}px`,
+                pointerEvents: 'auto',
+              }}
+            />
+          ) : !isLoading && !error ? (
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground bg-muted/5">
+              No preview available
+            </div>
+          ) : null}
         </div>
+
+        {/* Loading Overlay - Shown on top of content to avoid jumps */}
+        {isLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/20 backdrop-blur-[1px] transition-opacity duration-300">
+            <div className="flex flex-col items-center gap-2 px-4 py-2 rounded-full bg-background/80 shadow-lg border animate-in fade-in zoom-in duration-300">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <span className="text-xs font-medium text-foreground">Updating...</span>
+            </div>
+          </div>
+        )}
+
+        {/* Error Overlay */}
+        {error && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-destructive/5 backdrop-blur-[2px]">
+            <div className="px-4 py-2 rounded-lg bg-destructive text-destructive-foreground text-sm font-medium shadow-lg animate-in shake-1">
+              {error}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

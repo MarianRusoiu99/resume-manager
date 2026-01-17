@@ -2,7 +2,7 @@ import { apiProviderRepository } from '@/lib/repositories/api-providers.reposito
 import { decryptApiKey, createKeyPreview } from '@/lib/encryption/api-key';
 import { apiKeyAuditService, type AuditContext } from '@/lib/services/api-key-management';
 import { createProvider } from '@/lib/ai/providers';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 import { withServiceError } from '@/lib/services/utils';
 import { logger } from '@/lib/utils/logger';
 import type { ProviderWithModels } from '../types';

@@ -1,6 +1,6 @@
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { ContentType } from '@/lib/validations/settings';
-import type { ServiceResult } from '@/lib/types/service-result';
+import type { ServiceResult } from '@/lib/types';
 
 export interface EnhanceTextInput {
   content: string;

@@ -7,4 +7,4 @@ export type {
   ResumeData,
   GeneratedResumeData,
   CoverLetterGenerationData,
-} from './types';
+} from '@/lib/types';

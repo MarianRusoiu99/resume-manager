@@ -1,4 +1,4 @@
-import type { ResumeDetails, ResumeListItem } from './types';
+import type { ResumeDetails, ResumeListItem } from '@/lib/types';
 
 export interface LegacyGeneratedResume {
   id: string;

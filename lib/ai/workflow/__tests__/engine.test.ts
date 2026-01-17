@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { executeStepWithRetry, RetryConfig } from '../retry';
 import { WorkflowContext } from '../types';
 import { AppError } from '@/lib/errors';
-import { ErrorCode } from '@/lib/types/error-codes';
+import { ErrorCode } from '@/lib/types';
 
 // Mock logger
 vi.mock('@/lib/utils/logger', () => ({

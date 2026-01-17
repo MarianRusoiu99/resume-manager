@@ -4,7 +4,7 @@
  * Error handling classes and utilities for service operations.
  */
 
-import type { ServiceErrorCode } from '@/lib/types/service-result';
+import type { ServiceErrorCode } from '@/lib/types';
 import { 
   AppError, 
   NotFoundError, 

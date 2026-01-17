@@ -48,6 +48,7 @@
     "@tiptap/extensions": "^3.12.0",
     "ai": "^5.0.89",
     "bcryptjs": "^3.0.2",
+    "bullmq": "^5.66.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

@@ -8,7 +8,7 @@
 import mammoth from 'mammoth';
 import { ValidationError } from "@/lib/errors";
 import { IDocumentParserService } from '../interfaces/document-parser.service.interface';
-import { ServiceResult } from '@/lib/types/service-result';
+import { ServiceResult } from '@/lib/types';
 import { withServiceError, ServiceErrors } from '../utils/service-wrapper';
 import { logger } from '@/lib/utils/logger';
 

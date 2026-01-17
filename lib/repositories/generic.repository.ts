@@ -87,7 +87,11 @@ export abstract class GenericRepository<
 
   protected getDelegate(tx?: TransactionClient): PrismaDelegate {
     const client = tx || (this.db as unknown as TransactionClient);
-    return (client as unknown as Record<string, PrismaDelegate>)[this.modelName];
+    const delegate = (client as any)[this.modelName];
+    if (!delegate) {
+      throw new Error(`Prisma delegate for model "${this.modelName}" not found on client. Available keys: ${Object.keys(client).filter(k => !k.startsWith('_')).join(', ')}`);
+    }
+    return delegate;
   }
 
   async findById(id: string, userId?: string, tx?: TransactionClient): Promise<T | null> {

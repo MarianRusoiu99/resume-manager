@@ -5,7 +5,7 @@
  */
 
 import type { Resume } from '@/lib/validations/jsonresume';
-import type { ServiceResult } from '@/lib/types/service-result';
+import type { ServiceResult } from '@/lib/types';
 
 /**
  * Profile data returned from service operations

@@ -1,5 +1,5 @@
 import type { AIProvider } from '@/lib/ai/providers';
-import type { DeepPartial } from '@/lib/types/utils';
+import type { DeepPartial } from '@/lib/types';
 
 /**
  * Chunk types for streaming
@@ -81,4 +81,10 @@ export interface StreamChunkComplete<T> {
   usage: NormalizedUsage;
 }
 
-export type StreamChunk<T> = StreamChunkDelta<T> | StreamChunkComplete<T>;
+export interface StreamChunkText {
+  type: 'text';
+  text: string;
+  timestamp: number;
+}
+
+export type StreamChunk<T> = StreamChunkDelta<T> | StreamChunkComplete<T> | StreamChunkText;

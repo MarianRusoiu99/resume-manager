@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useConversation, ConversationMode, ConversationAttachment } from './useConversation';
 import { createComponentLogger } from '@/lib/utils/client-logger';
-import { DeepPartial } from '@/lib/types/utils';
+import { DeepPartial } from '@/lib/types';
 
 const logger = createComponentLogger('useAITask');
 

@@ -1,8 +1,8 @@
 import type { GeneratedResumeRepository } from '@/lib/repositories/generated-resumes.repository';
-import type { GenerateResumeServiceInput, GenerateResumeWithProgressInput, GeneratedResumeData } from './types';
+import type { GenerateResumeServiceInput, GenerateResumeWithProgressInput, GeneratedResumeData } from '@/lib/types';
 import { generateResume as runAIWorkflow } from '@/lib/ai/workflow/resume-generation';
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
-import { success, failure, type ServiceResult } from '@/lib/types/service-result';
+import { success, failure, type ServiceResult } from '@/lib/types';
 import { logger } from '@/lib/utils/logger';
 import type { IProfileService, INotificationService } from '@/lib/services/interfaces';
 import type { Resume } from '@/lib/validations/jsonresume';

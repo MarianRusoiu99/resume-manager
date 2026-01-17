@@ -4,7 +4,7 @@ import { notificationService as defaultNotificationService } from '@/lib/service
 
 import type { IResumeGenerationService, IProfileService, INotificationService } from '@/lib/services/interfaces';
 
-import type { GenerateResumeServiceInput, GenerateResumeWithProgressInput } from './types';
+import type { GenerateResumeServiceInput, GenerateResumeWithProgressInput } from '@/lib/types';
 import {
   runResumeGenerationWorkflow,
   runResumeGenerationWorkflowWithProgress,

@@ -10,6 +10,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runner
     container_name: resume-optimizer-app
     restart: unless-stopped
     ports:
@@ -27,12 +28,39 @@ services:
       - APP_NAME=${APP_NAME:-Resume Manager}
     networks:
       - app-network
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  # ---------------------------------------------------------------------------
+  # PDF Worker
+  # ---------------------------------------------------------------------------
+  pdf-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    container_name: resume-optimizer-pdf-worker
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-resume_optimizer}
+      - REDIS_URL=redis://redis:6379
+      - REDIS_KEY_PREFIX=${REDIS_KEY_PREFIX:-resume-optimizer:}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
+    networks:
+      - app-network
+    depends_on:
+      redis:
+        condition: service_healthy
 
   # ---------------------------------------------------------------------------
   # Database Migration (runs once)

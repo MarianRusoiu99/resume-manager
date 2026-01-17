@@ -1,12 +1,12 @@
 import { GeneratedResumeRepository, generatedResumeRepository } from '@/lib/repositories/generated-resumes.repository';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 import { withServiceError, NotFoundError } from '@/lib/services/utils';
 
 import type { IResumeCrudService } from '@/lib/services/interfaces';
 import { invalidateUserResumesCache } from './cache';
 import { mapGeneratedResumeToDetails, mapGeneratedResumeToListItem } from './mappers';
-import type { ResumeDetails, ResumeListItem, UpdatedResumeData } from './types';
+import type { ResumeDetails, ResumeListItem, UpdatedResumeData } from '@/lib/types';
 
 import { GenericUserOwnedCrudService } from '@/lib/services/utils/generic-crud.service';
 import type { CreateResumeInput, GeneratedResumeData, UpdateResumeInput } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';

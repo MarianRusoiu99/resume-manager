@@ -1,29 +1,31 @@
 /**
- * Resume Service Types
+ * Resume Core Types
  * 
  * Type definitions for resume generation, management, and related operations.
- * These types are used by the ResumeService and its consumers.
  */
 
 import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
+ * Normalized metadata for resume operations
+ */
+export interface ResumeMetadata {
+  generatedAt: string;
+  model: string;
+  totalTokens: number;
+  processingTime: number;
+}
+
+/**
  * Input parameters for resume generation
  */
 export interface GenerateResumeInput {
-  /** User ID who is generating the resume */
   userId: string;
-  /** Job description text to analyze */
   jobDescription: string;
-  /** Optional job title */
   jobTitle?: string;
-  /** Optional company name */
   companyName?: string;
-  /** Optional template ID to apply */
   templateId?: string;
-  /** Optional AI model ID to use for generation */
   modelId?: string;
-  /** Optional profile ID to use (defaults to user's default profile) */
   profileId?: string;
 }
 
@@ -36,7 +38,6 @@ export type ProgressCallback = (step: string, message: string, progress: number)
  * Input parameters for resume generation with progress streaming
  */
 export interface GenerateResumeWithProgressInput extends GenerateResumeInput {
-  /** Progress callback for real-time updates */
   onProgress: ProgressCallback;
 }
 
@@ -75,16 +76,6 @@ export interface ResumeListItem {
 }
 
 /**
- * Normalized metadata for resume operations
- */
-export interface ResumeMetadata {
-  generatedAt: string;
-  model: string;
-  totalTokens: number;
-  processingTime: number;
-}
-
-/**
  * Detailed resume data for editing/viewing
  */
 export interface ResumeDetails {
@@ -116,7 +107,6 @@ export interface UpdatedResumeData {
 
 /**
  * Full generated resume entity as returned from API
- * Used in detail pages and full resume operations
  */
 export interface GeneratedResume {
   id: string;
@@ -135,28 +125,4 @@ export interface GeneratedResume {
   metadata: ResumeMetadata;
   createdAt: string;
   updatedAt: string;
-}
-
-/**
- * Cover letter generation result
- */
-export interface CoverLetterGenerationData {
-  coverLetterId: string;
-  coverLetter: string;
-  metadata: {
-    jobTitle: string;
-    companyName: string;
-    tokensUsed: number;
-  };
-}
-
-/**
- * Input for standalone cover letter generation
- */
-export interface GenerateCoverLetterInput {
-  userId: string;
-  jobDescription: string;
-  personalInstructions?: string;
-  modelId?: string;
-  profileId?: string;
 }

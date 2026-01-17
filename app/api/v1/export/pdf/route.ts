@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pdfService } from '@/lib/services/pdf/pdf.service';
+import { getPdfQueue } from '@/lib/queue/pdf-queue';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
 import { logger } from '@/lib/utils/logger';
 import { createApiHandler } from '@/lib/api/handler';
@@ -9,18 +9,24 @@ export const POST = createApiHandler(
   async (request, context, session, body) => {
     const { resume, template, fileName } = body!;
 
-    // Render the final HTML (server-side, Handlebars compile is safe here)
+    // Render the final HTML
     const html = renderCompleteDocument(template.htmlTemplate, resume);
 
-    // Generate PDF
-    const pdfBuffer = await pdfService.generateFromHtml(html);
+    // Instead of generating the PDF synchronously, we offload it to the queue
+    const queue = getPdfQueue();
+    const job = await queue.add('generate-pdf', {
+      resumeId: (resume as any).id || 'new-resume',
+      html,
+      userId: session.user.id,
+    });
 
-    // Create a Blob-like response from the buffer
-    return new NextResponse(new Uint8Array(pdfBuffer), {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
-      },
+    logger.info(`Offloaded PDF generation to worker`, { jobId: job.id, userId: session.user.id });
+
+    // Return the jobId so the client can track progress
+    return NextResponse.json({ 
+      success: true, 
+      message: 'PDF generation started in background',
+      jobId: job.id 
     });
   },
   {

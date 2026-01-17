@@ -1,7 +1,7 @@
 import { apiProviderService } from '@/lib/services/api-providers';
 import { aiSettingsService } from '@/lib/services/ai-settings';
 import { logger } from '@/lib/utils/logger';
-import { failure, success, type ServiceResult } from '@/lib/types/service-result';
+import { failure, success, type ServiceResult } from '@/lib/types';
 import { AIProviderNotConfiguredError, ModelNotFoundError } from '@/lib/errors/ai';
 
 import type { ResolvedAIModel, ResolveAIModelInput } from './types';

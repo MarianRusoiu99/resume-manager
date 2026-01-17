@@ -4,7 +4,7 @@ import {
 } from '@/lib/repositories/notifications.repository';
 import type { CreateNotificationInput, NotificationData } from '@/lib/repositories/interfaces';
 import { emitNotification } from '@/lib/notifications/emitter';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 import { withServiceError, NotFoundError, GenericUserOwnedCrudService } from '@/lib/services/utils';
 import type {
   INotificationService,

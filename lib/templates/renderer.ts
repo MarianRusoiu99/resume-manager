@@ -6,7 +6,7 @@
 import Handlebars from 'handlebars';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { sanitizeTemplateHtml } from '@/lib/templates/utils/sanitizer';
-import type { DeepPartial } from '@/lib/types/utils';
+import type { DeepPartial } from '@/lib/types';
 
 /**
  * Renders the full HTML structure for PDF export

@@ -3,7 +3,7 @@ import {
   coverLetterRepository,
 } from '@/lib/repositories/cover-letters.repository';
 import type { CreateCoverLetterInput, UpdateCoverLetterInput, CoverLetterData, FindCoverLettersOptions } from '@/lib/repositories/interfaces/cover-letters.repository.interface';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 import { withServiceError, GenericUserOwnedCrudService } from '@/lib/services/utils';
 import type { ICoverLetterService, INotificationService } from '../interfaces';
 import { notificationService as defaultNotificationService } from '@/lib/services/notifications/notifications.service';

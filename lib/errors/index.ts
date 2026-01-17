@@ -13,7 +13,7 @@
  * ```
  */
 
-import type { ServiceErrorCode } from '@/lib/types/service-result';
+import type { ServiceErrorCode } from '@/lib/types';
 import { AppError, isAppError } from './base';
 
 // Re-export base error class and type guard

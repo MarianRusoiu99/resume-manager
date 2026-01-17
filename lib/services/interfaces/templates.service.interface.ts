@@ -5,7 +5,7 @@
  */
 
 import type { ResumeTemplate } from '@/lib/templates/template';
-import type { ServiceResult } from '@/lib/types/service-result';
+import type { ServiceResult } from '@/lib/types';
 
 /**
  * Input for creating a template

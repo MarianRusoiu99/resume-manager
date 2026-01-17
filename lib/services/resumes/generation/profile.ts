@@ -2,7 +2,7 @@ import { profileRepository } from '@/lib/repositories';
 import { resumeSchema } from '@/lib/validations/jsonresume';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { logger } from '@/lib/utils/logger';
-import { failure, success, type ServiceResult } from '@/lib/types/service-result';
+import { failure, success, type ServiceResult } from '@/lib/types';
 
 /**
  * Fetch and validate user's resume from profile.

@@ -9,18 +9,25 @@ import { rateLimiter } from './limiter';
  * Rate limit configurations for different endpoints
  */
 export const RateLimitConfigs = {
-  // Authentication endpoints (5 requests per 15 minutes)
+  // Authentication endpoints (10 requests per 15 minutes)
   auth: {
     windowMs: 15 * 60 * 1000,
-    maxRequests: 5,
+    maxRequests: 10,
     message: 'Too many authentication attempts. Please try again later.'
   },
   
-  // Resume generation (5 requests per minute)
+  // Registration (3 requests per hour per IP - strictly to prevent abuse)
+  registration: {
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 3,
+    message: 'Too many registration attempts. Please try again later.'
+  },
+  
+  // Resume generation (20 requests per hour)
   resumeGeneration: {
-    windowMs: 60 * 1000,
-    maxRequests: 5,
-    message: 'Too many resume generation requests. Please wait a moment.'
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 20,
+    message: 'You have reached the hourly limit for resume generation.'
   },
   
   // API key operations (10 requests per minute)
@@ -37,17 +44,17 @@ export const RateLimitConfigs = {
     message: 'Too many profile updates. Please wait a moment.'
   },
   
-  // General API (30 requests per minute)
+  // General API (60 requests per minute)
   general: {
     windowMs: 60 * 1000,
-    maxRequests: 30,
+    maxRequests: 60,
     message: 'Too many requests. Please wait a moment.'
   },
   
-  // PDF export (10 requests per minute)
+  // PDF export (5 requests per minute)
   pdfExport: {
     windowMs: 60 * 1000,
-    maxRequests: 10,
+    maxRequests: 5,
     message: 'Too many PDF export requests. Please wait a moment.'
   }
 } as const;

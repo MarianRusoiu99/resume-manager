@@ -5,7 +5,7 @@
  */
 
 import { NotificationType } from '@prisma/client';
-import type { ServiceResult } from '@/lib/types/service-result';
+import type { ServiceResult } from '@/lib/types';
 
 /**
  * Notification data for API responses

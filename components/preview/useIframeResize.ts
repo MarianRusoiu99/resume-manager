@@ -1,5 +1,5 @@
 import { RefObject, useEffect } from 'react';
-import { A4_HEIGHT } from '@/lib/utils/pagination';
+import { A4_WIDTH, A4_HEIGHT } from '@/lib/utils/pagination';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 
 const logger = createComponentLogger('useIframeResize');
@@ -18,8 +18,20 @@ export function useIframeResize({ iframeRef, htmlContent }: UseIframeResizeProps
             try {
                 const doc = iframe.contentDocument || iframe.contentWindow?.document;
                 if (doc?.body) {
+                    // Inject CSS to ensure standard A4 sizing inside iframe
+                    if (!doc.getElementById('preview-styles')) {
+                        const style = doc.createElement('style');
+                        style.id = 'preview-styles';
+                        style.innerHTML = `
+                            body { margin: 0; padding: 0; width: ${A4_WIDTH}px; min-height: ${A4_HEIGHT}px; overflow-x: hidden; }
+                            @page { size: A4; margin: 0; }
+                        `;
+                        doc.head.appendChild(style);
+                    }
+
                     // Reset height to min to allow shrinking if content reduced
                     iframe.style.height = `${A4_HEIGHT}px`;
+
 
                     const scrollHeight = doc.documentElement.scrollHeight || doc.body.scrollHeight;
                     const newHeight = Math.max(scrollHeight, A4_HEIGHT);

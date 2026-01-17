@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import { apiFetch } from '@/lib/utils/api-client';
 import { ExternalServiceError } from "@/lib/errors";
 import { 
   type UseConversationOptions, 
@@ -11,7 +12,7 @@ import {
   type ConversationMessage 
 } from './types';
 import { generateId } from './utils';
-import type { DeepPartial } from '@/lib/types/utils';
+import type { DeepPartial } from '@/lib/types';
 
 // Helper type for deep merging partials
 function mergeDeep<T>(target: T, source: DeepPartial<T>): T {
@@ -193,7 +194,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
       }));
 
       try {
-        const response = await fetch('/api/v1/ai/chat', {
+        const response = await apiFetch('/api/v1/ai/chat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

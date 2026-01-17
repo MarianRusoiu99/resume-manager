@@ -2,7 +2,7 @@ import type { GeneratedResumeRepository } from '@/lib/repositories/generated-res
 
 import type { Resume } from '@/lib/validations/jsonresume';
 
-import type { GenerateResumeServiceInput } from './types';
+import type { GenerateResumeServiceInput } from '@/lib/types';
 
 export async function saveGeneratedResume(
   repository: GeneratedResumeRepository,

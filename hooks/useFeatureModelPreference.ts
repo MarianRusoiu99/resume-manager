@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import { apiFetch } from '@/lib/utils/api-client';
 import type { AIFeatureType } from '@/lib/repositories/interfaces';
 import { updateFeaturePreference as updateFeaturePreferenceAction } from '@/app/actions/ai-settings';
 import { createComponentLogger } from '@/lib/utils/client-logger';
@@ -35,7 +36,7 @@ export function useFeatureModelPreference(feature?: AIFeatureType) {
         logger.info('Loading preference for feature:', { feature });
         
         // Load user preferences
-        const res = await fetch('/api/v1/user/preferences');
+        const res = await apiFetch('/api/v1/user/preferences');
         if (cancelled) return;
 
         logger.info('Fetch response status:', { 

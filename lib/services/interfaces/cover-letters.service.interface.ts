@@ -6,7 +6,7 @@
  * Note: Uses Prisma types for compatibility with the data layer.
  */
 
-import type { ServiceResult } from '@/lib/types/service-result';
+import type { ServiceResult } from '@/lib/types';
 import type {
   CreateCoverLetterInput,
   UpdateCoverLetterInput,

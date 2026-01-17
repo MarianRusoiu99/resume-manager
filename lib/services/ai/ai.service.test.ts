@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AIService } from './ai.service';
-import { success, failure } from '@/lib/types/service-result';
+import { success, failure } from '@/lib/types';
 
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
 import { enhanceText } from '@/lib/ai/features/enhance';

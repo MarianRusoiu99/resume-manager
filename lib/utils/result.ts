@@ -1,4 +1,4 @@
-import type { ServiceErrorCode, ServiceResult } from '@/lib/types/service-result';
+import type { ServiceErrorCode, ServiceResult } from '@/lib/types';
 import type { ActionResult } from '@/lib/actions/types';
 
 export function isServiceResult<T>(value: unknown): value is ServiceResult<T> {

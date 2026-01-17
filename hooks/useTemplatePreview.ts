@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Resume } from '@/lib/validations/jsonresume';
-import type { Template } from '@/lib/types/template';
+import type { Template } from '@/lib/types';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { getTemplate, getTemplates, renderTemplate } from '@/app/actions/template';
 import { NotFoundError } from '@/lib/errors';

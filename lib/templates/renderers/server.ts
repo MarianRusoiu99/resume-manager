@@ -8,7 +8,7 @@ import { renderCompleteDocument } from '@/lib/templates/renderer';
 import { templateRepository } from '@/lib/repositories/templates.repository';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { ResumeTemplate } from '@/lib/templates/template';
-import type { DeepPartial } from '@/lib/types/utils';
+import type { DeepPartial } from '@/lib/types';
 import Handlebars from 'handlebars';
 
 // Register Handlebars helpers for safe data access

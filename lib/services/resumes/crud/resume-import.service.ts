@@ -3,7 +3,7 @@ import { ValidationError } from "@/lib/errors";
 import { parseResumeFromText, parseResumeFromImage } from "@/lib/ai/agents/resume-parsing";
 import mammoth from "mammoth";
 import { withServiceError } from '@/lib/services/utils';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 
 /**
  * Service for importing resumes from various file formats

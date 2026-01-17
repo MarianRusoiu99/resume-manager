@@ -1,4 +1,4 @@
-import type { ProgressCallback } from './types';
+import type { ProgressCallback } from '@/lib/types';
 
 export function scheduleProgressUpdates(onProgress: ProgressCallback, startTime: number): void {
   onProgress('job-analysis', 'Analyzing job description...', 20);

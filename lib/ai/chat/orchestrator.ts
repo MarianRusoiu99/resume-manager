@@ -4,7 +4,7 @@
  * Bridges conversations to the Vercel AI SDK with streaming support
  */
 
-import { generateText, generateObject, streamObject, type Tool } from 'ai';
+import { generateText, generateObject, streamObject, streamText, type Tool } from 'ai';
 import type { z } from 'zod';
 import { logger } from '@/lib/utils/logger';
 import { ConversationManager, type Conversation } from './conversation';
@@ -18,18 +18,20 @@ import type {
   OrchestratorOptions,
   GenerationResult,
   StreamChunk,
-  StreamChunkDelta
+  StreamChunkDelta,
+  StreamChunkText,
 } from './orchestrator/types';
-import type { DeepPartial } from '@/lib/types/utils';
+import type { DeepPartial } from '@/lib/types';
 
 export { registerMode, getMode, getModeOrThrow } from './orchestrator/registry';
 export type {
   OrchestratorOptions,
   GenerationResult,
   StreamChunk,
-  StreamChunkDelta
+  StreamChunkDelta,
+  StreamChunkText,
 } from './orchestrator/types';
-export type { DeepPartial } from '@/lib/types/utils';
+export type { DeepPartial } from '@/lib/types';
 
 /**
  * AI Orchestrator
@@ -47,13 +49,16 @@ export class AIOrchestrator {
     const mode = getModeOrThrow(conversation.mode);
     const model = options.provider.createLanguageModel(options.modelKey);
 
-    const messages = buildMessages(conversation, mode);
+    const needsVision = requiresVision(conversation);
+    const messages = needsVision 
+      ? buildMessagesWithVision(conversation, mode)
+      : buildMessages(conversation, mode);
     const systemPrompt = mode.buildSystemPrompt(conversation.context);
     
-    // We only support streaming for structured output modes currently
-    if (mode.useStructuredOutput !== false && mode.outputSchema) {
+    // Support structured output streaming
+    if (mode.useStructuredOutput !== false && mode.outputSchema && !needsVision) {
       try {
-        const { partialObjectStream, object } = streamObject({
+        const { partialObjectStream, object, usage: usagePromise } = streamObject({
           model,
           system: systemPrompt,
           messages,
@@ -70,15 +75,11 @@ export class AIOrchestrator {
         }
 
         const finalObject = await object;
+        const usageResult = await usagePromise;
+        const usage = normalizeUsage(usageResult);
         
-        // Use normalized usage (this will be 0/0/0 if provider doesn't support usage in streamObject)
-        // Vercel AI SDK 3.1+ supports usage in object promise
-        const usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 }; 
-        
-        // Log usage (placeholder)
         logUsage(options, usage, 'stop', mode.id);
 
-        // Store output
         ConversationManager.setOutput(conversation.id, finalObject);
         ConversationManager.addAssistantMessage(conversation.id, JSON.stringify(finalObject, null, 2), finalObject);
 
@@ -88,14 +89,51 @@ export class AIOrchestrator {
           usage
         };
 
+        return;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         logger.error('Structured streaming generation failed', { error: errorMessage });
         throw error;
       }
-    } else {
-      // Fallback to non-streaming for text-only modes or throw error
-      throw new Error('Streaming is only supported for structured output modes');
+    } 
+
+    // Support text streaming (for text-enhancement or vision fallback)
+    try {
+      const { textStream, text, usage: usagePromise, finishReason } = streamText({
+        model,
+        system: systemPrompt,
+        messages,
+        abortSignal: options.abortSignal,
+      });
+
+      let fullText = '';
+      for await (const delta of textStream) {
+        fullText += delta;
+        yield {
+          type: 'text',
+          text: delta,
+          timestamp: Date.now()
+        };
+      }
+
+      const finalOutput = parseOutput<T>(await text, mode);
+      const usageResult = await usagePromise;
+      const usage = normalizeUsage(usageResult);
+      
+      logUsage(options, usage, await finishReason, mode.id);
+
+      ConversationManager.setOutput(conversation.id, finalOutput);
+      ConversationManager.addAssistantMessage(conversation.id, await text, finalOutput);
+
+      yield {
+        type: 'complete',
+        final: finalOutput,
+        usage
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Text streaming generation failed', { error: errorMessage });
+      throw error;
     }
   }
 

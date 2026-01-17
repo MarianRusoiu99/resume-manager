@@ -7,11 +7,12 @@
 
 import { z } from 'zod';
 import type { LanguageModel } from 'ai';
-import type { Resume } from '@/lib/validations/jsonresume';
 import { ValidatedAIRunner } from '@/lib/ai/core/validated-runner';
+import { StreamAIRunner } from '@/lib/ai/core/stream-runner';
 import { PromptRegistry } from '@/lib/ai/prompts';
 import { logger } from '@/lib/utils/logger';
-import { resumeSchema } from '@/lib/validations/jsonresume';
+import { resumeSchema } from '@/lib/validations/jsonresume/schema';
+import type { Resume } from '@/lib/validations/jsonresume/schema';
 
 export interface OptimizeResumeInput {
   model: LanguageModel;
@@ -26,6 +27,12 @@ export interface OptimizeResumeResult {
   companyName: string;
 }
 
+const resultSchema = z.object({
+  jobTitle: z.string(),
+  companyName: z.string(),
+  resume: resumeSchema,
+});
+
 export async function optimizeResume(
   input: OptimizeResumeInput
 ): Promise<OptimizeResumeResult> {
@@ -38,13 +45,7 @@ export async function optimizeResume(
     resume: JSON.stringify(input.userResume, null, 2),
   });
 
-  const resultSchema = z.object({
-    jobTitle: z.string(),
-    companyName: z.string(),
-    resume: resumeSchema,
-  });
-
-  const validatedResult = await ValidatedAIRunner.run({
+  return ValidatedAIRunner.run({
     model,
     system,
     prompt,
@@ -52,6 +53,22 @@ export async function optimizeResume(
     userId: input.userId,
     feature: 'resume-optimization',
   });
+}
 
-  return validatedResult;
+export function streamOptimizeResume(input: OptimizeResumeInput) {
+  const { model } = input;
+
+  const { system, prompt } = PromptRegistry.render('resume-optimization', {
+    jobDescription: input.jobDescription,
+    resume: JSON.stringify(input.userResume, null, 2),
+  });
+
+  return StreamAIRunner.stream({
+    model,
+    system,
+    prompt,
+    schema: resultSchema,
+    userId: input.userId,
+    feature: 'resume-optimization',
+  });
 }

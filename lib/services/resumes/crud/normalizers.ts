@@ -1,4 +1,4 @@
-import type { ResumeListItem, ResumeDetails } from './types';
+import type { ResumeListItem, ResumeDetails } from '@/lib/types';
 
 export function extractJobInfo(
   jobMetadata: Record<string, unknown> | null

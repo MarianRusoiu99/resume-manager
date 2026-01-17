@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { getCoverLetter, updateCoverLetter } from '@/app/actions/cover-letter';
 import { ExternalServiceError } from '@/lib/errors';
-import type { CoverLetterWithResume } from '@/lib/types/cover-letter';
+import type { CoverLetterWithResume } from '@/lib/types';
 
 export function useCoverLetterDetail(coverLetterId: string) {
   const [coverLetter, setCoverLetter] = useState<CoverLetterWithResume | null>(null);

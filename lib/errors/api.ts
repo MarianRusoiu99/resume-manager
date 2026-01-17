@@ -4,7 +4,7 @@
  * Error classes for API operations including rate limiting and service availability.
  */
 
-import type { ServiceErrorCode } from '@/lib/types/service-result';
+import type { ServiceErrorCode } from '@/lib/types';
 import { AppError } from './base';
 
 /**

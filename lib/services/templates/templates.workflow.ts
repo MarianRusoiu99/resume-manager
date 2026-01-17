@@ -1,7 +1,7 @@
 import { TemplateRepository, templateRepository } from '@/lib/repositories/templates.repository';
 import { ExternalServiceError } from "@/lib/errors";
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { type ServiceResult, isFailure } from '@/lib/types/service-result';
+import { type ServiceResult, isFailure } from '@/lib/types';
 import { withServiceError, ConflictError } from '@/lib/services/utils';
 import type { ITemplateService } from '../interfaces';
 import type { CreateTemplateInput, UpdateTemplateInput } from '@/lib/validations/api-schemas';

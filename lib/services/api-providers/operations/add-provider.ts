@@ -6,7 +6,7 @@ import {
   getSupportedProviders,
   isProviderSupported,
 } from '@/lib/ai/providers';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 import {
   withServiceError,
   ValidationError,

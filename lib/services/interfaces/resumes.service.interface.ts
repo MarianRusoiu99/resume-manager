@@ -5,14 +5,16 @@
  * is split into focused interfaces for different concerns.
  */
 
-import type { ServiceResult } from '@/lib/types/service-result';
+import type { ServiceResult } from '@/lib/types';
 import type {
   CoverLetterGenerationData,
   GeneratedResumeData,
-  GenerateResumeServiceInput,
   GenerateResumeWithProgressInput,
-} from '@/lib/services/resumes/generation/types';
-import type { ResumeDetails, ResumeListItem, UpdatedResumeData } from '@/lib/services/resumes/crud/types';
+  ResumeDetails,
+  ResumeListItem,
+  UpdatedResumeData,
+} from '@/lib/types';
+import type { GenerateResumeServiceInput } from '@/lib/services/resumes/generation/types';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 /**

@@ -5,7 +5,7 @@
  * Provides specific error types for better error handling and user messaging.
  */
 
-import type { ServiceErrorCode } from '@/lib/types/service-result';
+import type { ServiceErrorCode } from '@/lib/types';
 import { AppError } from './base';
 
 /**

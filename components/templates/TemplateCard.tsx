@@ -6,6 +6,7 @@
 'use client';
 
 import { useState, useEffect, memo } from 'react';
+import { apiFetch } from '@/lib/utils/api-client';
 import { ExternalServiceError } from "@/lib/errors";
 import { Edit, Eye, Copy, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from '@/components/shared/EntityCard';
@@ -109,7 +110,7 @@ export const TemplateCard = memo(function TemplateCard({
         // This still uses a client-side fetch because it's a file download
         // and we don't have a direct "download file" server action yet.
         // But we could potentially move the PDF generation logic.
-        const response = await fetch('/api/v1/export/pdf', {
+        const response = await apiFetch('/api/v1/export/pdf', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

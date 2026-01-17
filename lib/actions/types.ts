@@ -4,9 +4,9 @@
  * @deprecated Use domain-specific types in '@/lib/types/' instead.
  */
 
-export * from '@/lib/types/profile';
-export * from '@/lib/types/ai-settings';
-export * from '@/lib/types/api-provider';
+export * from '@/lib/types';
+export * from '@/lib/types';
+export * from '@/lib/types';
 
 
 // Shared types for UI components to avoid direct lib/client or lib/services imports

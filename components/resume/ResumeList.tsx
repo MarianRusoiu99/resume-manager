@@ -4,15 +4,7 @@ import { useResumeOperations } from '@/hooks/features/useResumeOperations';
 import { FileText } from 'lucide-react';
 import type { Resume as JsonResume } from '@/lib/validations/jsonresume';
 
-export interface ResumeListItem {
-    id: string;
-    jobTitle: string | null;
-    companyName: string | null;
-    jobDescription: string | null;
-    content: JsonResume;
-    templateId: string | null;
-    createdAt: string;
-}
+import type { ResumeListItem } from '@/lib/types';
 
 interface ResumeListProps {
     resumes: ResumeListItem[];
@@ -58,7 +50,7 @@ export function ResumeList({
                     jobDescription={resume.jobDescription}
                     content={resume.content}
                     templateId={resume.templateId}
-                    createdAt={resume.createdAt}
+                    createdAt={resume.createdAt instanceof Date ? resume.createdAt.toISOString() : resume.createdAt}
                     onView={handleView}
                     onEdit={handleEdit}
                     onDelete={onDelete}
