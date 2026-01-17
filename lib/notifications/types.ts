@@ -1,4 +1,4 @@
-import type { NotificationType } from '@prisma/client';
+import { NotificationType } from '@prisma/client';
 
 /**
  * Notification payload structure for SSE events

@@ -1,6 +1,6 @@
 import puppeteer, { type PDFOptions, type Browser } from 'puppeteer';
 import { ServiceErrors } from '../utils/service-wrapper';
-import { logger } from '@/lib/utils/logger';
+import { logger } from '../../utils/logger';
 
 export interface PdfServiceConfig {
   puppeteerArgs?: string[];

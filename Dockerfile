@@ -6,7 +6,7 @@
 FROM node:20-alpine AS base
 
 # Install base dependencies (shared between app and worker)
-RUN apk add --no-cache \
+RUN apk add \
     libc6-compat \
     openssl \
     ca-certificates \
@@ -28,7 +28,7 @@ RUN npm install --legacy-peer-deps
 RUN npx prisma generate
 
 # =============================================================================
-# Builder Stage - Build the Next.js application
+# Builder Stage - Build App and Worker
 # =============================================================================
 FROM base AS builder
 WORKDIR /app
@@ -40,11 +40,15 @@ COPY . .
 # Disable Next.js telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build the application
+# 1. Build Next.js application (standalone)
 RUN npm run build
 
+# 2. Build Worker (compile TS to JS)
+# We still compile for standalone server usage if needed
+RUN npx tsc --project tsconfig.worker.json --noEmitOnError false
+
 # =============================================================================
-# Runner Stage - Main Next.js App (No Chromium)
+# Runner Stage - Next.js App (Lean)
 # =============================================================================
 FROM base AS runner
 WORKDIR /app
@@ -54,19 +58,16 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Create non-root user for security
+# Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy public assets
+# Copy Next.js standalone assets
 COPY --from=builder /app/public ./public
-
-# Create .next directory with correct permissions
 RUN mkdir .next && chown nextjs:nodejs .next
-
-# Copy standalone build output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/instrumentation.ts ./instrumentation.ts
 
 # Copy Prisma schema and generated client
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
@@ -78,7 +79,6 @@ USER nextjs
 
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
@@ -86,30 +86,44 @@ ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "server.js"]
 
 # =============================================================================
-# Worker Stage - PDF Generation Worker (With Chromium)
+# Worker Stage - PDF Worker (Chromium)
 # =============================================================================
 FROM base AS worker
 WORKDIR /app
 
-# Install Chromium & fonts for Puppeteer
-RUN apk add --no-cache \
+ENV NODE_ENV=production
+
+# Install Chromium & fonts only for the worker
+RUN apk add \
     chromium \
     nss \
     freetype \
     harfbuzz \
-    ttf-freefont
+    ttf-freefont \
+    font-noto-emoji
 
 # Puppeteer configuration
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-ENV NODE_ENV=production
 
-# Copy built code and dependencies
-COPY --from=builder /app/.next/standalone ./
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
-# Add a simple entrypoint for the worker
-# In a real setup, you might want to create a dedicated worker entrypoint script
-# For now, we assume the server.js can detect its role or we use a separate command
-CMD ["node", "lib/queue/worker/run-worker.js"]
+# Copy everything needed for the worker to run via Next.js instrumentation
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/instrumentation.ts ./instrumentation.ts
+COPY --from=builder --chown=nextjs:nodejs /app/lib ./lib
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+
+# Copy Prisma schema and generated client
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+# Switch to non-root user
+USER nextjs
+
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "server.js"]

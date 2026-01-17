@@ -50,8 +50,15 @@ services:
       target: worker
     container_name: resume-optimizer-pdf-worker
     restart: unless-stopped
+    shm_size: '1gb'
+    deploy:
+      resources:
+        limits:
+          memory: 1G # Limit memory to prevent worker from starving the host
+          cpus: '0.50' # Limit CPU to prevent worker from hogging the host
     environment:
       - NODE_ENV=production
+      - IS_WORKER=true
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-resume_optimizer}
       - REDIS_URL=redis://redis:6379
       - REDIS_KEY_PREFIX=${REDIS_KEY_PREFIX:-resume-optimizer:}
@@ -69,14 +76,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: deps
+      target: builder # Use builder which has all code and devDeps
     container_name: resume-optimizer-migrate
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-resume_optimizer}
     networks:
       - app-network
     command: npx prisma migrate deploy
-    restart: "no"
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
 
   # ---------------------------------------------------------------------------
   # PostgreSQL

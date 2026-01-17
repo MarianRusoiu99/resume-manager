@@ -275,6 +275,20 @@ export function useNotificationManager() {
           createdAt: notification.createdAt,
         };
         addNotification(fullNotification);
+
+        // Special handling for completed PDF exports
+        if (fullNotification.type === 'EXPORT_COMPLETE' && fullNotification.metadata) {
+          const metadata = fullNotification.metadata as any;
+          if (metadata.jobId) {
+            // Dismiss the "generating" toast if it exists
+            toast.dismiss(`pdf-gen-${metadata.jobId}`);
+            
+            // Redirect to the download URL in the current tab instead of auto-downloading with a hidden link
+            // This allows the server to set the correct headers and handle the response naturally
+            const downloadUrl = `/api/v1/export/pdf?jobId=${metadata.jobId}`;
+            window.location.href = downloadUrl;
+          }
+        }
       } catch (error) {
         sseLog.error('Error parsing notification', error);
       }

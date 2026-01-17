@@ -38,5 +38,5 @@ export async function chainOperations(
   return result;
 }
 
-import type { ServiceResult } from '@/lib/types';
-import { success } from '@/lib/types';
+import type { ServiceResult } from '../../../types';
+import { success } from '../../../types';

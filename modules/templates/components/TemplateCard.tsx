@@ -14,6 +14,7 @@ import type { GalleryCardAction } from '@/components/core/data-display/GalleryCa
 import { TemplatePreviewModal } from './TemplatePreviewModal';
 import { deleteTemplate, duplicateTemplate } from '@/app/actions/template';
 import { useToastAction, useComponentLogger } from '@/hooks';
+import { useExportPDF } from '@/components/preview/useExportPDF';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { renderTemplateServerSide } from '@/components/core/data-display/rendering/client-renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
@@ -77,6 +78,7 @@ export const TemplateCard = memo(function TemplateCard({
 }: Readonly<TemplateCardProps>) {
   const log = useComponentLogger('TemplateCard');
   const { runWithToast } = useToastAction();
+  const { handleExportPDF } = useExportPDF();
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | undefined>(undefined);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
@@ -104,47 +106,12 @@ export const TemplateCard = memo(function TemplateCard({
     generatePreview();
   }, [template, log]);
 
-  const handleExportPDF = async () => {
-    await runWithToast(
-      async () => {
-        // This still uses a client-side fetch because it's a file download
-        // and we don't have a direct "download file" server action yet.
-        // But we could potentially move the PDF generation logic.
-        const response = await apiFetch('/api/v1/export/pdf', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            resume: SAMPLE_RESUME,
-            template: {
-              htmlTemplate: template.htmlTemplate,
-            },
-            fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
-        }
-
-        const blob = await response.blob();
-        const url = globalThis.URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        globalThis.URL.revokeObjectURL(url);
-        anchor.remove();
-
-        return true;
-      },
-      {
-        successMessage: 'PDF exported successfully',
-        errorMessage: 'Failed to export PDF',
-      },
-    );
+  const onExportPDF = async () => {
+    await handleExportPDF({
+      resume: SAMPLE_RESUME,
+      templateHtml: template.htmlTemplate,
+      fileName: `${template.name.replaceAll(/\s+/g, '_')}_preview.pdf`,
+    });
   };
 
   const handleDelete = async () => {
@@ -193,7 +160,7 @@ export const TemplateCard = memo(function TemplateCard({
       icon: <Eye className="h-4 w-4" />,
       onClick: () => setShowPreviewModal(true),
     },
-    createCardAction.export(handleExportPDF, <Download className="h-4 w-4" />),
+    createCardAction.export(onExportPDF, <Download className="h-4 w-4" />),
     ...(showAdminActions
       ? [
           createCardAction.edit(() => {

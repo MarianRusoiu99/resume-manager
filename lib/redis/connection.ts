@@ -3,7 +3,7 @@
  */
 
 import { RedisOptions as IoRedisOptions } from 'ioredis';
-import { ValidationError } from '@/lib/errors';
+import { ValidationError } from '../errors';
 
 /**
  * Redis connection options

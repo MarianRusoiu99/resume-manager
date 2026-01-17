@@ -1,0 +1,37 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "outDir": "./dist-worker",
+    "rootDir": ".",
+    "allowJs": true,
+    "declaration": false,
+    "sourceMap": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "strict": false,
+    "checkJs": false,
+    "allowUnreachableCode": true,
+    "noEmitOnError": false
+  },
+  "include": [
+    "lib/queue/worker/run-worker.js",
+    "lib/queue/worker/pdf-worker.ts",
+    "lib/queue/pdf-queue.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "app",
+    "components",
+    "hooks",
+    "modules",
+    "**/*.test.ts",
+    "**/__tests__/**"
+  ]
+}

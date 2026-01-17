@@ -85,10 +85,67 @@ export function useExportPDF() {
         throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
       }
 
+      if (response.status === 202) {
+        const data = await response.json();
+        toast.info('PDF generation started...', {
+          id: `pdf-gen-${data.jobId}`,
+          duration: Infinity,
+        });
+        return;
+      }
+
+      // If we got a direct 200 (sync generation), download it
       await downloadPDF(response);
       toast.success('PDF exported successfully');
     } catch (err) {
       logger.error('PDF export error', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to export PDF');
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
+  /**
+   * Export PDF synchronously for development/testing
+   */
+  const handleExportPDFSync = async (params: ExportPDFParams) => {
+    try {
+      setIsExportingPDF(true);
+      const { resume, templateId, templateHtml, fileName } = params;
+
+      let html = templateHtml;
+      if (!html && templateId) {
+        const templateResult = await getTemplate(templateId);
+        if (templateResult.success && templateResult.data) {
+          html = templateResult.data.htmlTemplate;
+        }
+      }
+
+      if (!html) {
+        throw new ValidationError('No template data available');
+      }
+
+      const response = await fetch('/api/v1/export/pdf', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Export-Mode': 'sync'
+        },
+        body: JSON.stringify({
+          resume,
+          template: { htmlTemplate: html },
+          fileName,
+        })
+      });
+
+      if (!response.ok) {
+        throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
+      }
+
+      await downloadPDF(response);
+      toast.success('PDF exported successfully');
+    } catch (err) {
+      logger.error('Sync PDF export error', err);
       toast.error(err instanceof Error ? err.message : 'Failed to export PDF');
     } finally {
       setIsExportingPDF(false);
@@ -144,6 +201,7 @@ export function useExportPDF() {
   return {
     isExportingPDF,
     handleExportPDF,
+    handleExportPDFSync,
     handleExportCoverLetter,
   };
 }

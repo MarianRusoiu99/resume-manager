@@ -17,6 +17,7 @@
 import { z } from 'zod';
 import { ConfigurationError } from '../errors';
 import { logger } from '../utils/logger';
+
 /**
  * Environment variable schema
  * Add all environment variables here with their expected types
@@ -40,8 +41,6 @@ const envSchema = z.object({
   REDIS_KEY_PREFIX: z.string().default('resume-optimizer:'),
 
   // AI Providers (optional - users add their own)
-  OPENAI_API_KEY: z.string().optional(),
-  ANTHROPIC_API_KEY: z.string().optional(),
 
   // Application
   APP_VERSION: z.string().default('1.0.0'),
@@ -50,11 +49,11 @@ const envSchema = z.object({
   // Admin access (comma-separated emails)
   ADMIN_EMAILS: z.string().optional(),
 
-  // Feature flags
-  ANALYZE: z.string().transform(v => v === 'true').optional(),
-
   // Trusted hosts (comma-separated)
   TRUSTED_HOSTS: z.string().optional(),
+
+  // Background worker
+  RUN_WORKER: z.string().transform(v => v === 'true').optional(),
 });
 
 type EnvConfig = z.infer<typeof envSchema>;
@@ -84,13 +83,11 @@ function parseEnv(): EnvConfig {
         ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
         REDIS_URL: process.env.REDIS_URL,
         REDIS_KEY_PREFIX: process.env.REDIS_KEY_PREFIX || 'resume-optimizer:',
-        OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
         APP_VERSION: process.env.APP_VERSION || '1.0.0',
         APP_NAME: process.env.APP_NAME || 'Resume Manager',
         ADMIN_EMAILS: process.env.ADMIN_EMAILS,
-        ANALYZE: process.env.ANALYZE === 'true',
         TRUSTED_HOSTS: process.env.TRUSTED_HOSTS,
+        RUN_WORKER: process.env.RUN_WORKER === 'true',
       };
     }
 
@@ -234,8 +231,8 @@ class EnvironmentConfig {
   get hasRedis() { return !!this.config.REDIS_URL; }
 
   // AI Providers (safe at build time - optional)
-  get OPENAI_API_KEY() { return this.config.OPENAI_API_KEY; }
-  get ANTHROPIC_API_KEY() { return this.config.ANTHROPIC_API_KEY; }
+  get OPENAI_API_KEY() { return undefined; }
+  get ANTHROPIC_API_KEY() { return undefined; }
 
   // Application (safe at build time)
   get APP_VERSION() { return this.config.APP_VERSION; }
@@ -253,7 +250,7 @@ class EnvironmentConfig {
   }
 
   // Feature flags (safe at build time)
-  get shouldAnalyze() { return this.config.ANALYZE ?? false; }
+  get runWorker() { return this.config.RUN_WORKER ?? false; }
 
   // Trusted hosts (safe at build time)
   get trustedHosts(): string[] {

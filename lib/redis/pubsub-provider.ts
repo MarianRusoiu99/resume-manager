@@ -5,7 +5,7 @@
  */
 
 import Redis from 'ioredis';
-import { logger } from '@/lib/utils/logger';
+import { logger } from '../utils/logger';
 import { PubSubProvider, MessageHandler } from './types';
 import { RedisOptions, getRedisConfig } from './connection';
 

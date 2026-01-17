@@ -4,7 +4,7 @@
  * Type definitions for service wrapper utilities.
  */
 
-import { success, failure, type ServiceResult, type ServiceErrorCode } from '@/lib/types';
+import { success, failure, type ServiceResult, type ServiceErrorCode } from '../../../types';
 
 export type { ServiceResult, ServiceErrorCode };
 

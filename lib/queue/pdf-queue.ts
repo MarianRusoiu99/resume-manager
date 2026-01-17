@@ -1,5 +1,5 @@
-import { Queue, Worker, Job, ConnectionOptions } from 'bullmq';
-import { getRedisConfig } from '@/lib/redis/connection';
+import { Queue, ConnectionOptions } from 'bullmq';
+import { getRedisConfig } from '../redis/connection';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -18,8 +18,8 @@ export interface PdfJobData {
 }
 
 export interface PdfJobResult {
-  s3Url?: string; // If you plan to store it
-  buffer?: Buffer; // Or just the raw data for internal transfer
+  success: boolean;
+  pdfBase64?: string;
   error?: string;
 }
 
@@ -36,7 +36,13 @@ export function getPdfQueue() {
           type: 'exponential',
           delay: 1000,
         },
-        removeOnComplete: true,
+        removeOnComplete: {
+          age: 1800, // Keep for 30 minutes to allow download
+          count: 100, // Keep last 100 jobs
+        },
+        removeOnFail: {
+          age: 24 * 3600, // Keep failed jobs for 24 hours for debugging
+        },
       },
     });
   }

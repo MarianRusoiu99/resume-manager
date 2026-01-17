@@ -16,12 +16,17 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "prisma:studio": "prisma studio",
     "prisma:deploy": "prisma migrate deploy",
+    "build:worker": "tsc -p tsconfig.worker.json",
     "postinstall": "prisma generate"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.53",
     "@ai-sdk/google": "^2.0.44",
     "@ai-sdk/openai": "^2.0.64",
+    "@mantine/core": "^8.3.4",
+    "@mantine/hooks": "^8.3.4",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "@blocknote/core": "^0.42.0",
     "@blocknote/mantine": "^0.42.0",
     "@blocknote/react": "^0.42.0",

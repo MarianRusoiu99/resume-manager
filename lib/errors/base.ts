@@ -5,7 +5,7 @@
  * All error classes should extend from AppError defined here.
  */
 
-import type { ServiceErrorCode } from '@/lib/types';
+import type { ServiceErrorCode } from '../types';
 
 /**
  * Base application error class

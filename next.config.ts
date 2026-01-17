@@ -3,7 +3,7 @@ import bundleAnalyzer from '@next/bundle-analyzer';
 import { env } from './lib/config/env';
 
 const withBundleAnalyzer = bundleAnalyzer({
-  enabled: env.shouldAnalyze,
+  enabled: process.env.ANALYZE === 'true',
 });
 
 const securityHeadersBase = [
@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
     '@tiptap/extension-history',
     '@tiptap/extensions',
   ],
-  serverExternalPackages: ['puppeteer', 'pdf-parse', 'pdfjs-dist', '@napi-rs/canvas'],
+  serverExternalPackages: ['puppeteer', 'pdf-parse', 'pdfjs-dist', '@napi-rs/canvas', 'bullmq', 'ioredis'],
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
