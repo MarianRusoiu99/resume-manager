@@ -15,6 +15,9 @@ export interface ResumeData {
   jobDescription?: string;
   content: Resume;
   coverLetter?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 }
 
 export function useResumeDetail(resumeId: string) {
@@ -38,7 +41,7 @@ export function useResumeDetail(resumeId: string) {
         throw new ExternalServiceError('Resume API', errorResult.error || 'Failed to fetch resume');
       }
 
-      setResume(result.data as ResumeData);
+      setResume(result.data as unknown as ResumeData);
     } catch (err) {
       logger.error('Failed to fetch resume', err);
       setError(err instanceof Error ? err.message : 'Failed to load resume');

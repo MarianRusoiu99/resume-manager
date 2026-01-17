@@ -42,7 +42,13 @@ export interface CreateCoverLetterInput {
   jobPostingId?: string | null;
   metadata: {
     model?: string;
+    modelId?: string;
     tokens?: number;
+    usage?: {
+      promptTokens?: number;
+      completionTokens?: number;
+      totalTokens?: number;
+    };
     generationTime?: number;
     personalInstructions?: string;
     jobDescription?: string;

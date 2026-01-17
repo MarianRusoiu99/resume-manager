@@ -227,12 +227,14 @@ export const POST = createApiHandler<unknown, ChatRequest>(
         const stream = new ReadableStream({
           async start(controller) {
             let finalOutput: any = null;
+            let finalUsage: any = null;
             try {
               const generator = AIOrchestrator.streamGenerate(conversation, orchestratorOptions);
               
               for await (const chunk of generator) {
                 if (chunk.type === 'complete') {
                   finalOutput = chunk.final;
+                  finalUsage = chunk.usage;
                 }
                 controller.enqueue(
                   new TextEncoder().encode(`data: ${JSON.stringify(chunk)}\n\n`)
@@ -257,6 +259,8 @@ export const POST = createApiHandler<unknown, ChatRequest>(
                       metadata: {
                         matchScore: finalOutput.matchScore,
                         suggestions: finalOutput.suggestions,
+                        modelId: resolvedModel.modelId,
+                        usage: finalUsage,
                       }
                     });
                     if (result.success) {
@@ -279,6 +283,8 @@ export const POST = createApiHandler<unknown, ChatRequest>(
                         jobDescription: jobDesc,
                         jobTitle,
                         companyName,
+                        modelId: resolvedModel.modelId,
+                        usage: finalUsage,
                       }
                     });
                     if (result.success) {
@@ -340,6 +346,8 @@ export const POST = createApiHandler<unknown, ChatRequest>(
             metadata: {
               matchScore: output.matchScore,
               suggestions: output.suggestions,
+              modelId: resolvedModel.modelId,
+              usage: result.usage,
             }
           }).catch(err => logger.error('Failed to auto-save resume', { err, userId }));
           if (res?.success) savedId = res.data.id;
@@ -351,6 +359,8 @@ export const POST = createApiHandler<unknown, ChatRequest>(
               jobDescription: conversationContext.job?.description || message,
               jobTitle: output.jobTitle || '',
               companyName: output.companyName || '',
+              modelId: resolvedModel.modelId,
+              usage: result.usage,
             }
           }).catch(err => logger.error('Failed to auto-save cover letter', { err, userId }));
           if (res?.success) savedId = res.data.id;

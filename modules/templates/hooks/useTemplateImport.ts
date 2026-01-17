@@ -51,10 +51,13 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
     clearProgressInterval();
   }, [reset, clearProgressInterval]);
 
+  const isProcessingRef = useRef(false);
+
   // Handle completion
   useEffect(() => {
     const processResult = async () => {
-      if (template) {
+      if (template && !isProcessingRef.current) {
+        isProcessingRef.current = true;
         clearProgressInterval();
         
         const templateName = selectedFile?.name?.replace(/\.[^/.]+$/, '') || 'Imported Template';
@@ -91,6 +94,7 @@ export function useTemplateImport({ onImportComplete, onClose }: UseTemplateImpo
           onClose();
         } else {
           toast.error('Failed to save imported template');
+          isProcessingRef.current = false;
         }
       }
     };
