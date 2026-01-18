@@ -178,14 +178,12 @@ The template MUST be designed to handle all 12 sections of the JSON Resume schem
    - work, volunteer, education, awards, certificates, publications, skills, languages, interests, references, projects
 
 ## HANDLEBARS SYNTAX & SAFETY
-- Simple value: {{basics.name}}
-- Conditional: {{#if basics.summary}}...{{/if}}
-- Loop: {{#each work}}...{{/each}}
-- Lists: {{#each highlights}}<li>{{this}}</li>{{/each}}
-- **LOGICAL OPERATORS**: Use the "or" and "and" helpers for complex conditions. 
-  - CORRECT: {{#if (or this.startDate this.endDate)}}
-  - INCORRECT: {{#if this.startDate || this.endDate}} (This will crash the renderer)
-- **QUOTES**: Avoid escaping quotes in the HTML/CSS (e.g., use <div class="container"> NOT <div class="\\&quot;container\\&quot;">).
+- **CRITICAL RULE**: Do NOT use JavaScript logical operators like \`||\`, \`&&\`, \`!\`, or \`===\` inside expressions. They will CRASH the renderer.
+- **LOGICAL OPERATORS**: You MUST use Handlebars helpers:
+  - CORRECT: \`{{#if (or this.startDate this.endDate)}}\`
+  - INCORRECT: \`{{#if this.startDate || this.endDate}}\` (This causes a Parse Error)
+  - CORRECT: \`{{#if (and this.city this.region)}}\`
+- **QUOTES**: Avoid escaping quotes in the HTML/CSS (e.g., use <div class="container"> NOT <div class="\&quot;container\&quot;">).
 
 ## OUTPUT FORMAT
 Return a JSON object:
