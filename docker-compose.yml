@@ -41,35 +41,6 @@ services:
       start_period: 40s
 
   # ---------------------------------------------------------------------------
-  # PDF Worker
-  # ---------------------------------------------------------------------------
-  pdf-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: worker
-    container_name: resume-optimizer-pdf-worker
-    restart: unless-stopped
-    shm_size: '1gb'
-    deploy:
-      resources:
-        limits:
-          memory: 1G # Limit memory to prevent worker from starving the host
-          cpus: '0.50' # Limit CPU to prevent worker from hogging the host
-    environment:
-      - NODE_ENV=production
-      - IS_WORKER=true
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-resume_optimizer}
-      - REDIS_URL=redis://redis:6379
-      - REDIS_KEY_PREFIX=${REDIS_KEY_PREFIX:-resume-optimizer:}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY:?ENCRYPTION_KEY is required}
-    networks:
-      - app-network
-    depends_on:
-      redis:
-        condition: service_healthy
-
-  # ---------------------------------------------------------------------------
   # Database Migration (runs once)
   # ---------------------------------------------------------------------------
   migrate:

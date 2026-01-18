@@ -24,10 +24,22 @@ export class PdfService {
   private browserPromise: Promise<Browser> | null = null;
 
   constructor(config: PdfServiceConfig = {}) {
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+    
     this.config = {
-      puppeteerArgs: config.puppeteerArgs || ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      puppeteerArgs: config.puppeteerArgs || [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-dev-shm-usage',
+        '--font-render-hinting=none',
+      ],
       timeout: config.timeout || 30000,
     };
+
+    if (executablePath) {
+      logger.info(`Using Puppeteer executable path: ${executablePath}`);
+      (this.config as any).executablePath = executablePath;
+    }
   }
 
   private async getBrowser(): Promise<Browser> {
@@ -35,10 +47,16 @@ export class PdfService {
 
     this.browserPromise = (async () => {
       try {
-        const browser = await puppeteer.launch({
+        const launchOptions: any = {
           headless: true,
           args: this.config.puppeteerArgs,
-        });
+        };
+
+        if ((this.config as any).executablePath) {
+          launchOptions.executablePath = (this.config as any).executablePath;
+        }
+
+        const browser = await puppeteer.launch(launchOptions);
 
         browser.on('disconnected', () => {
           logger.warn('Puppeteer browser disconnected, resetting...');

@@ -21,7 +21,6 @@ import type {
 import {
   runResumeGenerationWorkflow,
   runResumeGenerationWorkflowWithProgress,
-  runStandaloneCoverLetterWorkflow,
 } from './resume-generation.workflow';
 import { invalidateUserResumesCache } from './crud-cache';
 import { mapGeneratedResumeToDetails, mapGeneratedResumeToListItem } from './mappers';
@@ -74,21 +73,11 @@ export class ResumeService
   // --- Generation Methods ---
 
   async generateResume(input: GenerateResumeServiceInput): Promise<ServiceResult<RepoGeneratedResumeData>> {
-    const result = await runResumeGenerationWorkflow(this.repository, this.profileService, this.notificationService, input);
-    if (!result.success) return result;
-    
-    const resume = await this.repository.findById(result.data.resumeId, input.userId);
-    if (!resume) throw new Error('Generated resume not found');
-    return { success: true, data: resume };
+    return runResumeGenerationWorkflow(this.repository, this.profileService, this.notificationService, input);
   }
 
   async generateResumeWithProgress(input: GenerateResumeWithProgressInput): Promise<ServiceResult<RepoGeneratedResumeData>> {
-    const result = await runResumeGenerationWorkflowWithProgress(this.repository, this.profileService, this.notificationService, input);
-    if (!result.success) return result;
-
-    const resume = await this.repository.findById(result.data.resumeId, input.userId);
-    if (!resume) throw new Error('Generated resume not found');
-    return { success: true, data: resume };
+    return runResumeGenerationWorkflowWithProgress(this.repository, this.profileService, this.notificationService, input);
   }
 
   async generateStandaloneCoverLetter(input: {
@@ -97,8 +86,8 @@ export class ResumeService
     personalInstructions?: string;
     modelId?: string;
     profileId?: string;
-  }) {
-    return runStandaloneCoverLetterWorkflow(input);
+  }): Promise<ServiceResult<any>> {
+    return { success: false, error: 'Standalone cover letter generation not implemented in worker build context', code: 'INTERNAL_ERROR' };
   }
 
   async create(data: CreateResumeInput & { userId: string }): Promise<ServiceResult<RepoGeneratedResumeData>> {

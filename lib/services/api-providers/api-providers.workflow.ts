@@ -74,7 +74,7 @@ export class ApiProviderService
     return withServiceError('fetch available models', async () => {
       const result = await this.getUserProvidersWithModels(userId);
 
-      if (!result.success) {
+      if (result.success === false) {
         throw new ValidationError(result.error);
       }
 

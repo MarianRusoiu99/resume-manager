@@ -50,7 +50,7 @@ export function createServerAction<TArgs extends unknown[], TResult>(
       if (isServiceResult<TResult>(handlerResult)) {
         if (!handlerResult.success) {
           if (options.auditAction && session?.userId) {
-            auditLog.failure(options.auditAction, session.userId, handlerResult.error, {
+            auditLog.failure(options.auditAction, session.userId, (handlerResult as any).error, {
               resourceType: options.resourceType,
             });
           }
@@ -71,7 +71,7 @@ export function createServerAction<TArgs extends unknown[], TResult>(
         }
 
         if (options.auditAction && session?.userId) {
-          const resourceId = extractResourceId(handlerResult.data);
+          const resourceId = extractResourceId((handlerResult as any).data);
           auditLog.success(options.auditAction, session.userId, {
             resourceType: options.resourceType,
             resourceId,
@@ -79,7 +79,7 @@ export function createServerAction<TArgs extends unknown[], TResult>(
           });
         }
 
-        return { success: true, data: handlerResult.data };
+        return { success: true, data: (handlerResult as any).data };
       }
 
       const result = handlerResult as TResult;

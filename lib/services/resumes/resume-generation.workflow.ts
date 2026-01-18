@@ -1,5 +1,6 @@
 import type { GeneratedResumeRepository } from '@/lib/repositories/generated-resumes.repository';
-import type { GenerateResumeInput as GenerateResumeServiceInput, GenerateResumeWithProgressInput, GeneratedResumeData } from '@/lib/types';
+import type { GenerateResumeInput as GenerateResumeServiceInput, GenerateResumeWithProgressInput } from '@/lib/types';
+import type { GeneratedResumeData as RepoGeneratedResumeData } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
 import { generateResume as runAIWorkflow } from '@/lib/ai/workflow/resume-generation';
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
 import { success, failure, type ServiceResult } from '@/lib/types';
@@ -12,7 +13,7 @@ export async function runResumeGenerationWorkflow(
   profileService: IProfileService,
   notificationService: INotificationService,
   input: GenerateResumeServiceInput
-): Promise<ServiceResult<GeneratedResumeData>> {
+): Promise<ServiceResult<RepoGeneratedResumeData>> {
   try {
     // Get the user's default profile or a specific profile
     let profileResult;
@@ -60,29 +61,7 @@ export async function runResumeGenerationWorkflow(
       }
     });
 
-    // Notify user that resume is ready
-    /* Notification moved to resumeService.create to ensure it fires for all creations */
-    /*
-    await notificationService.notifyResumeGenerated(
-      input.userId,
-      saved.id,
-      result.jobTitle,
-      result.companyName
-    );
-    */
-
-    return success({
-      resumeId: saved.id,
-      resume: {
-        id: saved.id,
-        content: result.resume,
-        metadata: {
-          jobTitle: result.jobTitle,
-          companyName: result.companyName,
-        },
-        createdAt: new Date(),
-      },
-    } as GeneratedResumeData);
+    return success(saved);
   } catch (error) {
     logger.error('Error in resume generation workflow', error as Error);
     return failure('An unexpected error occurred during generation', 'INTERNAL_ERROR');
@@ -94,11 +73,7 @@ export async function runResumeGenerationWorkflowWithProgress(
   profileService: IProfileService,
   notificationService: INotificationService,
   input: GenerateResumeWithProgressInput
-): Promise<ServiceResult<GeneratedResumeData>> {
+): Promise<ServiceResult<RepoGeneratedResumeData>> {
     // Basic implementation for now to satisfy types - onProgress is in input but not used yet
     return runResumeGenerationWorkflow(repository, profileService, notificationService, input);
-}
-
-export async function runStandaloneCoverLetterWorkflow(_input: Record<string, unknown>): Promise<ServiceResult<never>> {
-    return failure('Cover letter generation not implemented in this workflow', 'INTERNAL_ERROR');
 }

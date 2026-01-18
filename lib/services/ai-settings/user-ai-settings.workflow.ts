@@ -140,7 +140,7 @@ export class UserAISettingsService extends GenericUserOwnedCrudService<
     return withServiceError('update all AI preferences', async () => {
       await this.repository.upsert({ ...input, userId });
       const result = await this.getSettings(userId);
-      if (!result.success) {
+      if (result.success === false) {
         throw new ExternalServiceError('AI Settings API', result.error);
       }
       return result.data;

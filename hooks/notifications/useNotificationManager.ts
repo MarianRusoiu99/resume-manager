@@ -37,9 +37,6 @@ export function useNotificationManager() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
-  /**
-   * Fetch all notifications
-   */
   const fetchNotifications = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -52,26 +49,8 @@ export function useNotificationManager() {
       const fetchedNotifications = (result.data as unknown as Notification[]) ?? [];
       
       setNotifications((prev) => {
-        // Merge new notifications, avoiding duplicates
         const existingIds = new Set(prev.map(n => n.id));
         const newNotifications = fetchedNotifications.filter(n => !existingIds.has(n.id));
-        
-        // Handle side effects for any newly fetched "EXPORT_COMPLETE" notifications
-        newNotifications.forEach(notification => {
-          if (notification.type === 'EXPORT_COMPLETE' && notification.metadata) {
-            const metadata = notification.metadata as any;
-            if (metadata.jobId) {
-              const lastDownloadedJob = sessionStorage.getItem('last_downloaded_job');
-              const wasStartedHere = sessionStorage.getItem(`pdf_job_started_${metadata.jobId}`) === 'true';
-
-              if (lastDownloadedJob !== metadata.jobId && wasStartedHere) {
-                sessionStorage.setItem('last_downloaded_job', metadata.jobId);
-                window.location.href = `/api/v1/export/pdf?jobId=${metadata.jobId}`;
-              }
-            }
-          }
-        });
-
         return [...newNotifications, ...prev];
       });
       
@@ -86,9 +65,6 @@ export function useNotificationManager() {
     }
   }, []);
 
-  /**
-   * Fetch just the unread count (lightweight polling)
-   */
   const fetchUnreadCount = useCallback(async () => {
     try {
       const result = await getUnreadCount();
@@ -101,9 +77,6 @@ export function useNotificationManager() {
     }
   }, []);
 
-  /**
-   * Mark a single notification as read
-   */
   const markAsRead = useCallback(async (id: string) => {
     try {
       const result = await markAsReadAction(id);
@@ -111,7 +84,6 @@ export function useNotificationManager() {
         throw new ExternalServiceError('Notification API', result.error);
       }
 
-      // Update local state
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       );
@@ -121,9 +93,6 @@ export function useNotificationManager() {
     }
   }, []);
 
-  /**
-   * Mark all notifications as read
-   */
   const markAllAsRead = useCallback(async () => {
     try {
       const result = await markAllAsReadAction();
@@ -131,7 +100,6 @@ export function useNotificationManager() {
         throw new ExternalServiceError('Notification API', result.error);
       }
 
-      // Update local state
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (error) {
@@ -139,9 +107,6 @@ export function useNotificationManager() {
     }
   }, []);
 
-  /**
-   * Delete a notification
-   */
   const deleteNotification = useCallback(async (id: string) => {
     try {
       const result = await deleteNotificationAction(id);
@@ -149,7 +114,6 @@ export function useNotificationManager() {
         throw new ExternalServiceError('Notification API', result.error);
       }
 
-      // Update local state
       setNotifications((prev) => {
         const notification = prev.find((n) => n.id === id);
         if (notification && !notification.isRead) {
@@ -162,15 +126,11 @@ export function useNotificationManager() {
     }
   }, []);
 
-  /**
-   * Clear all notifications (mark all read, then delete all)
-   */
   const clearAllNotifications = useCallback(async () => {
     const idsToDelete = notifications.map((n) => n.id);
     if (idsToDelete.length === 0) return;
 
     try {
-      // Mark all read first (preserves current API behavior)
       const markResult = await markAllAsReadAction();
       if (!markResult.success) {
         throw new ExternalServiceError('Notification API', markResult.error);
@@ -185,17 +145,12 @@ export function useNotificationManager() {
     }
   }, [notifications]);
 
-  /**
-   * Handle notification action (navigate to URL)
-   */
   const handleNotificationAction = useCallback(
     (notification: Notification) => {
-      // Mark as read when clicking
       if (!notification.isRead) {
         markAsRead(notification.id);
       }
 
-      // Navigate if there's an action URL
       if (notification.actionUrl) {
         router.push(notification.actionUrl);
         setIsOpen(false);
@@ -204,23 +159,17 @@ export function useNotificationManager() {
     [markAsRead, router]
   );
 
-  /**
-   * Add a notification to state (for real-time updates)
-   */
   const addNotification = useCallback((notification: Notification) => {
     setNotifications((prev) => {
-      // Avoid duplicates from SSE if already in state
       if (prev.some(n => n.id === notification.id)) return prev;
       return [notification, ...prev];
     });
     setUnreadCount((prev) => prev + 1);
 
-    // Truncate title if too long (max 60 characters)
     const truncatedTitle = notification.title.length > 60
       ? `${notification.title.substring(0, 60)}...`
       : notification.title;
 
-    // Show a toast with action button
     toast(truncatedTitle, {
       description: notification.message,
       action: notification.actionUrl
@@ -235,9 +184,6 @@ export function useNotificationManager() {
     });
   }, [router]);
 
-  /**
-   * Dropdown state management
-   */
   const openNotifications = useCallback(() => {
     setIsOpen(true);
     fetchNotifications();
@@ -255,55 +201,26 @@ export function useNotificationManager() {
     }
   }, [isOpen, openNotifications, closeNotifications]);
 
-  /**
-   * Initial fetch and SSE connection for real-time notifications
-   */
   useEffect(() => {
-    // Initial fetch of notifications
     fetchUnreadCount();
 
     let isClosing = false;
 
-    // Set up SSE connection for real-time updates
     const eventSource = new EventSource(API_V1.NOTIFICATIONS.STREAM);
 
     const sseLog = log.withContext({ action: 'notifications-sse' });
 
-    // Function to handle a single notification (reused for SSE and initial fetch)
     const handleNotification = (fullNotification: Notification) => {
       addNotification(fullNotification);
-
-      // Special handling for completed PDF exports
-      if (fullNotification.type === 'EXPORT_COMPLETE' && fullNotification.metadata) {
-        const metadata = fullNotification.metadata as any;
-        if (metadata.jobId) {
-          // Dismiss the "generating" toast if it exists
-          toast.dismiss(`pdf-gen-${metadata.jobId}`);
-          
-          // Check if we should auto-download (prevent repeat downloads on reconnect)
-          const lastDownloadedJob = sessionStorage.getItem('last_downloaded_job');
-          // ONLY auto-download if this specific browser session actually started the job
-          const wasStartedHere = sessionStorage.getItem(`pdf_job_started_${metadata.jobId}`) === 'true';
-          
-          if (lastDownloadedJob !== metadata.jobId && wasStartedHere) {
-            sessionStorage.setItem('last_downloaded_job', metadata.jobId);
-            const downloadUrl = `/api/v1/export/pdf?jobId=${metadata.jobId}`;
-            window.location.href = downloadUrl;
-          }
-        }
-      }
     };
 
     eventSource.addEventListener('connected', (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('[SSE] Connected to notifications stream', data);
         sseLog.debug('Connected to notifications stream', { data });
         
-        // When connected, fetch any unread notifications that might have been missed
         fetchNotifications();
       } catch {
-        console.log('[SSE] Connected to notifications stream');
         sseLog.debug('Connected to notifications stream');
         fetchNotifications();
       }
@@ -312,8 +229,7 @@ export function useNotificationManager() {
     eventSource.addEventListener('notification', (event) => {
       try {
         const notification = JSON.parse(event.data);
-        console.log('[SSE] Received notification event:', notification);
-        // Transform SSE payload to match Notification interface
+        
         const fullNotification: Notification = {
           id: notification.id,
           type: notification.type,
@@ -335,17 +251,12 @@ export function useNotificationManager() {
     });
 
     eventSource.addEventListener('heartbeat', () => {
-      // Connection is alive, no action needed
     });
 
     eventSource.onerror = (error) => {
-      // In dev, navigation/HMR unmounts can interrupt the request and surface as an error.
-      // Ignore disconnects caused by our own cleanup.
       if (isClosing || eventSource.readyState === EventSource.CLOSED) return;
 
-      console.error('[SSE] Connection error:', error);
       sseLog.error('Connection error', error);
-      // EventSource will automatically try to reconnect
     };
 
     return () => {

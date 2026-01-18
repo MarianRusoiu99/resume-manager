@@ -19,10 +19,10 @@ export async function renderTemplateServerSide({
   const result = await renderTemplate(htmlTemplate, resumeData);
   
   if (!result.success) {
-    throw new Error(result.error || 'Failed to render template');
+    throw new Error((result as any).error || 'Failed to render template');
   }
   
-  return result.data;
+  return (result as any).data;
 }
 
 /**
