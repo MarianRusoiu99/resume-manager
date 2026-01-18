@@ -78,13 +78,14 @@ export function TemplateThumbnail({
             {/* Scaled Preview Surface */}
             <div className="absolute inset-0 pointer-events-none origin-top-left scale-[0.2] overflow-hidden"
                 style={{ width: '500%', height: '500%' }}>
-                <iframe
-                    ref={iframeRef}
-                    title={`Preview of ${name}`}
-                    className="w-full h-full border-none pointer-events-none"
-                    sandbox="allow-same-origin"
-                    scrolling="no"
-                />
+            <iframe
+                ref={iframeRef}
+                title={`Preview of ${name}`}
+                srcDoc={htmlContent}
+                className="w-full h-full border-none pointer-events-none"
+                sandbox="allow-same-origin"
+                scrolling="no"
+            />
             </div>
 
             {/* Overlay for Name */}
