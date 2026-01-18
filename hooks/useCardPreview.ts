@@ -3,10 +3,11 @@
 import { useState, useCallback } from "react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import type { Template } from "@/lib/types/template";
-import { useTemplatePreview } from "./useTemplatePreview";
+import { useTemplatePreview } from "@/modules/templates/hooks/useTemplatePreview";
 import { createComponentLogger } from "@/lib/utils/client-logger";
 import { getTemplate, getTemplates } from "@/app/actions/template";
 import { NotFoundError, ExternalServiceError } from "@/lib/errors";
+import { useExportPDF } from "@/components/preview/useExportPDF";
 
 const logger = createComponentLogger('useCardPreview');
 
@@ -94,7 +95,7 @@ export function useExportPdf({
   templateId,
   fileName = "resume",
 }: UseExportPdfOptions): UseExportPdfReturn {
-  const [isExporting, setIsExporting] = useState(false);
+  const { handleExportPDF, isExportingPDF } = useExportPDF();
   const [error, setError] = useState<string | null>(null);
 
   const exportPdf = useCallback(async () => {
@@ -104,64 +105,23 @@ export function useExportPdf({
     }
 
     try {
-      setIsExporting(true);
       setError(null);
 
-      let template: Template | null = null;
-
-      if (templateId) {
-        const result = await getTemplate(templateId);
-        if (result.success && result.data) {
-          template = result.data as unknown as Template;
-        }
-      }
-
-      if (!template) {
-        const templatesResult = await getTemplates();
-        if (!templatesResult.success || !templatesResult.data?.length) {
-          throw new NotFoundError('Templates');
-        }
-        template = templatesResult.data[0] as unknown as Template;
-      }
-
-      const response = await fetch('/api/v1/export/pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          resume: content,
-          template: {
-            htmlTemplate: template.htmlTemplate,
-          },
-          fileName: `${fileName.replaceAll(/\s+/g, '_')}.pdf`,
-        })
+      await handleExportPDF({
+        resume: content,
+        templateId,
+        fileName: `${fileName.replaceAll(/\s+/g, '_')}.pdf`,
       });
-
-      if (!response.ok) {
-        throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
-      }
-
-      // Download the PDF
-      const blob = await response.blob();
-      const url = globalThis.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${fileName.replaceAll(/\s+/g, "_")}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      globalThis.URL.revokeObjectURL(url);
-      a.remove();
     } catch (err) {
       logger.error('Failed to export PDF', err);
       setError(err instanceof Error ? err.message : "Failed to export PDF");
       throw err;
-    } finally {
-      setIsExporting(false);
     }
-  }, [content, templateId, fileName]);
+  }, [content, templateId, fileName, handleExportPDF]);
 
   return {
     exportPdf,
-    isExporting,
+    isExporting: isExportingPDF,
     error,
   };
 }

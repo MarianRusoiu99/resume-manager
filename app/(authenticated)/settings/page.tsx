@@ -11,7 +11,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui';
-import { SectionHeader } from '@/components/shared/SectionHeader';
+import { SectionHeader } from '@/components/core/data-display/SectionHeader';
 import {
   Trash2,
   Loader2,

@@ -1,27 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { pdfService } from '@/lib/services/pdf/pdf.service';
+import { NextResponse } from 'next/server';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
 import { logger } from '@/lib/utils/logger';
 import { createApiHandler } from '@/lib/api/handler';
-import { pdfExportSchema } from '@/lib/validations/api-schemas';
+import { pdfExportSchema, type PdfExportInput } from '@/lib/validations/api-schemas';
+import { pdfService } from '@/lib/services/pdf/pdf.service';
 
-export const POST = createApiHandler(
+export const POST = createApiHandler<unknown, PdfExportInput>(
   async (request, context, session, body) => {
     const { resume, template, fileName } = body!;
 
-    // Render the final HTML (server-side, Handlebars compile is safe here)
-    const html = renderCompleteDocument(template.htmlTemplate, resume);
+    try {
+      logger.info(`Starting PDF generation for user ${session.user.id}`);
 
-    // Generate PDF
-    const pdfBuffer = await pdfService.generateFromHtml(html);
+      const html = renderCompleteDocument(template.htmlTemplate, resume);
+      const buffer = await pdfService.generateFromHtml(html);
+      
+      const finalFileName = fileName || 'resume.pdf';
 
-    // Create a Blob-like response from the buffer
-    return new NextResponse(new Uint8Array(pdfBuffer), {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
-      },
-    });
+      logger.info(`Successfully generated PDF for user ${session.user.id}`, { 
+        fileName: finalFileName, 
+        bufferSize: buffer.length 
+      });
+
+      return new NextResponse(new Uint8Array(buffer), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${finalFileName}"`,
+          'Content-Length': buffer.length.toString(),
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+        },
+      });
+    } catch (error) {
+      logger.error('Failed to generate PDF', error);
+      return NextResponse.json(
+        { error: 'Failed to generate PDF' },
+        { status: 500 }
+      );
+    }
   },
   {
     isPublic: false,

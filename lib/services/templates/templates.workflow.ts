@@ -1,9 +1,8 @@
 import { TemplateRepository, templateRepository } from '@/lib/repositories/templates.repository';
 import { ExternalServiceError } from "@/lib/errors";
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { type ServiceResult, isFailure } from '@/lib/types/service-result';
+import { type ServiceResult, isFailure } from '@/lib/types';
 import { withServiceError, ConflictError } from '@/lib/services/utils';
-import type { ITemplateService } from '../interfaces';
 import type { CreateTemplateInput, UpdateTemplateInput } from '@/lib/validations/api-schemas';
 
 import { validateCreateTemplateInput, validateUpdateTemplateInput } from './validation';
@@ -16,9 +15,41 @@ const TEMPLATE_CACHE_KEY = 'templates:public';
 const TEMPLATE_CACHE_TTL = 300; // 5 minutes
 
 /**
+ * Input for creating a template
+ */
+export interface CreateTemplateServiceInput {
+  name: string;
+  description?: string;
+  htmlTemplate: string;
+  previewUrl?: string;
+  isPublic?: boolean;
+}
+
+/**
+ * Input for updating a template
+ */
+export interface UpdateTemplateServiceInput {
+  name?: string;
+  description?: string;
+  htmlTemplate?: string;
+  previewUrl?: string;
+  isPublic?: boolean;
+}
+
+/**
+ * Template Service Interface
+ */
+export interface ITemplateService {
+  getAllPublicTemplates(): Promise<ServiceResult<ResumeTemplate[]>>;
+  getTemplateById(id: string): Promise<ServiceResult<ResumeTemplate>>;
+  createTemplate(input: CreateTemplateServiceInput): Promise<ServiceResult<ResumeTemplate>>;
+  updateTemplate(id: string, input: UpdateTemplateServiceInput): Promise<ServiceResult<ResumeTemplate>>;
+  deleteTemplate(id: string): Promise<ServiceResult<void>>;
+  duplicateTemplate(id: string): Promise<ServiceResult<ResumeTemplate>>;
+}
+
+/**
  * Service for managing resume templates
- *
- * Implements ITemplateService with constructor injection.
  */
 export class TemplateService 
   extends GenericCrudService<ResumeTemplate, CreateTemplateInput, UpdateTemplateInput, Record<string, unknown>, TemplateRepository>

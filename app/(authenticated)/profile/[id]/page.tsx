@@ -1,4 +1,4 @@
-import { ProfileEditor } from "@/components/profile/ProfileEditor";
+import { ProfileEditor } from "@/modules/profile/components/ProfileEditor";
 import { verifySession } from "@/lib/auth/dal";
 
 interface ProfilePageProps {

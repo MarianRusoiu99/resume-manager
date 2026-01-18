@@ -2,7 +2,7 @@
 
 import { templateService } from '@/lib/services';
 import { withServerAction } from '@/lib/actions/with-server-action';
-import type { CreateTemplateServiceInput, UpdateTemplateServiceInput } from '@/lib/services/interfaces/templates.service.interface';
+import type { CreateTemplateServiceInput, UpdateTemplateServiceInput } from '@/lib/services/types';
 import { renderCompleteDocument } from '@/lib/templates/renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 

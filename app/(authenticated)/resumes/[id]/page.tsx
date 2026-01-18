@@ -6,18 +6,27 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui';
-import { ErrorState, LoadingState } from '@/components/shared/states';
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { Edit2, Info } from 'lucide-react';
+import { ErrorState, LoadingState } from '@/components/core/feedback/states';
+import { ConfirmDialog } from "@/components/core/feedback/ConfirmDialog";
+import { Edit2, Info, Trash2, Download, Copy, Save, Share2 } from 'lucide-react';
 import { getResume, updateResumeContent } from '@/app/actions/resume';
 import { ExternalServiceError } from "@/lib/errors";
 import type { Resume } from '@/lib/validations/jsonresume';
-import { ResumeEditor, type ResumeEditorRef } from "@/components/editor/ResumeEditor";
+import { ResumeEditor, type ResumeEditorRef } from "@/modules/editor/components/ResumeEditor";
 import { EditorProvider } from "@/lib/contexts";
-import { useResumeDetail } from '@/hooks/features/useResumeDetail';
-import { ResumeDetailActions } from '@/components/resume/ResumeDetailActions';
-import { ResumeMetadataModals } from '@/components/resume/ResumeMetadataModals';
+import { useResumeDetail } from '@/modules/resume/hooks/useResumeDetail';
+import { ResumeMetadataModals } from '@/modules/resume/components/ResumeMetadataModals';
 import { FeatureErrorBoundary } from '@/components/error-boundaries';
+
+type ResumeMetadata = {
+  modelId?: string;
+  usage?: {
+    totalTokens?: number;
+  };
+  matchScore?: number;
+  suggestions?: string[];
+  personalInstructions?: string;
+};
 
 export default function ResumeDetailPage() {
   const router = useRouter();
@@ -40,6 +49,7 @@ export default function ResumeDetailPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   const handleLoad = async (): Promise<Resume | null> => {
     if (resume?.content) return resume.content;
@@ -55,6 +65,7 @@ export default function ResumeDetailPage() {
       const result = await updateResumeContent(resumeId, content);
       if (!result.success) throw new ExternalServiceError('Resume API', result.error);
       toast.success('Resume saved');
+      setIsEditing(false);
       return true;
     } catch (error) {
       toast.error('Failed to save resume');
@@ -78,18 +89,44 @@ export default function ResumeDetailPage() {
     return await updateMetadata({ jobTitle: newTitle });
   };
 
+  const getMetadata = (): ResumeMetadata => {
+    if (!resume || !resume.metadata) return {};
+    return resume.metadata as unknown as ResumeMetadata;
+  };
+
   if (isLoading) {
-    return <LoadingState message="Loading resume..." />;
+    return (
+      <Page
+        title="Loading..."
+        description="Fetching resume details"
+        breadcrumbs={[
+          { label: 'Resumes', href: '/resumes' },
+          { label: '...' },
+        ]}
+      >
+        <LoadingState message="Loading resume..." />
+      </Page>
+    );
   }
 
   if (error || !resume) {
     return (
-      <ErrorState
-        title="Error Loading Resume"
-        message={error || 'Resume not found'}
-        onRetry={() => router.push('/resumes')}
-        retryText="Back to Resumes"
-      />
+      <Page
+        title="Error"
+        description="Failed to load resume"
+        breadcrumbs={[
+          { label: 'Resumes', href: '/resumes' },
+          { label: 'Error' },
+        ]}
+      >
+        <ErrorState
+          title="Resume Not Found"
+          message={error || 'Resume not found'}
+          variant="full"
+          onRetry={() => router.push('/resumes')}
+          retryText="Back to Resumes"
+        />
+      </Page>
     );
   }
 
@@ -105,7 +142,7 @@ export default function ResumeDetailPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
                 onClick={() => setIsRenameModalOpen(true)}
               >
                 <Edit2 className="h-4 w-4" />
@@ -128,13 +165,71 @@ export default function ResumeDetailPage() {
           ]}
           scrollable={false}
           actions={
-            <ResumeDetailActions
-              editorRef={editorRef}
-              onDelete={handleDeleteClick}
-              onDuplicate={handleDuplicate}
-              isDeleting={isDeleting}
-              isDuplicating={isDuplicating}
-            />
+            <div className="flex items-center gap-2">
+              {!isEditing ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+                    onClick={() => {
+                      setIsEditing(true);
+                    }}
+                  >
+                    <Edit2 className="h-3.5 w-3.5 mr-2" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+                    onClick={handleDuplicate}
+                    disabled={isDuplicating}
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-2" />
+                    Duplicate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
+                    onClick={() => editorRef.current?.setShowShareDialog(true)}
+                  >
+                    <Share2 className="h-3.5 w-3.5 mr-2" />
+                    Share
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
+                    onClick={handleDeleteClick}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-2" />
+                    Delete
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 transition-all shadow-sm"
+                    onClick={() => setIsEditing(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 transition-all"
+                    onClick={() => editorRef.current?.save()}
+                  >
+                    <Save className="h-3.5 w-3.5 mr-2" />
+                    Save Changes
+                  </Button>
+                </>
+              )}
+            </div>
           }
         >
           <div className="flex-1 flex flex-col h-full -mx-4 sm:-mx-8">
@@ -157,9 +252,10 @@ export default function ResumeDetailPage() {
             onSaveTitle={handleSaveTitle}
             companyName={resume.companyName}
             jobDescription={resume.jobDescription}
+            metadata={getMetadata()}
+            createdAt={resume.createdAt}
           />
 
-          {/* Confirmation Dialog */}
           <ConfirmDialog
             isOpen={deleteDialogOpen}
             title="Delete Resume"

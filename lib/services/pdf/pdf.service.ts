@@ -1,6 +1,6 @@
 import puppeteer, { type PDFOptions, type Browser } from 'puppeteer';
 import { ServiceErrors } from '../utils/service-wrapper';
-import { logger } from '@/lib/utils/logger';
+import { logger } from '../../utils/logger';
 
 export interface PdfServiceConfig {
   puppeteerArgs?: string[];
@@ -20,31 +20,75 @@ export const DEFAULT_PDF_CONFIG: PDFOptions = {
 
 export class PdfService {
   private config: PdfServiceConfig;
+  private browser: Browser | null = null;
+  private browserPromise: Promise<Browser> | null = null;
 
   constructor(config: PdfServiceConfig = {}) {
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+    
     this.config = {
-      puppeteerArgs: config.puppeteerArgs || ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      puppeteerArgs: config.puppeteerArgs || [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--disable-dev-shm-usage',
+        '--font-render-hinting=none',
+      ],
       timeout: config.timeout || 30000,
     };
+
+    if (executablePath) {
+      logger.info(`Using Puppeteer executable path: ${executablePath}`);
+      (this.config as any).executablePath = executablePath;
+    }
+  }
+
+  private async getBrowser(): Promise<Browser> {
+    if (this.browserPromise) return this.browserPromise;
+
+    this.browserPromise = (async () => {
+      try {
+        const launchOptions: any = {
+          headless: true,
+          args: this.config.puppeteerArgs,
+        };
+
+        if ((this.config as any).executablePath) {
+          launchOptions.executablePath = (this.config as any).executablePath;
+        }
+
+        const browser = await puppeteer.launch(launchOptions);
+
+        browser.on('disconnected', () => {
+          logger.warn('Puppeteer browser disconnected, resetting...');
+          this.browser = null;
+          this.browserPromise = null;
+        });
+
+        this.browser = browser;
+        return browser;
+      } catch (error) {
+        this.browserPromise = null;
+        logger.error('Failed to launch Puppeteer browser', error);
+        throw error;
+      }
+    })();
+
+    return this.browserPromise;
   }
 
   /**
    * Generates a PDF from HTML content
    */
   async generateFromHtml(html: string, options: PDFOptions = DEFAULT_PDF_CONFIG): Promise<Buffer> {
-    let browser: Browser | null = null;
+    let page: any = null;
 
     try {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: this.config.puppeteerArgs,
-      });
-
-      const page = await browser.newPage();
+      const browser = await this.getBrowser();
+      page = await browser.newPage();
 
       // Security: Block all network requests except data URIs and about:blank
       await page.setRequestInterception(true);
-      page.on('request', (req) => {
+      page.on('request', (req: any) => {
         const url = req.url();
         if (url.startsWith('data:') || url.startsWith('about:')) {
           req.continue();
@@ -65,11 +109,29 @@ export class PdfService {
       return Buffer.from(pdfBuffer);
     } catch (error) {
       logger.error('PDF generation failed', error);
+      
+      // If the browser crashed or is invalid, reset it
+      if (error instanceof Error && (error.message.includes('Browser closed') || error.message.includes('Connection closed'))) {
+        this.browser = null;
+        this.browserPromise = null;
+      }
+
       throw ServiceErrors.externalService('Failed to generate PDF', error);
     } finally {
-      if (browser) {
-        await browser.close().catch(() => {});
+      if (page) {
+        await page.close().catch(() => {});
       }
+    }
+  }
+
+  /**
+   * Gracefully shuts down the browser instance
+   */
+  async shutdown(): Promise<void> {
+    if (this.browser) {
+      await this.browser.close().catch(() => {});
+      this.browser = null;
+      this.browserPromise = null;
     }
   }
 }

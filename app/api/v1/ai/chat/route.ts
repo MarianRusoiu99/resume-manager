@@ -21,6 +21,8 @@ import { resolveAIModelOrThrow } from '@/lib/ai/runtime/resolve-model';
 import type { ConversationContext } from '@/lib/ai/chat/context';
 import type { Attachment, AttachmentType } from '@/lib/ai/chat/message';
 import { logger } from '@/lib/utils/logger';
+import { resumeService, coverLetterService } from '@/lib/services';
+import type { Resume } from '@/lib/validations/jsonresume';
 
 // Ensure AI modes are registered
 ensureModesRegistered();
@@ -58,6 +60,9 @@ const chatRequestSchema = z.object({
   
   /** Override model ID */
   modelId: z.string().optional(),
+  
+  /** Enable streaming response */
+  stream: z.boolean().optional().default(false),
 });
 
 type ChatRequest = z.infer<typeof chatRequestSchema>;
@@ -216,10 +221,151 @@ export const POST = createApiHandler<unknown, ChatRequest>(
         userId,
       };
 
+      const { stream = false } = body;
+
+      if (stream) {
+        const stream = new ReadableStream({
+          async start(controller) {
+            let finalOutput: any = null;
+            let finalUsage: any = null;
+            try {
+              const generator = AIOrchestrator.streamGenerate(conversation, orchestratorOptions);
+              
+              for await (const chunk of generator) {
+                if (chunk.type === 'complete') {
+                  finalOutput = chunk.final;
+                  finalUsage = chunk.usage;
+                }
+                controller.enqueue(
+                  new TextEncoder().encode(`data: ${JSON.stringify(chunk)}\n\n`)
+                );
+              }
+
+              // Background processing for resume/cover letter generation
+              if (finalOutput) {
+                let savedId: string | undefined;
+
+                if (mode === 'resume-generation' && finalOutput.resume) {
+                  const jobDesc = conversationContext.job?.description || message;
+                  const jobTitle = finalOutput.jobTitle || (finalOutput.resume as any).basics?.label || 'Optimized Resume';
+                  const companyName = finalOutput.companyName || '';
+                  
+                  try {
+                    const result = await resumeService.create({
+                      userId,
+                      resume: finalOutput.resume as Resume,
+                      jobDescription: jobDesc,
+                      jobMetadata: { jobTitle, companyName },
+                      metadata: {
+                        matchScore: finalOutput.matchScore,
+                        suggestions: finalOutput.suggestions,
+                        modelId: resolvedModel.modelId,
+                        usage: finalUsage,
+                      }
+                    });
+                    if (result.success) {
+                      savedId = result.data.id;
+                      logger.info('Auto-saved streamed resume', { resumeId: savedId, userId });
+                    }
+                  } catch (err) {
+                    logger.error('Failed to auto-save streamed resume', { err, userId });
+                  }
+                } else if (mode === 'cover-letter-generation' && finalOutput.content) {
+                  const jobDesc = conversationContext.job?.description || message;
+                  const jobTitle = finalOutput.jobTitle || '';
+                  const companyName = finalOutput.companyName || '';
+
+                  try {
+                    const result = await coverLetterService.createCoverLetter({
+                      userId,
+                      content: finalOutput.content,
+                      metadata: {
+                        jobDescription: jobDesc,
+                        jobTitle,
+                        companyName,
+                        modelId: resolvedModel.modelId,
+                        usage: finalUsage,
+                      }
+                    });
+                    if (result.success) {
+                      savedId = result.data.id;
+                      logger.info('Auto-saved streamed cover letter', { coverLetterId: savedId, userId });
+                    }
+                  } catch (err) {
+                    logger.error('Failed to auto-save streamed cover letter', { err, userId });
+                  }
+                }
+
+                // If we saved something, send a final notification chunk with the ID
+                if (savedId) {
+                  controller.enqueue(
+                    new TextEncoder().encode(`data: ${JSON.stringify({ type: 'saved', id: savedId })}\n\n`)
+                  );
+                }
+              }
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              logger.error('Streaming error', { error, requestId, userId });
+              controller.enqueue(
+                new TextEncoder().encode(`data: ${JSON.stringify({ type: 'error', error: errorMessage })}\n\n`)
+              );
+            } finally {
+              controller.close();
+            }
+          }
+        });
+
+        return new Response(stream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Conversation-Id': conversation.id,
+          },
+        });
+      }
+
       // Non-streaming response only
       const result = needsVision
         ? await AIOrchestrator.generateWithVision(conversation, orchestratorOptions)
         : await AIOrchestrator.generate(conversation, orchestratorOptions);
+
+      // Auto-save for non-streaming as well
+      let savedId: string | undefined;
+      if (result.output) {
+        const output = result.output as any;
+        if (mode === 'resume-generation' && output.resume) {
+          const res = await resumeService.create({
+            userId,
+            resume: output.resume as Resume,
+            jobDescription: conversationContext.job?.description || message,
+            jobMetadata: { 
+              jobTitle: output.jobTitle || (output.resume as any).basics?.label || 'Optimized Resume', 
+              companyName: output.companyName || '' 
+            },
+            metadata: {
+              matchScore: output.matchScore,
+              suggestions: output.suggestions,
+              modelId: resolvedModel.modelId,
+              usage: result.usage,
+            }
+          }).catch(err => logger.error('Failed to auto-save resume', { err, userId }));
+          if (res?.success) savedId = res.data.id;
+        } else if (mode === 'cover-letter-generation' && output.content) {
+          const res = await coverLetterService.createCoverLetter({
+            userId,
+            content: output.content,
+            metadata: {
+              jobDescription: conversationContext.job?.description || message,
+              jobTitle: output.jobTitle || '',
+              companyName: output.companyName || '',
+              modelId: resolvedModel.modelId,
+              usage: result.usage,
+            }
+          }).catch(err => logger.error('Failed to auto-save cover letter', { err, userId }));
+          if (res?.success) savedId = res.data.id;
+        }
+      }
 
       return Response.json(
         {
@@ -229,6 +375,7 @@ export const POST = createApiHandler<unknown, ChatRequest>(
             text: result.text,
             output: result.output,
             usage: result.usage,
+            savedId,
           },
           requestId,
         },

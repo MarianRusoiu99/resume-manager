@@ -5,7 +5,7 @@
 
 import { templateRepository } from '@/lib/repositories/templates.repository';
 import { Page } from '@/components/layout/Page';
-import { TemplateGallery } from '@/components/templates/TemplateGallery';
+import { TemplateGallery } from '@/modules/templates/components/TemplateGallery';
 import { getSession } from '@/lib/auth/dal';
 
 export default async function TemplatesPage() {

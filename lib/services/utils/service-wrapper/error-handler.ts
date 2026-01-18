@@ -5,11 +5,11 @@
  */
 
 import { ZodError } from 'zod';
-import { logger } from '@/lib/utils/logger';
-import { failure } from '@/lib/types/service-result';
-import type { ServiceErrorCode } from '@/lib/types/service-result';
+import { logger } from '../../../utils/logger';
+import { failure } from '../../../types';
+import type { ServiceErrorCode } from '../../../types';
 import type { ServiceWrapperOptions } from './types';
-import { AppError } from '@/lib/errors';
+import { AppError } from '../../../errors';
 import { appErrorToServiceCode } from './errors';
 
 export function handleServiceError<T>(
@@ -17,7 +17,7 @@ export function handleServiceError<T>(
   operation: string,
   logErrors: boolean,
   context?: Record<string, unknown>
-): import('@/lib/types/service-result').ServiceResult<T> {
+): import('../../../types/service-result').ServiceResult<T> {
   if (error instanceof ZodError) {
     const messages = error.issues.map(e => e.message).join(', ');
     if (logErrors) {

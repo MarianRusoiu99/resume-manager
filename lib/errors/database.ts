@@ -4,7 +4,7 @@
  * Error classes for database operations including queries, constraints, and transactions.
  */
 
-import type { ServiceErrorCode } from '@/lib/types/service-result';
+import type { ServiceErrorCode } from '@/lib/types';
 import { AppError } from './base';
 
 /**

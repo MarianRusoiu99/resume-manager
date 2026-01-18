@@ -1,5 +1,5 @@
 import { NotFoundError } from '@/lib/errors';
-import type { AIMode } from '../../modes/types';
+import type { AIMode } from '@/lib/ai/modes/types';
 import type { ConversationMode } from '../conversation';
 
 /**

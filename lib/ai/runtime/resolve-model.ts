@@ -1,7 +1,7 @@
 import { apiProviderService } from '@/lib/services/api-providers';
 import { aiSettingsService } from '@/lib/services/ai-settings';
 import { logger } from '@/lib/utils/logger';
-import { failure, success, type ServiceResult } from '@/lib/types/service-result';
+import { failure, success, type ServiceResult } from '@/lib/types';
 import { AIProviderNotConfiguredError, ModelNotFoundError } from '@/lib/errors/ai';
 
 import type { ResolvedAIModel, ResolveAIModelInput } from './types';
@@ -69,7 +69,7 @@ export async function resolveAIModel(input: ResolveAIModelInput): Promise<Servic
 
     const providerResult = await apiProviderService.getProviderInstance(targetModel.providerId, input.userId);
     if (!providerResult.success) {
-      return failure(providerResult.error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
+      return failure((providerResult as any).error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
     }
 
     return success({

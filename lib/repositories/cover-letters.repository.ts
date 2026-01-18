@@ -7,6 +7,7 @@
 
 import { prisma } from '@/lib/db/index';
 import { Prisma, PrismaClient } from '@prisma/client';
+import { TransactionClient } from '@/lib/db/transaction';
 
 import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
 import type { CreateCoverLetterInput, ICoverLetterRepository, UpdateCoverLetterInput, CoverLetterData, FindCoverLettersOptions } from './interfaces/cover-letters.repository.interface';
@@ -25,8 +26,8 @@ export class CoverLetterRepository
   /**
    * Find cover letter by ID
    */
-  override async findById(id: string, userId?: string): Promise<CoverLetterData | null> {
-    return this.db.coverLetter.findFirst({
+  override async findById(id: string, userId?: string, tx?: TransactionClient): Promise<CoverLetterData | null> {
+    return this.getDelegate(tx).findFirst({
       where: {
         id,
         ...(userId ? { userId } : {}),
@@ -52,7 +53,7 @@ export class CoverLetterRepository
   /**
    * Update a cover letter
    */
-  override async update(id: string, data: UpdateCoverLetterInput, userId?: string): Promise<CoverLetterData> {
+  override async update(id: string, data: UpdateCoverLetterInput, userId?: string, tx?: TransactionClient): Promise<CoverLetterData> {
     const updateData: Prisma.CoverLetterUpdateInput = {
       ...(data.content !== undefined && { content: data.content }),
       ...(data.resumeId !== undefined && { resumeId: data.resumeId }),
@@ -60,14 +61,14 @@ export class CoverLetterRepository
       ...(data.metadata !== undefined && { metadata: data.metadata }),
     };
 
-    return this.db.coverLetter.update({
+    return this.getDelegate(tx).update({
       where: { id, ...(userId ? { userId } : {}) },
       data: updateData,
     }) as Promise<CoverLetterData>;
   }
 
-  override async delete(id: string, userId?: string): Promise<CoverLetterData> {
-    return this.db.coverLetter.delete({
+  override async delete(id: string, userId?: string, tx?: TransactionClient): Promise<CoverLetterData> {
+    return this.getDelegate(tx).delete({
       where: { id, ...(userId ? { userId } : {}) },
     }) as Promise<CoverLetterData>;
   }
@@ -77,7 +78,8 @@ export class CoverLetterRepository
    */
   override async findAllForUser(
     userId: string,
-    args?: PrismaArgs & { limit?: number; offset?: number }
+    args?: PrismaArgs & { limit?: number; offset?: number },
+    tx?: TransactionClient
   ): Promise<CoverLetterData[]> {
     const { where, orderBy, take, skip, include, select, limit, offset } = args || {};
     
@@ -85,7 +87,7 @@ export class CoverLetterRepository
     const effectiveLimit = limit ?? take ?? 100;
     const effectiveOffset = offset ?? skip ?? 0;
     
-    return this.db.coverLetter.findMany({
+    return this.getDelegate(tx).findMany({
       where: { ...where, userId },
       orderBy: orderBy || { createdAt: 'desc' },
       take: effectiveLimit,
@@ -100,7 +102,8 @@ export class CoverLetterRepository
    */
   async findAllForUserWithCount(
     userId: string,
-    options?: FindCoverLettersOptions
+    options?: FindCoverLettersOptions,
+    tx?: TransactionClient
   ): Promise<{ coverLetters: CoverLetterData[]; total: number }> {
     const { limit = 50, offset = 0, orderBy = 'createdAt', orderDir = 'desc' } = options || {};
 
@@ -109,8 +112,8 @@ export class CoverLetterRepository
         orderBy: { [orderBy]: orderDir },
         take: limit,
         skip: offset,
-      }),
-      this.count({ userId }),
+      }, tx),
+      this.count({ userId }, tx),
     ]);
 
     return { coverLetters, total };

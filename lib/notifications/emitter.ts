@@ -6,8 +6,8 @@
  * - Redis PubSub for cross-instance delivery
  */
 
-import { getPubSubProvider } from '@/lib/redis';
-import { logger } from '@/lib/utils/logger';
+import { getPubSubProvider } from '../redis';
+import { logger } from '../utils/logger';
 import { SseHub, type SseController } from './sse-hub';
 import type { NotificationPayload } from './types';
 
@@ -114,9 +114,6 @@ export function getConnectionStats(): {
   };
 }
 
-/**
- * Graceful shutdown - clean up all connections and subscriptions
- */
 /**
  * Graceful shutdown - clean up all connections and subscriptions
  */

@@ -34,40 +34,22 @@ export function useExportPDF() {
 
       const { resume, templateId, templateHtml, fileName } = params;
 
-      // If custom template is provided, use it directly
-      if (templateHtml) {
-        const response = await fetch('/api/v1/export/pdf', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            resume,
-            template: {
-              htmlTemplate: templateHtml,
-            },
-            fileName,
-          })
-        });
+      let html = templateHtml;
 
-        if (!response.ok) {
-          throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
+      if (!html) {
+        if (!templateId) {
+          throw new ValidationError('No template selected');
         }
 
-        await downloadPDF(response);
-        toast.success('PDF exported successfully');
-        return;
-      }
+        const templateResult = await getTemplate(templateId);
+        if (!templateResult.success || !templateResult.data) {
+          throw !templateResult.success 
+            ? new ExternalServiceError('Template API', templateResult.error) 
+            : new NotFoundError('Template');
+        }
 
-      // Otherwise, fetch the template first
-      if (!templateId) {
-        throw new ValidationError('No template selected');
+        html = templateResult.data.htmlTemplate;
       }
-
-      const templateResult = await getTemplate(templateId);
-      if (!templateResult.success || !templateResult.data) {
-        throw !templateResult.success ? new ExternalServiceError('Template API', templateResult.error) : new NotFoundError('Template');
-      }
-
-      const template = templateResult.data;
 
       const response = await fetch('/api/v1/export/pdf', {
         method: 'POST',
@@ -75,14 +57,15 @@ export function useExportPDF() {
         body: JSON.stringify({
           resume,
           template: {
-            htmlTemplate: template.htmlTemplate,
+            htmlTemplate: html,
           },
           fileName,
         })
       });
 
       if (!response.ok) {
-        throw new ExternalServiceError('PDF Export', 'Failed to export PDF');
+        const errorData = await response.json().catch(() => ({}));
+        throw new ExternalServiceError('PDF Export', errorData.error || 'Failed to export PDF');
       }
 
       await downloadPDF(response);
@@ -99,16 +82,13 @@ export function useExportPDF() {
    * Download PDF blob from response
    */
   const downloadPDF = async (response: Response, defaultFileName?: string) => {
-    // Download the PDF blob
     const blob = await response.blob();
     const url = globalThis.URL.createObjectURL(blob);
     
-    // Extract filename from Content-Disposition header
     const contentDisposition = response.headers.get('Content-Disposition');
     const fileNameMatch = contentDisposition?.match(/filename="(.+)"/);
     const fileName = fileNameMatch?.[1] || defaultFileName || 'resume.pdf';
 
-    // Trigger download
     const link = document.createElement('a');
     link.href = url;
     link.download = fileName;
@@ -116,7 +96,6 @@ export function useExportPDF() {
     link.click();
     link.remove();
     
-    // Cleanup
     globalThis.URL.revokeObjectURL(url);
   };
 

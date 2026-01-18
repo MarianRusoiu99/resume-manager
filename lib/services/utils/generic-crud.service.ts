@@ -1,4 +1,4 @@
-import { ServiceResult } from '@/lib/types/service-result';
+import { ServiceResult } from '@/lib/types';
 import { withServiceError, NotFoundError } from '@/lib/services/utils';
 import { ICache } from '@/lib/repositories/interfaces';
 import { type ZodType } from 'zod';

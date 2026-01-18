@@ -13,7 +13,7 @@ import {
   createProvider,
   isProviderSupported,
 } from '@/lib/ai/providers';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 import { withServiceError, ValidationError } from '@/lib/services/utils';
 import { RecordNotFoundError } from '@/lib/errors/database';
 import { GenericUserOwnedCrudService } from '../utils/generic-crud.service';
@@ -74,7 +74,7 @@ export class ApiProviderService
     return withServiceError('fetch available models', async () => {
       const result = await this.getUserProvidersWithModels(userId);
 
-      if (!result.success) {
+      if (result.success === false) {
         throw new ValidationError(result.error);
       }
 

@@ -27,6 +27,12 @@ export const ErrorCode = {
   CONFIGURATION_ERROR: 'CONFIGURATION_ERROR',
   /** Conflict with existing resource */
   CONFLICT: 'CONFLICT',
+  /** Method not allowed (405 equivalent) */
+  METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
+  /** Payload too large (413 equivalent) */
+  PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
+  /** Request timeout (408 equivalent) */
+  REQUEST_TIMEOUT: 'REQUEST_TIMEOUT',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
@@ -44,6 +50,9 @@ export const errorCodeToHttpStatus: Record<ErrorCode, number> = {
   [ErrorCode.RATE_LIMITED]: 429,
   [ErrorCode.EXTERNAL_SERVICE_ERROR]: 502,
   [ErrorCode.CONFIGURATION_ERROR]: 500,
+  [ErrorCode.METHOD_NOT_ALLOWED]: 405,
+  [ErrorCode.PAYLOAD_TOO_LARGE]: 413,
+  [ErrorCode.REQUEST_TIMEOUT]: 408,
   [ErrorCode.CONFLICT]: 409,
 };
 
@@ -61,6 +70,9 @@ export function getErrorMessage(code: ErrorCode): string {
     [ErrorCode.EXTERNAL_SERVICE_ERROR]: 'An external service is unavailable',
     [ErrorCode.CONFIGURATION_ERROR]: 'System configuration error',
     [ErrorCode.CONFLICT]: 'This operation conflicts with existing data',
+    [ErrorCode.METHOD_NOT_ALLOWED]: 'The requested method is not allowed',
+    [ErrorCode.PAYLOAD_TOO_LARGE]: 'The request payload is too large',
+    [ErrorCode.REQUEST_TIMEOUT]: 'The request timed out',
   };
   return messages[code];
 }

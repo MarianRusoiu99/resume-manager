@@ -5,6 +5,7 @@
  */
 
 import { Prisma } from '@prisma/client';
+import { TransactionClient } from '@/lib/db/transaction';
 
 /**
  * Cover letter data structure
@@ -41,7 +42,13 @@ export interface CreateCoverLetterInput {
   jobPostingId?: string | null;
   metadata: {
     model?: string;
+    modelId?: string;
     tokens?: number;
+    usage?: {
+      promptTokens?: number;
+      completionTokens?: number;
+      totalTokens?: number;
+    };
     generationTime?: number;
     personalInstructions?: string;
     jobDescription?: string;
@@ -77,12 +84,12 @@ export interface ICoverLetterRepository {
   /**
    * Create a new cover letter
    */
-  create(data: CreateCoverLetterInput): Promise<CoverLetterData>;
+  create(data: CreateCoverLetterInput, tx?: TransactionClient): Promise<CoverLetterData>;
 
   /**
    * Find cover letter by ID with optional user ownership check
    */
-  findById(id: string, userId?: string): Promise<CoverLetterData | null>;
+  findById(id: string, userId?: string, tx?: TransactionClient): Promise<CoverLetterData | null>;
 
   /**
    * Find all cover letters for a user
@@ -92,28 +99,29 @@ export interface ICoverLetterRepository {
     orderBy?: Record<string, unknown>;
     take?: number;
     skip?: number;
-  }): Promise<CoverLetterData[]>;
+  }, tx?: TransactionClient): Promise<CoverLetterData[]>;
 
   /**
    * Find all cover letters for a user with count
    */
   findAllForUserWithCount(
     userId: string,
-    options?: FindCoverLettersOptions
+    options?: FindCoverLettersOptions,
+    tx?: TransactionClient
   ): Promise<{ coverLetters: CoverLetterData[]; total: number }>;
 
   /**
    * Update a cover letter
    */
-  update(id: string, data: UpdateCoverLetterInput, userId?: string): Promise<CoverLetterData>;
+  update(id: string, data: UpdateCoverLetterInput, userId?: string, tx?: TransactionClient): Promise<CoverLetterData>;
 
   /**
    * Delete a cover letter
    */
-  delete(id: string, userId?: string): Promise<CoverLetterData>;
+  delete(id: string, userId?: string, tx?: TransactionClient): Promise<CoverLetterData>;
 
   /**
    * Check if cover letter exists and belongs to user
    */
-  exists(id: string, userId?: string): Promise<boolean>;
+  exists(id: string, userId?: string, tx?: TransactionClient): Promise<boolean>;
 }

@@ -48,7 +48,7 @@ export function TagInput({
   className,
   disabled = false,
   error,
-}: TagInputProps) {
+}: Readonly<TagInputProps>) {
   const [inputValue, setInputValue] = React.useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
   const displayLabel = required ? `${label} *` : label;

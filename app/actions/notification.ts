@@ -57,8 +57,25 @@ export const deleteNotification = withServerAction(
     async (session, notificationId: string) => {
         return notificationService.deleteNotification(notificationId, session.user.id);
     },
-    {
-        auditAction: 'SETTINGS_UPDATE', // Reusing valid audit action for now
-        resourceType: 'notification',
-    }
+    { resourceType: 'notification' }
+);
+
+/**
+ * Create a new notification for the current user
+ */
+export const sendNotification = withServerAction(
+    'sendNotification',
+    async (session, data: {
+        title: string;
+        message: string;
+        type?: 'RESUME_GENERATED' | 'COVER_LETTER_GENERATED' | 'PROFILE_UPDATED' | 'SYSTEM';
+        metadata?: Record<string, any>;
+    }) => {
+        return notificationService.createNotification({
+            userId: session.user.id,
+            ...data,
+            type: data.type || 'SYSTEM'
+        });
+    },
+    { resourceType: 'notification' }
 );

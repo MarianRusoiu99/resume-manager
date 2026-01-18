@@ -1,68 +1,36 @@
-'use client';
+import { Suspense } from 'react';
+import { getProfiles } from '@/app/actions/profile';
+import { getApiProviders } from '@/app/actions/api-provider';
+import { GenerateContent } from './components/GenerateContent';
+import { PageSkeleton } from '@/components/core/data-display/skeletons/PageSkeleton';
+import type { ProfileListItem } from '@/lib/actions/types';
 
-/**
- * Standardized Generate Page
- * Full-width tabbed interface for generating tailored resumes and cover letters.
- * Refactored to use modular sub-components.
- */
+async function GenerateDataWrapper() {
+  const [profilesResult, providersResult] = await Promise.all([
+    getProfiles(),
+    getApiProviders(),
+  ]);
 
-import { useSearchParams } from 'next/navigation';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui';
-import { FileText, Send } from 'lucide-react';
-import { Page } from '@/components/layout/Page';
-import { useGenerateMetadata } from './components/useGenerateMetadata';
-import { ResumeGenerator } from './components/ResumeGenerator';
-import { CoverLetterGenerator } from './components/CoverLetterGenerator';
-
-export default function GeneratePage() {
-  const searchParams = useSearchParams();
-  const tabParam = searchParams.get('tab');
-
-  const {
-    profiles,
-    hasAIProviders,
-    isLoadingMetadata,
-    defaultProfileId,
-  } = useGenerateMetadata();
+  const profiles = (profilesResult.success ? profilesResult.data : []) as ProfileListItem[];
+  const providers = (providersResult.success ? providersResult.data : []) as any[];
+  const hasAIProviders = providers.some((p) => p.isActive);
+  
+  const defaultProfile = profiles.find((p) => p.isDefault) || profiles[0];
+  const defaultProfileId = defaultProfile?.id || '';
 
   return (
-    <Page
-      title="Generate Content"
-      description="Create tailored resumes and cover letters with AI"
-    >
-      <Tabs defaultValue={tabParam === 'cover-letter' ? 'cover-letter' : 'resume'} className="w-full">
-        <div className="flex items-center justify-end mb-8">
-          <TabsList className="grid w-full grid-cols-2 max-w-md bg-muted/50 p-1 rounded-xl">
-            <TabsTrigger value="resume" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <FileText className="w-4 h-4" />
-              Resume
-            </TabsTrigger>
-            <TabsTrigger value="cover-letter" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <Send className="w-4 h-4" />
-              Cover Letter
-            </TabsTrigger>
-          </TabsList>
-        </div>
+    <GenerateContent 
+      initialProfiles={profiles}
+      hasAIProviders={hasAIProviders}
+      defaultProfileId={defaultProfileId}
+    />
+  );
+}
 
-        <div className="mt-2">
-          <TabsContent value="resume" className="m-0">
-            <ResumeGenerator 
-              profiles={profiles}
-              hasAIProviders={hasAIProviders}
-              isLoadingMetadata={isLoadingMetadata}
-              defaultProfileId={defaultProfileId}
-            />
-          </TabsContent>
-
-          <TabsContent value="cover-letter" className="m-0">
-            <CoverLetterGenerator 
-              profiles={profiles}
-              hasAIProviders={hasAIProviders}
-              defaultProfileId={defaultProfileId}
-            />
-          </TabsContent>
-        </div>
-      </Tabs>
-    </Page>
+export default function GeneratePage() {
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <GenerateDataWrapper />
+    </Suspense>
   );
 }

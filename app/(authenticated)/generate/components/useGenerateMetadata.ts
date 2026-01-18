@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { apiJson } from '@/lib/utils/api-client';
 import { getProfiles } from '@/app/actions/profile';
 import { getApiProviders } from '@/app/actions/api-provider';
 import { toast } from 'sonner';
@@ -30,24 +31,24 @@ export function useGenerateMetadata() {
         const [profilesResult, providersResult, preferencesRes] = await Promise.all([
           getProfiles(),
           getApiProviders(),
-          fetch('/api/v1/user/preferences').then(res => res.json())
+          apiJson<UserPreferences>('/api/v1/user/preferences')
         ]);
 
         if (profilesResult.success && profilesResult.data) {
           const profileData = profilesResult.data as ProfileListItem[];
           setProfiles(profileData);
           
-          const prefDefaultProfileId = preferencesRes?.data?.template?.defaultProfileId;
+          const prefDefaultProfileId = (preferencesRes?.data as any)?.template?.defaultProfileId;
           const defaultProfile = profileData.find((p) => p.id === prefDefaultProfileId) || 
-                               profileData.find((p) => p.isDefault) || 
-                               profileData[0];
+                                profileData.find((p) => p.isDefault) || 
+                                profileData[0];
           
           if (defaultProfile) {
             setDefaultProfileId(defaultProfile.id);
           }
         }
 
-        if (preferencesRes?.success) {
+        if (preferencesRes?.data) {
           setUserPreferences(preferencesRes.data);
         }
 

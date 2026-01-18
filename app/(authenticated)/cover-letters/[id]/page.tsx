@@ -9,13 +9,13 @@ import { useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui';
-import { ErrorState, LoadingState } from '@/components/shared/states';
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
-import { CoverLetterEditor, type CoverLetterEditorRef } from '@/components/cover-letter';
+import { ErrorState, LoadingState } from '@/components/core/feedback/states';
+import { ConfirmDialog } from "@/components/core/feedback/ConfirmDialog";
+import { CoverLetterEditor, type CoverLetterEditorRef } from '@/modules/cover-letter/components/CoverLetterEditor';
 import { Trash2, Download, Copy, Sparkles, Edit, Save } from 'lucide-react';
 import { useExportPDF, useCoverLetterOperations } from '@/hooks';
-import { useCoverLetterDetail } from '@/hooks/features/useCoverLetterDetail';
-import { CoverLetterSidebar } from '@/components/cover-letter/detail/CoverLetterSidebar';
+import { useCoverLetterDetail } from '@/modules/cover-letter/hooks/useCoverLetterDetail';
+import { CoverLetterSidebar } from '@/modules/cover-letter/components/detail/CoverLetterSidebar';
 import { FeatureErrorBoundary } from '@/components/error-boundaries';
 
 type CoverLetterMetadata = {
@@ -155,7 +155,7 @@ export default function CoverLetterDetailPage() {
                     setIsEditing(true);
                     editorRef.current?.setIsEditing(true);
                   }}
-                  className="h-8 rounded-none border-px"
+                  className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
                 >
                   <Edit className="w-3.5 h-3.5 mr-2" />
                   Edit
@@ -164,7 +164,7 @@ export default function CoverLetterDetailPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => editorRef.current?.copyToClipboard()}
-                  className="h-8 rounded-none border-px"
+                  className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
                 >
                   <Copy className="w-3.5 h-3.5 mr-2" />
                   Copy
@@ -173,7 +173,7 @@ export default function CoverLetterDetailPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => editorRef.current?.enhance()}
-                  className="h-8 rounded-none border-px"
+                  className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
                 >
                   <Sparkles className="w-3.5 h-3.5 mr-2" />
                   AI Enhance
@@ -183,17 +183,17 @@ export default function CoverLetterDetailPage() {
                   size="sm"
                   onClick={handleExport}
                   disabled={isExportingPDF}
-                  className="h-8 rounded-none border-px"
+                  className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 hover:text-primary transition-all shadow-sm"
                 >
                   <Download className="w-3.5 h-3.5 mr-2" />
                   {isExportingPDF ? 'Exporting...' : 'Export PDF'}
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => setDeleteDialogOpen(true)}
                   disabled={isDeleting}
-                  className="h-8 rounded-none border-px text-red-600 hover:text-red-700"
+                  className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
                 >
                   <Trash2 className="w-3.5 h-3.5 mr-2" />
                   Delete
@@ -209,7 +209,7 @@ export default function CoverLetterDetailPage() {
                     editorRef.current?.setIsEditing(false);
                   }}
                   disabled={isSaving}
-                  className="h-8 rounded-none border-px"
+                  className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] bg-background border-primary/10 hover:bg-primary/5 transition-all shadow-sm"
                 >
                   Cancel
                 </Button>
@@ -217,7 +217,7 @@ export default function CoverLetterDetailPage() {
                   size="sm"
                   onClick={() => editorRef.current?.save()}
                   disabled={isSaving}
-                  className="h-8 rounded-none border-px"
+                  className="h-8 rounded-xl font-bold uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 transition-all"
                 >
                   <Save className="w-3.5 h-3.5 mr-2" />
                   {isSaving ? 'Saving...' : 'Save Changes'}
@@ -227,13 +227,13 @@ export default function CoverLetterDetailPage() {
           </div>
         }
       >
-        <div className="flex flex-col h-full overflow-hidden bg-muted/20">
+        <div className="flex flex-col h-full overflow-hidden">
           <div className="flex-1 overflow-y-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] h-full gap-px bg-border border-b">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] h-full gap-8 p-8">
               {/* Editor Pane */}
-              <div className="bg-background flex flex-col">
-                <div className="p-4 border-b bg-muted/10">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              <div className="bg-card/60 backdrop-blur-sm rounded-2xl shadow-sm border-none flex flex-col overflow-hidden">
+                <div className="p-4 border-b bg-muted/20">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary">
                     Cover Letter Content
                   </span>
                 </div>
@@ -248,12 +248,14 @@ export default function CoverLetterDetailPage() {
               </div>
 
               {/* Sidebar Pane */}
-              <CoverLetterSidebar
-                resumeId={coverLetter.resumeId}
-                jobDescription={coverLetter.jobPosting?.description ?? coverLetter.resume?.jobPosting?.description}
-                metadata={getMetadata()}
-                createdAt={coverLetter.createdAt}
-              />
+              <div className="space-y-6">
+                <CoverLetterSidebar
+                  resumeId={coverLetter.resumeId}
+                  jobDescription={coverLetter.jobPosting?.description ?? coverLetter.resume?.jobPosting?.description}
+                  metadata={getMetadata()}
+                  createdAt={coverLetter.createdAt}
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -5,7 +5,7 @@
 
 import { notFound } from 'next/navigation';
 import { templateRepository } from '@/lib/repositories/templates.repository';
-import { TemplateEditor } from '@/components/templates/TemplateEditor';
+import { TemplateEditor } from '@/modules/templates/components/TemplateEditor';
 
 export default async function EditTemplatePage({
   params,

@@ -10,6 +10,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runner
     container_name: resume-optimizer-app
     restart: unless-stopped
     ports:
@@ -27,6 +28,11 @@ services:
       - APP_NAME=${APP_NAME:-Resume Manager}
     networks:
       - app-network
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -41,14 +47,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: deps
+      target: builder # Use builder which has all code and devDeps
     container_name: resume-optimizer-migrate
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-resume_optimizer}
     networks:
       - app-network
     command: npx prisma migrate deploy
-    restart: "no"
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
 
   # ---------------------------------------------------------------------------
   # PostgreSQL

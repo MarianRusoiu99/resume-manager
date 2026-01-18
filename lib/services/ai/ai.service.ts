@@ -2,21 +2,94 @@ import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
 import { enhanceText } from '@/lib/ai/features/enhance';
 import { optimizeResume } from '@/lib/ai/agents/resume-optimization/agent';
 import { generateCoverLetter } from '@/lib/ai/agents/cover-letter/agent';
-import { success, failure, type ServiceResult } from '@/lib/types/service-result';
+import { success, failure, type ServiceResult } from '@/lib/types';
 import { logger } from '@/lib/utils/logger';
 import { apiProviderService } from '@/lib/services/api-providers';
-import type { 
-  IAIService, 
-  EnhanceTextInput, 
-  EnhanceTextResult,
-  OptimizeResumeInput,
-  OptimizeResumeResult,
-  GenerateCoverLetterInput,
-  GenerateCoverLetterResult
-} from '../interfaces/ai.service.interface';
+import { withResilience } from '@/lib/resilience';
 import type { ResolvedAIModel, AIModelFeature } from '@/lib/ai/runtime/types';
+import type { Resume } from '@/lib/validations/jsonresume';
+import type { ContentType } from '@/lib/validations/settings';
+
+export interface EnhanceTextInput {
+  content: string;
+  instructions: string;
+  context?: string;
+  contentType: ContentType;
+  modelId?: string;
+  attachments?: Array<{
+    type: string;
+    content: string;
+    name: string;
+  }>;
+}
+
+export interface EnhanceTextResult {
+  enhancedContent: string;
+  metadata: {
+    model: string;
+    provider: string;
+    contentType: ContentType;
+  };
+}
+
+export interface OptimizeResumeInput {
+  jobDescription: string;
+  userResume: Resume;
+  modelId?: string;
+}
+
+export interface OptimizeResumeResult {
+  resume: Resume;
+  jobTitle: string;
+  companyName: string;
+}
+
+export interface GenerateCoverLetterInput {
+  jobDescription: string;
+  userResume: Resume;
+  modelId?: string;
+}
+
+export interface GenerateCoverLetterResult {
+  content: string;
+  subject?: string;
+  jobTitle?: string;
+  companyName?: string;
+  recipientName?: string;
+}
+
+export interface IAIService {
+  enhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<EnhanceTextResult>>;
+  optimizeResume(userId: string, input: OptimizeResumeInput): Promise<ServiceResult<OptimizeResumeResult>>;
+  generateCoverLetter(userId: string, input: GenerateCoverLetterInput): Promise<ServiceResult<GenerateCoverLetterResult>>;
+}
 
 export class AIService implements IAIService {
+  private async executeWithResilience<T>(
+    userId: string,
+    feature: AIModelFeature,
+    modelId: string | undefined,
+    operation: (resolvedModel: ResolvedAIModel) => Promise<T>
+  ): Promise<ServiceResult<T>> {
+    const resilienceOptions = {
+      retry: 'ai' as const,
+      timeout: 'ai' as const,
+      circuitBreaker: `ai-${feature}`,
+      operationName: `AI ${feature}`,
+    };
+
+    try {
+      // We still handle fallback manually because it's a domain-specific logic 
+      // (switching models/providers), while withResilience handles transient faults.
+      return await this.withFallback(userId, feature, modelId, (resolvedModel) => 
+        withResilience(() => operation(resolvedModel), resilienceOptions)
+      );
+    } catch (error) {
+      logger.error(`Resilient AI operation failed for ${feature}`, error);
+      return failure(`AI operation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
   private async withFallback<T>(
     userId: string,
     feature: AIModelFeature,
@@ -72,7 +145,7 @@ export class AIService implements IAIService {
   async enhanceText(userId: string, input: EnhanceTextInput): Promise<ServiceResult<EnhanceTextResult>> {
     const hasImages = input.attachments?.some(a => a.type.startsWith('image/'));
     
-    return this.withFallback(userId, 'enhance', input.modelId, async (resolvedModel) => {
+    return this.executeWithResilience(userId, 'enhance', input.modelId, async (resolvedModel) => {
       let modelKey = resolvedModel.modelKey;
       
       if (hasImages) {
@@ -97,7 +170,7 @@ export class AIService implements IAIService {
   }
 
   async optimizeResume(userId: string, input: OptimizeResumeInput): Promise<ServiceResult<OptimizeResumeResult>> {
-    return this.withFallback(userId, 'resume', input.modelId, async (resolvedModel) => {
+    return this.executeWithResilience(userId, 'resume', input.modelId, async (resolvedModel) => {
       return optimizeResume({
         model: resolvedModel.provider.createLanguageModel(resolvedModel.modelKey),
         jobDescription: input.jobDescription,
@@ -108,7 +181,7 @@ export class AIService implements IAIService {
   }
 
   async generateCoverLetter(userId: string, input: GenerateCoverLetterInput): Promise<ServiceResult<GenerateCoverLetterResult>> {
-    return this.withFallback(userId, 'coverLetter', input.modelId, async (resolvedModel) => {
+    return this.executeWithResilience(userId, 'coverLetter', input.modelId, async (resolvedModel) => {
       return generateCoverLetter({
         model: resolvedModel.provider.createLanguageModel(resolvedModel.modelKey),
         jobDescription: input.jobDescription,

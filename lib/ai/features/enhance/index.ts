@@ -1,6 +1,6 @@
 import type { LanguageModel, CoreMessage } from 'ai';
 import { z } from 'zod';
-import { ValidatedAIRunner } from '../../core/validated-runner';
+import { ValidatedAIRunner } from '@/lib/ai/core/validated-runner';
 import type { ContentType } from '@/lib/validations/settings';
 
 export type EnhanceTextInput = {

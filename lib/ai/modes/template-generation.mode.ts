@@ -7,6 +7,7 @@
 import { defineMode } from './types';
 import { templateGenerationOutputSchema } from '../schemas';
 import { BASE_SYSTEM_PROMPT, TEMPLATE_EXPERT_PROMPT, TEMPLATE_OUTPUT_INSTRUCTIONS, HANDLEBARS_REFERENCE } from '../prompts/system';
+import { MASTER_RESUME_DATA } from '../prompts/template-extraction';
 import type { ConversationContext } from '../chat/context';
 
 export const templateGenerationMode = defineMode({
@@ -32,25 +33,20 @@ export const templateGenerationMode = defineMode({
       '## YOUR TASK',
       'Analyze the provided resume design image and recreate it as an HTML/CSS template.',
       '',
+      '### STRESS TEST MANDATE',
+      'The template MUST be designed to handle all 12 sections of the JSON Resume schema gracefully. Use the provided MASTER JSON structure as your reference for data coverage and section naming.',
+      '',
       '### REQUIREMENTS',
-      '1. Match the visual design as closely as possible',
-      '2. Use Handlebars syntax for all dynamic content',
-      '3. Create print-friendly CSS (A4 page size)',
-      '4. Ensure proper structure for all JSON Resume sections (basics, work, education, skills, projects, etc.)',
-      '5. Use Handlebars loops ({{#each section}}) for lists like work experience and skills',
-      '6. Make it responsive and accessible',
+      '1. Match the visual design as closely as possible.',
+      '2. Use Handlebars syntax for all dynamic content.',
+      '3. EVERY section and optional field MUST be wrapped in Handlebars {{#if}} blocks to prevent empty headers or whitespace when data is missing.',
+      '4. Create print-friendly CSS (A4 page size) with break-inside: avoid for list items.',
+      '5. Use CSS Flexbox or Grid for a flexible layout that handles varying data density.',
       '',
-      '### HANDLEBARS BEST PRACTICES',
-      '- Use {{#if basics.summary}} to conditionally render sections',
-      '- For dates, use {{startDate}} and {{endDate}}',
-      '- For skills, iterate through keywords if available: {{#each keywords}}{{this}}{{/each}}',
-      '',
-      '### STRUCTURE GUIDELINES',
-      '- Use semantic HTML5 elements',
-      '- Organize sections logically',
-      '- Use CSS classes for styling (avoid inline styles)',
-      '- Include @media print rules',
-      '- Use CSS variables for colors and fonts',
+      '### MASTER DATA REFERENCE (FOR SECTION COVERAGE)',
+      '```json',
+      JSON.stringify(MASTER_RESUME_DATA, null, 2),
+      '```',
       '',
       TEMPLATE_OUTPUT_INSTRUCTIONS,
       '',

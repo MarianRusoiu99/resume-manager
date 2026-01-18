@@ -4,14 +4,14 @@
  */
 
 import { Page } from "@/components/layout/Page";
-import { ProfileGalleryClient } from "@/components/profile/ProfileGalleryClient";
+import { ProfileGalleryClient } from "@/modules/profile/components/ProfileGalleryClient";
 import { profileService } from "@/lib/services";
 import { verifySession } from "@/lib/auth/dal";
 import type { Resume } from "@/lib/validations/jsonresume";
 import type { ProfileDto } from "@/lib/actions/types";
 import { Suspense } from "react";
 import { ExternalServiceError, ValidationError } from "@/lib/errors";
-import { GallerySkeleton } from "@/components/shared/skeletons/GallerySkeleton";
+import { GallerySkeleton } from "@/components/core/data-display/skeletons/GallerySkeleton";
 
 interface Props {
   searchParams: Promise<{ q?: string }>;

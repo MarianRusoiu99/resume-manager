@@ -10,6 +10,7 @@ export { useExportPDF } from './useExportPDF';
 export { usePagination } from './usePagination';
 export { usePreviewScale } from './usePreviewScale';
 export { useIframeResize } from './useIframeResize';
+export { useTemplatePreview } from './useTemplatePreview';
 
 // UI Components
 export { PreviewHeader } from './PreviewHeader';

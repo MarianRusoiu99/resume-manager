@@ -51,7 +51,7 @@ export const POST = createApiHandler(
   },
   {
     isPublic: true,
-    rateLimit: "auth",
+    rateLimit: "registration",
     bodySchema: registerSchema,
   }
 );

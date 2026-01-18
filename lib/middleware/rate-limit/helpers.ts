@@ -9,45 +9,52 @@ import { rateLimiter } from './limiter';
  * Rate limit configurations for different endpoints
  */
 export const RateLimitConfigs = {
-  // Authentication endpoints (5 requests per 15 minutes)
+  // Authentication endpoints (20 requests per 15 minutes)
   auth: {
     windowMs: 15 * 60 * 1000,
-    maxRequests: 5,
+    maxRequests: 20,
     message: 'Too many authentication attempts. Please try again later.'
   },
   
-  // Resume generation (5 requests per minute)
-  resumeGeneration: {
-    windowMs: 60 * 1000,
-    maxRequests: 5,
-    message: 'Too many resume generation requests. Please wait a moment.'
+  // Registration (10 requests per hour per IP)
+  registration: {
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 10,
+    message: 'Too many registration attempts. Please try again later.'
   },
   
-  // API key operations (10 requests per minute)
+  // Resume generation (50 requests per hour)
+  resumeGeneration: {
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 50,
+    message: 'You have reached the hourly limit for resume generation.'
+  },
+  
+  // API key operations (30 requests per minute)
   apiKeys: {
     windowMs: 60 * 1000,
-    maxRequests: 10,
+    maxRequests: 30,
     message: 'Too many API key operations. Please wait a moment.'
   },
   
-  // Profile updates (20 requests per minute)
+  // Profile updates (50 requests per minute)
   profileUpdates: {
     windowMs: 60 * 1000,
-    maxRequests: 20,
+    maxRequests: 50,
     message: 'Too many profile updates. Please wait a moment.'
   },
   
-  // General API (30 requests per minute)
+  // General API (200 requests per minute)
   general: {
     windowMs: 60 * 1000,
-    maxRequests: 30,
+    maxRequests: 200,
     message: 'Too many requests. Please wait a moment.'
   },
   
-  // PDF export (10 requests per minute)
+  // PDF export (500 requests per minute)
   pdfExport: {
     windowMs: 60 * 1000,
-    maxRequests: 10,
+    maxRequests: 500,
     message: 'Too many PDF export requests. Please wait a moment.'
   }
 } as const;

@@ -49,7 +49,7 @@ export const ManagedForm = memo(function ManagedForm<T extends FieldValues>({
   children,
   disabled = false,
   columns = 2,
-}: ManagedFormProps<T>) {
+}: Readonly<ManagedFormProps<T>>) {
   const form = useForm<T>({
     resolver: zodResolver(schema),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- react-hook-form DefaultValues type requires cast

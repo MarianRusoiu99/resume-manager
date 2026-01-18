@@ -25,7 +25,10 @@ export type ServiceErrorCode =
   | 'RATE_LIMITED'
   | 'EXTERNAL_SERVICE_ERROR'
   | 'CONFIGURATION_ERROR'
-  | 'INTERNAL_ERROR';
+  | 'INTERNAL_ERROR'
+  | 'METHOD_NOT_ALLOWED'
+  | 'PAYLOAD_TOO_LARGE'
+  | 'REQUEST_TIMEOUT';
 
 /**
  * Create a successful result

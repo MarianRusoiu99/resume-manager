@@ -62,6 +62,19 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
           return;
         }
 
+        // If we have a specific entity ID but no template was found on it, 
+        // strictly fall back to the SYSTEM DEFAULT. 
+        // Do NOT check localStorage/UserPrefs, to prevent "bleeding" state from other resumes.
+        if (entityId) {
+             const defaultTemplate = await loadDefaultTemplate();
+             if (defaultTemplate) {
+                 setSelectedTemplateId(defaultTemplate);
+             }
+             return;
+        }
+
+        // --- Generic Preview Mode Only (No Entity ID) ---
+
         // Priority 2: Load from user preferences (API)
         try {
           const res = await fetch('/api/v1/user/preferences');
@@ -81,7 +94,7 @@ export function useTemplateSelection({ resumeId, profileId, onTemplateChange }: 
           return;
         }
 
-        // Priority 3: Load default template
+        // Priority 4: Load default template
         const defaultTemplate = await loadDefaultTemplate();
         if (defaultTemplate) {
           setSelectedTemplateId(defaultTemplate);

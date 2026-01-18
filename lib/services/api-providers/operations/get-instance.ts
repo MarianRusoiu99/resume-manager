@@ -1,8 +1,8 @@
 import { apiProviderRepository } from '@/lib/repositories/api-providers.repository';
 import { decryptApiKey } from '@/lib/encryption/api-key';
-import { apiKeyAuditService, type AuditContext } from '../../api-key-management';
+import { apiKeyAuditService, type AuditContext } from '@/lib/services/api-key-management';
 import { createProvider } from '@/lib/ai/providers';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 import { withServiceError, ValidationError } from '@/lib/services/utils';
 import { RecordNotFoundError } from '@/lib/errors/database';
 import type { ProviderInstanceData } from '../types';

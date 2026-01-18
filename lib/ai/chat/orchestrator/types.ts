@@ -1,4 +1,5 @@
-import type { AIProvider } from '../../providers';
+import type { AIProvider } from '@/lib/ai/providers';
+import type { DeepPartial } from '@/lib/types';
 
 /**
  * Chunk types for streaming
@@ -58,11 +59,7 @@ export interface OrchestratorOptions {
 export interface GenerationResult<T> {
   output: T;
   text: string;
-  usage: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-  };
+  usage: NormalizedUsage;
   finishReason: string;
 }
 
@@ -71,3 +68,23 @@ export interface NormalizedUsage {
   completionTokens: number;
   totalTokens: number;
 }
+
+export interface StreamChunkDelta<T> {
+  type: 'delta';
+  partial: DeepPartial<T>;
+  timestamp: number;
+}
+
+export interface StreamChunkComplete<T> {
+  type: 'complete';
+  final: T;
+  usage: NormalizedUsage;
+}
+
+export interface StreamChunkText {
+  type: 'text';
+  text: string;
+  timestamp: number;
+}
+
+export type StreamChunk<T> = StreamChunkDelta<T> | StreamChunkComplete<T> | StreamChunkText;

@@ -4,11 +4,11 @@ import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
-import type { BlockNoteEditorMethods } from "@/components/editor/BlockNoteEditorWrapper.client";
+import type { BlockNoteEditorMethods } from "@/modules/editor/components/BlockNoteEditorWrapper.client";
 
 // Dynamically import BlockNote to avoid SSR issues
 const BlockNoteEditor = dynamic(
-  () => import("@/components/editor/BlockNoteEditorWrapper.client").then((mod) => mod.BlockNoteEditorWrapper),
+  () => import("@/modules/editor/components/BlockNoteEditorWrapper.client").then((mod) => mod.BlockNoteEditorWrapper),
   {
     ssr: false,
     loading: () => (
@@ -62,7 +62,7 @@ export function RichTextField({
   className,
   disabled = false,
   error,
-}: RichTextFieldProps) {
+}: Readonly<RichTextFieldProps>) {
   const editorRef = React.useRef<BlockNoteEditorMethods>(null);
   const displayLabel = required ? `${label} *` : label;
   

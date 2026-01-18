@@ -29,9 +29,9 @@ export function usePreviewScale({
       const containerWidth = container.clientWidth;
       const containerHeight = container.clientHeight;
 
-      // Use all available space with minimal padding (8px)
-      const availableWidth = containerWidth - 16;
-      const availableHeight = containerHeight - 16;
+      // Use available space with padding
+      const availableWidth = containerWidth - 64; // Horizontal padding (32px each side)
+      const availableHeight = containerHeight - 64; // Vertical padding (32px each side)
 
       const scaleWidth = availableWidth / A4_WIDTH;
       const scaleHeight = availableHeight / A4_HEIGHT;

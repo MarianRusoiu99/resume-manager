@@ -5,7 +5,7 @@
  * Each section includes all fields from its respective JSONResume schema.
  */
 
-import { createFormSchema } from '../../form-schema';
+import { createFormSchema } from '@/lib/forms/form-schema';
 import type { Certificate, Language, Award, Publication, Interest, Reference } from '@/lib/validations/jsonresume';
 
 /**

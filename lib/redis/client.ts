@@ -5,8 +5,8 @@
  * Supports Redis (production) and in-memory (development/fallback).
  */
 
-import { env } from '@/lib/config';
-import { logger } from '@/lib/utils/logger';
+import { env } from '../config';
+import { logger } from '../utils/logger';
 import { CacheProvider, PubSubProvider } from './types';
 import { MemoryCacheProvider, MemoryPubSubProvider } from './memory-provider';
 import { RedisCacheProvider, RedisPubSubProvider, RedisProvider, RedisOptions } from './redis-provider';

@@ -47,19 +47,6 @@ export const EDITOR_CONFIG: EditorSection[] = [
     fromForm: schemas.formDataToBasics as (data: unknown) => unknown,
   },
   {
-    id: "summary",
-    label: "Summary",
-    icon: BookOpen,
-    isPrimary: true,
-    type: 'object',
-    field: 'basics', // Summary is part of basics
-    schema: schemas.summaryFormSchema,
-    fields: schemas.summaryFields,
-    // Custom to/from to handle summary within basics
-    toForm: ((basics: Resume['basics']) => ({ summary: basics?.summary || "" })) as (data: unknown) => unknown,
-    fromForm: ((data: { summary: string }) => ({ summary: data.summary })) as (data: unknown) => unknown,
-  },
-  {
     id: "experience",
     label: "Experience",
     icon: Briefcase,

@@ -7,6 +7,7 @@
 import { defineMode } from './types';
 import { templateEnhancementOutputSchema } from '../schemas';
 import { BASE_SYSTEM_PROMPT, TEMPLATE_EXPERT_PROMPT, HANDLEBARS_REFERENCE } from '../prompts/system';
+import { MASTER_RESUME_DATA } from '../prompts/template-extraction';
 import type { ConversationContext } from '../chat/context';
 
 export const templateEnhancementMode = defineMode({
@@ -29,7 +30,12 @@ export const templateEnhancementMode = defineMode({
       HANDLEBARS_REFERENCE,
       '',
       '## YOUR TASK',
-      'You are helping the user modify and enhance their resume template.',
+      'You are helping the user modify and enhance their resume template. Ensure the template remains ROBUST and handles the full JSON Resume schema.',
+      '',
+      '### MASTER DATA REFERENCE (FOR STRESS TESTING)',
+      '```json',
+      JSON.stringify(MASTER_RESUME_DATA, null, 2),
+      '```',
       '',
       '### CAPABILITIES',
       '- Modify colors, fonts, spacing, and layout',
@@ -43,8 +49,9 @@ export const templateEnhancementMode = defineMode({
       '1. Preserve the overall structure unless asked to change it',
       '2. Keep all existing Handlebars placeholders intact',
       '3. Maintain proper HTML semantics',
-      '4. Ensure print styles remain functional',
+      '4. Ensure print styles remain functional (break-inside: avoid for list items)',
       '5. List all changes made in the "changes" array',
+      '6. Ensure EVERY field is wrapped in a conditional {{#if}} block',
       '',
       '## OUTPUT FORMAT',
       'Return a JSON object with:',

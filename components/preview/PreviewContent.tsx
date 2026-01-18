@@ -10,7 +10,7 @@ import { RefObject, memo } from 'react';
 // UI Components
 import { PreviewHeader } from './PreviewHeader';
 import { PreviewState } from './PreviewState';
-import type { Template } from '@/lib/types/template';
+import type { Template } from '@/lib/types';
 
 interface PreviewContentProps {
   showTemplateSelector: boolean;
@@ -71,7 +71,7 @@ export const PreviewContent = memo(function PreviewContent(props: Readonly<Previ
         title={headerTitle}
       />
 
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full overflow-hidden bg-muted/30 relative">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-start w-full overflow-hidden bg-muted/30 relative">
         <PreviewState
           isLoading={isLoading}
           error={error}

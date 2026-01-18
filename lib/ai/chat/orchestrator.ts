@@ -4,7 +4,7 @@
  * Bridges conversations to the Vercel AI SDK with streaming support
  */
 
-import { generateText, generateObject, type Tool } from 'ai';
+import { generateText, generateObject, streamObject, streamText, type Tool } from 'ai';
 import type { z } from 'zod';
 import { logger } from '@/lib/utils/logger';
 import { ConversationManager, type Conversation } from './conversation';
@@ -16,14 +16,22 @@ import { parseOutput } from './orchestrator/output-parser';
 import { logUsage, normalizeUsage } from './orchestrator/usage';
 import type {
   OrchestratorOptions,
-  GenerationResult
+  GenerationResult,
+  StreamChunk,
+  StreamChunkDelta,
+  StreamChunkText,
 } from './orchestrator/types';
+import type { DeepPartial } from '@/lib/types';
 
 export { registerMode, getMode, getModeOrThrow } from './orchestrator/registry';
 export type {
   OrchestratorOptions,
-  GenerationResult
+  GenerationResult,
+  StreamChunk,
+  StreamChunkDelta,
+  StreamChunkText,
 } from './orchestrator/types';
+export type { DeepPartial } from '@/lib/types';
 
 /**
  * AI Orchestrator
@@ -31,6 +39,104 @@ export type {
  * Handles the interaction between conversations and the AI provider
  */
 export class AIOrchestrator {
+  /**
+   * Generates a streaming response
+   */
+  static async *streamGenerate<T>(
+    conversation: Conversation,
+    options: OrchestratorOptions
+  ): AsyncGenerator<StreamChunk<T>, void, unknown> {
+    const mode = getModeOrThrow(conversation.mode);
+    const model = options.provider.createLanguageModel(options.modelKey);
+
+    const needsVision = requiresVision(conversation);
+    const messages = needsVision 
+      ? buildMessagesWithVision(conversation, mode)
+      : buildMessages(conversation, mode);
+    const systemPrompt = mode.buildSystemPrompt(conversation.context);
+    
+    // Support structured output streaming
+    if (mode.useStructuredOutput !== false && mode.outputSchema && !needsVision) {
+      try {
+        const { partialObjectStream, object, usage: usagePromise } = streamObject({
+          model,
+          system: systemPrompt,
+          messages,
+          schema: mode.outputSchema,
+          abortSignal: options.abortSignal,
+        });
+
+        for await (const partial of partialObjectStream) {
+          yield {
+            type: 'delta',
+            partial: partial as DeepPartial<T>,
+            timestamp: Date.now()
+          };
+        }
+
+        const finalObject = await object;
+        const usageResult = await usagePromise;
+        const usage = normalizeUsage(usageResult);
+        
+        logUsage(options, usage, 'stop', mode.id);
+
+        ConversationManager.setOutput(conversation.id, finalObject);
+        ConversationManager.addAssistantMessage(conversation.id, JSON.stringify(finalObject, null, 2), finalObject);
+
+        yield {
+          type: 'complete',
+          final: finalObject as T,
+          usage
+        };
+
+        return;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('Structured streaming generation failed', { error: errorMessage });
+        throw error;
+      }
+    } 
+
+    // Support text streaming (for text-enhancement or vision fallback)
+    try {
+      const { textStream, text, usage: usagePromise, finishReason } = streamText({
+        model,
+        system: systemPrompt,
+        messages,
+        abortSignal: options.abortSignal,
+      });
+
+      let fullText = '';
+      for await (const delta of textStream) {
+        fullText += delta;
+        yield {
+          type: 'text',
+          text: delta,
+          timestamp: Date.now()
+        };
+      }
+
+      const finalOutput = parseOutput<T>(await text, mode);
+      const usageResult = await usagePromise;
+      const usage = normalizeUsage(usageResult);
+      
+      logUsage(options, usage, await finishReason, mode.id);
+
+      ConversationManager.setOutput(conversation.id, finalOutput);
+      ConversationManager.addAssistantMessage(conversation.id, await text, finalOutput);
+
+      yield {
+        type: 'complete',
+        final: finalOutput,
+        usage
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Text streaming generation failed', { error: errorMessage });
+      throw error;
+    }
+  }
+
   /**
    * Generates a non-streaming response
    */

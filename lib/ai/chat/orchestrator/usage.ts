@@ -1,5 +1,5 @@
 import { auditLogService } from '@/lib/services';
-import { calculateAICost } from '../../pricing';
+import { calculateAICost } from '@/lib/ai/pricing';
 import type { OrchestratorOptions, NormalizedUsage } from './types';
 
 /**

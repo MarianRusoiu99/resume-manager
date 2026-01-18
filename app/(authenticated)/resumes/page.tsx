@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
 import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui/button';
-import { ResumeListClient } from '@/components/resume/ResumeListClient';
-import { ErrorState } from '@/components/shared/states';
+import { ResumeListClient } from '@/modules/resume/components/ResumeListClient';
+import { ErrorState } from '@/components/core/feedback/states';
 import { ROUTES } from '@/lib/constants';
 import { getResumes } from '@/app/actions/resume';
-import { GallerySkeleton } from '@/components/shared/skeletons/GallerySkeleton';
+import { GallerySkeleton } from '@/components/core/data-display/skeletons/GallerySkeleton';
 import Link from 'next/link';
 
 interface Props {
@@ -47,10 +47,7 @@ async function ResumesContent({ searchTerm }: { searchTerm: string }) {
     );
   }
 
-  const resumes = (result.data || []).map(r => ({
-    ...r,
-    createdAt: r.createdAt.toISOString()
-  }));
+  const resumes = result.data || [];
 
   return (
     <ResumeListClient

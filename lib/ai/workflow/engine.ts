@@ -15,6 +15,8 @@ import type { AIProvider } from '@/lib/ai/providers';
 import { ValidationError } from '@/lib/errors';
 import { logger } from '@/lib/utils/logger';
 
+import { executeStepWithRetry, DEFAULT_RETRY_CONFIG } from './retry';
+
 export interface ExecuteWorkflowInput {
   /** Workflow configuration */
   config: WorkflowConfig;
@@ -72,8 +74,12 @@ export async function executeWorkflow(
       onProgress?.(step.id, step.description, step.progressStart);
 
       try {
-        // Execute the step
-        const stepResult = await step.execute(context);
+        // Execute the step with retry
+        const stepResult = await executeStepWithRetry(
+          step,
+          context,
+          step.retryConfig || DEFAULT_RETRY_CONFIG
+        );
 
         // Merge results into context
         context.results = {

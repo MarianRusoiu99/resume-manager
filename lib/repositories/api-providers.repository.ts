@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db/index';
 import { PrismaClient, ProviderType, ApiProvider } from '@prisma/client';
 import { GenericUserOwnedRepository } from './generic.repository';
 import { RecordNotFoundError } from '@/lib/errors/database';
+import { TransactionClient } from '@/lib/db/transaction';
 import type { 
   IApiProviderRepository, 
   CreateApiProviderInput, 
@@ -32,8 +33,8 @@ export class ApiProviderRepository
   /**
    * Create a new API provider
    */
-  override async create(data: CreateApiProviderInput): Promise<ApiProviderWithModels> {
-    return this.db.apiProvider.create({
+  override async create(data: CreateApiProviderInput, tx?: TransactionClient): Promise<ApiProviderWithModels> {
+    return this.getDelegate(tx).create({
       data: {
         userId: data.userId,
         name: data.name,
@@ -46,13 +47,13 @@ export class ApiProviderRepository
       include: {
         models: true,
       },
-    });
+    }) as Promise<ApiProviderWithModels>;
   }
 
   /**
    * Find all API providers for a user
    */
-  async findByUserId(userId: string, includeInactive = false): Promise<ApiProviderWithModels[]> {
+  async findByUserId(userId: string, includeInactive = false, tx?: TransactionClient): Promise<ApiProviderWithModels[]> {
     return this.findAllForUser(userId, {
       where: {
         ...(includeInactive ? {} : { isActive: true, revokedAt: null }),
@@ -63,29 +64,29 @@ export class ApiProviderRepository
       orderBy: {
         createdAt: 'desc',
       },
-    });
+    }, tx);
   }
 
   /**
    * Find a specific API provider by ID
    */
-  override async findById(id: string, userId?: string): Promise<ApiProviderWithModels | null> {
-    return this.db.apiProvider.findFirst({
-      where: {
-        id,
-        ...(userId ? { userId } : {}),
-      },
+  override async findById(id: string, userId?: string, tx?: TransactionClient): Promise<ApiProviderWithModels | null> {
+    const where: Record<string, unknown> = { id };
+    if (userId) where.userId = userId;
+    
+    return this.getDelegate(tx).findFirst({
+      where,
       include: {
         models: true,
       },
-    });
+    }) as Promise<ApiProviderWithModels | null>;
   }
 
   /**
    * Find active providers by provider type
    */
-  async findByProviderType(userId: string, provider: string): Promise<ApiProviderWithModels[]> {
-    return this.db.apiProvider.findMany({
+  async findByProviderType(userId: string, provider: string, tx?: TransactionClient): Promise<ApiProviderWithModels[]> {
+    return this.getDelegate(tx).findMany({
       where: {
         userId,
         provider: toProviderType(provider),
@@ -98,62 +99,62 @@ export class ApiProviderRepository
       orderBy: {
         createdAt: 'desc',
       },
-    });
+    }) as Promise<ApiProviderWithModels[]>;
   }
 
   /**
    * Update an API provider
    */
-  override async update(id: string, data: UpdateApiProviderInput, userId?: string): Promise<ApiProviderWithModels> {
-    return this.db.apiProvider.update({
-      where: {
-        id,
-        ...(userId ? { userId } : {}),
-      },
+  override async update(id: string, data: UpdateApiProviderInput, userId?: string, tx?: TransactionClient): Promise<ApiProviderWithModels> {
+    const where: Record<string, unknown> = { id };
+    if (userId) where.userId = userId;
+
+    return this.getDelegate(tx).update({
+      where,
       data,
       include: {
         models: true,
       },
-    });
+    }) as Promise<ApiProviderWithModels>;
   }
 
   /**
    * Update last used timestamp and IP
    */
-  async updateLastUsed(id: string, ipAddress?: string): Promise<ApiProvider> {
-    return this.db.apiProvider.update({
+  async updateLastUsed(id: string, ipAddress?: string, tx?: TransactionClient): Promise<ApiProvider> {
+    return this.getDelegate(tx).update({
       where: { id },
       data: {
         lastUsedAt: new Date(),
         ...(ipAddress ? { lastUsedIp: ipAddress } : {}),
       },
-    });
+    }) as Promise<ApiProvider>;
   }
 
   /**
    * Increment usage count
    */
-  async incrementUsage(id: string, ipAddress?: string): Promise<ApiProvider> {
-    return this.db.apiProvider.update({
+  async incrementUsage(id: string, ipAddress?: string, tx?: TransactionClient): Promise<ApiProvider> {
+    return this.getDelegate(tx).update({
       where: { id },
       data: {
         usageCount: { increment: 1 },
         lastUsedAt: new Date(),
         ...(ipAddress ? { lastUsedIp: ipAddress } : {}),
       },
-    });
+    }) as Promise<ApiProvider>;
   }
 
   /**
    * Delete an API provider
    */
-  override async delete(id: string, userId?: string): Promise<ApiProviderWithModels> {
-    const provider = await this.findById(id, userId);
+  override async delete(id: string, userId?: string, tx?: TransactionClient): Promise<ApiProviderWithModels> {
+    const provider = await this.findById(id, userId, tx);
     if (!provider) {
       throw new RecordNotFoundError('ApiProvider', id, 'delete');
     }
 
-    await this.db.apiProvider.delete({
+    await this.getDelegate(tx).delete({
       where: {
         id,
         ...(userId ? { userId } : {}),
@@ -166,8 +167,8 @@ export class ApiProviderRepository
   /**
    * Toggle active status
    */
-  async toggleActive(id: string, userId: string, isActive: boolean): Promise<ApiProvider> {
-    return this.db.apiProvider.update({
+  async toggleActive(id: string, userId: string, isActive: boolean, tx?: TransactionClient): Promise<ApiProvider> {
+    return this.getDelegate(tx).update({
       where: {
         id,
         userId,
@@ -175,14 +176,14 @@ export class ApiProviderRepository
       data: {
         isActive,
       },
-    });
+    }) as Promise<ApiProvider>;
   }
 
   /**
    * Count active providers for a user
    */
-  async countActive(userId: string): Promise<number> {
-    return this.db.apiProvider.count({
+  async countActive(userId: string, tx?: TransactionClient): Promise<number> {
+    return this.getDelegate(tx).count({
       where: {
         userId,
         isActive: true,

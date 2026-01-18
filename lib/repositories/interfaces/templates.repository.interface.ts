@@ -5,6 +5,7 @@
  */
 
 import type { ResumeTemplate } from '@/lib/templates/template';
+import { TransactionClient } from '@/lib/db/transaction';
 
 /**
  * Input for creating a template
@@ -35,30 +36,30 @@ export interface ITemplateRepository {
   /**
    * Get all public templates
    */
-  findAllPublic(): Promise<ResumeTemplate[]>;
+  findAllPublic(tx?: TransactionClient): Promise<ResumeTemplate[]>;
 
   /**
    * Get template by ID
    */
-  findById(id: string): Promise<ResumeTemplate | null>;
+  findById(id: string, userId?: string, tx?: TransactionClient): Promise<ResumeTemplate | null>;
 
   /**
    * Create a new template
    */
-  create(data: CreateTemplateInput): Promise<ResumeTemplate>;
+  create(data: CreateTemplateInput, tx?: TransactionClient): Promise<ResumeTemplate>;
 
   /**
    * Update template
    */
-  update(id: string, data: UpdateTemplateInput): Promise<ResumeTemplate>;
+  update(id: string, data: UpdateTemplateInput, userId?: string, tx?: TransactionClient): Promise<ResumeTemplate>;
 
   /**
    * Delete template
    */
-  delete(id: string): Promise<ResumeTemplate>;
+  delete(id: string, userId?: string, tx?: TransactionClient): Promise<ResumeTemplate>;
 
   /**
    * Check if a template is in use
    */
-  isInUse(templateId: string): Promise<boolean>;
+  isInUse(templateId: string, tx?: TransactionClient): Promise<boolean>;
 }

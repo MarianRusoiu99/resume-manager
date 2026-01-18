@@ -4,7 +4,7 @@
  * Error handling classes and utilities for service operations.
  */
 
-import type { ServiceErrorCode } from '@/lib/types/service-result';
+import type { ServiceErrorCode } from '../../../types';
 import { 
   AppError, 
   NotFoundError, 
@@ -14,7 +14,7 @@ import {
   ConflictError, 
   RateLimitError, 
   ExternalServiceError 
-} from '@/lib/errors';
+} from '../../../errors';
 
 export { 
   AppError, 
@@ -27,6 +27,9 @@ export {
   ExternalServiceError 
 };
 
+/**
+ * @deprecated Use specific AppError subclasses instead. This class will be removed in a future version.
+ */
 export class ServiceOperationError extends Error {
   constructor(
     message: string,

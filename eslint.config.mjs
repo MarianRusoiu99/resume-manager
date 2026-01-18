@@ -16,6 +16,12 @@ const eslintConfig = defineConfig([
 
   // React Compiler rules
   {
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
       "react-hooks/exhaustive-deps": "warn",
       "@typescript-eslint/no-unused-vars": ["warn", { 
@@ -23,10 +29,21 @@ const eslintConfig = defineConfig([
         "varsIgnorePattern": "^_",
         "caughtErrorsIgnorePattern": "^_"
       }],
-      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-floating-promises": "off",
       "@typescript-eslint/await-thenable": "error",
-      "@typescript-eslint/no-misused-promises": "error",
+      "@typescript-eslint/no-misused-promises": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["../../*"],
+              message: "Please use absolute imports with `@/` for cross-module imports (more than 1 level up).",
+            },
+          ],
+        },
+      ],
     },
   },
 

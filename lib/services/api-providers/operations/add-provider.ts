@@ -1,12 +1,12 @@
 import { apiProviderRepository } from '@/lib/repositories/api-providers.repository';
 import { encryptApiKey, createKeyPreview } from '@/lib/encryption/api-key';
-import { apiKeyAuditService } from '../../api-key-management';
+import { apiKeyAuditService } from '@/lib/services/api-key-management';
 import {
   createProvider,
   getSupportedProviders,
   isProviderSupported,
 } from '@/lib/ai/providers';
-import { type ServiceResult } from '@/lib/types/service-result';
+import { type ServiceResult } from '@/lib/types';
 import {
   withServiceError,
   ValidationError,

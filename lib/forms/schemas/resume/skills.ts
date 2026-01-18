@@ -5,7 +5,7 @@
  * All fields from the Skill schema in JSONResume are included.
  */
 
-import { createFormSchema } from '../../form-schema';
+import { createFormSchema } from '@/lib/forms/form-schema';
 import type { Skill } from '@/lib/validations/jsonresume';
 
 /**

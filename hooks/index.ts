@@ -32,17 +32,17 @@ export { useComponentLogger } from './useComponentLogger';
 // Feature Hooks - Domain-specific business logic
 // ============================================================================
 
-export { useTemplatePreview } from './useTemplatePreview';
+export { useTemplatePreview } from '@/modules/templates/hooks/useTemplatePreview';
 export { useCardPreview } from './useCardPreview';
 export { useListForm } from './useListForm';
 export { useToastAction } from './useToastAction';
 export { useAIModels } from './useAIModels';
 export type { AIModel } from './useAIModels';
 export { useSettingsManager } from './useSettingsManager';
-export { useCoverLetterOperations } from './features/useCoverLetterOperations';
-export { useResumeOperations } from './features/useResumeOperations';
-export { useResourceOperations } from './features/useResourceOperations';
-export type { ResourceOperationsConfig, ResourceOperationsReturn } from './features/useResourceOperations';
+export { useCoverLetterOperations } from '@/modules/cover-letter/hooks/useCoverLetterOperations';
+export { useResumeOperations } from '@/modules/resume/hooks/useResumeOperations';
+export { useResourceOperations } from './core/useResourceOperations';
+export type { ResourceOperationsConfig, ResourceOperationsReturn } from './core/useResourceOperations';
 export { useFeatureModelPreference } from './useFeatureModelPreference';
 
 // ============================================================================

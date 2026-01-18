@@ -39,7 +39,7 @@ export function SearchableSelect({
   className,
   dialogTitle = 'Select an option',
   maxListHeightClassName = 'h-64',
-}: SearchableSelectProps) {
+}: Readonly<SearchableSelectProps>) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
 

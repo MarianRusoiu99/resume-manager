@@ -16,10 +16,7 @@ export {
   serviceContainer,
   profileService,
   resumeService,
-  resumeGenerationService,
-  resumeCrudService,
   notificationService,
-  analyticsService,
   templateService,
   coverLetterService,
   apiProviderService,
@@ -35,27 +32,19 @@ export {
 export type {
   IProfileService,
   IResumeService,
-  IResumeGenerationService,
-  IResumeCrudService,
   INotificationService,
   ITemplateService,
   ICoverLetterService,
   IAIService,
-} from './interfaces';
+} from './types';
 
 // Resume services (facade + split services)
 export { ResumeService } from './resumes';
 export type {
-  GenerateResumeServiceInput,
-  GenerateResumeWithProgressInput,
-  ProgressCallback,
-  ResumeData,
-  GeneratedResumeData,
-  CoverLetterGenerationData,
   ResumeListItem,
   ResumeDetails,
   UpdatedResumeData,
-} from './resumes';
+} from '@/lib/types';
 
 export { ProfileService } from './profiles/profiles.service';
 export type { Profile, ProfileList } from './profiles/types';

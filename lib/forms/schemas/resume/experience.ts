@@ -5,7 +5,7 @@
  * All fields from the Work and Volunteer schemas in JSONResume are included.
  */
 
-import { createFormSchema } from '../../form-schema';
+import { createFormSchema } from '@/lib/forms/form-schema';
 import type { Work, Volunteer } from '@/lib/validations/jsonresume';
 
 /**

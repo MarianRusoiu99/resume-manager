@@ -4,8 +4,8 @@
  * Main wrapper functions for service operations.
  */
 
-import { success } from '@/lib/types/service-result';
-import type { ServiceResult } from '@/lib/types/service-result';
+import { success } from '../../../types';
+import type { ServiceResult } from '../../../types';
 import type { ServiceWrapperOptions } from './types';
 import { handleServiceError } from './error-handler';
 
