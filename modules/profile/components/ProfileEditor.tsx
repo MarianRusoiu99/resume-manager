@@ -7,7 +7,7 @@ import { Button } from "@/components/ui";
 import { Page } from "@/components/layout/Page";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useToastAction } from "@/hooks/useToastAction";
+import { useToastAction } from "@/hooks';
 import { toast } from "sonner";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { getProfile, updateProfile } from "@/app/actions/profile";

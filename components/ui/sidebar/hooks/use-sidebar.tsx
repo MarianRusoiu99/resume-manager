@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { ConfigurationError } from "@/lib/errors";
-import { useIsMobile } from "@/hooks/useMobile"
+import { useMobile as useIsMobile } from "@/hooks';
 
 export const SIDEBAR_COOKIE_NAME = "sidebar_state"
 export const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7

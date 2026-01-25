@@ -8,7 +8,7 @@ import { ROUTES } from '@/lib/constants';
 import type { ResumeListItem } from '@/lib/types';
 import { deleteResume } from '@/app/actions/resume';
 import { ResourceList } from '@/components/core/data-display/ResourceList';
-import { useResourceCollection } from '@/hooks/useResourceCollection';
+import { useResourceCollection } from '@/hooks';
 
 interface ResumeListClientProps {
     resumes: ResumeListItem[];

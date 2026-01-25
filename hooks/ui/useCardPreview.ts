@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import type { Resume } from "@/lib/validations/jsonresume";
 import type { Template } from "@/lib/types/template";
-import { useTemplatePreview } from "@/hooks/features/useTemplatePreview";
+import { useTemplatePreview } from "@/hooks';
 import { createComponentLogger } from "@/lib/utils/client-logger";
 import { getTemplate, getTemplates } from "@/app/actions/template";
 import { NotFoundError, ExternalServiceError } from "@/lib/errors";

@@ -15,7 +15,7 @@
 
 export { useAutoSave } from './core/useAutoSave';
 export { useDebouncedCallback } from './core/useDebouncedCallback';
-export { useMobile } from './core/useMobile';
+export { useIsMobile as useMobile } from './core/useMobile';
 export { useAsyncOperation } from './core/useAsyncOperation';
 
 // ============================================================================
