@@ -36,7 +36,7 @@ export async function executeStepWithRetry(
 ): Promise<Partial<import("./types").WorkflowResults>> {
   let lastError: Error | undefined;
   let attempt = 1;
-  let delayMs = retryConfig.initialDelayMs;
+  const delayMs = retryConfig.initialDelayMs;
 
   while (attempt <= retryConfig.maxAttempts) {
     try {

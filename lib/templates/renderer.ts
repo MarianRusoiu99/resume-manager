@@ -97,7 +97,7 @@ function registerHelpers() {
 
   // Safe value checker
   Handlebars.registerHelper('safeIf', function(this: unknown, value: unknown, options: Handlebars.HelperOptions) {
-    if (value !== undefined && value !== null && (value as any) !== '') {
+    if (value !== undefined && value !== null && value !== '') {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -108,10 +108,10 @@ function registerHelpers() {
     if (!context || !path) return options.inverse(this);
     
     const value = path.split('.').reduce((acc, part) => {
-      return acc && (acc as Record<string, any>)[part];
+      return acc && (acc as Record<string, unknown>)[part];
     }, context);
     
-    if (value !== undefined && value !== null && (value as any) !== '') {
+    if (value !== undefined && value !== null && value !== '') {
       return options.fn(this);
     }
     return options.inverse(this);

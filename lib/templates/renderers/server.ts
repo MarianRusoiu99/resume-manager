@@ -22,7 +22,7 @@ if (typeof Handlebars !== 'undefined') {
   });
 
   Handlebars.registerHelper('safeIf', function(this: unknown, value: unknown, options: Handlebars.HelperOptions) {
-    if (value !== undefined && value !== null && (value as any) !== '') {
+    if (value !== undefined && value !== null && value !== '') {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -33,10 +33,10 @@ if (typeof Handlebars !== 'undefined') {
     if (!context || !path) return options.inverse(this);
     
     const value = path.split('.').reduce((acc, part) => {
-      return acc && (acc as Record<string, any>)[part];
+      return acc && (acc as Record<string, unknown>)[part];
     }, context);
     
-    if (value !== undefined && value !== null && (value as any) !== '') {
+    if (value !== undefined && value !== null && value !== '') {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -110,7 +110,7 @@ export async function renderTemplateServerSide(
   }
 
   // Render the template with resume data
-  let html = renderCompleteDocument(
+  const html = renderCompleteDocument(
     template.htmlTemplate,
     resumeData
   );

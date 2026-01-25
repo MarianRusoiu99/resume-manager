@@ -22,8 +22,7 @@ export function useAutoSaveForm<T extends FieldValues>({
 }: UseAutoSaveFormProps<T>) {
   const form = useForm<T>({
     ...formProps,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(schema as any),
+    resolver: zodResolver(schema),
   });
 
   const { reset, formState: { isDirty }, getValues, control } = form;

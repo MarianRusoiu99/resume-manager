@@ -33,7 +33,7 @@ export function useErrorHandler(componentName: string) {
     } else if (typeof error === 'string') {
       message = error;
     } else if (error && typeof error === 'object' && 'message' in error) {
-      message = String((error as any).message);
+      message = String((error as { message: unknown }).message);
     }
 
     // Show toast
