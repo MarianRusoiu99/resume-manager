@@ -27,7 +27,7 @@ import { Page } from '@/components/layout/Page';
 import { TemplateSettingsDialog } from './editor/TemplateSettingsDialog';
 import { TemplatePreviewFrame } from './editor/TemplatePreviewFrame';
 import { TemplateEditorToolbar } from './editor/TemplateEditorToolbar';
-import { useTemplatePreview } from './editor/hooks/useTemplatePreview';
+import { useTemplatePreviewLegacy as useTemplatePreview } from '@/hooks';
 import { useTemplatePersistence } from './editor/hooks/useTemplatePersistence';
 
 import type { OnMount } from '@monaco-editor/react';

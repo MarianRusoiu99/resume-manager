@@ -8,7 +8,7 @@
  */
 
 import { SideBySideComparison, PreviewIframe } from './SideBySideComparison';
-import { useTemplatePreview } from '@/modules/templates/hooks/useTemplatePreview';
+import { useTemplatePreview } from '@/hooks';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 export interface ResumeVisualComparisonProps {

@@ -5,50 +5,55 @@
  * 
  * @example
  * ```typescript
- * import { useAutoSave, useTemplatePreview, useIsMobile } from '@/hooks';
+ * import { useAutoSave, useTemplatePreview, useMobile } from '@/hooks';
  * ```
- * 
- * Hook Categories:
- * - Shared: Low-level, reusable hooks (useIsMobile)
- * - Data: Data fetching and persistence (useAutoSave, useDataFetching)
- * - Features: Domain-specific business logic (useTemplatePreview)
- * - Preview: Resume preview-specific hooks (useExportPDF, useTemplateSelection)
  */
 
 // ============================================================================
-// Shared Hooks - Low-level, reusable utilities
+// Core Hooks - Generic, low-level utilities
 // ============================================================================
 
-export { useIsMobile } from './useMobile';
+export { useAutoSave } from './core/useAutoSave';
+export { useDebouncedCallback } from './core/useDebouncedCallback';
+export { useMobile } from './core/useMobile';
+export { useAsyncOperation } from './core/useAsyncOperation';
+
+// ============================================================================
+// UI Hooks - UI-related state and interactions
+// ============================================================================
+
+export { useToastAction } from './ui/useToastAction';
+export { useListForm } from './ui/useListForm';
+export { useCardPreview } from './ui/useCardPreview';
 
 // ============================================================================
 // Data Hooks - Data fetching and persistence
 // ============================================================================
 
-export { useAutoSave } from './useAutoSave';
-export { useComponentLogger } from './useComponentLogger';
+export { useResourceOperations } from './data/useResourceOperations';
+export type { ResourceOperationsConfig, ResourceOperationsReturn } from './data/useResourceOperations';
+export { useResourceCollection } from './data/useResourceCollection';
+export { useSettingsManager } from './data/useSettingsManager';
 
 // ============================================================================
 // Feature Hooks - Domain-specific business logic
 // ============================================================================
 
-export { useTemplatePreview } from '@/modules/templates/hooks/useTemplatePreview';
-export { useCardPreview } from './useCardPreview';
-export { useListForm } from './useListForm';
-export { useToastAction } from './useToastAction';
+export { useTemplatePreview } from './features/useTemplatePreview';
+export { useTemplatePreview as useTemplatePreviewLegacy } from './features/useTemplatePreviewLegacy';
 export { useAIModels } from './useAIModels';
 export type { AIModel } from './useAIModels';
-export { useSettingsManager } from './useSettingsManager';
+export { useFeatureModelPreference } from './useFeatureModelPreference';
+export { useResumeImport } from './useResumeImport';
+export { useAutoSaveForm } from './useAutoSaveForm';
+export { useAutoBreadcrumbs } from './useAutoBreadcrumbs';
+export { useComponentLogger } from './useComponentLogger';
+
+// Re-exports from modules
 export { useCoverLetterOperations } from '@/modules/cover-letter/hooks/useCoverLetterOperations';
 export { useResumeOperations } from '@/modules/resume/hooks/useResumeOperations';
-export { useResourceOperations } from './core/useResourceOperations';
-export type { ResourceOperationsConfig, ResourceOperationsReturn } from './core/useResourceOperations';
-export { useFeatureModelPreference } from './useFeatureModelPreference';
 
-// ============================================================================
-// Preview Hooks - Resume preview-specific (re-exported from components/preview)
-// ============================================================================
-
+// Re-exports from components/preview
 export {
   useTemplateSelection,
   useResumeData,

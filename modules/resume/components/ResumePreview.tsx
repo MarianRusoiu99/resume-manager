@@ -14,7 +14,7 @@ import { useResumeData } from '@/components/preview/useResumeData';
 import { useExportPDF } from '@/components/preview/useExportPDF';
 import { usePreviewScale } from '@/components/preview/usePreviewScale';
 import { usePagination } from '@/components/preview/usePagination';
-import { useTemplatePreview } from '@/components/preview/useTemplatePreview';
+import { useTemplatePreview } from '@/hooks';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { PreviewContent } from '@/components/preview/PreviewContent';
