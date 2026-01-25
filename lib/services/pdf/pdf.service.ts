@@ -1,10 +1,12 @@
-import puppeteer, { type PDFOptions, type Browser } from 'puppeteer';
+import puppeteer, { type PDFOptions, type Browser, type Page, type HTTPRequest } from 'puppeteer';
+import type { LaunchOptions } from 'puppeteer-core';
 import { ServiceErrors } from '../utils/service-wrapper';
 import { logger } from '../../utils/logger';
 
 export interface PdfServiceConfig {
   puppeteerArgs?: string[];
   timeout?: number;
+  executablePath?: string;
 }
 
 export const DEFAULT_PDF_CONFIG: PDFOptions = {
@@ -24,7 +26,7 @@ export class PdfService {
   private browserPromise: Promise<Browser> | null = null;
 
   constructor(config: PdfServiceConfig = {}) {
-    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+    const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || config.executablePath;
     
     this.config = {
       puppeteerArgs: config.puppeteerArgs || [
@@ -34,11 +36,11 @@ export class PdfService {
         '--font-render-hinting=none',
       ],
       timeout: config.timeout || 30000,
+      executablePath,
     };
 
     if (executablePath) {
       logger.info(`Using Puppeteer executable path: ${executablePath}`);
-      (this.config as any).executablePath = executablePath;
     }
   }
 
@@ -47,13 +49,13 @@ export class PdfService {
 
     this.browserPromise = (async () => {
       try {
-        const launchOptions: any = {
+        const launchOptions: LaunchOptions = {
           headless: true,
           args: this.config.puppeteerArgs,
         };
 
-        if ((this.config as any).executablePath) {
-          launchOptions.executablePath = (this.config as any).executablePath;
+        if (this.config.executablePath) {
+          launchOptions.executablePath = this.config.executablePath;
         }
 
         const browser = await puppeteer.launch(launchOptions);
@@ -80,7 +82,7 @@ export class PdfService {
    * Generates a PDF from HTML content
    */
   async generateFromHtml(html: string, options: PDFOptions = DEFAULT_PDF_CONFIG): Promise<Buffer> {
-    let page: any = null;
+    let page: Page | null = null;
 
     try {
       const browser = await this.getBrowser();
@@ -88,7 +90,7 @@ export class PdfService {
 
       // Security: Block all network requests except data URIs and about:blank
       await page.setRequestInterception(true);
-      page.on('request', (req: any) => {
+      page.on('request', (req: HTTPRequest) => {
         const url = req.url();
         if (url.startsWith('data:') || url.startsWith('about:')) {
           req.continue();

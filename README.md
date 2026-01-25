@@ -64,7 +64,7 @@ Resume Manager is a modern platform for creating, editing, and managing professi
 ### 📝 Resume Editor
 | Feature | Description |
 | :--- | :--- |
-| **Rich Text Editor** | BlockNote-powered editor with formatting, lists, and more |
+| **Rich Text Editor** | TipTap-powered editor with formatting, lists, and more |
 | **Section Management** | Organize experience, education, skills, projects, and certifications |
 | **Real-time Preview** | See changes instantly as you edit |
 | **Multiple Profiles** | Maintain different resume versions for various career paths |

@@ -2,8 +2,7 @@ import { User, Briefcase, GraduationCap, Code, FolderOpen, Award, Languages, Hea
 import * as schemas from "@/lib/forms/form-schema";
 import type { Resume } from "@/lib/validations/jsonresume";
 import type { FormSchema, FieldConfig } from "@/lib/forms/schemas/types";
-import type { ZodType } from "zod";
-import type { GenericFieldConfig, GenericFormSchema, DynamicDataTransformer } from "@/lib/types/form-config";
+import type { z } from "zod";
 
 export type EditorSectionType = 'object' | 'list';
 
@@ -13,7 +12,7 @@ export type EditorSectionType = 'object' | 'list';
  * Note: This config uses flexible typing because each section has different
  * data shapes. The consuming components should validate/cast as needed.
  */
-export interface EditorSection {
+export interface EditorSection<T extends Record<string, unknown> = Record<string, unknown>> {
   id: string;
   label: string;
   icon: LucideIcon;
@@ -22,15 +21,15 @@ export interface EditorSection {
   type: EditorSectionType;
   field: keyof Resume;
   /** Zod schema for validation (object sections) */
-  schema?: ZodType;
+  schema?: z.ZodType<T>;
   /** Field configurations for object sections */
-  fields?: GenericFieldConfig[];
+  fields?: FieldConfig<T>[];
   /** Form schema for list sections */
-  config?: GenericFormSchema;
-  /** Transform data to form format - type is flexible to support various resume field types */
-  toForm?: (data: unknown) => unknown;
-  /** Transform form data back to resume format - type is flexible to support various resume field types */
-  fromForm?: (data: unknown) => unknown;
+  config?: FormSchema<T>;
+  /** Transform data to form format */
+  toForm?: (data: unknown) => T;
+  /** Transform form data back to resume format */
+  fromForm?: (data: T) => unknown;
 }
 
 export const EDITOR_CONFIG: EditorSection[] = [

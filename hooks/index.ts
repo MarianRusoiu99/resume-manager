@@ -19,12 +19,22 @@ export { useIsMobile as useMobile } from './core/useMobile';
 export { useAsyncOperation } from './core/useAsyncOperation';
 
 // ============================================================================
+// Notification Hooks - Toast and notification management
+// ============================================================================
+
+export { useNotificationManager } from './notifications/useNotificationManager';
+export type { Notification } from './notifications/useNotificationManager';
+export { useToastAction } from './ui/useToastAction';
+
+// ============================================================================
 // UI Hooks - UI-related state and interactions
 // ============================================================================
 
-export { useToastAction } from './ui/useToastAction';
 export { useListForm } from './ui/useListForm';
 export { useCardPreview } from './ui/useCardPreview';
+export { useBaseModal } from './ui/useBaseModal';
+export { useExportPDF } from '@/components/preview/useExportPDF';
+export { useExportPDF as useCardExportPDF } from './ui/useCardPreview';
 
 // ============================================================================
 // Data Hooks - Data fetching and persistence
@@ -47,6 +57,7 @@ export { useFeatureModelPreference } from './useFeatureModelPreference';
 export { useResumeImport } from './useResumeImport';
 export { useAutoSaveForm } from './useAutoSaveForm';
 export { useAutoBreadcrumbs } from './useAutoBreadcrumbs';
+export type { BreadcrumbItem } from './useAutoBreadcrumbs';
 export { useComponentLogger } from './useComponentLogger';
 
 // Re-exports from modules
@@ -57,7 +68,6 @@ export { useResumeOperations } from '@/modules/resume/hooks/useResumeOperations'
 export {
   useTemplateSelection,
   useResumeData,
-  useExportPDF,
   usePagination,
   usePreviewScale,
   useIframeResize,

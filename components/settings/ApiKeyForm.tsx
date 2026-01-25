@@ -70,16 +70,15 @@ export function ApiKeyForm({ onSuccess, onCancel, submitLabel = 'Add Provider', 
   };
 
   return (
-    <ManagedForm
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ManagedForm schema typing with Zod requires any cast
-      schema={addApiProviderInputSchema as any}
+    <ManagedForm<AddApiProviderInput>
+      schema={addApiProviderInputSchema}
       defaultValues={{
         name: initialData?.name || '',
         provider: initialData?.provider || 'openai',
         apiKey: initialData?.apiKey || '',
       }}
-      fields={API_KEY_FIELDS as any}
-      onSubmit={onSubmit as any}
+      fields={API_KEY_FIELDS}
+      onSubmit={onSubmit}
     >
       {(form) => (
         <div className="flex justify-end gap-2 pt-4">

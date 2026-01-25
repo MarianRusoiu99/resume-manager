@@ -20,7 +20,7 @@ vi.mock('@/lib/utils/async', () => ({
 class MockError extends AppError {
     readonly statusCode = 500;
     
-    constructor(message: string, public readonly code: any) {
+    constructor(message: string, public readonly code: string | number) {
         super(message);
     }
 }

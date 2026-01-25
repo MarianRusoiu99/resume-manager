@@ -17,7 +17,7 @@ import type { ITemplateRepository, CreateTemplateInput, UpdateTemplateInput } fr
  * Template Repository Implementation
  */
 export class TemplateRepository 
-  extends GenericRepository<ResumeTemplate, CreateTemplateInput, UpdateTemplateInput>
+  extends GenericRepository<ResumeTemplate, CreateTemplateInput, UpdateTemplateInput, 'resumeTemplate', Prisma.ResumeTemplateDelegate>
   implements ITemplateRepository 
 {
   constructor(dbClient: PrismaClient = prisma) {
@@ -32,16 +32,7 @@ export class TemplateRepository
       orderBy: [{ name: 'asc' }],
     });
 
-    return (templates as Array<{
-      id: string;
-      name: string;
-      description: string | null;
-      htmlTemplate: string;
-      previewUrl: string | null;
-      isPublic: boolean;
-      createdAt: Date;
-      updatedAt: Date;
-    }>).map((t) => this.mapToTemplate(t));
+    return (templates as unknown as Array<Prisma.ResumeTemplateGetPayload<{}>>).map((t) => this.mapToTemplate(t));
   }
 
   /**
@@ -52,16 +43,7 @@ export class TemplateRepository
       where: { id },
     });
 
-    return template ? this.mapToTemplate(template as {
-      id: string;
-      name: string;
-      description: string | null;
-      htmlTemplate: string;
-      previewUrl: string | null;
-      isPublic: boolean;
-      createdAt: Date;
-      updatedAt: Date;
-    }) : null;
+    return template ? this.mapToTemplate(template as unknown as Prisma.ResumeTemplateGetPayload<{}>) : null;
   }
 
   /**
@@ -78,16 +60,7 @@ export class TemplateRepository
       },
     });
 
-    return this.mapToTemplate(template as {
-      id: string;
-      name: string;
-      description: string | null;
-      htmlTemplate: string;
-      previewUrl: string | null;
-      isPublic: boolean;
-      createdAt: Date;
-      updatedAt: Date;
-    });
+    return this.mapToTemplate(template as unknown as Prisma.ResumeTemplateGetPayload<{}>);
   }
 
   /**
@@ -112,16 +85,7 @@ export class TemplateRepository
       data: updateData,
     });
 
-    return this.mapToTemplate(template as {
-      id: string;
-      name: string;
-      description: string | null;
-      htmlTemplate: string;
-      previewUrl: string | null;
-      isPublic: boolean;
-      createdAt: Date;
-      updatedAt: Date;
-    });
+    return this.mapToTemplate(template as unknown as Prisma.ResumeTemplateGetPayload<{}>);
   }
 
   /**
@@ -144,8 +108,8 @@ export class TemplateRepository
    * Check if a template is in use by any resumes
    */
   async isInUse(templateId: string, tx?: TransactionClient): Promise<boolean> {
-    const client = tx || (this.db as unknown as TransactionClient);
-    const count = await (client as any).resume.count({
+    const client = tx || (this.db as TransactionClient);
+    const count = await client.resume.count({
       where: { templateId },
     });
     return count > 0;
@@ -154,16 +118,7 @@ export class TemplateRepository
   /**
    * Map Prisma model to domain model
    */
-  private mapToTemplate(template: {
-    id: string;
-    name: string;
-    description: string | null;
-    htmlTemplate: string;
-    previewUrl: string | null;
-    isPublic: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-  }): ResumeTemplate {
+  private mapToTemplate(template: Prisma.ResumeTemplateGetPayload<{}>): ResumeTemplate {
     return {
       id: template.id,
       name: template.name,
@@ -176,6 +131,7 @@ export class TemplateRepository
     };
   }
 }
+
 
 // Singleton instance
 export const templateRepository = new TemplateRepository();

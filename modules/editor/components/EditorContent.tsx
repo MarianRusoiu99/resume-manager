@@ -7,6 +7,8 @@ import type { Resume } from "@/lib/validations/jsonresume";
 import { ManagedForm } from "@/components/forms/ManagedForm";
 import { GenericFormList } from "@/components/forms/GenericFormList";
 import { ChevronDown } from "lucide-react";
+import { z } from "zod";
+import { FieldConfig } from "@/lib/forms/schemas/types";
 
 export function EditorContent() {
     const { resume, updateField } = useEditor();
@@ -23,13 +25,13 @@ export function EditorContent() {
             }
             
             const data = resume[section.field as keyof Resume];
-            const formData = (section.toForm ? section.toForm(data) : data) as Record<string, any>;
+            const formData = (section.toForm ? section.toForm(data) : data) as Record<string, unknown>;
 
             return (
                 <ManagedForm
-                    schema={section.schema}
+                    schema={section.schema as z.ZodType<Record<string, unknown>>}
                     defaultValues={formData}
-                    fields={section.fields as any || []}
+                    fields={(section.fields as FieldConfig<Record<string, unknown>>[]) || []}
                     onSubmit={() => {}}
                     onUpdate={(updatedFormData) => {
                         const updatedData = section.fromForm 
@@ -38,9 +40,9 @@ export function EditorContent() {
                         
                         // If it's a nested update (like summary in basics)
                         if (section.field === 'basics' && section.id === 'summary') {
-                            updateField('basics', { ...(resume.basics || {}), ...(updatedData as any) } as any);
+                            updateField('basics', { ...(resume.basics || {}), ...(updatedData as Record<string, unknown>) } as Resume['basics']);
                         } else {
-                            updateField(section.field as keyof Resume, updatedData as any);
+                            updateField(section.field as keyof Resume, updatedData as Resume[keyof Resume]);
                         }
                     }}
                     autoSave
@@ -56,9 +58,9 @@ export function EditorContent() {
             const items = (resume[section.field as keyof Resume] || []) as Record<string, unknown>[];
             return (
                 <GenericFormList
-                    schema={section.config}
+                    schema={section.config as FormSchema<Record<string, unknown>>}
                     items={items}
-                    onChange={(newItems) => updateField(section.field as keyof Resume, newItems)}
+                    onChange={(newItems) => updateField(section.field as keyof Resume, newItems as Resume[keyof Resume])}
                 />
             );
         }

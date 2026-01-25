@@ -5,7 +5,7 @@
  * Abstracts Prisma operations for better testability and separation of concerns.
  */
 
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient, User, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/index';
 import { GenericRepository } from './generic.repository';
 import { RecordNotFoundError } from '@/lib/errors/database';
@@ -22,7 +22,7 @@ import {
  * Repository for managing users in the database
  */
 export class UserRepository 
-  extends GenericRepository<User, CreateUserInput, UpdateUserInput>
+  extends GenericRepository<User, CreateUserInput, UpdateUserInput, 'user', Prisma.UserDelegate>
   implements IUserRepository 
 {
   constructor(dbClient: PrismaClient = prisma) {

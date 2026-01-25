@@ -145,11 +145,11 @@ export class ResumeService
       invalidateUserResumesCache(userId);
       return {
         id: updatedResume.id,
-        resume: updatedResume.resume as any,
+        resume: updatedResume.resume as Resume,
         jobDescription: updatedResume.jobDescription,
-        jobMetadata: updatedResume.jobMetadata as any,
+        jobMetadata: updatedResume.jobMetadata as Record<string, unknown>,
         template: null,
-        metadata: updatedResume.metadata as any,
+        metadata: updatedResume.metadata as Record<string, unknown>,
         createdAt: updatedResume.createdAt,
         updatedAt: updatedResume.updatedAt,
       };
@@ -166,11 +166,11 @@ export class ResumeService
       invalidateUserResumesCache(userId);
       return {
         id: updatedResume.id,
-        resume: updatedResume.resume as any,
+        resume: updatedResume.resume as Resume,
         jobDescription: updatedResume.jobDescription,
-        jobMetadata: updatedResume.jobMetadata as any,
+        jobMetadata: updatedResume.jobMetadata as Record<string, unknown>,
         template: null,
-        metadata: updatedResume.metadata as any,
+        metadata: updatedResume.metadata as Record<string, unknown>,
         createdAt: updatedResume.createdAt,
         updatedAt: updatedResume.updatedAt,
       };
@@ -206,11 +206,11 @@ export class ResumeService
 
       return {
         id: updatedResume.id,
-        resume: updatedResume.resume as any,
+        resume: updatedResume.resume as Resume,
         jobDescription: updatedResume.jobDescription,
-        jobMetadata: updatedResume.jobMetadata as any,
+        jobMetadata: updatedResume.jobMetadata as Record<string, unknown>,
         template: null,
-        metadata: updatedResume.metadata as any,
+        metadata: updatedResume.metadata as Record<string, unknown>,
         createdAt: updatedResume.createdAt,
         updatedAt: updatedResume.updatedAt,
       };

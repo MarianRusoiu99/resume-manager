@@ -11,7 +11,13 @@ import { mapResumeToGeneratedData, ResumeWithIncludes } from './generated-resume
  * Repository for managing generated resumes in the database.
  */
 export class GeneratedResumeRepository 
-  extends GenericUserOwnedRepository<GeneratedResumeData, CreateResumeInput, UpdateResumeInput>
+  extends GenericUserOwnedRepository<
+    GeneratedResumeData, 
+    CreateResumeInput, 
+    UpdateResumeInput, 
+    'resume', 
+    Prisma.ResumeDelegate
+  >
   implements IGeneratedResumeRepository 
 {
   constructor(dbClient: PrismaClient = prisma) {
@@ -22,11 +28,11 @@ export class GeneratedResumeRepository
     const normalized = companyName?.trim();
     if (!normalized) return null;
 
-    const delegate = tx || (this.db as any);
-    const existing = await delegate.company.findFirst({ where: { name: normalized } });
+    const client = tx || (this.db as TransactionClient);
+    const existing = await client.company.findFirst({ where: { name: normalized } });
     if (existing) return existing.id;
 
-    const created = await delegate.company.create({
+    const created = await client.company.create({
       data: { name: normalized },
       select: { id: true },
     });
@@ -44,8 +50,8 @@ export class GeneratedResumeRepository
 
     const companyId = await this.findOrCreateCompanyId(companyName, tx);
 
-    const delegate = tx || (this.db as any);
-    const jobPosting = await delegate.jobPosting.create({
+    const client = tx || (this.db as TransactionClient);
+    const jobPosting = await client.jobPosting.create({
       data: {
         userId: data.userId,
         description: data.jobDescription,
@@ -60,7 +66,7 @@ export class GeneratedResumeRepository
       ...(data.jobMetadata ? { jobMetadata: data.jobMetadata } : {}),
     };
 
-    const created = await delegate.resume.create({
+    const created = await client.resume.create({
       data: {
         userId: data.userId,
         jobPostingId: jobPosting.id,
@@ -96,9 +102,9 @@ export class GeneratedResumeRepository
     const effectiveLimit = limit ?? take ?? 100;
     const effectiveOffset = offset ?? skip ?? 0;
     
-    const resumes = await (this.getDelegate(tx) as any).findMany({
+    const resumes = await this.getDelegate(tx).findMany({
       where: { ...where, userId },
-      orderBy: orderBy || { createdAt: 'desc' },
+      orderBy: orderBy as any || { createdAt: 'desc' },
       take: effectiveLimit,
       skip: effectiveOffset,
       include: {
@@ -108,7 +114,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return resumes.map((resume: any) => mapResumeToGeneratedData(resume as ResumeWithIncludes));
+    return (resumes as unknown as ResumeWithIncludes[]).map((resume) => mapResumeToGeneratedData(resume));
   }
 
   /**
@@ -122,7 +128,7 @@ export class GeneratedResumeRepository
    * Find a resume by ID
    */
   override async findById(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData | null> {
-    const resume = await (this.getDelegate(tx) as any).findFirst({
+    const resume = await this.getDelegate(tx).findFirst({
       where: { id, ...(userId ? { userId } : {}) },
       include: {
         document: { select: { document: true } },
@@ -131,7 +137,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return resume ? mapResumeToGeneratedData(resume as ResumeWithIncludes) : null;
+    return resume ? mapResumeToGeneratedData(resume as unknown as ResumeWithIncludes) : null;
   }
 
   /**
@@ -140,7 +146,7 @@ export class GeneratedResumeRepository
   override async update(id: string, data: UpdateResumeInput, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData> {
     const resume = data.resume;
     
-    const updated = await (this.getDelegate(tx) as any).update({
+    const updated = await this.getDelegate(tx).update({
       where: { id, ...(userId ? { userId } : {}) },
       data: {
         ...(resume ? {
@@ -167,7 +173,7 @@ export class GeneratedResumeRepository
       },
     });
 
-    return mapResumeToGeneratedData(updated as ResumeWithIncludes);
+    return mapResumeToGeneratedData(updated as unknown as ResumeWithIncludes);
   }
 
   /**
@@ -179,7 +185,7 @@ export class GeneratedResumeRepository
       throw new RecordNotFoundError('Resume', id, 'delete');
     }
 
-    await (this.getDelegate(tx) as any).delete({ where: { id, ...(userId ? { userId } : {}) } });
+    await this.getDelegate(tx).delete({ where: { id, ...(userId ? { userId } : {}) } });
     return resume;
   }
 
@@ -205,8 +211,8 @@ export class GeneratedResumeRepository
     data: { jobDescription?: string; jobMetadata?: Record<string, unknown> },
     tx?: TransactionClient
   ): Promise<GeneratedResumeData> {
-    const delegate = tx || (this.db as any);
-    const resume = await delegate.resume.findUnique({
+    const client = tx || (this.db as TransactionClient);
+    const resume = await client.resume.findUnique({
       where: { id },
       select: { jobPostingId: true, metadata: true },
     });
@@ -216,7 +222,7 @@ export class GeneratedResumeRepository
     }
 
     if (data.jobDescription !== undefined && resume.jobPostingId) {
-      await delegate.jobPosting.update({
+      await client.jobPosting.update({
         where: { id: resume.jobPostingId },
         data: { description: data.jobDescription },
       });
@@ -228,7 +234,7 @@ export class GeneratedResumeRepository
       ...(data.jobMetadata ? { jobMetadata: data.jobMetadata } : {}),
     };
 
-    const updated = await delegate.resume.update({
+    const updated = await client.resume.update({
       where: { id },
       data: { metadata: updatedMetadata as Prisma.InputJsonValue },
       include: {
@@ -238,15 +244,15 @@ export class GeneratedResumeRepository
       },
     });
 
-    return mapResumeToGeneratedData(updated as ResumeWithIncludes);
+    return mapResumeToGeneratedData(updated as unknown as ResumeWithIncludes);
   }
 
   /**
    * Link a cover letter to a resume
    */
   async linkCoverLetter(id: string, coverLetterId: string | null, tx?: TransactionClient): Promise<GeneratedResumeData> {
-    const delegate = tx || (this.db as any);
-    const updated = await delegate.resume.update({
+    const client = tx || (this.db as TransactionClient);
+    const updated = await client.resume.update({
       where: { id },
       data: { 
         coverLetter: coverLetterId 
@@ -259,7 +265,7 @@ export class GeneratedResumeRepository
         coverLetter: { select: { id: true } },
       },
     });
-    return mapResumeToGeneratedData(updated as ResumeWithIncludes);
+    return mapResumeToGeneratedData(updated as unknown as ResumeWithIncludes);
   }
 }
 

@@ -11,7 +11,7 @@ import { EntityCard, createCardAction } from "@/components/core/surfaces/EntityC
 import type { GalleryCardAction } from "@/components/core/data-display/GalleryCard";
 import { useToastAction } from "@/hooks";
 import type { Resume } from '@/lib/validations/jsonresume';
-import { useCardPreview, useExportPdf } from "@/hooks";
+import { useCardPreview, useCardExportPDF as useExportPDF } from "@/hooks";
 import { deleteProfile, duplicateProfile, setDefaultProfile } from '@/app/actions/profile';
 import { ROUTES } from '@/lib/constants';
 
@@ -45,7 +45,7 @@ export const ProfileCard = memo(function ProfileCard({
     enabled: !!resumeData,
   });
 
-  const { exportPdf } = useExportPdf({
+  const { exportPdf } = useExportPDF({
     content: resumeData,
     fileName: name,
   });

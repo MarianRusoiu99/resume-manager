@@ -22,21 +22,21 @@ if (typeof Handlebars !== 'undefined') {
   });
 
   Handlebars.registerHelper('safeIf', function(this: unknown, value: unknown, options: Handlebars.HelperOptions) {
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && (value as any) !== '') {
       return options.fn(this);
     }
     return options.inverse(this);
   });
   
   // New helper for safe nested property access
-  Handlebars.registerHelper('safeGet', function(this: unknown, context: any, path: string, options: Handlebars.HelperOptions) {
+  Handlebars.registerHelper('safeGet', function(this: unknown, context: Record<string, unknown> | unknown[], path: string, options: Handlebars.HelperOptions) {
     if (!context || !path) return options.inverse(this);
     
     const value = path.split('.').reduce((acc, part) => {
-      return acc && acc[part];
+      return acc && (acc as Record<string, any>)[part];
     }, context);
     
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && (value as any) !== '') {
       return options.fn(this);
     }
     return options.inverse(this);

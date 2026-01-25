@@ -42,7 +42,7 @@ export class AIOrchestrator {
   /**
    * Generates a streaming response
    */
-  static async *streamGenerate<T>(
+  static async *streamGenerate<T = any>(
     conversation: Conversation,
     options: OrchestratorOptions
   ): AsyncGenerator<StreamChunk<T>, void, unknown> {
@@ -140,7 +140,7 @@ export class AIOrchestrator {
   /**
    * Generates a non-streaming response
    */
-  static async generate<T>(
+  static async generate<T = any>(
     conversation: Conversation,
     options: OrchestratorOptions
   ): Promise<GenerationResult<T>> {
@@ -219,7 +219,7 @@ export class AIOrchestrator {
   /**
    * Generates with vision support (for image attachments)
    */
-  static async generateWithVision<T>(
+  static async generateWithVision<T = any>(
     conversation: Conversation,
     options: OrchestratorOptions
   ): Promise<GenerationResult<T>> {

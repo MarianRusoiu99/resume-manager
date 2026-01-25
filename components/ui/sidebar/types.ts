@@ -1,3 +1,5 @@
+import { TooltipContent } from "@/components/ui/tooltip"
+
 /**
  * Shared types for Sidebar components
  */
@@ -19,7 +21,7 @@ export interface SidebarMenuButtonProps extends React.ComponentProps<"button"> {
   isActive?: boolean;
   variant?: "default" | "outline";
   size?: "default" | "sm" | "lg";
-  tooltip?: string;
+  tooltip?: string | React.ComponentPropsWithoutRef<typeof TooltipContent>;
 }
 
 export interface SidebarMenuActionProps extends React.ComponentProps<"button"> {

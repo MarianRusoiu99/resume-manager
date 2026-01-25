@@ -48,8 +48,8 @@ export function validateHandlebarsSyntax(template: string): void {
 
   try {
     Handlebars.precompile(template);
-  } catch (error: any) {
-    throw new ValidationError(`Handlebars syntax error: ${error.message}`);
+  } catch (error: unknown) {
+    throw new ValidationError(`Handlebars syntax error: ${(error as Error).message}`);
   }
 }
 
@@ -97,21 +97,21 @@ function registerHelpers() {
 
   // Safe value checker
   Handlebars.registerHelper('safeIf', function(this: unknown, value: unknown, options: Handlebars.HelperOptions) {
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && (value as any) !== '') {
       return options.fn(this);
     }
     return options.inverse(this);
   });
 
   // Safe nested property access
-  Handlebars.registerHelper('safeGet', function(this: unknown, context: any, path: string, options: Handlebars.HelperOptions) {
+  Handlebars.registerHelper('safeGet', function(this: unknown, context: Record<string, unknown> | unknown[], path: string, options: Handlebars.HelperOptions) {
     if (!context || !path) return options.inverse(this);
     
     const value = path.split('.').reduce((acc, part) => {
-      return acc && acc[part];
+      return acc && (acc as Record<string, any>)[part];
     }, context);
     
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && (value as any) !== '') {
       return options.fn(this);
     }
     return options.inverse(this);
@@ -175,7 +175,7 @@ function registerHelpers() {
   });
 
   // Logical OR helper
-  const orHelper = function(...args: any[]) {
+  const orHelper = function(...args: unknown[]) {
     args.pop(); // Remove Handlebars options
     return args.some(v => !!v);
   };
@@ -183,7 +183,7 @@ function registerHelpers() {
   Handlebars.registerHelper('||', orHelper);
 
   // Logical AND helper
-  const andHelper = function(...args: any[]) {
+  const andHelper = function(...args: unknown[]) {
     args.pop(); // Remove Handlebars options
     return args.every(v => !!v);
   };

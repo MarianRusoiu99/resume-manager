@@ -22,15 +22,21 @@ import {
   updateTemplate,
 } from '@/app/actions/template';
 import { TemplateImportModal } from './TemplateImportModal';
-import { AIEnhanceTemplateModal } from '@/modules/ai-enhance/modals/AIEnhanceTemplateModal';
 import { Page } from '@/components/layout/Page';
 import { TemplateSettingsDialog } from './editor/TemplateSettingsDialog';
 import { TemplatePreviewFrame } from './editor/TemplatePreviewFrame';
 import { TemplateEditorToolbar } from './editor/TemplateEditorToolbar';
 import { useTemplatePreviewLegacy as useTemplatePreview } from "@/hooks";
 import { useTemplatePersistence } from './editor/hooks/useTemplatePersistence';
+import { Skeleton } from "@/components/ui/skeleton";
 
 import type { OnMount } from '@monaco-editor/react';
+
+// Dynamically import AI Enhance modal
+const AIEnhanceTemplateModal = dynamic(
+  () => import('@/modules/ai-enhance/modals/AIEnhanceTemplateModal').then(mod => mod.AIEnhanceTemplateModal),
+  { ssr: false }
+);
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(() => import('@monaco-editor/react'), {
@@ -38,7 +44,7 @@ const Editor = dynamic(() => import('@monaco-editor/react'), {
   loading: () => (
     <div className="h-full w-full flex items-center justify-center bg-muted/20 rounded-lg">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2 opacity-20"></div>
+        <Skeleton className="h-8 w-8 rounded-full mx-auto mb-2 opacity-20" />
         <p className="text-sm text-muted-foreground">Loading editor...</p>
       </div>
     </div>

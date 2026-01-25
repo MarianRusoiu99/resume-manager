@@ -7,7 +7,7 @@ import { useTemplatePreview } from "@/hooks";
 import { createComponentLogger } from "@/lib/utils/client-logger";
 import { getTemplate, getTemplates } from "@/app/actions/template";
 import { NotFoundError, ExternalServiceError } from "@/lib/errors";
-import { useExportPDF } from "@/components/preview/useExportPDF";
+import { useExportPDF as useExportPDFInternal } from "@/components/preview/useExportPDF";
 
 const logger = createComponentLogger('useCardPreview');
 
@@ -74,28 +74,28 @@ export function useCardPreview({
 }
 
 /**
- * useExportPdf - Hook for PDF export functionality
+ * useExportPDF - Hook for PDF export functionality
  * 
  * Extracts common PDF export logic from card components.
  */
-interface UseExportPdfOptions {
+interface UseExportPDFOptions {
   content: Resume | null;
   templateId?: string | null;
   fileName?: string;
 }
 
-interface UseExportPdfReturn {
+interface UseExportPDFReturn {
   exportPdf: () => Promise<void>;
   isExporting: boolean;
   error: string | null;
 }
 
-export function useExportPdf({
+export function useExportPDF({
   content,
   templateId,
   fileName = "resume",
-}: UseExportPdfOptions): UseExportPdfReturn {
-  const { handleExportPDF, isExportingPDF } = useExportPDF();
+}: UseExportPDFOptions): UseExportPDFReturn {
+  const { handleExportPDF, isExportingPDF } = useExportPDFInternal();
   const [error, setError] = useState<string | null>(null);
 
   const exportPdf = useCallback(async () => {

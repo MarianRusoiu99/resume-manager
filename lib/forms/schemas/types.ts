@@ -36,7 +36,7 @@ export interface TextareaFieldConfig<T> extends BaseFieldConfig<T> {
 }
 
 /**
- * Rich text field configuration (uses BlockNote editor)
+ * Rich text field configuration (uses TipTap editor)
  */
 export interface RichTextFieldConfig<T> extends BaseFieldConfig<T> {
   type: 'richtext';

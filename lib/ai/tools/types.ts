@@ -20,7 +20,7 @@ export interface ToolContext {
 /**
  * AI Tool definition
  */
-export interface AITool<TParams = unknown, TResult = unknown> {
+export interface AITool<TParams = any, TResult = any> {
   /** Unique tool name (used in function calling) */
   name: string;
   /** Human-readable description for AI */

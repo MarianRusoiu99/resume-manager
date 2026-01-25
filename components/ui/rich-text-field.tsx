@@ -4,11 +4,11 @@ import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
-import type { BlockNoteEditorMethods } from "@/modules/editor/components/BlockNoteEditorWrapper.client";
+import type { TiptapEditorMethods } from "@/modules/editor/components/TiptapEditorWrapper.client";
 
-// Dynamically import BlockNote to avoid SSR issues
-const BlockNoteEditor = dynamic(
-  () => import("@/modules/editor/components/BlockNoteEditorWrapper.client").then((mod) => mod.BlockNoteEditorWrapper),
+// Dynamically import TipTap to avoid SSR issues
+const TiptapEditor = dynamic(
+  () => import("@/modules/editor/components/TiptapEditorWrapper.client").then((mod) => mod.TiptapEditorWrapper),
   {
     ssr: false,
     loading: () => (
@@ -45,7 +45,7 @@ export interface RichTextFieldProps {
 }
 
 /**
- * RichTextField - A form field component with BlockNote rich text editing
+ * RichTextField - A form field component with TipTap rich text editing
  * 
  * Supports bold, italic, lists, bullet points, and other rich formatting.
  * Stores content as markdown for compatibility with JSONResume.
@@ -63,7 +63,7 @@ export function RichTextField({
   disabled = false,
   error,
 }: Readonly<RichTextFieldProps>) {
-  const editorRef = React.useRef<BlockNoteEditorMethods>(null);
+  const editorRef = React.useRef<TiptapEditorMethods>(null);
   const displayLabel = required ? `${label} *` : label;
   
   // Track if we need to update the editor from external value changes
@@ -101,7 +101,7 @@ export function RichTextField({
         )}
         style={{ minHeight }}
       >
-        <BlockNoteEditor
+        <TiptapEditor
           ref={editorRef}
           markdown={value}
           onChange={handleChange}
