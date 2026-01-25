@@ -14,7 +14,7 @@ interface FormListProps<T> {
     description?: string;
 }
 
-export const FormList = memo(function FormList<T>({
+function FormListInternal<T>({
     items,
     onAdd,
     onRemove,
@@ -65,4 +65,6 @@ export const FormList = memo(function FormList<T>({
             )}
         </div>
     );
-});
+}
+
+export const FormList = memo(FormListInternal) as typeof FormListInternal;

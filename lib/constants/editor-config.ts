@@ -42,8 +42,8 @@ export const EDITOR_CONFIG: EditorSection[] = [
     field: 'basics',
     schema: schemas.personalInfoFormSchema,
     fields: schemas.personalInfoFields,
-    toForm: schemas.basicsToFormData as (data: unknown) => unknown,
-    fromForm: schemas.formDataToBasics as (data: unknown) => unknown,
+    toForm: schemas.basicsToFormData as (data: unknown) => any,
+    fromForm: schemas.formDataToBasics as (data: any) => any,
   },
   {
     id: "experience",

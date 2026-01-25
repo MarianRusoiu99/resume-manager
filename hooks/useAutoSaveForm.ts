@@ -22,7 +22,7 @@ export function useAutoSaveForm<T extends FieldValues>({
 }: UseAutoSaveFormProps<T>) {
   const form = useForm<T>({
     ...formProps,
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema as any) as any,
   });
 
   const { reset, formState: { isDirty }, getValues, control } = form;

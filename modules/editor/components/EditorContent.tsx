@@ -8,7 +8,7 @@ import { ManagedForm } from "@/components/forms/ManagedForm";
 import { GenericFormList } from "@/components/forms/GenericFormList";
 import { ChevronDown } from "lucide-react";
 import { z } from "zod";
-import { FieldConfig } from "@/lib/forms/schemas/types";
+import { FieldConfig, FormSchema } from "@/lib/forms/schemas/types";
 
 export function EditorContent() {
     const { resume, updateField } = useEditor();

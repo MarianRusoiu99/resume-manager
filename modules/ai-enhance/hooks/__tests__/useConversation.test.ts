@@ -33,6 +33,7 @@ describe('useConversation Hook', () => {
       messages: [],
       context: {},
       output: null,
+      savedId: null,
       isLoading: false,
       isStreaming: false,
       error: null,
@@ -73,7 +74,7 @@ describe('useConversation Hook', () => {
     expect(result.current.state.messages).toHaveLength(2); // User + Assistant
     expect(result.current.state.isLoading).toBe(false);
     expect(result.current.state.id).toBe('conv-123');
-    expect(onComplete).toHaveBeenCalledWith({ text: 'Hello World' });
+    expect(onComplete).toHaveBeenCalledWith({ text: 'Hello World' }, null);
   });
 
   it('should handle API errors', async () => {

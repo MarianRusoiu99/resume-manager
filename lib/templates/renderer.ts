@@ -107,7 +107,7 @@ function registerHelpers() {
   Handlebars.registerHelper('safeGet', function(this: unknown, context: Record<string, unknown> | unknown[], path: string, options: Handlebars.HelperOptions) {
     if (!context || !path) return options.inverse(this);
     
-    const value = path.split('.').reduce((acc, part) => {
+    const value = path.split('.').reduce((acc: any, part) => {
       return acc && (acc as Record<string, unknown>)[part];
     }, context);
     

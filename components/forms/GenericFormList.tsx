@@ -57,14 +57,14 @@ function GenericFormListComponent<T extends Record<string, unknown>>({
   }, [updateItem]);
 
   return (
-    <FormList
+    <FormList<T>
       items={currentItems}
       onAdd={addItem}
       onRemove={removeItem}
       addButtonText={schema.labels?.addButton || "Add Item"}
       emptyMessage={schema.labels?.emptyMessage || "No items yet."}
       renderItem={(item, index) => (
-        <GenericForm
+        <GenericForm<T>
           fields={schema.fields}
           data={item}
           onChange={(updatedItem) => handleItemChange(updatedItem, index, item)}

@@ -59,27 +59,48 @@ export interface PrismaArgs {
  * Prisma delegate type constraint - base interface for type safety
  */
 export interface PrismaDelegate {
-  findUnique(args: { where: any; include?: any; select?: any }): Promise<any>;
+  findUnique(args: {
+    where: Record<string, unknown>;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+  }): Promise<unknown>;
   findFirst(args?: {
-    where?: any;
-    include?: any;
-    select?: any;
-    orderBy?: any;
+    where?: Record<string, unknown>;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+    orderBy?: Record<string, unknown> | Record<string, unknown>[];
     take?: number;
     skip?: number;
-  }): Promise<any>;
+  }): Promise<unknown>;
   findMany(args?: {
-    where?: any;
-    include?: any;
-    select?: any;
-    orderBy?: any;
+    where?: Record<string, unknown>;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+    orderBy?: Record<string, unknown> | Record<string, unknown>[];
     take?: number;
     skip?: number;
-  }): Promise<any[]>;
-  create(args: { data: any; include?: any; select?: any }): Promise<any>;
-  update(args: { where: any; data: any; include?: any; select?: any }): Promise<any>;
-  delete(args: { where: any; include?: any; select?: any }): Promise<any>;
-  count(args?: { where?: any; take?: number; skip?: number }): Promise<number>;
+  }): Promise<unknown[]>;
+  create(args: {
+    data: unknown;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+  }): Promise<unknown>;
+  update(args: {
+    where: Record<string, unknown>;
+    data: unknown;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+  }): Promise<unknown>;
+  delete(args: {
+    where: Record<string, unknown>;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+  }): Promise<unknown>;
+  count(args?: {
+    where?: Record<string, unknown>;
+    take?: number;
+    skip?: number;
+  }): Promise<number>;
 }
 
 /**
@@ -90,7 +111,7 @@ export abstract class GenericRepository<
   TCreateInput,
   TUpdateInput,
   TModelName extends keyof TransactionClient = keyof TransactionClient,
-  TDelegate extends PrismaDelegate = any
+  TDelegate extends PrismaDelegate = PrismaDelegate
 > {
   protected readonly db: PrismaClient;
 
@@ -117,17 +138,17 @@ export abstract class GenericRepository<
   }
 
   async findById(id: string, userId?: string, tx?: TransactionClient): Promise<T | null> {
-    const where: any = { id };
+    const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
     return this.getDelegate(tx).findUnique({ where }) as Promise<T | null>;
   }
 
   async findAll(args?: PrismaArgs, tx?: TransactionClient): Promise<T[]> {
-    return this.getDelegate(tx).findMany(args as any) as Promise<T[]>;
+    return this.getDelegate(tx).findMany(args as Record<string, unknown>) as Promise<T[]>;
   }
 
   async create(data: TCreateInput, tx?: TransactionClient): Promise<T> {
-    return this.getDelegate(tx).create({ data }) as Promise<T>;
+    return this.getDelegate(tx).create({ data: data as unknown }) as Promise<T>;
   }
 
   async update(
@@ -136,13 +157,13 @@ export abstract class GenericRepository<
     userId?: string,
     tx?: TransactionClient
   ): Promise<T> {
-    const where: any = { id };
+    const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
-    return this.getDelegate(tx).update({ where, data }) as Promise<T>;
+    return this.getDelegate(tx).update({ where, data: data as unknown }) as Promise<T>;
   }
 
   async delete(id: string, userId?: string, tx?: TransactionClient): Promise<T> {
-    const where: any = { id };
+    const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
     return this.getDelegate(tx).delete({ where }) as Promise<T>;
   }
@@ -169,7 +190,7 @@ export abstract class GenericUserOwnedRepository<
   TCreateInput,
   TUpdateInput,
   TModelName extends keyof TransactionClient = keyof TransactionClient,
-  TDelegate extends PrismaDelegate = any
+  TDelegate extends PrismaDelegate = PrismaDelegate
 > extends GenericRepository<T, TCreateInput, TUpdateInput, TModelName, TDelegate> {
   async findByIdForUser(id: string, userId: string, tx?: TransactionClient): Promise<T | null> {
     return this.findById(id, userId, tx);

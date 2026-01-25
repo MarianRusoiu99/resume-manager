@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mocked } from 'vitest';
 import { executeWorkflow, createConsoleProgress } from '@/lib/ai/workflow/engine';
 import type { WorkflowConfig, WorkflowStep, WorkflowContext, WorkflowResults } from '@/lib/ai/workflow/types';
 import type { Resume } from '@/lib/validations/jsonresume';
@@ -6,15 +6,15 @@ import type { AIProvider } from '@/lib/ai/providers';
 import { logger } from '@/lib/utils/logger';
 
 describe('Workflow Engine', () => {
-  let mockProvider: AIProvider;
+  let mockProvider: Mocked<AIProvider>;
   let mockUserResume: Resume;
   let progressCallbacks: Array<[string, string, number]>;
 
-  const createMockProvider = (): AIProvider => ({
+  const createMockProvider = (): Mocked<AIProvider> => ({
     generateChat: vi.fn(),
     generateCompletion: vi.fn(),
     embed: vi.fn(),
-  } as unknown as AIProvider);
+  } as unknown as Mocked<AIProvider>);
 
   const createMockStep = (
     id: string,

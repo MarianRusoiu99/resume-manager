@@ -36,7 +36,7 @@ interface ManagedFormProps<T extends FieldValues> {
 /**
  * ManagedForm - Connects GenericForm with react-hook-form and Zod validation
  */
-export const ManagedForm = memo(function ManagedForm<T extends FieldValues>({
+function ManagedFormInternal<T extends FieldValues>({
   schema,
   defaultValues,
   fields,
@@ -50,7 +50,7 @@ export const ManagedForm = memo(function ManagedForm<T extends FieldValues>({
   columns = 2,
 }: Readonly<ManagedFormProps<T>>) {
   const form = useForm<T>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema as any) as any,
     defaultValues: defaultValues as DefaultValues<T>,
     mode: "onBlur",
   });
@@ -123,4 +123,6 @@ export const ManagedForm = memo(function ManagedForm<T extends FieldValues>({
       </form>
     </FormProvider>
   );
-});
+}
+
+export const ManagedForm = memo(ManagedFormInternal) as typeof ManagedFormInternal;

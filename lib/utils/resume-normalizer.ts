@@ -61,7 +61,7 @@ export function normalizeResume(data: unknown | null | undefined): Resume {
   const resumeData = data as Partial<Resume>;
 
   // Helper to merge objects
-  const mergeObject = <T extends Record<string, unknown>>(target: T, source: unknown): T => {
+  const mergeObject = (target: any, source: any): any => {
     if (!source || typeof source !== 'object') {
       return target;
     }
@@ -83,10 +83,10 @@ export function normalizeResume(data: unknown | null | undefined): Resume {
           sourceValue !== null &&
           !Array.isArray(sourceValue)
         ) {
-          result[key] = mergeObject(targetValue as Record<string, unknown>, sourceValue) as T[Extract<keyof T, string>];
+          result[key] = mergeObject(targetValue, sourceValue);
         } else {
           // Otherwise use source value
-          result[key] = sourceValue as T[Extract<keyof T, string>];
+          result[key] = sourceValue;
         }
       }
     }

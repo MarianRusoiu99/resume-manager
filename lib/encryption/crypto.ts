@@ -126,11 +126,23 @@ export function maskApiKey(apiKey: string): string {
 
 /**
  * Validate encryption/decryption by round-trip test
- * @param testString - String to test with
+ * Or check if a string can be decrypted
+ * @param testString - String to test with or encrypted string to check
  * @returns true if encryption/decryption works correctly
  */
 export function validateEncryption(testString: string = 'test'): boolean {
   try {
+    // If it looks like encrypted data (4 parts separated by colons), try to decrypt it
+    const parts = testString.split(':');
+    if (parts.length === 4) {
+      // Basic check for base64 characters to avoid false positives on strings like "a:b:c:d"
+      const isBase64 = (str: string) => /^[A-Za-z0-9+/]*={0,2}$/.test(str);
+      if (parts.every(isBase64)) {
+        decrypt(testString);
+        return true;
+      }
+    }
+    // Otherwise, do a round-trip test
     const encrypted = encrypt(testString);
     const decrypted = decrypt(encrypted);
     return decrypted === testString;

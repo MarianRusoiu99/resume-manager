@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type MockedFunction } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
 import { proxy } from '@/proxy';
 import { env } from '@/lib/config/env';
@@ -8,6 +8,8 @@ import { cookies } from 'next/headers';
 vi.mock('next/headers', () => ({
   cookies: vi.fn(),
 }));
+
+const mockCookies = cookies as unknown as MockedFunction<typeof cookies>;
 
 vi.mock('@/lib/auth/routes', () => ({
   DEFAULT_AUTH_REDIRECT: '/login',
@@ -28,9 +30,9 @@ describe('Proxy (Middleware)', () => {
     vi.spyOn(env, 'isProduction', 'get').mockReturnValue(false);
     
     // Default cookie mock to prevent TypeError: Cannot read properties of undefined (reading 'get')
-    (cookies as any).mockReturnValue(Promise.resolve({
+    mockCookies.mockReturnValue(Promise.resolve({
       get: vi.fn().mockReturnValue(undefined)
-    }));
+    } as any));
   });
 
   describe('Host Validation', () => {
@@ -67,9 +69,9 @@ describe('Proxy (Middleware)', () => {
     it('should redirect unauthenticated users to login for protected routes', async () => {
       vi.spyOn(env, 'trustedHosts', 'get').mockReturnValue([]);
       // Mock no session cookie
-      (cookies as any).mockReturnValue(Promise.resolve({
+      mockCookies.mockReturnValue(Promise.resolve({
         get: () => undefined
-      }));
+      } as any));
 
       const req = mockRequest('http://localhost:3000/dashboard');
       const res = await proxy(req);
@@ -81,9 +83,9 @@ describe('Proxy (Middleware)', () => {
 
     it('should allow unauthenticated users to access public routes', async () => {
       vi.spyOn(env, 'trustedHosts', 'get').mockReturnValue([]);
-      (cookies as any).mockReturnValue(Promise.resolve({
+      mockCookies.mockReturnValue(Promise.resolve({
         get: () => undefined
-      }));
+      } as any));
 
       const req = mockRequest('http://localhost:3000/public');
       const res = await proxy(req);
@@ -94,9 +96,9 @@ describe('Proxy (Middleware)', () => {
     it('should allow authenticated users to access protected routes', async () => {
       vi.spyOn(env, 'trustedHosts', 'get').mockReturnValue([]);
       // Mock session cookie exists
-      (cookies as any).mockReturnValue(Promise.resolve({
+      mockCookies.mockReturnValue(Promise.resolve({
         get: (name: string) => name === 'authjs.session-token' ? { value: 'valid-token' } : undefined
-      }));
+      } as any));
 
       const req = mockRequest('http://localhost:3000/dashboard');
       const res = await proxy(req);
@@ -108,9 +110,9 @@ describe('Proxy (Middleware)', () => {
   describe('CSP Headers', () => {
     it('should set Content-Security-Policy header', async () => {
       vi.spyOn(env, 'trustedHosts', 'get').mockReturnValue([]);
-      (cookies as any).mockReturnValue(Promise.resolve({
+      mockCookies.mockReturnValue(Promise.resolve({
         get: () => ({ value: 'token' })
-      }));
+      } as any));
 
       const req = mockRequest('http://localhost:3000/dashboard');
       const res = await proxy(req);
@@ -120,9 +122,9 @@ describe('Proxy (Middleware)', () => {
 
     it('should use template editor CSP for template routes', async () => {
       vi.spyOn(env, 'trustedHosts', 'get').mockReturnValue([]);
-      (cookies as any).mockReturnValue(Promise.resolve({
+      mockCookies.mockReturnValue(Promise.resolve({
         get: () => ({ value: 'token' })
-      }));
+      } as any));
 
       const req = mockRequest('http://localhost:3000/templates/new');
       const res = await proxy(req);
