@@ -75,8 +75,10 @@ export const HANDLEBARS_REFERENCE = `
 {{/if}}
 
 ### Helpers (Available)
+{{date startDate endDate}} - (RECOMMENDED) Single-line formatted date range
 {{formatDate startDate}} - Formats date to readable format
-{{dateRange startDate endDate}} - Shows date range with "Present" for missing end
 {{formatLocation location}} - Formats location object
+{{#if (or this.startDate this.endDate)}} - Logical OR (supports || as well)
+{{#if (and v1 v2)}} - Logical AND (supports && as well)
 {{#if (hasItems skills)}} - Checks if array has items
 {{join keywords ", "}} - Joins array with separator`;

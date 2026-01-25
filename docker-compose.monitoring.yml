@@ -1,0 +1,166 @@
+version: '3.8'
+
+services:
+  # =========================================
+  # 1. APM: GLITCHTIP
+  # =========================================
+  postgres-glitchtip:
+    image: postgres:15
+    container_name: glitchtip-db
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+      POSTGRES_DB: glitchtip
+    volumes:
+      - pg-glitchtip-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-glitchtip:
+    image: redis:7
+    container_name: glitchtip-redis
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  glitchtip-web:
+    image: glitchtip/glitchtip:latest
+    container_name: glitchtip-web
+    depends_on:
+      postgres-glitchtip:
+        condition: service_healthy
+      redis-glitchtip:
+        condition: service_started
+    ports:
+      - "8088:8000"
+    environment:
+      DATABASE_URL: postgres://postgres@postgres-glitchtip:5432/glitchtip
+      REDIS_URL: redis://redis-glitchtip:6379
+      SECRET_KEY: "${GLITCHTIP_SECRET_KEY:-change_me_in_production_random_string}"
+      PORT: 8000
+      GLITCHTIP_DOMAIN: "${GLITCHTIP_DOMAIN:-http://localhost:8088}"
+      ENABLE_USER_REGISTRATION: "true"
+      EMAIL_URL: "consolemail://"
+    networks:
+      - app-network
+
+  glitchtip-worker:
+    image: glitchtip/glitchtip:latest
+    container_name: glitchtip-worker
+    command: ./bin/run-celery-with-beat.sh
+    depends_on:
+      postgres-glitchtip:
+        condition: service_healthy
+      redis-glitchtip:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://postgres@postgres-glitchtip:5432/glitchtip
+      REDIS_URL: redis://redis-glitchtip:6379
+      SECRET_KEY: "${GLITCHTIP_SECRET_KEY:-change_me_in_production_random_string}"
+    networks:
+      - app-network
+
+  # =========================================
+  # 2. AI MONITORING: LANGFUSE
+  # =========================================
+  langfuse-server:
+    image: langfuse/langfuse:3
+    container_name: langfuse-server
+    depends_on:
+      - postgres-langfuse
+      - clickhouse
+    ports:
+      - "3300:3000"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres-langfuse:5432/postgres"
+      NEXTAUTH_SECRET: "${LANGFUSE_NEXTAUTH_SECRET:-mysecret}"
+      SALT: "${LANGFUSE_SALT:-mysalt}"
+      NEXTAUTH_URL: "${LANGFUSE_NEXTAUTH_URL:-http://localhost:3300}"
+      TELEMETRY_ENABLED: "false"
+      CLICKHOUSE_URL: "http://clickhouse:8123"
+      CLICKHOUSE_MIGRATION_URL: "clickhouse://default:password@clickhouse:9000"
+      CLICKHOUSE_USER: "default"
+      CLICKHOUSE_PASSWORD: "password"
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+    networks:
+      - app-network
+
+  postgres-langfuse:
+    image: postgres:16
+    container_name: langfuse-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - pg-langfuse-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24
+    container_name: langfuse-clickhouse
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: "password"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - app-network
+
+  # =========================================
+  # 3. LOGS & METRICS: OTEL -> LOKI -> GRAFANA
+  # =========================================
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3301:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - app-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  pg-glitchtip-data:
+  pg-langfuse-data:
+  clickhouse-data:
+  grafana-data:

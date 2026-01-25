@@ -179,10 +179,11 @@ The template MUST be designed to handle all 12 sections of the JSON Resume schem
 
 ## HANDLEBARS SYNTAX & SAFETY
 - **CRITICAL RULE**: Do NOT use JavaScript logical operators like \`||\`, \`&&\`, \`!\`, or \`===\` inside expressions. They will CRASH the renderer.
-- **LOGICAL OPERATORS**: You MUST use Handlebars helpers:
-  - CORRECT: \`{{#if (or this.startDate this.endDate)}}\`
+- **LOGICAL OPERATORS**: Use these built-in helpers for logic:
+  - CORRECT: \`{{#if (or this.startDate this.endDate)}}\` or \`{{#if (|| this.startDate this.endDate)}}\`
   - INCORRECT: \`{{#if this.startDate || this.endDate}}\` (This causes a Parse Error)
-  - CORRECT: \`{{#if (and this.city this.region)}}\`
+  - CORRECT: \`{{#if (and this.city this.region)}}\` or \`{{#if (&& this.city this.region)}}\`
+- **DATE HANDLING (RECOMMENDED)**: Use the \`{{date startDate endDate}}\` helper for single-line date ranges. It handles "Present" automatically.
 - **QUOTES**: Avoid escaping quotes in the HTML/CSS (e.g., use <div class="container"> NOT <div class="\&quot;container\&quot;">).
 
 ## OUTPUT FORMAT
