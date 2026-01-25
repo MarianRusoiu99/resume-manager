@@ -1,6 +1,6 @@
 import { ResumeCard } from './ResumeCard';
 import { Gallery } from '@/components/core/data-display/Gallery';
-import { useResourceOperations } from '@/hooks';
+import { useResourceOperations } from "@/hooks";
 import { FileText } from 'lucide-react';
 import type { Resume as JsonResume } from '@/lib/validations/jsonresume';
 

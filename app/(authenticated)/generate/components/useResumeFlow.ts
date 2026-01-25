@@ -1,25 +1,26 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useResumeGeneration } from '@/modules/ai-enhance/hooks/useResumeGeneration';
 import { deleteResume } from '@/app/actions/resume';
 import { getProfile } from '@/app/actions/profile';
 import { useTemplateSelection } from '@/components/preview/useTemplateSelection';
-import { useFeatureModelPreference } from '@/hooks';
+import { useFeatureModelPreference } from "@/hooks";
 
 export function useResumeFlow(defaultProfileId: string) {
-  const [selectedProfileId, setSelectedProfileId] = useState(() => defaultProfileId);
+  const [selectedProfileId, setSelectedProfileId] = useState(defaultProfileId);
   const [jobDescription, setJobDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const { modelId, providerId, isLoading: isModelLoading, updatePreference } = useFeatureModelPreference('resume');
 
-  useEffect(() => {
-    if (defaultProfileId && !selectedProfileId) {
-      setSelectedProfileId(defaultProfileId);
-    }
-  }, [defaultProfileId, selectedProfileId]);
+  // Sync selectedProfileId if defaultProfileId changes externally
+  const [prevDefaultProfileId, setPrevDefaultProfileId] = useState(defaultProfileId);
+  if (defaultProfileId !== prevDefaultProfileId) {
+    setPrevDefaultProfileId(defaultProfileId);
+    setSelectedProfileId(defaultProfileId);
+  }
 
   const handleModelChange = useCallback((newModelId: string, newProviderId: string) => {
     updatePreference(newModelId, newProviderId);

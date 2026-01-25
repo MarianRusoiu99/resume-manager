@@ -5,7 +5,7 @@
  * 
  * @example
  * ```typescript
- * import { useAutoSave, useTemplatePreview, useMobile } from '@/hooks';
+ * import { useAutoSave, useTemplatePreview, useMobile } from "@/hooks";
  * ```
  */
 

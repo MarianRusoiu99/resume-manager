@@ -5,7 +5,7 @@ import { FieldConfig } from "@/lib/forms/form-schema";
 import { addApiProviderInputSchema, type AddApiProviderInput } from '@/lib/validations/shared-inputs';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
-import { useToastAction } from '@/hooks';
+import { useToastAction } from "@/hooks";
 import { addApiProvider } from '@/app/actions/api-provider';
 
 interface ApiKeyFormProps {

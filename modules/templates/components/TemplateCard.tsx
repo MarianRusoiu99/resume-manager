@@ -13,7 +13,7 @@ import { EntityCard, createCardAction } from '@/components/core/surfaces/EntityC
 import type { GalleryCardAction } from '@/components/core/data-display/GalleryCard';
 import { TemplatePreviewModal } from './TemplatePreviewModal';
 import { deleteTemplate, duplicateTemplate } from '@/app/actions/template';
-import { useToastAction, useComponentLogger } from '@/hooks';
+import { useToastAction, useComponentLogger } from "@/hooks";
 import { useExportPDF } from '@/components/preview/useExportPDF';
 import type { ResumeTemplate } from '@/lib/templates/template';
 import { renderTemplateServerSide } from '@/components/core/data-display/rendering/client-renderer';

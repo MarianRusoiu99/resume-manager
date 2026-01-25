@@ -1,11 +1,11 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { useListForm } from "@/hooks';
+import { useListForm } from "@/hooks";
 import { FormList } from "@/components/ui/form-list";
 import type { FormSchema } from "@/lib/forms/form-schema";
 
-import { useAutoSave } from "@/hooks';
+import { useAutoSave } from "@/hooks";
 
 import { GenericForm } from "./GenericForm";
 

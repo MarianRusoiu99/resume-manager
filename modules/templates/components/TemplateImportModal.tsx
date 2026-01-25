@@ -24,7 +24,7 @@ import type { Resume } from '@/lib/validations/jsonresume';
 import { ModelSelector } from '@/components/ai/ModelSelector';
 import { ResumePreview } from '@/modules/resume/components/ResumePreview';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
-import { useFeatureModelPreference } from '@/hooks';
+import { useFeatureModelPreference } from "@/hooks";
 
 interface TemplateImportModalProps {
   open: boolean;

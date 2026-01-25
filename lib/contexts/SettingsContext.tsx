@@ -26,7 +26,7 @@ import {
   type ReactNode,
 } from 'react';
 import { type AISettings, type ApiProvider } from '@/lib/actions/types';
-import { useSettingsManager } from '@/hooks';
+import { useSettingsManager } from "@/hooks";
 import { ConfigurationError } from "@/lib/errors";
 
 interface SettingsContextValue {

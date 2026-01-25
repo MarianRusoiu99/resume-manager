@@ -13,10 +13,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Upload, FileText, Loader2, AlertCircle, Settings2 } from 'lucide-react';
-import { useResumeImport } from '@/hooks';
+import { useResumeImport } from "@/hooks";
 import type { Resume } from '@/lib/validations/jsonresume';
 import { ModelSelector } from '@/components/ai/ModelSelector';
-import { useFeatureModelPreference } from '@/hooks';;
+import { useFeatureModelPreference } from "@/hooks";
 
 interface ResumeImportModalProps {
   open: boolean;

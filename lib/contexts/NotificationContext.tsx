@@ -6,7 +6,7 @@ import React, {
   useMemo,
   ReactNode,
 } from 'react';
-import { useNotificationManager, Notification } from '@/hooks';
+import { useNotificationManager, Notification } from "@/hooks";
 import { ConfigurationError } from "@/lib/errors";
 
 export type { Notification };

@@ -37,11 +37,16 @@ export function PreviewState({
   iframeRef,
   containerRef,
 }: Readonly<PreviewStateProps>) {
-  // Track if component has mounted to avoid hydration mismatch
+  // Tracking mounted state for hydration safety
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    setHasMounted(true);
+    // This is necessary for hydration safety when rendering iframes or client-only components
+    // We use requestAnimationFrame to ensure it runs after the initial render
+    const rafId = requestAnimationFrame(() => {
+      setHasMounted(true);
+    });
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   // During SSR and initial client render, show consistent loading state

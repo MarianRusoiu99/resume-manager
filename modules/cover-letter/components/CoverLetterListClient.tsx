@@ -7,7 +7,7 @@ import { deleteCoverLetter } from '@/app/actions/cover-letter';
 import { ResourceList } from '@/components/core/data-display/ResourceList';
 import { CoverLetterCard } from './CoverLetterCard';
 import type { CoverLetterListItem } from './CoverLetterList';
-import { useResourceCollection } from '@/hooks';
+import { useResourceCollection } from "@/hooks";
 
 interface CoverLetterListClientProps {
     coverLetters: CoverLetterListItem[];

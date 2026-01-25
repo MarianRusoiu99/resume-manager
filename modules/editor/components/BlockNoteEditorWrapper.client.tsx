@@ -6,7 +6,7 @@ import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
 import '@blocknote/mantine/style.css';
 import '@blocknote/core/fonts/inter.css';
-import { useComponentLogger } from '@/hooks';
+import { useComponentLogger } from "@/hooks";
 import { useTheme } from '@/lib/contexts';
 
 export interface BlockNoteEditorMethods {

@@ -13,7 +13,7 @@ import { ErrorState, LoadingState } from '@/components/core/feedback/states';
 import { ConfirmDialog } from "@/components/core/feedback/ConfirmDialog";
 import { CoverLetterEditor, type CoverLetterEditorRef } from '@/modules/cover-letter/components/CoverLetterEditor';
 import { Trash2, Download, Copy, Sparkles, Edit, Save } from 'lucide-react';
-import { useExportPDF, useCoverLetterOperations } from '@/hooks';
+import { useExportPDF, useCoverLetterOperations } from "@/hooks";
 import { useCoverLetterDetail } from '@/modules/cover-letter/hooks/useCoverLetterDetail';
 import { CoverLetterSidebar } from '@/modules/cover-letter/components/detail/CoverLetterSidebar';
 import { FeatureErrorBoundary } from '@/components/error-boundaries';

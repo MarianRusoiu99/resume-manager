@@ -5,7 +5,7 @@ import { apiJson } from '@/lib/utils/api-client';
 import { getProfiles } from '@/app/actions/profile';
 import { getApiProviders } from '@/app/actions/api-provider';
 import { toast } from 'sonner';
-import { useComponentLogger } from '@/hooks';
+import { useComponentLogger } from "@/hooks";
 import type { ProfileListItem } from '@/lib/actions/types';
 import type { UserPreferences } from '@/lib/types';
 

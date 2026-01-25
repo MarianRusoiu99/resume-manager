@@ -1,25 +1,26 @@
 'use client';
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useCoverLetterGeneration } from '@/modules/ai-enhance/hooks/useCoverLetterGeneration';
 import { deleteCoverLetter } from '@/app/actions/cover-letter';
 import { getProfile } from '@/app/actions/profile';
-import { useFeatureModelPreference } from '@/hooks';
+import { useFeatureModelPreference } from "@/hooks";
 
 export function useCoverLetterFlow(defaultProfileId: string) {
-  const [selectedProfileId, setSelectedProfileId] = useState(() => defaultProfileId);
+  const [selectedProfileId, setSelectedProfileId] = useState(defaultProfileId);
   const [jobDescription, setJobDescription] = useState('');
   const [personalInstructions, setPersonalInstructions] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const { modelId, isLoading: isModelLoading, updatePreference } = useFeatureModelPreference('coverLetter');
 
-  useEffect(() => {
-    if (defaultProfileId && !selectedProfileId) {
-      setSelectedProfileId(defaultProfileId);
-    }
-  }, [defaultProfileId, selectedProfileId]);
+  // Sync selectedProfileId if defaultProfileId changes externally
+  const [prevDefaultProfileId, setPrevDefaultProfileId] = useState(defaultProfileId);
+  if (defaultProfileId !== prevDefaultProfileId) {
+    setPrevDefaultProfileId(defaultProfileId);
+    setSelectedProfileId(defaultProfileId);
+  }
 
   const handleModelChange = useCallback((newModelId: string, newProviderId: string) => {
     updatePreference(newModelId, newProviderId);

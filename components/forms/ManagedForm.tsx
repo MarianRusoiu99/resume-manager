@@ -85,9 +85,11 @@ export const ManagedForm = memo(function ManagedForm<T extends FieldValues>({
     }
   }, [values, isDirty, onUpdate, autoSave, debounceMs, getValues]);
 
-  const handleFormSubmit = useCallback(form.handleSubmit(async (data) => {
-    await onSubmit(data);
-  }), [form, onSubmit]);
+  const handleFormSubmit = useCallback((e?: React.BaseSyntheticEvent) => {
+    return form.handleSubmit(async (data) => {
+      await onSubmit(data);
+    })(e);
+  }, [form, onSubmit]);
 
   const handleFieldChange = useCallback((newData: T) => {
     Object.entries(newData).forEach(([key, value]) => {

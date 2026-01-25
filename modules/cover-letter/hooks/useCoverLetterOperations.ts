@@ -1,7 +1,7 @@
 'use client';
 
 import { deleteCoverLetter } from '@/app/actions/cover-letter';
-import { useResourceOperations } from '@/hooks';
+import { useResourceOperations } from "@/hooks";
 
 /**
  * Hook for cover letter CRUD operations

@@ -24,7 +24,7 @@ import { RESUME_PRESETS } from '../components/types';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { ModelSelector } from '@/components/ai/ModelSelector';
 import type { ResumeEnhancementOutput } from '@/lib/ai/modes/types';
-import { useFeatureModelPreference } from '@/hooks';
+import { useFeatureModelPreference } from "@/hooks";
 
 import type { ConversationAttachment } from '../hooks/useConversation';
 

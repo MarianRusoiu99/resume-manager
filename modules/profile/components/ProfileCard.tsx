@@ -9,9 +9,9 @@ import { useTransition, memo } from 'react';
 import { Star, Edit, Copy, Check, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/core/surfaces/EntityCard";
 import type { GalleryCardAction } from "@/components/core/data-display/GalleryCard";
-import { useToastAction } from '@/hooks';;
+import { useToastAction } from "@/hooks";
 import type { Resume } from '@/lib/validations/jsonresume';
-import { useCardPreview, useExportPdf } from '@/hooks';
+import { useCardPreview, useExportPdf } from "@/hooks";
 import { deleteProfile, duplicateProfile, setDefaultProfile } from '@/app/actions/profile';
 import { ROUTES } from '@/lib/constants';
 

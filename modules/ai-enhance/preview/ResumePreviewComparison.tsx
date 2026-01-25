@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useTemplatePreview } from '@/hooks';
+import { useTemplatePreview } from "@/hooks";
 import type { Resume } from '@/lib/validations/jsonresume';
 
 interface ResumePreviewComparisonProps {

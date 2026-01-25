@@ -10,7 +10,7 @@ import { Edit, Eye, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/core/surfaces/EntityCard";
 import type { GalleryCardAction } from "@/components/core/data-display/GalleryCard";
 import type { Resume } from '@/lib/validations/jsonresume';
-import { useCardPreview, useExportPdf } from '@/hooks';
+import { useCardPreview, useExportPdf } from "@/hooks";
 import { ROUTES } from '@/lib/constants';
 import { useResourceOperations } from '@/hooks/useResourceOperations';
 import { deleteResume } from '@/app/actions/resume';

@@ -1,7 +1,7 @@
 'use client';
 
 import { deleteResume, duplicateResume } from '@/app/actions/resume';
-import { useResourceOperations } from '@/hooks';
+import { useResourceOperations } from "@/hooks";
 
 /**
  * Hook for resume CRUD operations

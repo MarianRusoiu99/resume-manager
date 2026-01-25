@@ -10,7 +10,7 @@ import { Save, Share2, Edit2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { getResume, updateResumeContent, updateResumeMetadata } from "@/app/actions/resume";
-import { useComponentLogger } from "@/hooks';
+import { useComponentLogger } from "@/hooks";
 import { Page } from "@/components/layout/Page";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";

@@ -22,7 +22,7 @@ import { TemplateCodeComparison } from '../preview/TemplateCodeComparison';
 import { useTemplateEnhancement } from '../hooks/useTemplateEnhancement';
 import { ModelSelector } from '@/components/ai/ModelSelector';
 import type { ConversationAttachment } from '../hooks/useConversation';
-import { useFeatureModelPreference } from '@/hooks';
+import { useFeatureModelPreference } from "@/hooks";
 
 // Local file attachment type to match PromptInput's expected type
 interface PromptFileAttachment {
