@@ -81,6 +81,7 @@
     "langfuse": "^3.38.6",
     "lucide-react": "^0.548.0",
     "mammoth": "^1.11.0",
+    "marked": "^17.0.1",
     "monaco-editor": "^0.55.1",
     "next": "^16.0.9",
     "next-auth": "^5.0.0-beta.29",

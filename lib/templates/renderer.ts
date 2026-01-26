@@ -10,6 +10,7 @@ import type { DeepPartial } from '@/lib/types';
 import { ValidationError } from '@/lib/errors';
 
 import { loadBaseCss } from './loader';
+import { marked } from 'marked';
 
 /**
  * Auto-corrects common Handlebars syntax errors
@@ -218,6 +219,20 @@ function registerHelpers() {
     }
 
     return `${format(startDate)} — ${format(endDate)}`;
+  });
+
+  // Markdown helper
+  Handlebars.registerHelper('markdown', function(text: string | undefined) {
+    if (!text) return '';
+    try {
+      // Parse markdown to HTML
+      const html = marked.parse(text);
+      // Return safe string so Handlebars doesn't escape the HTML
+      return new Handlebars.SafeString(html as string);
+    } catch (e) {
+      console.error('Error parsing markdown:', e);
+      return text;
+    }
   });
 }
 

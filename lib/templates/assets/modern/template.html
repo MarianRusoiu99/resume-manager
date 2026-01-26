@@ -16,7 +16,7 @@
 <section>
   <h3>Summary</h3>
   <article>
-    <p>{{basics.summary}}</p>
+    <p>{{markdown basics.summary}}</p>
   </article>
 </section>
 {{/safeIf}}
@@ -35,10 +35,10 @@
         <time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{else}} – Present{{/safeIf}}</time>
       {{/safeIf}}
     </div>
-    {{#safeIf summary}}<p>{{summary}}</p>{{/safeIf}}
+    {{#safeIf summary}}<p>{{markdown summary}}</p>{{/safeIf}}
     {{#safeIf highlights}}
       <ul>
-        {{#safeEach highlights}}<li>{{this}}</li>{{/safeEach}}
+        {{#safeEach highlights}}<li>{{markdown this}}</li>{{/safeEach}}
       </ul>
     {{/safeIf}}
   </article>
@@ -76,9 +76,9 @@
       <strong>{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</strong>
       {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{/safeIf}}</time>{{/safeIf}}
     </div>
-    {{#safeIf description}}<p>{{description}}</p>{{/safeIf}}
+    {{#safeIf description}}<p>{{markdown description}}</p>{{/safeIf}}
     {{#safeIf highlights}}
-      <ul>{{#safeEach highlights}}<li>{{this}}</li>{{/safeEach}}</ul>
+      <ul>{{#safeEach highlights}}<li>{{markdown this}}</li>{{/safeEach}}</ul>
     {{/safeIf}}
   </article>
   {{/safeEach}}
@@ -156,7 +156,7 @@
       <time>{{date}}</time>
     </div>
     {{#safeIf awarder}}<div class="meta">{{awarder}}</div>{{/safeIf}}
-    {{#safeIf summary}}<p>{{summary}}</p>{{/safeIf}}
+    {{#safeIf summary}}<p>{{markdown summary}}</p>{{/safeIf}}
   </article>
   {{/safeEach}}
 </section>
@@ -198,7 +198,7 @@
   {{#safeEach references}}
   <article>
     <strong>{{name}}</strong>
-    {{#safeIf reference}}<p class="quote">{{reference}}</p>{{/safeIf}}
+    {{#safeIf reference}}<p class="quote">{{markdown reference}}</p>{{/safeIf}}
   </article>
   {{/safeEach}}
 </section>

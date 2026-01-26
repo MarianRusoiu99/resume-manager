@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useImperativeHandle, memo } from 'react';
+import { forwardRef, useImperativeHandle, memo, useEffect } from 'react';
 import { useEditor, EditorContent, type Content, type JSONContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
@@ -49,6 +49,21 @@ interface TiptapEditorWrapperProps {
   readOnly?: boolean;
 }
 
+// Helper to determine if we should show the bubble menu
+const shouldShowBubbleMenu = (props: any) => {
+  const { state } = props.editor;
+  const { selection } = state;
+  const { empty } = selection;
+
+  // Don't show if selection is empty
+  if (empty) return false;
+
+  // Don't show if we are in code block (optional)
+  if (props.editor.isActive('codeBlock')) return false;
+
+  return true;
+};
+
 const TiptapEditorWrapperComponent = forwardRef<TiptapEditorMethods, TiptapEditorWrapperProps>(
   ({ markdown, jsonContent, onChange, onJSONChange, className = '', placeholder = 'Start typing...', readOnly = false }, ref) => {
     const log = useComponentLogger('TiptapEditorWrapper');
@@ -59,6 +74,7 @@ const TiptapEditorWrapperComponent = forwardRef<TiptapEditorMethods, TiptapEdito
         Underline,
         ExtensionBubbleMenu.configure({
            pluginKey: 'bubbleMenu',
+           shouldShow: shouldShowBubbleMenu,
         }),
         TextAlign.configure({
           types: ['heading', 'paragraph'],
@@ -94,7 +110,7 @@ const TiptapEditorWrapperComponent = forwardRef<TiptapEditorMethods, TiptapEdito
       ],
       editorProps: {
         attributes: {
-          class: 'focus:outline-none min-h-[100px] px-3 py-2 text-foreground [&_p]:text-foreground [&_li]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_h4]:text-foreground',
+          class: 'focus:outline-none min-h-[100px] px-3 py-2 text-foreground [&_p]:text-foreground [&_li]:text-foreground [&_h1]:text-foreground [&_h2]:text-foreground [&_h3]:text-foreground [&_h4]:text-foreground [&_strong]:text-foreground [&_b]:text-foreground',
         },
       },
       content: jsonContent ? JSON.parse(jsonContent) : (markdown || ''),
@@ -111,6 +127,16 @@ const TiptapEditorWrapperComponent = forwardRef<TiptapEditorMethods, TiptapEdito
       },
       immediatelyRender: false,
     });
+
+    useEffect(() => {
+      if (editor && markdown !== undefined) {
+         // Only update if content is different to avoid cursor jumps or loops
+         const currentMarkdown = (editor.storage as Record<string, any>).markdown?.getMarkdown();
+         if (currentMarkdown !== markdown) {
+             editor.commands.setContent(markdown);
+         }
+      }
+    }, [markdown, editor]);
 
     useImperativeHandle(ref, () => ({
       getMarkdown: async () => {
@@ -149,7 +175,8 @@ const TiptapEditorWrapperComponent = forwardRef<TiptapEditorMethods, TiptapEdito
       <div className={`relative w-full ${className}`}>
         {editor && !readOnly && (
           <BubbleMenu 
-            editor={editor} 
+            editor={editor}
+            shouldShow={shouldShowBubbleMenu}
             className="flex items-center gap-1 p-1 rounded-md border bg-popover text-popover-foreground shadow-md"
           >
             <button
