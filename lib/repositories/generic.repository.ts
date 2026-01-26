@@ -46,11 +46,11 @@ export function createPaginatedResult<T>(
  * Common Prisma operation arguments
  */
 export interface PrismaArgs {
-  where?: Record<string, unknown>;
-  data?: Record<string, unknown>;
-  include?: Record<string, unknown>;
-  select?: Record<string, unknown>;
-  orderBy?: Record<string, unknown> | Record<string, unknown>[];
+  where?: any;
+  data?: any;
+  include?: any;
+  select?: any;
+  orderBy?: any | any[];
   take?: number;
   skip?: number;
 }
@@ -60,44 +60,44 @@ export interface PrismaArgs {
  */
 export interface PrismaDelegate {
   findUnique(args: {
-    where: Record<string, unknown>;
-    include?: Record<string, unknown>;
-    select?: Record<string, unknown>;
+    where: any;
+    include?: any;
+    select?: any;
   }): Promise<unknown>;
   findFirst(args?: {
-    where?: Record<string, unknown>;
-    include?: Record<string, unknown>;
-    select?: Record<string, unknown>;
-    orderBy?: Record<string, unknown> | Record<string, unknown>[];
+    where?: any;
+    include?: any;
+    select?: any;
+    orderBy?: any | any[];
     take?: number;
     skip?: number;
   }): Promise<unknown>;
   findMany(args?: {
-    where?: Record<string, unknown>;
-    include?: Record<string, unknown>;
-    select?: Record<string, unknown>;
-    orderBy?: Record<string, unknown> | Record<string, unknown>[];
+    where?: any;
+    include?: any;
+    select?: any;
+    orderBy?: any | any[];
     take?: number;
     skip?: number;
   }): Promise<unknown[]>;
   create(args: {
     data: unknown;
-    include?: Record<string, unknown>;
-    select?: Record<string, unknown>;
+    include?: any;
+    select?: any;
   }): Promise<unknown>;
   update(args: {
-    where: Record<string, unknown>;
+    where: any;
     data: unknown;
-    include?: Record<string, unknown>;
-    select?: Record<string, unknown>;
+    include?: any;
+    select?: any;
   }): Promise<unknown>;
   delete(args: {
-    where: Record<string, unknown>;
-    include?: Record<string, unknown>;
-    select?: Record<string, unknown>;
+    where: any;
+    include?: any;
+    select?: any;
   }): Promise<unknown>;
   count(args?: {
-    where?: Record<string, unknown>;
+    where?: any;
     take?: number;
     skip?: number;
   }): Promise<number>;
@@ -138,13 +138,13 @@ export abstract class GenericRepository<
   }
 
   async findById(id: string, userId?: string, tx?: TransactionClient): Promise<T | null> {
-    const where: Record<string, unknown> = { id };
+    const where: any = { id };
     if (userId) where.userId = userId;
     return this.getDelegate(tx).findUnique({ where }) as Promise<T | null>;
   }
 
   async findAll(args?: PrismaArgs, tx?: TransactionClient): Promise<T[]> {
-    return this.getDelegate(tx).findMany(args as Record<string, unknown>) as Promise<T[]>;
+    return this.getDelegate(tx).findMany(args as any) as Promise<T[]>;
   }
 
   async create(data: TCreateInput, tx?: TransactionClient): Promise<T> {
@@ -157,19 +157,19 @@ export abstract class GenericRepository<
     userId?: string,
     tx?: TransactionClient
   ): Promise<T> {
-    const where: Record<string, unknown> = { id };
+    const where: any = { id };
     if (userId) where.userId = userId;
     return this.getDelegate(tx).update({ where, data: data as unknown }) as Promise<T>;
   }
 
   async delete(id: string, userId?: string, tx?: TransactionClient): Promise<T> {
-    const where: Record<string, unknown> = { id };
+    const where: any = { id };
     if (userId) where.userId = userId;
     return this.getDelegate(tx).delete({ where }) as Promise<T>;
   }
 
   async count(
-    whereOrUserId?: Record<string, unknown> | string,
+    whereOrUserId?: any | string,
     tx?: TransactionClient
   ): Promise<number> {
     const where = typeof whereOrUserId === 'string' ? { userId: whereOrUserId } : whereOrUserId;
@@ -200,7 +200,7 @@ export abstract class GenericUserOwnedRepository<
     return this.findAll(
       {
         ...args,
-        where: { ...args?.where, userId } as Record<string, unknown>,
+        where: { ...args?.where, userId } as any,
       },
       tx
     );
