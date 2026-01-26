@@ -6,7 +6,7 @@ import { PageHeader } from "./PageHeader";
 import { PageContainer } from "./PageContainer";
 import { PageSkeleton } from "@/components/core/data-display/skeletons/PageSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAutoBreadcrumbs, type BreadcrumbItem } from "@/hooks/useAutoBreadcrumbs";
+import { useAutoBreadcrumbs, type BreadcrumbItem } from "@/hooks";
 import { usePathname } from "next/navigation";
 import { getRouteConfig } from "@/lib/constants/nav-config";
 

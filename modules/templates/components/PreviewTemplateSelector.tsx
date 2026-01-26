@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TemplateThumbnail } from './TemplateThumbnail';
 import type { ResumeTemplate } from '@/lib/templates/template';
-import { useComponentLogger } from '@/hooks';
+import { useComponentLogger } from "@/hooks";
 import { getTemplates } from '@/app/actions/template';
 import { cn } from '@/lib/utils';
 import {

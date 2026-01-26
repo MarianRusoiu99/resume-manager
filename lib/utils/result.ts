@@ -15,7 +15,7 @@ export function serviceResultToActionResult<T>(result: ServiceResult<T>): Action
     return { success: true, data: result.data };
   }
 
-  return { success: false, error: (result as any).error, code: (result as any).code };
+  return { success: false, error: (result as { error: string }).error, code: (result as { code?: ServiceErrorCode }).code };
 }
 
 export function failureActionResult(error: string, code?: ServiceErrorCode): ActionResult<never> {

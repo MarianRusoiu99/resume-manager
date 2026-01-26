@@ -1,14 +1,20 @@
 import { useState, useImperativeHandle, forwardRef } from "react";
+import dynamic from "next/dynamic";
 import { Tabs } from "@/components/ui/tabs";
 import { useEditor } from "@/lib/contexts";
 import { toast } from "sonner";
 import { ResumePreview } from "@/modules/resume/components/ResumePreview";
 import { EditorSidebar } from "./EditorSidebar";
 import { EditorContent } from "./EditorContent";
-import { AIEnhanceResumeModal } from "@/modules/ai-enhance/modals/AIEnhanceResumeModal";
 import { ShareDialog } from "./modals/ShareDialog";
 import { useShareState } from "@/modules/editor/hooks/useShareState";
 import type { Resume } from "@/lib/validations/jsonresume";
+
+// Dynamically import AI Enhance modal
+const AIEnhanceResumeModal = dynamic(
+  () => import("@/modules/ai-enhance/modals/AIEnhanceResumeModal").then(mod => mod.AIEnhanceResumeModal),
+  { ssr: false }
+);
 
 export interface ResumeEditorRef {
   save: () => Promise<void>;

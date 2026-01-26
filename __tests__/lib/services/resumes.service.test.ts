@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { mockDeep, mockReset } from 'vitest-mock-extended';
 import type { GeneratedResumeRepository } from '@/lib/repositories/generated-resumes.repository';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { createMockResume, createMockResumes } from '@/__tests__/utils/test-factories';
-import { ResumeCrudService } from '@/lib/services/resumes/crud/resume-crud.workflow';
+import { createMockResume, createMockResumes } from '@/lib/test/test-factories';
+import { ResumeService as ResumeCrudService } from '@/lib/services/resumes/resume.service';
 
 describe('ResumeCrudService', () => {
   let service: ResumeCrudService;
@@ -12,7 +12,7 @@ describe('ResumeCrudService', () => {
   beforeEach(() => {
     repositoryMock = mockDeep<GeneratedResumeRepository>();
     mockReset(repositoryMock);
-    service = new ResumeCrudService(repositoryMock);
+    service = new ResumeCrudService(repositoryMock, {} as any, {} as any);
   });
 
   describe('CRUD Operations', () => {

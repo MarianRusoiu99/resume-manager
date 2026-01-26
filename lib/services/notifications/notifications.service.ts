@@ -83,7 +83,7 @@ export class NotificationService
   ): Promise<ServiceResult<NotificationServiceData>> {
     const dataToCreate = {
       ...input,
-      actionUrl: input.actionUrl || (input.metadata as any)?.url || undefined,
+      actionUrl: input.actionUrl || (input.metadata as Record<string, unknown> | undefined)?.url as string | undefined || undefined,
     };
     const result = await this.create(dataToCreate as CreateNotificationInput & { userId: string });
     if (result.success) {

@@ -39,7 +39,7 @@ export async function generateWithValidation<T>(
     abortSignal,
   } = config;
 
-  let currentMessages = [...initialMessages];
+  const currentMessages = [...initialMessages];
   let attempts = 0;
 
   while (attempts <= maxCorrections) {

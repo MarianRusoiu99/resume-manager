@@ -1,11 +1,11 @@
 "use client";
 
 import { memo, useCallback } from "react";
-import { useListForm } from "@/hooks/useListForm";
+import { useListForm } from "@/hooks";
 import { FormList } from "@/components/ui/form-list";
 import type { FormSchema } from "@/lib/forms/form-schema";
 
-import { useAutoSave } from "@/hooks/useAutoSave";
+import { useAutoSave } from "@/hooks";
 
 import { GenericForm } from "./GenericForm";
 
@@ -57,17 +57,17 @@ function GenericFormListComponent<T extends Record<string, unknown>>({
   }, [updateItem]);
 
   return (
-    <FormList
+    <FormList<T>
       items={currentItems}
       onAdd={addItem}
       onRemove={removeItem}
       addButtonText={schema.labels?.addButton || "Add Item"}
       emptyMessage={schema.labels?.emptyMessage || "No items yet."}
-      renderItem={(item: any, index: number) => (
-        <GenericForm
-          fields={schema.fields as any}
-          data={item as any}
-          onChange={(updatedItem: any) => handleItemChange(updatedItem, index, item)}
+      renderItem={(item, index) => (
+        <GenericForm<T>
+          fields={schema.fields}
+          data={item}
+          onChange={(updatedItem) => handleItemChange(updatedItem, index, item)}
         />
       )}
     />

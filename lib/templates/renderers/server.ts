@@ -29,11 +29,11 @@ if (typeof Handlebars !== 'undefined') {
   });
   
   // New helper for safe nested property access
-  Handlebars.registerHelper('safeGet', function(this: unknown, context: any, path: string, options: Handlebars.HelperOptions) {
+  Handlebars.registerHelper('safeGet', function(this: unknown, context: Record<string, unknown> | unknown[], path: string, options: Handlebars.HelperOptions) {
     if (!context || !path) return options.inverse(this);
     
-    const value = path.split('.').reduce((acc, part) => {
-      return acc && acc[part];
+    const value = path.split('.').reduce((acc: any, part) => {
+      return acc && (acc as Record<string, unknown>)[part];
     }, context);
     
     if (value !== undefined && value !== null && value !== '') {
@@ -110,7 +110,7 @@ export async function renderTemplateServerSide(
   }
 
   // Render the template with resume data
-  let html = renderCompleteDocument(
+  const html = renderCompleteDocument(
     template.htmlTemplate,
     resumeData
   );

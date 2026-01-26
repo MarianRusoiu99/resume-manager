@@ -58,15 +58,50 @@ export interface PrismaArgs {
 /**
  * Prisma delegate type constraint - base interface for type safety
  */
-export type PrismaDelegate = {
-  findUnique(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
-  findFirst(args: { where: Record<string, unknown>; include?: unknown; select?: unknown; orderBy?: unknown }): Promise<unknown>;
-  findMany(args?: PrismaArgs): Promise<unknown[]>;
-  create(args: { data: unknown; include?: unknown; select?: unknown }): Promise<unknown>;
-  update(args: { where: Record<string, unknown>; data: unknown; include?: unknown; select?: unknown }): Promise<unknown>;
-  delete(args: { where: Record<string, unknown>; include?: unknown; select?: unknown }): Promise<unknown>;
-  count(args?: { where?: Record<string, unknown> }): Promise<number>;
-};
+export interface PrismaDelegate {
+  findUnique(args: {
+    where: Record<string, unknown>;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+  }): Promise<unknown>;
+  findFirst(args?: {
+    where?: Record<string, unknown>;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+    orderBy?: Record<string, unknown> | Record<string, unknown>[];
+    take?: number;
+    skip?: number;
+  }): Promise<unknown>;
+  findMany(args?: {
+    where?: Record<string, unknown>;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+    orderBy?: Record<string, unknown> | Record<string, unknown>[];
+    take?: number;
+    skip?: number;
+  }): Promise<unknown[]>;
+  create(args: {
+    data: unknown;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+  }): Promise<unknown>;
+  update(args: {
+    where: Record<string, unknown>;
+    data: unknown;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+  }): Promise<unknown>;
+  delete(args: {
+    where: Record<string, unknown>;
+    include?: Record<string, unknown>;
+    select?: Record<string, unknown>;
+  }): Promise<unknown>;
+  count(args?: {
+    where?: Record<string, unknown>;
+    take?: number;
+    skip?: number;
+  }): Promise<number>;
+}
 
 /**
  * Generic Repository for Prisma entities
@@ -74,24 +109,32 @@ export type PrismaDelegate = {
 export abstract class GenericRepository<
   T extends EntityWithId,
   TCreateInput,
-  TUpdateInput
+  TUpdateInput,
+  TModelName extends keyof TransactionClient = keyof TransactionClient,
+  TDelegate extends PrismaDelegate = PrismaDelegate
 > {
   protected readonly db: PrismaClient;
 
   constructor(
-    protected readonly modelName: string,
+    protected readonly modelName: TModelName,
     dbClient: PrismaClient = prisma
   ) {
     this.db = dbClient;
   }
 
-  protected getDelegate(tx?: TransactionClient): PrismaDelegate {
+  protected getDelegate(tx?: TransactionClient): TDelegate {
     const client = tx || (this.db as unknown as TransactionClient);
-    const delegate = (client as any)[this.modelName];
+    const delegate = client[this.modelName];
     if (!delegate) {
-      throw new Error(`Prisma delegate for model "${this.modelName}" not found on client. Available keys: ${Object.keys(client).filter(k => !k.startsWith('_')).join(', ')}`);
+      throw new Error(
+        `Prisma delegate for model "${String(
+          this.modelName
+        )}" not found on client. Available keys: ${Object.keys(client)
+          .filter((k) => !k.startsWith('_'))
+          .join(', ')}`
+      );
     }
-    return delegate;
+    return delegate as unknown as TDelegate;
   }
 
   async findById(id: string, userId?: string, tx?: TransactionClient): Promise<T | null> {
@@ -101,17 +144,22 @@ export abstract class GenericRepository<
   }
 
   async findAll(args?: PrismaArgs, tx?: TransactionClient): Promise<T[]> {
-    return this.getDelegate(tx).findMany(args) as Promise<T[]>;
+    return this.getDelegate(tx).findMany(args as Record<string, unknown>) as Promise<T[]>;
   }
 
   async create(data: TCreateInput, tx?: TransactionClient): Promise<T> {
-    return this.getDelegate(tx).create({ data }) as Promise<T>;
+    return this.getDelegate(tx).create({ data: data as unknown }) as Promise<T>;
   }
 
-  async update(id: string, data: TUpdateInput, userId?: string, tx?: TransactionClient): Promise<T> {
+  async update(
+    id: string,
+    data: TUpdateInput,
+    userId?: string,
+    tx?: TransactionClient
+  ): Promise<T> {
     const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
-    return this.getDelegate(tx).update({ where, data }) as Promise<T>;
+    return this.getDelegate(tx).update({ where, data: data as unknown }) as Promise<T>;
   }
 
   async delete(id: string, userId?: string, tx?: TransactionClient): Promise<T> {
@@ -120,7 +168,10 @@ export abstract class GenericRepository<
     return this.getDelegate(tx).delete({ where }) as Promise<T>;
   }
 
-  async count(whereOrUserId?: Record<string, unknown> | string, tx?: TransactionClient): Promise<number> {
+  async count(
+    whereOrUserId?: Record<string, unknown> | string,
+    tx?: TransactionClient
+  ): Promise<number> {
     const where = typeof whereOrUserId === 'string' ? { userId: whereOrUserId } : whereOrUserId;
     return this.getDelegate(tx).count({ where });
   }
@@ -137,21 +188,30 @@ export abstract class GenericRepository<
 export abstract class GenericUserOwnedRepository<
   T extends UserOwnedEntity,
   TCreateInput,
-  TUpdateInput
-> extends GenericRepository<T, TCreateInput, TUpdateInput> {
-  
+  TUpdateInput,
+  TModelName extends keyof TransactionClient = keyof TransactionClient,
+  TDelegate extends PrismaDelegate = PrismaDelegate
+> extends GenericRepository<T, TCreateInput, TUpdateInput, TModelName, TDelegate> {
   async findByIdForUser(id: string, userId: string, tx?: TransactionClient): Promise<T | null> {
     return this.findById(id, userId, tx);
   }
 
   async findAllForUser(userId: string, args?: PrismaArgs, tx?: TransactionClient): Promise<T[]> {
-    return this.findAll({
-      ...args,
-      where: { ...args?.where, userId } as Record<string, unknown>,
-    }, tx);
+    return this.findAll(
+      {
+        ...args,
+        where: { ...args?.where, userId } as Record<string, unknown>,
+      },
+      tx
+    );
   }
 
-  async updateForUser(id: string, userId: string, data: TUpdateInput, tx?: TransactionClient): Promise<T> {
+  async updateForUser(
+    id: string,
+    userId: string,
+    data: TUpdateInput,
+    tx?: TransactionClient
+  ): Promise<T> {
     return this.update(id, data, userId, tx);
   }
 
@@ -163,3 +223,4 @@ export abstract class GenericUserOwnedRepository<
     return this.exists(id, userId, tx);
   }
 }
+

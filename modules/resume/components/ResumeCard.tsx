@@ -10,9 +10,9 @@ import { Edit, Eye, Download } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/core/surfaces/EntityCard";
 import type { GalleryCardAction } from "@/components/core/data-display/GalleryCard";
 import type { Resume } from '@/lib/validations/jsonresume';
-import { useCardPreview, useExportPdf } from '@/hooks/useCardPreview';
+import { useCardPreview, useCardExportPDF as useExportPDF } from "@/hooks";
 import { ROUTES } from '@/lib/constants';
-import { useResourceOperations } from '@/hooks/core/useResourceOperations';
+import { useResourceOperations } from '@/hooks/data/useResourceOperations';
 import { deleteResume } from '@/app/actions/resume';
 
 interface ResumeCardProps {
@@ -55,7 +55,7 @@ export const ResumeCard = memo(function ResumeCard({
     enabled: !!content,
   });
 
-  const { exportPdf } = useExportPdf({
+  const { exportPdf } = useExportPDF({
     content,
     templateId,
     fileName: jobTitle || 'resume',

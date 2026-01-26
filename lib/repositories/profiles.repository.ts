@@ -1,15 +1,11 @@
 import { prisma } from '@/lib/db/index';
 import { PrismaClient, Prisma } from '@prisma/client';
 import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
-import type { IProfileRepository, ProfileData, CreateProfileInput, UpdateProfileInput, ProfileWithTemplate } from './interfaces/profiles.repository.interface';
+import type { IProfileRepository, ProfileData, CreateProfileInput, UpdateProfileInput, ProfileWithTemplate, ProfileFindOptions } from './interfaces/profiles.repository.interface';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { TransactionClient } from '@/lib/db/transaction';
 
-export interface ProfileFindOptions {
-  limit?: number;
-  offset?: number;
-  includeDocument?: boolean;
-}
+// Remove local ProfileFindOptions as it's now exported from the interface file
 
 /**
  * Profile with document relation from Prisma
@@ -26,7 +22,9 @@ type ProfileWithDocument = Prisma.ProfileGetPayload<{
 export class ProfileRepository extends GenericUserOwnedRepository<
   ProfileData,
   CreateProfileInput,
-  UpdateProfileInput
+  UpdateProfileInput,
+  'profile',
+  Prisma.ProfileDelegate
 > implements IProfileRepository {
   
   constructor(dbClient: PrismaClient = prisma) {
@@ -53,31 +51,31 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   async findAllByUserId(userId: string, options?: ProfileFindOptions, tx?: TransactionClient): Promise<ProfileData[]> {
     const { limit = 100, offset = 0, includeDocument = true } = options || {};
 
-    const profiles = await (this.getDelegate(tx) as any).findMany({
+    const profiles = await this.getDelegate(tx).findMany({
       where: { userId },
       include: includeDocument ? { document: { select: { document: true } } } : undefined,
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
       take: limit,
       skip: offset,
     });
-    return profiles.map((p: any) => this.mapProfile(p));
+    return (profiles as unknown as ProfileWithDocument[]).map((p) => this.mapProfile(p));
   }
 
   override async findById(profileId: string, userId?: string, tx?: TransactionClient): Promise<ProfileData | null> {
-    const profile = await (this.getDelegate(tx) as any).findFirst({
+    const profile = await this.getDelegate(tx).findFirst({
       where: { id: profileId, ...(userId ? { userId } : {}) },
       include: { document: { select: { document: true } } }
     });
     
-    return profile ? this.mapProfile(profile) : null;
+    return profile ? this.mapProfile(profile as unknown as ProfileWithDocument) : null;
   }
 
   async findDefaultByUserId(userId: string, tx?: TransactionClient): Promise<ProfileData | null> {
-    const profile = await (this.getDelegate(tx) as any).findFirst({
+    const profile = await this.getDelegate(tx).findFirst({
       where: { userId, isDefault: true },
       include: { document: { select: { document: true } } }
     });
-    return profile ? this.mapProfile(profile) : null;
+    return profile ? this.mapProfile(profile as unknown as ProfileWithDocument) : null;
   }
 
   async findByUserId(userId: string, tx?: TransactionClient): Promise<ProfileData | null> {
@@ -86,7 +84,7 @@ export class ProfileRepository extends GenericUserOwnedRepository<
 
   // Custom create to handle document relation
   override async create(data: CreateProfileInput, tx?: TransactionClient): Promise<ProfileData> {
-    const created = await (this.getDelegate(tx) as any).create({
+    const created = await this.getDelegate(tx).create({
       data: {
         userId: data.userId,
         name: data.name,
@@ -99,7 +97,7 @@ export class ProfileRepository extends GenericUserOwnedRepository<
       },
       include: { document: { select: { document: true } } },
     });
-    return this.mapProfile(created);
+    return this.mapProfile(created as unknown as ProfileWithDocument);
   }
 
   // Custom update to handle document relation
@@ -122,26 +120,26 @@ export class ProfileRepository extends GenericUserOwnedRepository<
           }),
     };
 
-    const updated = await (this.getDelegate(tx) as any).update({
+    const updated = await this.getDelegate(tx).update({
       where: { id: profileId, ...(userId ? { userId } : {}) },
       data: updateData,
       include: { document: { select: { document: true } } },
     });
 
-    return this.mapProfile(updated);
+    return this.mapProfile(updated as unknown as ProfileWithDocument);
   }
 
   // Custom delete to include document
   override async delete(profileId: string, userId?: string, tx?: TransactionClient): Promise<ProfileData> {
-    const deleted = await (this.getDelegate(tx) as any).delete({
+    const deleted = await this.getDelegate(tx).delete({
       where: { id: profileId, ...(userId ? { userId } : {}) },
       include: { document: { select: { document: true } } },
     });
-    return this.mapProfile(deleted);
+    return this.mapProfile(deleted as unknown as ProfileWithDocument);
   }
 
   async unsetAllDefaults(userId: string, tx?: TransactionClient) {
-    return (this.getDelegate(tx) as any).updateMany({
+    return this.getDelegate(tx).updateMany({
       where: { userId, isDefault: true },
       data: { isDefault: false },
     });
@@ -162,7 +160,7 @@ export class ProfileRepository extends GenericUserOwnedRepository<
   }
 
   async findByPublicSlug(slug: string, tx?: TransactionClient): Promise<ProfileWithTemplate | null> {
-    const profile = await (this.getDelegate(tx) as any).findUnique({
+    const profile = await this.getDelegate(tx).findUnique({
       where: { publicSlug: slug },
       include: {
         document: { select: { document: true } },
@@ -172,14 +170,20 @@ export class ProfileRepository extends GenericUserOwnedRepository<
 
     if (!profile) return null;
 
-    const mapped = this.mapProfile(profile);
+    const mapped = this.mapProfile(profile as unknown as ProfileWithDocument);
+    const p = profile as unknown as Prisma.ProfileGetPayload<{
+      include: {
+        document: { select: { document: true } };
+        selectedTemplate: { select: { id: true; name: true; htmlTemplate: true } };
+      };
+    }>;
     return {
       ...mapped,
-      selectedTemplate: profile.selectedTemplate
+      selectedTemplate: p.selectedTemplate
         ? {
-            id: profile.selectedTemplate.id,
-            name: profile.selectedTemplate.name,
-            htmlTemplate: profile.selectedTemplate.htmlTemplate,
+            id: p.selectedTemplate.id,
+            name: p.selectedTemplate.name,
+            htmlTemplate: p.selectedTemplate.htmlTemplate,
           }
         : null,
     };

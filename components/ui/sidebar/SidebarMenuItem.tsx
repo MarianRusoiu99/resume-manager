@@ -95,7 +95,7 @@ export function SidebarMenuButton({
   if (typeof tooltip === "string") {
     tooltip = {
       children: tooltip,
-    } as any
+    }
   }
 
   return (
@@ -105,7 +105,7 @@ export function SidebarMenuButton({
         side="right"
         align="center"
         hidden={state !== "collapsed" || isMobile}
-        {...(tooltip as any)}
+        {...tooltip}
       />
     </Tooltip>
   )

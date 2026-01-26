@@ -1,8 +1,27 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { prismaMock, resetPrismaMock } from '@/__tests__/utils/mock-prisma';
-import { createMockCoverLetter, createMockCoverLetters } from '@/__tests__/utils/test-factories';
+import { prismaMock, resetPrismaMock } from '@/lib/test/mock-prisma';
+import { createMockCoverLetter, createMockCoverLetters } from '@/lib/test/test-factories';
 import { CoverLetterRepository } from '@/lib/repositories/cover-letters.repository';
 import { RecordNotFoundError } from '@/lib/errors/database';
+import { Prisma } from '@prisma/client';
+
+type CoverLetterWithIncludes = Prisma.CoverLetterGetPayload<{
+  include: {
+    resume: {
+      select: {
+        id: true;
+        jobPosting: { select: { description: true } };
+      };
+    };
+    jobPosting: {
+      select: {
+        description: true;
+        title: true;
+        company: { select: { name: true } };
+      };
+    };
+  };
+}>;
 
 vi.mock('@/lib/db/index', () => ({
   prisma: prismaMock,
@@ -39,7 +58,7 @@ describe('CoverLetterRepository', () => {
         name: 'Test Company',
       },
     },
-  });
+  } as unknown as CoverLetterWithIncludes);
 
   beforeEach(() => {
     resetPrismaMock();
@@ -49,7 +68,7 @@ describe('CoverLetterRepository', () => {
   describe('findById', () => {
     it('should return cover letter when found', async () => {
       prismaMock.coverLetter.findFirst.mockResolvedValue(
-        createMockCoverLetterWithIncludes() as any
+        createMockCoverLetterWithIncludes()
       );
 
       const result = await repository.findById('cover-letter-1', 'user-123');
@@ -86,7 +105,7 @@ describe('CoverLetterRepository', () => {
 
     it('should find without userId filter when not provided', async () => {
       prismaMock.coverLetter.findFirst.mockResolvedValue(
-        createMockCoverLetterWithIncludes() as any
+        createMockCoverLetterWithIncludes()
       );
 
       await repository.findById('cover-letter-1');
@@ -115,7 +134,7 @@ describe('CoverLetterRepository', () => {
   describe('update', () => {
     it('should update cover letter content', async () => {
       prismaMock.coverLetter.update.mockResolvedValue(
-        createMockCoverLetterWithIncludes() as any
+        createMockCoverLetterWithIncludes()
       );
 
       const result = await repository.update('cover-letter-1', {
@@ -130,7 +149,7 @@ describe('CoverLetterRepository', () => {
 
     it('should update resumeId', async () => {
       prismaMock.coverLetter.update.mockResolvedValue(
-        createMockCoverLetterWithIncludes() as any
+        createMockCoverLetterWithIncludes()
       );
 
       const result = await repository.update('cover-letter-1', {
@@ -145,7 +164,7 @@ describe('CoverLetterRepository', () => {
 
     it('should update jobPostingId', async () => {
       prismaMock.coverLetter.update.mockResolvedValue(
-        createMockCoverLetterWithIncludes() as any
+        createMockCoverLetterWithIncludes()
       );
 
       const result = await repository.update('cover-letter-1', {
@@ -161,7 +180,7 @@ describe('CoverLetterRepository', () => {
     it('should update metadata', async () => {
       const newMetadata = { jobTitle: 'New Title', companyName: 'New Company' };
       prismaMock.coverLetter.update.mockResolvedValue(
-        createMockCoverLetterWithIncludes() as any
+        createMockCoverLetterWithIncludes()
       );
 
       const result = await repository.update('cover-letter-1', {
@@ -176,7 +195,7 @@ describe('CoverLetterRepository', () => {
 
     it('should update without userId filter when not provided', async () => {
       prismaMock.coverLetter.update.mockResolvedValue(
-        createMockCoverLetterWithIncludes() as any
+        createMockCoverLetterWithIncludes()
       );
 
       const result = await repository.update('cover-letter-1', {
@@ -191,7 +210,7 @@ describe('CoverLetterRepository', () => {
 
     it('should handle undefined values correctly', async () => {
       prismaMock.coverLetter.update.mockResolvedValue(
-        createMockCoverLetterWithIncludes() as any
+        createMockCoverLetterWithIncludes()
       );
 
       const result = await repository.update('cover-letter-1', {
@@ -209,7 +228,7 @@ describe('CoverLetterRepository', () => {
   describe('delete', () => {
     it('should delete and return cover letter', async () => {
       prismaMock.coverLetter.delete.mockResolvedValue(
-        createMockCoverLetterWithIncludes() as any
+        createMockCoverLetterWithIncludes()
       );
 
       const result = await repository.delete('cover-letter-1', 'user-123');
@@ -222,7 +241,7 @@ describe('CoverLetterRepository', () => {
 
     it('should delete without userId filter when not provided', async () => {
       prismaMock.coverLetter.delete.mockResolvedValue(
-        createMockCoverLetterWithIncludes() as any
+        createMockCoverLetterWithIncludes()
       );
 
       const result = await repository.delete('cover-letter-1');
@@ -239,7 +258,7 @@ describe('CoverLetterRepository', () => {
         createMockCoverLetterWithIncludes(),
         createMockCoverLetterWithIncludes({ id: 'cover-letter-2' }),
         createMockCoverLetterWithIncludes({ id: 'cover-letter-3' }),
-      ] as any);
+      ]);
 
       const result = await repository.findAllForUser('user-123');
 
@@ -328,7 +347,7 @@ describe('CoverLetterRepository', () => {
       prismaMock.coverLetter.findMany.mockResolvedValue([
         createMockCoverLetterWithIncludes(),
         createMockCoverLetterWithIncludes({ id: 'cover-letter-2' }),
-      ] as any);
+      ]);
       prismaMock.coverLetter.count.mockResolvedValue(5);
 
       const result = await repository.findAllForUserWithCount('user-123');

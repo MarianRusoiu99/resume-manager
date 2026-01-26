@@ -8,7 +8,7 @@
 import { memo } from 'react';
 import { Download, FileText, Briefcase } from 'lucide-react';
 import { EntityCard, createCardAction } from "@/components/core/surfaces/EntityCard";
-import { useExportPDF } from '@/hooks';
+import { useExportPDF } from "@/hooks";
 import { ROUTES } from '@/lib/constants';
 
 interface CoverLetterCardProps {

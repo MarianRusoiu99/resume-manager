@@ -5,9 +5,6 @@
  */
 
 export * from '@/lib/types';
-export * from '@/lib/types';
-export * from '@/lib/types';
-
 
 // Shared types for UI components to avoid direct lib/client or lib/services imports
 

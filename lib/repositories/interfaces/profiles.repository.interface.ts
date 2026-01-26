@@ -60,6 +60,12 @@ export interface UpdateProfileInput {
   selectedTemplateId?: string | null;
 }
 
+export interface ProfileFindOptions {
+  limit?: number;
+  offset?: number;
+  includeDocument?: boolean;
+}
+
 /**
  * Profile Repository Interface
  * 
@@ -69,7 +75,7 @@ export interface IProfileRepository {
   /**
    * Find all profiles for a user
    */
-  findAllByUserId(userId: string, options?: any, tx?: TransactionClient): Promise<ProfileData[]>;
+  findAllByUserId(userId: string, options?: ProfileFindOptions, tx?: TransactionClient): Promise<ProfileData[]>;
 
   /**
    * Find a specific profile by ID with optional user ownership check

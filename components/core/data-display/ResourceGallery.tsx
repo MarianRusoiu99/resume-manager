@@ -3,7 +3,7 @@
 import { type ReactNode, memo, useMemo, useCallback } from "react";
 import { Gallery, type GalleryEmptyConfig, type GridConfig } from "@/components/core/data-display/Gallery";
 import { SearchInput } from "@/components/core/data-display/SearchInput";
-import { useResourceCollection } from "@/hooks/useResourceCollection";
+import { useResourceCollection } from "@/hooks";
 
 interface Resource {
   id: string;

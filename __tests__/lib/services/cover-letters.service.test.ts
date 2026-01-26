@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { mockDeep, mockReset } from 'vitest-mock-extended';
 import type { CoverLetterRepository } from '@/lib/repositories/cover-letters.repository';
 import type { INotificationService } from '@/lib/services/types';
-import { createMockCoverLetter, createMockCoverLetters } from '@/__tests__/utils/test-factories';
+import { createMockCoverLetter, createMockCoverLetters } from '@/lib/test/test-factories';
 import { CoverLetterService } from '@/lib/services/cover-letters/cover-letters.service';
 import type { CoverLetterData, CreateCoverLetterInput } from '@/lib/repositories/interfaces/cover-letters.repository.interface';
 

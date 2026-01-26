@@ -12,18 +12,39 @@
 
 'use client';
 
-import { useState, useRef, useImperativeHandle, forwardRef } from 'react';
+import { useState, useRef, useImperativeHandle, forwardRef, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { toast } from 'sonner';
-import { RichTextEditor } from '@/modules/editor/components/RichTextEditor';
-import type { BlockNoteEditorMethods } from '@/modules/editor/components/BlockNoteEditorWrapper.client';
-import { MarkdownPreview } from '@/modules/editor/components/MarkdownPreview';
-import { cn } from '@/lib/utils';
-import { createComponentLogger } from '@/lib/utils/client-logger';
-import { AIEnhanceTextModal } from '@/modules/ai-enhance/modals/AIEnhanceTextModal';
-import { CoverLetterEditorToolbar } from './editor/CoverLetterEditorToolbar';
+import type { TiptapEditorMethods } from '@/modules/editor/components/TiptapEditorWrapper.client';
+import { useComponentLogger } from "@/hooks";
+import { MarkdownPreview } from "@/modules/editor/components/MarkdownPreview";
+import { CoverLetterEditorToolbar } from "./editor/CoverLetterEditorToolbar";
+import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 
+// Dynamically import heavy editor and AI modal components
+const RichTextEditor = dynamic(
+  () => import('@/modules/editor/components/RichTextEditor').then(mod => mod.RichTextEditor),
+  { 
+    ssr: false,
+    loading: () => <Skeleton className="h-[400px] w-full" />
+  }
+);
 
-export interface CoverLetterEditorRef {
+const AIEnhanceTextModal = dynamic(
+  () => import('@/modules/ai-enhance/modals/AIEnhanceTextModal').then(mod => mod.AIEnhanceTextModal),
+  { ssr: false }
+);
+
+interface CoverLetterEditorProps {
+  content: string;
+  contentJson?: string;
+  onSave?: (markdown: string, json: string) => Promise<void>;
+  className?: string;
+  editable?: boolean;
+}
+
+export interface CoverLetterEditorMethods {
   save: () => Promise<void>;
   setIsEditing: (isEditing: boolean) => void;
   isEditing: boolean;
@@ -31,59 +52,17 @@ export interface CoverLetterEditorRef {
   enhance: () => void;
 }
 
-interface CoverLetterEditorProps {
-  /**
-   * Cover letter content in markdown format
-   */
-  content: string;
+export type CoverLetterEditorRef = CoverLetterEditorMethods;
 
-  /**
-   * Cover letter content in Yoopta JSON format (for editing with formatting)
-   */
-  contentJson?: string;
-
-  /**
-   * Whether the cover letter can be edited
-   * @default false
-   */
-  editable?: boolean;
-
-  /**
-   * Resume ID for exporting cover letter to PDF (optional)
-   */
-  resumeId?: string;
-
-  /**
-   * Callback when cover letter is saved (for editable mode)
-   * @param content - Markdown content
-   * @param contentJson - Yoopta JSON state
-   */
-  onSave?: (content: string, contentJson: string) => Promise<void>;
-
-  /**
-   * Additional CSS classes
-   */
-  className?: string;
-
-  /**
-   * Custom title
-   * @default "Generated Cover Letter"
-   */
-  title?: string;
-}
-
-export const CoverLetterEditor = forwardRef<CoverLetterEditorRef, CoverLetterEditorProps>(({
-  content,
-  contentJson,
-  onSave,
-  className,
-}, ref) => {
-  const log = createComponentLogger('CoverLetterEditor');
+export const CoverLetterEditor = forwardRef<CoverLetterEditorMethods, CoverLetterEditorProps>(
+  ({ content, contentJson = '{}', onSave, className }, ref) => {
+  const log = useComponentLogger('CoverLetterEditor');
   const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [editedContent, setEditedContent] = useState(content);
+  const [isSaving, setIsSaving] = useState(false);
   const [enhanceModalOpen, setEnhanceModalOpen] = useState(false);
-  const editorRef = useRef<BlockNoteEditorMethods>(null);
+  
+  const editorRef = useRef<TiptapEditorMethods>(null);
 
   const handleCopy = async () => {
     try {
@@ -131,11 +110,9 @@ export const CoverLetterEditor = forwardRef<CoverLetterEditorRef, CoverLetterEdi
         <RichTextEditor
           ref={editorRef}
           key="editing-mode" // Force remount when entering edit mode
-          initialValue={editedContent}
-          initialJsonValue={contentJson}
-          onSave={handleSaveEdit}
+          initialContent={editedContent}
+          jsonContent={contentJson}
           placeholder="Edit your cover letter..."
-          showSaveButton={false}
           readOnly={false}
           onChange={(value) => setEditedContent(value)}
         />

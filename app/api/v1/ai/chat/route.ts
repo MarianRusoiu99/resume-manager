@@ -17,6 +17,7 @@ import {
   type ConversationMode,
 } from '@/lib/ai/chat';
 import { ensureModesRegistered } from '@/lib/ai/modes';
+import type { AnyModeOutput, ResumeGenerationOutput, CoverLetterOutput } from '@/lib/ai/modes/types';
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime/resolve-model';
 import type { ConversationContext } from '@/lib/ai/chat/context';
 import type { Attachment, AttachmentType } from '@/lib/ai/chat/message';
@@ -226,10 +227,14 @@ export const POST = createApiHandler<unknown, ChatRequest>(
       if (stream) {
         const stream = new ReadableStream({
           async start(controller) {
-            let finalOutput: any = null;
-            let finalUsage: any = null;
+            let finalOutput: AnyModeOutput | null = null;
+            let finalUsage: {
+              promptTokens: number;
+              completionTokens: number;
+              totalTokens: number;
+            } | null = null;
             try {
-              const generator = AIOrchestrator.streamGenerate(conversation, orchestratorOptions);
+              const generator = AIOrchestrator.streamGenerate<AnyModeOutput>(conversation, orchestratorOptions);
               
               for await (const chunk of generator) {
                 if (chunk.type === 'complete') {
@@ -245,22 +250,23 @@ export const POST = createApiHandler<unknown, ChatRequest>(
               if (finalOutput) {
                 let savedId: string | undefined;
 
-                if (mode === 'resume-generation' && finalOutput.resume) {
+                if (mode === 'resume-generation' && 'resume' in finalOutput) {
+                  const resumeOutput = finalOutput as ResumeGenerationOutput;
                   const jobDesc = conversationContext.job?.description || message;
-                  const jobTitle = finalOutput.jobTitle || (finalOutput.resume as any).basics?.label || 'Optimized Resume';
-                  const companyName = finalOutput.companyName || '';
+                  const jobTitle = resumeOutput.jobTitle || resumeOutput.resume.basics?.label || 'Optimized Resume';
+                  const companyName = resumeOutput.companyName || '';
                   
                   try {
                     const result = await resumeService.create({
                       userId,
-                      resume: finalOutput.resume as Resume,
+                      resume: resumeOutput.resume as Resume,
                       jobDescription: jobDesc,
                       jobMetadata: { jobTitle, companyName },
                       metadata: {
-                        matchScore: finalOutput.matchScore,
-                        suggestions: finalOutput.suggestions,
+                        matchScore: resumeOutput.matchScore,
+                        suggestions: resumeOutput.suggestions,
                         modelId: resolvedModel.modelId,
-                        usage: finalUsage,
+                        usage: finalUsage ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
                       }
                     });
                     if (result.success) {
@@ -270,21 +276,22 @@ export const POST = createApiHandler<unknown, ChatRequest>(
                   } catch (err) {
                     logger.error('Failed to auto-save streamed resume', { err, userId });
                   }
-                } else if (mode === 'cover-letter-generation' && finalOutput.content) {
+                } else if (mode === 'cover-letter-generation' && 'content' in finalOutput) {
+                  const coverLetterOutput = finalOutput as CoverLetterOutput;
                   const jobDesc = conversationContext.job?.description || message;
-                  const jobTitle = finalOutput.jobTitle || '';
-                  const companyName = finalOutput.companyName || '';
+                  const jobTitle = coverLetterOutput.jobTitle || '';
+                  const companyName = coverLetterOutput.companyName || '';
 
                   try {
                     const result = await coverLetterService.createCoverLetter({
                       userId,
-                      content: finalOutput.content,
+                      content: coverLetterOutput.content,
                       metadata: {
                         jobDescription: jobDesc,
                         jobTitle,
                         companyName,
                         modelId: resolvedModel.modelId,
-                        usage: finalUsage,
+                        usage: finalUsage ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
                       }
                     });
                     if (result.success) {
@@ -333,32 +340,34 @@ export const POST = createApiHandler<unknown, ChatRequest>(
       // Auto-save for non-streaming as well
       let savedId: string | undefined;
       if (result.output) {
-        const output = result.output as any;
-        if (mode === 'resume-generation' && output.resume) {
+        const output = result.output as AnyModeOutput;
+        if (mode === 'resume-generation' && 'resume' in output) {
+          const resumeOutput = output as ResumeGenerationOutput;
           const res = await resumeService.create({
             userId,
-            resume: output.resume as Resume,
+            resume: resumeOutput.resume as Resume,
             jobDescription: conversationContext.job?.description || message,
             jobMetadata: { 
-              jobTitle: output.jobTitle || (output.resume as any).basics?.label || 'Optimized Resume', 
-              companyName: output.companyName || '' 
+              jobTitle: resumeOutput.jobTitle || resumeOutput.resume.basics?.label || 'Optimized Resume', 
+              companyName: resumeOutput.companyName || '' 
             },
             metadata: {
-              matchScore: output.matchScore,
-              suggestions: output.suggestions,
+              matchScore: resumeOutput.matchScore,
+              suggestions: resumeOutput.suggestions,
               modelId: resolvedModel.modelId,
               usage: result.usage,
             }
           }).catch(err => logger.error('Failed to auto-save resume', { err, userId }));
           if (res?.success) savedId = res.data.id;
-        } else if (mode === 'cover-letter-generation' && output.content) {
+        } else if (mode === 'cover-letter-generation' && 'content' in output) {
+          const coverLetterOutput = output as CoverLetterOutput;
           const res = await coverLetterService.createCoverLetter({
             userId,
-            content: output.content,
+            content: coverLetterOutput.content,
             metadata: {
               jobDescription: conversationContext.job?.description || message,
-              jobTitle: output.jobTitle || '',
-              companyName: output.companyName || '',
+              jobTitle: coverLetterOutput.jobTitle || '',
+              companyName: coverLetterOutput.companyName || '',
               modelId: resolvedModel.modelId,
               usage: result.usage,
             }

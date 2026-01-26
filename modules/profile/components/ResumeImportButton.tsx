@@ -19,7 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { FileText, ClipboardPaste, Upload, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useToastAction } from "@/hooks/useToastAction";
+import { useToastAction } from "@/hooks";
 import { resumeSchema } from "@/lib/validations/jsonresume";
 import type { Resume } from "@/lib/validations/jsonresume";
 import { createComponentLogger } from "@/lib/utils/client-logger";

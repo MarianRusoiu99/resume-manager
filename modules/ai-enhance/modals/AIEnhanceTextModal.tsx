@@ -19,6 +19,7 @@ import type { AIEnhanceTextModalProps } from '../components/types';
 import { useAITask } from '../hooks/useAITask';
 import { ModelSelector } from '@/components/ai/ModelSelector';
 import type { TextEnhancementOutput } from '@/lib/ai/modes/types';
+import { useBaseModal } from '@/hooks';
 
 import type { ConversationAttachment } from '../hooks/useConversation';
 
@@ -43,13 +44,13 @@ export function AIEnhanceTextModal({
   const [selectedModelId, setSelectedModelId] = useState<string>('');
   const [instructions, setInstructions] = useState('');
 
-  const handleModelChange = useCallback((newModelId: string, newProviderId: string) => {
+  const handleModelChange = useCallback((newModelId: string) => {
     setSelectedModelId(newModelId);
   }, []);
 
   const {
     runTask,
-    reset,
+    reset: resetAITask,
     partialOutput,
     isLoading,
     output,
@@ -58,17 +59,21 @@ export function AIEnhanceTextModal({
     mode: 'text-enhancement',
   });
 
-  const enhancedContent = (output?.content || (partialOutput as any)?.content) ?? '';
-
-  // Handle open change with reset logic
-  const handleOpenChange = useCallback((nextOpen: boolean) => {
-    if (nextOpen) {
-      // Transitioning from closed to open - reset state
-      reset();
+  const modal = useBaseModal({
+    initialOpen: open,
+    onOpen: () => {
+      resetAITask();
       setInstructions('');
-    }
+    },
+    onClose: () => onOpenChange(false),
+  });
+
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    modal.onOpenChange(nextOpen);
     onOpenChange(nextOpen);
-  }, [onOpenChange, reset]);
+  }, [modal, onOpenChange]);
+
+  const enhancedContent = (output?.content || (partialOutput as any)?.content) ?? '';
 
   // Handle enhance with attachments from PromptInput
   const handleEnhance = useCallback((inputAttachments?: AttachmentInput[]) => {

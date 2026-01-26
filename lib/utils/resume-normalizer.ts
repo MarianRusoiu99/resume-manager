@@ -60,17 +60,16 @@ export function normalizeResume(data: unknown | null | undefined): Resume {
   const empty = createEmptyResume();
   const resumeData = data as Partial<Resume>;
 
-  // Helper to merge objects (uses any to work around strict type checking)
-  const mergeObject = (target: unknown, source: unknown): unknown => {
+  // Helper to merge objects
+  const mergeObject = (target: any, source: any): any => {
     if (!source || typeof source !== 'object') {
       return target;
     }
 
-    const targetObj = target as Record<string, unknown>;
     const sourceObj = source as Record<string, unknown>;
-    const result = { ...targetObj };
+    const result = { ...target };
 
-    for (const key in targetObj) {
+    for (const key in target) {
       const targetValue = result[key];
       const sourceValue = sourceObj[key];
 
@@ -78,8 +77,10 @@ export function normalizeResume(data: unknown | null | undefined): Resume {
         // If both are objects, recursively merge
         if (
           typeof targetValue === 'object' &&
+          targetValue !== null &&
           !Array.isArray(targetValue) &&
           typeof sourceValue === 'object' &&
+          sourceValue !== null &&
           !Array.isArray(sourceValue)
         ) {
           result[key] = mergeObject(targetValue, sourceValue);

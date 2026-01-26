@@ -24,7 +24,7 @@ export interface ValidationResult {
 /**
  * Mode configuration
  */
-export interface AIMode<TOutput = unknown> {
+export interface AIMode<TOutput = any> {
   /** Unique mode identifier */
   id: ConversationMode;
   /** Human-readable name */

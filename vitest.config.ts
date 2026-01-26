@@ -33,7 +33,6 @@ export default defineConfig({
       'dist/**',
       'coverage/**',
       'components/error-boundaries/ErrorBoundary.test.tsx',
-      '__tests__/proxy.test.ts',
     ],
     coverage: {
       provider: 'v8',

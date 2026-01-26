@@ -77,7 +77,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
   }
 
   private async getPreferenceRows(userId: string, tx?: TransactionClient) {
-    return (this.getDelegate(tx) as any).findMany({
+    return this.getDelegate(tx).findMany({
       where: { userId },
       select: {
         feature: true,
@@ -86,7 +86,13 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
         createdAt: true,
         updatedAt: true,
       },
-    });
+    }) as Promise<Array<{
+      feature: string;
+      providerId: string;
+      modelId: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+    }>>;
   }
 
   /**
@@ -126,7 +132,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
   async upsert(data: UpsertAISettingsInput, tx?: TransactionClient): Promise<UserAISettingsData> {
     const { userId, ...settings } = data;
 
-    const delegate = this.getDelegate(tx) as any;
+    const delegate = this.getDelegate(tx);
     const upsertOrDeleteFeature = async (
       feature: AIFeatureType,
       providerId?: string | null,
@@ -137,13 +143,18 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
       // `UserAiPreference.providerId` is required in the new schema.
       // Treat clearing a preference as deleting the row.
       if (providerId === null || providerId === undefined) {
-        await delegate.deleteMany({
+        // We use deleteMany because we don't have the unique composite key here easily without mapping
+        // but actually we do: userId and feature.
+        // PrismaDelegate delete requires Record<string, unknown> which matches deleteMany criteria
+        // Note: Generic PrismaDelegate doesn't have deleteMany, but we can cast or add it.
+        // For simplicity in this generic layer, we'll use the delegate directly.
+        (delegate as any).deleteMany({
           where: { userId, feature: toFeatureKey(feature) },
         });
         return;
       }
 
-      await delegate.upsert({
+      (delegate as any).upsert({
         where: { userId_feature: { userId, feature: toFeatureKey(feature) } },
         create: {
           userId,
@@ -177,18 +188,18 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
     modelId: string | null,
     tx?: TransactionClient
   ): Promise<UserAISettingsData> {
-    const delegate = this.getDelegate(tx) as any;
+    const delegate = this.getDelegate(tx);
 
     // `UserAiPreference.providerId` is required in the new schema.
     // Clearing a preference is represented by deleting the row.
     if (!providerId) {
-      await delegate.deleteMany({
+      (delegate as any).deleteMany({
         where: { userId, feature: toFeatureKey(feature) },
       });
       return (await this.findByUserId(userId, tx)) ?? blankSettings(userId);
     }
 
-    await delegate.upsert({
+    (delegate as any).upsert({
       where: { userId_feature: { userId, feature: toFeatureKey(feature) } },
       create: {
         userId,
@@ -216,7 +227,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
         providerId: true,
         modelId: true,
       },
-    });
+    }) as { providerId: string; modelId: string | null } | null;
 
     return {
       providerId: preference?.providerId ?? null,

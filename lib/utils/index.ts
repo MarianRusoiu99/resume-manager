@@ -12,11 +12,6 @@ export {
 export { clientLogger, createComponentLogger, ClientLogger } from './client-logger';
 export { cn } from './cn';
 export {
-    renderTemplateServerSide,
-    generatePreviewDataUrl,
-    revokePreviewDataUrl
-} from '@/components/core/data-display/rendering/client-renderer';
-export {
     sanitizeTemplate,
     sanitizeTemplateHtml,
     type SanitizedTemplate,
