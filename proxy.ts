@@ -51,6 +51,11 @@ function buildStrictCsp(isDev: boolean): string {
   if (isDev) {
     scriptSources.push("'unsafe-eval'");
     connectSources.push('ws:', 'wss:');
+  } else {
+    // We need unsafe-eval for certain libraries even in production
+    // Consider moving this logic to be route-specific if needed
+    // but for now, the error 5a61793a9eb136e7.js suggests a build asset requires it.
+    scriptSources.push("'unsafe-eval'");
   }
   const connectDirective = buildDirective(connectSources);
 
