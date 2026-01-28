@@ -47,6 +47,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@sentry/nextjs": "^10.34.0",
     "@tailwindcss/postcss": "^4.1.18",
+    "@tiptap/extension-bubble-menu": "^3.17.1",
     "@tiptap/extension-bullet-list": "^3.17.1",
     "@tiptap/extension-character-count": "^3.17.1",
     "@tiptap/extension-link": "^3.17.1",
@@ -80,6 +81,7 @@
     "langfuse": "^3.38.6",
     "lucide-react": "^0.548.0",
     "mammoth": "^1.11.0",
+    "marked": "^17.0.1",
     "monaco-editor": "^0.55.1",
     "next": "^16.0.9",
     "next-auth": "^5.0.0-beta.29",
@@ -96,6 +98,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
+    "tiptap-markdown": "^0.9.0",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "zod": "^4.1.12"
