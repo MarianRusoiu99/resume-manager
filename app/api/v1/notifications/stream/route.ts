@@ -2,20 +2,22 @@ import { auth } from '@/lib/auth';
 import { addConnection, removeConnection, sendHeartbeat } from '@/lib/notifications/emitter';
 import { NextResponse } from 'next/server';
 import { logger } from '@/lib/utils/logger';
+import { generateRequestId } from '@/lib/api/handler/utils';
 
-/**
- * SSE endpoint for real-time notifications
- */
 export async function GET() {
+  const requestId = generateRequestId();
+  const reqLogger = logger.forRequest(requestId);
+  
   const session = await auth();
   
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    reqLogger.warn(`Unauthorized access attempt to GET /api/v1/notifications/stream`);
+    return NextResponse.json({ error: 'Unauthorized', requestId }, { status: 401 });
   }
   
   const userId = session.user.id;
   
-  logger.info('SSE connection opened', { userId });
+  reqLogger.info(`Opening SSE connection for user: ${userId}`);
   
   // Set up SSE response headers
   const headers = new Headers({
@@ -23,6 +25,7 @@ export async function GET() {
     'Cache-Control': 'no-cache, no-transform',
     'Connection': 'keep-alive',
     'X-Accel-Buffering': 'no', // Disable nginx buffering
+    'X-Request-Id': requestId, // Track requests through SSE connection
   });
   
   // Create the readable stream for SSE
@@ -39,7 +42,7 @@ export async function GET() {
       // Send initial connection message
       const encoder = new TextEncoder();
       const connectMessage = encoder.encode(
-        `event: connected\ndata: ${JSON.stringify({ userId, timestamp: new Date().toISOString() })}\n\n`
+        `event: connected\ndata: ${JSON.stringify({ userId, requestId, timestamp: new Date().toISOString() })}\n\n`
       );
       controller.enqueue(connectMessage);
       
@@ -50,7 +53,7 @@ export async function GET() {
     },
     
     async cancel() {
-      logger.info('SSE connection closed', { userId });
+      reqLogger.info(`Closing SSE connection for user: ${userId}`);
       // Clean up when client disconnects
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
