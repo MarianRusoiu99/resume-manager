@@ -3,6 +3,8 @@
  * Manages local connections and fan-out of SSE events.
  */
 
+import { logger } from '@/lib/utils/logger';
+
 export type SseController = ReadableStreamDefaultController;
 
 interface ConnectedClient {
@@ -62,9 +64,8 @@ export class SseHub {
       try {
         client.controller.enqueue(encoded);
         successCount++;
-        console.log(`[SSE Hub] Broadcast to user ${userId} successful`);
       } catch (err) {
-        console.error(`[SSE Hub] Broadcast to user ${userId} failed:`, err);
+        logger.warn('SSE broadcast failed for user', { userId, error: err });
         // Client connection is closed/broken - mark for cleanup
         // This is expected when clients disconnect unexpectedly
         failedClients.push(client);

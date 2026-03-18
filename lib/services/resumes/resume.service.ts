@@ -3,6 +3,7 @@ import { profileService as defaultProfileService } from '@/lib/services/profiles
 import { notificationService as defaultNotificationService } from '@/lib/services/notifications/notifications.service';
 import { GenericUserOwnedCrudService } from '@/lib/services/utils/generic-crud.service';
 import { withServiceError, NotFoundError } from '@/lib/services/utils';
+import { logger } from '@/lib/utils/logger';
 import type { Resume } from '@/lib/validations/jsonresume';
 import type { 
   ServiceResult, 
@@ -100,7 +101,7 @@ export class ResumeService
         result.data.id,
         jobMetadata?.jobTitle,
         jobMetadata?.companyName
-      ).catch(err => console.error('Failed to notify resume generated', err));
+      ).catch(err => logger.error('Failed to notify resume generated', { error: err }));
     }
     return result;
   }
