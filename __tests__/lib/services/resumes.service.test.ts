@@ -183,26 +183,44 @@ describe('ResumeCrudService', () => {
       it('should update resume template successfully', async () => {
         const resume = createMockResume({ id: 'resume-123', userId: 'user-123' });
         const updatedResume = { ...resume, templateId: 'new-template', updatedAt: new Date() };
+        repositoryMock.findById.mockResolvedValue(resume);
         repositoryMock.updateTemplate.mockResolvedValue(updatedResume);
 
         const result = await service.updateResumeTemplate('resume-123', 'user-123', 'new-template');
 
         expect(result.success).toBe(true);
-        expect(repositoryMock.updateTemplate).toHaveBeenCalledWith('resume-123', 'new-template');
+        expect(repositoryMock.findById).toHaveBeenCalledWith('resume-123', 'user-123');
+        expect(repositoryMock.updateTemplate).toHaveBeenCalledWith('resume-123', 'user-123', 'new-template');
+      });
+
+      it('should return NOT_FOUND when resume does not belong to user (cross-user attempt)', async () => {
+        repositoryMock.findById.mockResolvedValue(null);
+
+        const result = await service.updateResumeTemplate('resume-123', 'wrong-user', 'new-template');
+
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.error).toContain('Resume not found');
+          expect(result.code).toBe('NOT_FOUND');
+        }
+        expect(repositoryMock.updateTemplate).not.toHaveBeenCalled();
       });
 
       it('should handle null templateId (remove template)', async () => {
         const resume = createMockResume({ id: 'resume-123', userId: 'user-123' });
         const updatedResume = { ...resume, templateId: null, updatedAt: new Date() };
+        repositoryMock.findById.mockResolvedValue(resume);
         repositoryMock.updateTemplate.mockResolvedValue(updatedResume);
 
         const result = await service.updateResumeTemplate('resume-123', 'user-123', null);
 
         expect(result.success).toBe(true);
-        expect(repositoryMock.updateTemplate).toHaveBeenCalledWith('resume-123', undefined);
+        expect(repositoryMock.updateTemplate).toHaveBeenCalledWith('resume-123', 'user-123', undefined);
       });
 
       it('should handle template update errors gracefully', async () => {
+        const resume = createMockResume({ id: 'resume-123', userId: 'user-123' });
+        repositoryMock.findById.mockResolvedValue(resume);
         repositoryMock.updateTemplate.mockRejectedValue(new Error('Template update failed'));
 
         const result = await service.updateResumeTemplate('resume-123', 'user-123', 'new-template');

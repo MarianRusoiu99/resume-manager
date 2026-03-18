@@ -199,8 +199,12 @@ export class GeneratedResumeRepository
   /**
    * Update resume template
    */
-  async updateTemplate(id: string, templateId?: string, tx?: TransactionClient): Promise<GeneratedResumeData> {
-    return this.update(id, { templateId: templateId || undefined }, undefined, tx);
+  async updateTemplate(id: string, userId: string, templateId?: string, tx?: TransactionClient): Promise<GeneratedResumeData> {
+    const resume = await this.findById(id, userId, tx);
+    if (!resume) {
+      throw new RecordNotFoundError('Resume', id, 'updateTemplate');
+    }
+    return this.update(id, { templateId: templateId || undefined }, userId, tx);
   }
 
   /**
