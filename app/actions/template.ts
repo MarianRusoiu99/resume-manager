@@ -32,7 +32,6 @@ export const getTemplate = withServerAction(
 export const createTemplate = withServerAction(
     'createTemplate',
     async (session, data: CreateTemplateServiceInput) => {
-        // Admin check should ideally be here or in service
         return templateService.createTemplate({
             ...data,
             isPublic: data.isPublic ?? false,
@@ -42,6 +41,7 @@ export const createTemplate = withServerAction(
         auditAction: 'TEMPLATE_CREATE',
         resourceType: 'template',
         revalidatePaths: ['/templates'],
+        requireAdmin: true,
     }
 );
 
@@ -57,6 +57,7 @@ export const updateTemplate = withServerAction(
         auditAction: 'TEMPLATE_UPDATE',
         resourceType: 'template',
         revalidatePaths: ['/templates', '/templates/[id]'],
+        requireAdmin: true,
     }
 );
 
@@ -70,6 +71,7 @@ export const deleteTemplate = withServerAction(
         auditAction: 'TEMPLATE_DELETE',
         resourceType: 'template',
         revalidatePaths: ['/templates'],
+        requireAdmin: true,
     }
 );
 
@@ -83,6 +85,7 @@ export const duplicateTemplate = withServerAction(
         auditAction: 'TEMPLATE_CREATE',
         resourceType: 'template',
         revalidatePaths: ['/templates'],
+        requireAdmin: true,
     }
 );
 

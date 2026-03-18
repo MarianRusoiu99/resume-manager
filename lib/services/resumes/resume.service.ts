@@ -163,7 +163,10 @@ export class ResumeService
     templateId: string | null
   ): Promise<ServiceResult<UpdatedResumeData>> {
     return withServiceError('update resume template', async () => {
-      const updatedResume = await this.repository.updateTemplate(resumeId, templateId || undefined);
+      const existingResume = await this.repository.findById(resumeId, userId);
+      if (!existingResume) throw new NotFoundError('Resume');
+
+      const updatedResume = await this.repository.updateTemplate(resumeId, userId, templateId || undefined);
       invalidateUserResumesCache(userId);
       return {
         id: updatedResume.id,

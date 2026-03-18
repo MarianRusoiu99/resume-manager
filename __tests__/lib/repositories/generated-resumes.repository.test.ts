@@ -437,21 +437,39 @@ describe('GeneratedResumeRepository', () => {
   });
 
   describe('updateTemplate', () => {
-    it('should update resume template', async () => {
+    it('should update resume template for the owner user', async () => {
+      prismaMock.resume.findFirst.mockResolvedValue(createMockResumeWithIncludes());
       prismaMock.resume.update.mockResolvedValue(createMockResumeWithIncludes({ templateId: 'modern' }));
 
-      const result = await repository.updateTemplate('resume-123', 'modern');
+      const result = await repository.updateTemplate('resume-123', 'user-123', 'modern');
 
+      expect(prismaMock.resume.findFirst).toHaveBeenCalledWith({
+        where: { id: 'resume-123', userId: 'user-123' },
+        include: {
+          document: { select: { document: true } },
+          jobPosting: { include: { company: true } },
+          coverLetter: { select: { id: true } },
+        },
+      });
       expect(prismaMock.resume.update).toHaveBeenCalledWith(expect.objectContaining({
-        where: { id: 'resume-123' },
+        where: { id: 'resume-123', userId: 'user-123' },
         data: expect.objectContaining({ templateId: 'modern' }),
       }));
     });
 
+    it('should throw RecordNotFoundError when resume does not belong to user (cross-user attempt)', async () => {
+      prismaMock.resume.findFirst.mockResolvedValue(null);
+
+      await expect(
+        repository.updateTemplate('resume-123', 'wrong-user-id', 'modern')
+      ).rejects.toThrow(RecordNotFoundError);
+    });
+
     it('should set templateId to null when undefined provided', async () => {
+      prismaMock.resume.findFirst.mockResolvedValue(createMockResumeWithIncludes());
       prismaMock.resume.update.mockResolvedValue(createMockResumeWithIncludes({ templateId: null }));
 
-      await repository.update('resume-123', { templateId: null });
+      await repository.updateTemplate('resume-123', 'user-123', undefined);
 
       expect(prismaMock.resume.update).toHaveBeenCalledWith(
         expect.objectContaining({
