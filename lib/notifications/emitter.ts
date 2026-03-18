@@ -35,7 +35,7 @@ async function ensureSubscribed(userId: string): Promise<void> {
   
   // Subscribe to Redis channel for this user
   const unsubscribe = await pubsub.subscribe<NotificationPayload>(channel, (ch, notification) => {
-    console.log(`[SSE Emitter] Received message from PubSub on channel ${ch}`, notification);
+    logger.info('SSE received message from PubSub', { channel: ch, notification });
     hub.broadcast(userId, 'notification', notification);
   });
   

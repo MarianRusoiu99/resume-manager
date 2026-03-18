@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { addConnection, removeConnection, sendHeartbeat } from '@/lib/notifications/emitter';
 import { NextResponse } from 'next/server';
+import { logger } from '@/lib/utils/logger';
 
 /**
  * SSE endpoint for real-time notifications
@@ -14,7 +15,7 @@ export async function GET() {
   
   const userId = session.user.id;
   
-  console.log(`[SSE] Opening connection for user: ${userId}`);
+  logger.info('SSE connection opened', { userId });
   
   // Set up SSE response headers
   const headers = new Headers({
@@ -49,7 +50,7 @@ export async function GET() {
     },
     
     async cancel() {
-      console.log(`[SSE] Closing connection for user: ${userId}`);
+      logger.info('SSE connection closed', { userId });
       // Clean up when client disconnects
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
