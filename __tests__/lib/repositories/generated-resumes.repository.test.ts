@@ -25,7 +25,7 @@ describe('GeneratedResumeRepository', () => {
     document: {
       id: 'doc-1',
       resumeId: overrides?.id ?? 'resume-1',
-      document: { basics: { name: 'John Doe' } } as any,
+      document: { basics: { name: 'John Doe' } } as unknown as Prisma.JsonValue,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -82,7 +82,7 @@ describe('GeneratedResumeRepository', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      prismaMock.resume.create.mockResolvedValue(createMockResumeWithIncludes() as any);
+      prismaMock.resume.create.mockResolvedValue(createMockResumeWithIncludes() as unknown as Prisma.ResumeGetPayload<Record<string, never>>);
       prismaMock.resume.create.mockResolvedValue(createMockResumeWithIncludes());
 
       const result = await repository.create(resumeData);
@@ -120,7 +120,7 @@ describe('GeneratedResumeRepository', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      prismaMock.resume.create.mockResolvedValue(createMockResumeWithIncludes() as any);
+      prismaMock.resume.create.mockResolvedValue(createMockResumeWithIncludes() as unknown as Prisma.ResumeGetPayload<Record<string, never>>);
       prismaMock.resume.create.mockResolvedValue(createMockResumeWithIncludes());
 
       await repository.create(resumeData);
@@ -200,7 +200,7 @@ describe('GeneratedResumeRepository', () => {
           updatedAt: new Date(),
           company: null,
         },
-      } as any);
+      } as unknown as Prisma.ResumeGetPayload<Record<string, never>>);
 
       const result = await repository.create(resumeData);
 
@@ -218,7 +218,7 @@ describe('GeneratedResumeRepository', () => {
         createMockResumeWithIncludes(),
         createMockResumeWithIncludes({ id: 'resume-2' }),
         createMockResumeWithIncludes({ id: 'resume-3' }),
-      ] as any);
+      ] as unknown as Prisma.ResumeGetPayload<Record<string, never>>[]);
       prismaMock.resume.findMany.mockResolvedValue([
         createMockResumeWithIncludes(),
         createMockResumeWithIncludes({ id: 'resume-2' }),
@@ -407,7 +407,7 @@ describe('GeneratedResumeRepository', () => {
   describe('delete', () => {
     it('should delete and return the resume', async () => {
       prismaMock.resume.findFirst.mockResolvedValue(createMockResumeWithIncludes());
-      prismaMock.resume.delete.mockResolvedValue({ id: 'resume-1' } as any);
+      prismaMock.resume.delete.mockResolvedValue({ id: 'resume-1' } as unknown as Prisma.ResumeGetPayload<Record<string, never>>);
       prismaMock.resume.delete.mockResolvedValue(createMockResumeWithIncludes({ id: 'resume-1' }));
 
       const result = await repository.delete('resume-123', 'user-123');
@@ -490,7 +490,7 @@ describe('GeneratedResumeRepository', () => {
         metadata: {},
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any);
+      } as unknown as Prisma.ResumeGetPayload<Record<string, never>>);
       prismaMock.resume.findUnique.mockResolvedValue({
         id: 'resume-123',
         jobPostingId: 'job-1',
@@ -501,7 +501,7 @@ describe('GeneratedResumeRepository', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       } as unknown as ResumeWithIncludes);
-      prismaMock.jobPosting.update.mockResolvedValue({ id: 'job-1' } as any);
+      prismaMock.jobPosting.update.mockResolvedValue({ id: 'job-1' } as unknown as Prisma.JobPostingGetPayload<Record<string, never>>);
       prismaMock.resume.update.mockResolvedValue(createMockResumeWithIncludes());
 
       const result = await repository.updateJobDetails('resume-123', {
@@ -529,7 +529,7 @@ describe('GeneratedResumeRepository', () => {
         templateId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any);
+      } as unknown as Prisma.ResumeGetPayload<Record<string, never>>);
       prismaMock.resume.update.mockResolvedValue(createMockResumeWithIncludes());
 
       const result = await repository.updateJobDetails('resume-123', {
@@ -570,7 +570,7 @@ describe('GeneratedResumeRepository', () => {
         templateId: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any);
+      } as unknown as Prisma.ResumeGetPayload<Record<string, never>>);
       prismaMock.resume.update.mockResolvedValue(createMockResumeWithIncludes());
 
       await repository.updateJobDetails('resume-123', {

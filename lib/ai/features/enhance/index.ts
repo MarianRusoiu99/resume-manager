@@ -1,6 +1,5 @@
-import type { LanguageModel, CoreMessage } from 'ai';
+import { generateText, type LanguageModel, type CoreMessage } from 'ai';
 import { z } from 'zod';
-import { ValidatedAIRunner } from '@/lib/ai/core/validated-runner';
 import type { ContentType } from '@/lib/validations/settings';
 
 export type EnhanceTextInput = {
@@ -148,16 +147,13 @@ export async function enhanceText(
     }
   ];
 
-  const result = await ValidatedAIRunner.run({
+  const result = await generateText({
     model,
     messages,
-    schema: z.string(),
-    userId,
-    feature: 'enhance',
   });
 
   return {
-    enhancedContent: typeof result === 'string' ? result.trim() : JSON.stringify(result),
+    enhancedContent: typeof result.text === 'string' ? result.text.trim() : JSON.stringify(result.text),
     metadata: {
       model: modelKey,
       provider: providerType,

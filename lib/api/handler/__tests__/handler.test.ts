@@ -45,7 +45,7 @@ describe('createApiHandler', () => {
   });
 
   it('should block unauthorized requests for protected routes', async () => {
-    (getSession as any).mockResolvedValue(null);
+    (getSession as jest.Mock).mockResolvedValue(null);
     const handler = vi.fn();
     const wrappedHandler = createApiHandler(handler);
     

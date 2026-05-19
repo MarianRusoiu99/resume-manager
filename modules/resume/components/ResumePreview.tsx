@@ -142,28 +142,30 @@ export function ResumePreview({
     }
 
     let cancelled = false;
-    setIsCustomLoading(true);
 
-    renderTemplateServerSide({
-      htmlTemplate: templateHtml,
-      resumeData: resume,
-    })
-      .then((html) => {
+    const render = async () => {
+      setIsCustomLoading(true);
+      try {
+        const html = await renderTemplateServerSide({
+          htmlTemplate: templateHtml,
+          resumeData: resume,
+        });
         if (!cancelled) {
           setCustomHtmlContent(html);
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (!cancelled) {
           logger.error('Error rendering custom template', err);
-          setCustomHtmlContent(null);
+          setCustomHtmlContent('<div class="p-4 text-red-500 bg-red-50 rounded">Failed to render template</div>');
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) {
           setIsCustomLoading(false);
         }
-      });
+      }
+    };
+
+    void render();
 
     return () => {
       cancelled = true;

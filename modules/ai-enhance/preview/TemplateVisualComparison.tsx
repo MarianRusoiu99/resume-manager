@@ -37,27 +37,23 @@ export function TemplateVisualComparison({
   // Generate preview HTML for original template
   useEffect(() => {
     let cancelled = false;
-    setIsLoadingOriginal(true);
 
-    renderTemplateServerSide({
-      htmlTemplate: originalHtml,
-      resumeData: sampleResume,
-    })
-      .then((html) => {
-        if (!cancelled) {
-          setOriginalPreview(html);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setOriginalPreview(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoadingOriginal(false);
-        }
-      });
+    const render = async () => {
+      setIsLoadingOriginal(true);
+      try {
+        const html = await renderTemplateServerSide({
+          htmlTemplate: originalHtml,
+          resumeData: sampleResume,
+        });
+        if (!cancelled) setOriginalPreview(html);
+      } catch (err) {
+        if (!cancelled) setOriginalPreview(null);
+      } finally {
+        if (!cancelled) setIsLoadingOriginal(false);
+      }
+    };
+
+    void render();
 
     return () => {
       cancelled = true;
@@ -73,27 +69,23 @@ export function TemplateVisualComparison({
     }
 
     let cancelled = false;
-    setIsLoadingEnhanced(true);
 
-    renderTemplateServerSide({
-      htmlTemplate: enhancedHtml,
-      resumeData: sampleResume,
-    })
-      .then((html) => {
-        if (!cancelled) {
-          setEnhancedPreview(html);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setEnhancedPreview(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLoadingEnhanced(false);
-        }
-      });
+    const render = async () => {
+      setIsLoadingEnhanced(true);
+      try {
+        const html = await renderTemplateServerSide({
+          htmlTemplate: enhancedHtml,
+          resumeData: sampleResume,
+        });
+        if (!cancelled) setEnhancedPreview(html);
+      } catch (err) {
+        if (!cancelled) setEnhancedPreview(null);
+      } finally {
+        if (!cancelled) setIsLoadingEnhanced(false);
+      }
+    };
+
+    void render();
 
     return () => {
       cancelled = true;

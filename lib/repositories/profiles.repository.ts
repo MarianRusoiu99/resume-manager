@@ -31,7 +31,7 @@ export class ProfileRepository extends GenericUserOwnedRepository<
     super('profile', dbClient);
   }
 
-  private mapProfile(profile: ProfileWithDocument | Prisma.ProfileGetPayload<{}>): ProfileData {
+  private mapProfile(profile: ProfileWithDocument | Prisma.ProfileGetPayload<Record<string, never>>): ProfileData {
     const hasDocument = 'document' in profile && profile.document;
     
     return {

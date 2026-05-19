@@ -2,7 +2,7 @@ import { prisma } from '@/lib/db/index';
 import { logger } from '@/lib/utils';
 import { sanitize } from '@/lib/utils/logger/sanitizer';
 
-import type { AuditAction } from '@prisma/client';
+import { Prisma, type AuditAction } from '@prisma/client';
 
 import type { AuditLogEntry, AuditLogQueryOptions, AuditRequestContext } from './types';
 
@@ -32,7 +32,7 @@ export class AuditLogService {
           resourceId: entry.resourceId ?? undefined,
           ipAddress: entry.ipAddress ?? undefined,
           userAgent: entry.userAgent ?? undefined,
-          metadata: entry.metadata ? (sanitize(entry.metadata as object) as any) : undefined,
+          metadata: entry.metadata ? (sanitize(entry.metadata as object) as Prisma.InputJsonValue) : undefined,
           success: entry.success ?? true,
           errorMessage: entry.errorMessage ?? undefined,
         },

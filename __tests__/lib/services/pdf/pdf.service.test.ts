@@ -28,7 +28,7 @@ describe('PdfService', () => {
     const html = '<h1>Test 1</h1>';
     const html2 = '<h1>Test 2</h1>';
     
-    const spy = vi.spyOn(pdfService as any, 'getBrowser');
+    const spy = vi.spyOn(pdfService as unknown as { getBrowser: () => Promise<unknown> }, 'getBrowser');
     
     await pdfService.generateFromHtml(html);
     await pdfService.generateFromHtml(html2);

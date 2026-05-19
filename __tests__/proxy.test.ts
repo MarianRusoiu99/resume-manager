@@ -32,7 +32,7 @@ describe('Proxy (Middleware)', () => {
     // Default cookie mock to prevent TypeError: Cannot read properties of undefined (reading 'get')
     mockCookies.mockReturnValue(Promise.resolve({
       get: vi.fn().mockReturnValue(undefined)
-    } as any));
+    } as unknown as Request));
   });
 
   describe('Host Validation', () => {
@@ -71,7 +71,7 @@ describe('Proxy (Middleware)', () => {
       // Mock no session cookie
       mockCookies.mockReturnValue(Promise.resolve({
         get: () => undefined
-      } as any));
+      } as unknown as Request));
 
       const req = mockRequest('http://localhost:3000/dashboard');
       const res = await proxy(req);
@@ -85,7 +85,7 @@ describe('Proxy (Middleware)', () => {
       vi.spyOn(env, 'trustedHosts', 'get').mockReturnValue([]);
       mockCookies.mockReturnValue(Promise.resolve({
         get: () => undefined
-      } as any));
+      } as unknown as Request));
 
       const req = mockRequest('http://localhost:3000/public');
       const res = await proxy(req);
@@ -98,7 +98,7 @@ describe('Proxy (Middleware)', () => {
       // Mock session cookie exists
       mockCookies.mockReturnValue(Promise.resolve({
         get: (name: string) => name === 'authjs.session-token' ? { value: 'valid-token' } : undefined
-      } as any));
+      } as unknown as Request));
 
       const req = mockRequest('http://localhost:3000/dashboard');
       const res = await proxy(req);
@@ -112,7 +112,7 @@ describe('Proxy (Middleware)', () => {
       vi.spyOn(env, 'trustedHosts', 'get').mockReturnValue([]);
       mockCookies.mockReturnValue(Promise.resolve({
         get: () => ({ value: 'token' })
-      } as any));
+      } as unknown as Request));
 
       const req = mockRequest('http://localhost:3000/dashboard');
       const res = await proxy(req);
@@ -124,7 +124,7 @@ describe('Proxy (Middleware)', () => {
       vi.spyOn(env, 'trustedHosts', 'get').mockReturnValue([]);
       mockCookies.mockReturnValue(Promise.resolve({
         get: () => ({ value: 'token' })
-      } as any));
+      } as unknown as Request));
 
       const req = mockRequest('http://localhost:3000/templates/new');
       const res = await proxy(req);

@@ -108,8 +108,8 @@ function registerHelpers() {
   Handlebars.registerHelper('safeGet', function(this: unknown, context: Record<string, unknown> | unknown[], path: string, options: Handlebars.HelperOptions) {
     if (!context || !path) return options.inverse(this);
     
-    const value = path.split('.').reduce((acc: any, part) => {
-      return acc && (acc as Record<string, unknown>)[part];
+    const value = path.split('.').reduce((acc: unknown, part) => {
+      return (acc && typeof acc === 'object') ? (acc as Record<string, unknown>)[part] : undefined;
     }, context);
     
     if (value !== undefined && value !== null && value !== '') {

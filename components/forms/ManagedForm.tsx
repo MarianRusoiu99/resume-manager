@@ -1,6 +1,6 @@
 "use client";
 
-import { FormProvider, useForm, useWatch, UseFormReturn, FieldValues, Path, PathValue, DefaultValues } from "react-hook-form";
+import { FormProvider, useForm, useWatch, UseFormReturn, FieldValues, Path, PathValue, DefaultValues, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { GenericForm } from "./GenericForm";
@@ -50,7 +50,8 @@ function ManagedFormInternal<T extends FieldValues>({
   columns = 2,
 }: Readonly<ManagedFormProps<T>>) {
   const form = useForm<T>({
-    resolver: zodResolver(schema as any) as any,
+    // @ts-expect-error - zodResolver has strict generic constraints
+    resolver: zodResolver(schema) as unknown as Resolver<T>,
     defaultValues: defaultValues as DefaultValues<T>,
     mode: "onBlur",
   });

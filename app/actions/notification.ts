@@ -69,7 +69,7 @@ export const sendNotification = withServerAction(
         title: string;
         message: string;
         type?: 'RESUME_GENERATED' | 'COVER_LETTER_GENERATED' | 'PROFILE_UPDATED' | 'SYSTEM';
-        metadata?: Record<string, any>;
+        metadata?: Record<string, unknown>;
     }) => {
         return notificationService.createNotification({
             userId: session.user.id,

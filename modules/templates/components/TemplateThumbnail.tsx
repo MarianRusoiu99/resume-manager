@@ -27,27 +27,23 @@ export function TemplateThumbnail({
 
     useEffect(() => {
         let cancelled = false;
-        setIsLoading(true);
 
-        renderTemplateServerSide({
-            htmlTemplate: templateHtml,
-            resumeData: sampleResume as Record<string, unknown>,
-        })
-            .then((html) => {
-                if (!cancelled) {
-                    setHtmlContent(html);
-                }
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setHtmlContent(`<div style="padding: 20px; text-align: center; color: #666;">Preview Error</div>`);
-                }
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setIsLoading(false);
-                }
-            });
+        const render = async () => {
+            setIsLoading(true);
+            try {
+                const html = await renderTemplateServerSide({
+                    htmlTemplate: templateHtml,
+                    resumeData: sampleResume as Record<string, unknown>,
+                });
+                if (!cancelled) setHtmlContent(html);
+            } catch (err) {
+                if (!cancelled) setHtmlContent(`<div style="padding: 20px; text-align: center; color: #666;">Preview Error</div>`);
+            } finally {
+                if (!cancelled) setIsLoading(false);
+            }
+        };
+
+        void render();
 
         return () => {
             cancelled = true;

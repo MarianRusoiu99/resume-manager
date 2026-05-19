@@ -6,9 +6,8 @@
  */
 
 import { z } from 'zod';
-import type { LanguageModel } from 'ai';
+import { generateObject, type LanguageModel } from 'ai';
 import type { Resume } from '@/lib/validations/jsonresume';
-import { ValidatedAIRunner } from '@/lib/ai/core/validated-runner';
 import { PromptRegistry } from '@/lib/ai/prompts';
 import { logger } from '@/lib/utils/logger';
 
@@ -41,7 +40,7 @@ export async function generateCoverLetter(
     context: input.context || 'None provided',
   });
 
-  const validatedResult = await ValidatedAIRunner.run({
+  const result = await generateObject({
     model,
     system,
     prompt,
@@ -52,9 +51,7 @@ export async function generateCoverLetter(
       companyName: z.string().optional().describe('Company name'),
       jobTitle: z.string().optional().describe('Job title being applied for'),
     }),
-    userId: input.userId,
-    feature: 'cover-letter-generation',
   });
 
-  return validatedResult;
+  return result.object;
 }

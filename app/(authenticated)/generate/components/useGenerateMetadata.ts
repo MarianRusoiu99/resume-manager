@@ -38,7 +38,7 @@ export function useGenerateMetadata() {
           const profileData = profilesResult.data as ProfileListItem[];
           setProfiles(profileData);
           
-          const prefDefaultProfileId = (preferencesRes?.data as any)?.template?.defaultProfileId;
+          const prefDefaultProfileId = (preferencesRes?.data as { template?: { defaultProfileId?: string } })?.template?.defaultProfileId;
           const defaultProfile = profileData.find((p) => p.id === prefDefaultProfileId) || 
                                 profileData.find((p) => p.isDefault) || 
                                 profileData[0];

@@ -44,12 +44,12 @@ export class CoverLetterService
   ): Promise<ServiceResult<CoverLetterData>> {
     const result = await this.create(input);
     if (result.success) {
-      const metadata = (input.metadata ?? {}) as Record<string, any>;
+      const metadata = (input.metadata ?? {}) as Record<string, unknown>;
       await this.notificationService.notifyCoverLetterGenerated(
         input.userId,
         result.data.id,
-        metadata?.jobTitle,
-        metadata?.companyName
+        metadata?.jobTitle as string | undefined,
+        metadata?.companyName as string | undefined
       ).catch(err => console.error('Failed to notify cover letter generated', err));
     }
     return result;

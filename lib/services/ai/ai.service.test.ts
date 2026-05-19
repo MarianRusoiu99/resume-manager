@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+// eslint-disable-next-line no-restricted-syntax
 import { AIService } from './ai.service';
 import { success, failure } from '@/lib/types';
 
@@ -6,12 +7,13 @@ import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
 import { enhanceText } from '@/lib/ai/features/enhance';
 import { optimizeResume } from '@/lib/ai/agents/resume-optimization/agent';
 import { generateCoverLetter } from '@/lib/ai/agents/cover-letter/agent';
+ 
 import { apiProviderService } from '@/lib/services/api-providers';
-import type { 
-  EnhanceTextInput, 
-  OptimizeResumeInput, 
-  GenerateCoverLetterInput 
-} from '../interfaces/ai.service.interface';
+import type { ResolvedAIModel } from '@/lib/ai/runtime/types';
+import type { AvailableModelsData, ProviderInstanceData } from '@/lib/services/api-providers';
+import type { Resume } from '@/lib/validations/jsonresume/schema';
+
+import type { EnhanceTextInput } from './ai.service';
 
 // Mock the dependencies
 vi.mock('@/lib/ai/runtime', () => ({
@@ -61,7 +63,7 @@ describe('AIService', () => {
       modelId: 'gpt-4',
       modelKey: 'gpt-4',
       feature: 'enhance' as const,
-    } as any;
+    } as unknown as ResolvedAIModel;
 
     it('should enhance text successfully', async () => {
       const userId = 'user-123';
@@ -72,7 +74,7 @@ describe('AIService', () => {
         modelId: 'gpt-4',
       };
 
-      mockResolveAIModelOrThrow.mockResolvedValue(mockResolvedModel as any);
+      mockResolveAIModelOrThrow.mockResolvedValue(mockResolvedModel as unknown as ResolvedAIModel);
       mockEnhanceText.mockResolvedValue({
         enhancedContent: 'Enhanced text',
         metadata: {
@@ -80,7 +82,7 @@ describe('AIService', () => {
           provider: 'openai',
           contentType: 'text',
         },
-      } as any);
+      } as unknown as Awaited<ReturnType<typeof enhanceText>>);
 
       const result = await service.enhanceText(userId, input);
 
@@ -111,15 +113,15 @@ describe('AIService', () => {
             { id: 'gpt-3.5', providerId: 'openai', modelKey: 'gpt-3.5-turbo' },
           ],
           providers: [],
-        } as any)
+        } as unknown as AvailableModelsData)
       );
       mockApiProviderService.getProviderInstance.mockResolvedValue(
         success({
           provider: {
             createLanguageModel: vi.fn(() => 'fallback-model'),
-          } as any,
+          } as unknown as ProviderInstanceData['provider'],
           providerType: 'openai',
-        } as any)
+          } as unknown as ProviderInstanceData)
       );
       mockEnhanceText.mockResolvedValue({
         enhancedContent: 'Enhanced with fallback',
@@ -128,7 +130,7 @@ describe('AIService', () => {
           provider: 'openai',
           contentType: 'text',
         },
-      } as any);
+      } as unknown as Awaited<ReturnType<typeof enhanceText>>);
 
       const result = await service.enhanceText(userId, input);
 
@@ -170,7 +172,7 @@ describe('AIService', () => {
         resolveVisionModelKey: vi.fn(() => 'gpt-4-vision'),
       }));
 
-      mockResolveAIModelOrThrow.mockResolvedValue(mockResolvedModel as any);
+      mockResolveAIModelOrThrow.mockResolvedValue(mockResolvedModel as unknown as ResolvedAIModel);
       mockEnhanceText.mockResolvedValue({
         enhancedContent: 'Image description',
         metadata: {
@@ -178,7 +180,7 @@ describe('AIService', () => {
           provider: 'openai',
           contentType: 'text',
         },
-      } as any);
+      } as unknown as Awaited<ReturnType<typeof enhanceText>>);
 
       const result = await service.enhanceText(userId, input);
 
@@ -202,11 +204,11 @@ describe('AIService', () => {
       const userId = 'user-123';
       const input = {
         jobDescription: 'Software Engineer position',
-        userResume: { basics: { name: 'John Doe' } } as any,
+        userResume: { basics: { name: 'John Doe' } } as unknown as Resume,
         modelId: 'gpt-4',
       };
 
-      mockResolveAIModelOrThrow.mockResolvedValue(mockResolvedModel as any);
+      mockResolveAIModelOrThrow.mockResolvedValue(mockResolvedModel as unknown as ResolvedAIModel);
       mockOptimizeResume.mockResolvedValue({
         resume: { basics: { name: 'John Doe', summary: 'Optimized' } },
         jobTitle: 'Software Engineer',
@@ -232,7 +234,7 @@ describe('AIService', () => {
       const userId = 'user-123';
       const input = {
         jobDescription: 'Software Engineer position',
-        userResume: { basics: { name: 'John Doe' } } as any,
+        userResume: { basics: { name: 'John Doe' } } as unknown as Resume,
       };
 
       mockResolveAIModelOrThrow.mockRejectedValue(new Error('Model unavailable'));
@@ -262,11 +264,11 @@ describe('AIService', () => {
       const userId = 'user-123';
       const input = {
         jobDescription: 'Software Engineer position',
-        userResume: { basics: { name: 'John Doe' } } as any,
+        userResume: { basics: { name: 'John Doe' } } as unknown as Resume,
         modelId: 'gpt-4',
       };
 
-      mockResolveAIModelOrThrow.mockResolvedValue(mockResolvedModel as any);
+      mockResolveAIModelOrThrow.mockResolvedValue(mockResolvedModel as unknown as ResolvedAIModel);
       mockGenerateCoverLetter.mockResolvedValue({
         content: 'Dear Hiring Manager, ...',
         jobTitle: 'Software Engineer',
@@ -292,7 +294,7 @@ describe('AIService', () => {
       const userId = 'user-123';
       const input = {
         jobDescription: 'Software Engineer position',
-        userResume: { basics: { name: 'John Doe' } } as any,
+        userResume: { basics: { name: 'John Doe' } } as unknown as Resume,
       };
 
       mockResolveAIModelOrThrow.mockRejectedValue(new Error('Model unavailable'));
@@ -323,7 +325,7 @@ describe('AIService', () => {
             { id: 'model-2', providerId: 'provider-2', modelKey: 'key-2' },
           ],
           providers: [],
-        } as any)
+        } as unknown as AvailableModelsData)
       );
 
       // First fallback fails
@@ -332,17 +334,17 @@ describe('AIService', () => {
           success({
             provider: {
               createLanguageModel: vi.fn(() => 'fallback-1'),
-            } as any,
+            } as unknown as ProviderInstanceData['provider'],
             providerType: 'openai',
-          } as any)
+          } as unknown as ProviderInstanceData)
         )
         .mockResolvedValueOnce(
           success({
             provider: {
               createLanguageModel: vi.fn(() => 'fallback-2'),
-            } as any,
+            } as unknown as ProviderInstanceData['provider'],
             providerType: 'anthropic',
-          } as any)
+          } as unknown as ProviderInstanceData)
         );
 
       mockEnhanceText
@@ -354,7 +356,7 @@ describe('AIService', () => {
             provider: 'anthropic',
             contentType: 'text',
           },
-        } as any);
+        } as unknown as Awaited<ReturnType<typeof enhanceText>>);
 
       const result = await service.enhanceText(userId, input);
 
@@ -377,16 +379,16 @@ describe('AIService', () => {
             { id: 'model-1', providerId: 'provider-1', modelKey: 'key-1' },
           ],
           providers: [],
-        } as any)
+        } as unknown as AvailableModelsData)
       );
 
       mockApiProviderService.getProviderInstance.mockResolvedValue(
         success({
           provider: {
             createLanguageModel: vi.fn(() => 'fallback'),
-          } as any,
+          } as unknown as ProviderInstanceData['provider'],
           providerType: 'openai',
-        } as any)
+          } as unknown as ProviderInstanceData)
       );
 
       mockEnhanceText.mockRejectedValue(new Error('All models failed'));

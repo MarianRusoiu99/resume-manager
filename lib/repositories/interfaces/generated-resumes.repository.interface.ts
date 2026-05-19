@@ -41,7 +41,7 @@ export interface CreateResumeInput {
  */
 export interface UpdateResumeInput {
   resume?: Resume;
-  templateId?: string;
+  templateId?: string | null;
   metadata?: Record<string, unknown>;
 }
 
@@ -93,7 +93,7 @@ export interface IGeneratedResumeRepository {
   /**
    * Update resume template
    */
-  updateTemplate(id: string, templateId?: string, tx?: TransactionClient): Promise<GeneratedResumeData>;
+  updateTemplate(id: string, userId: string, templateId?: string, tx?: TransactionClient): Promise<GeneratedResumeData>;
 
   /**
    * Update job details

@@ -37,7 +37,7 @@ describe('ApiProviderService', () => {
           models: [{ id: 'm1', modelKey: 'gpt-4' }]
         }
       ];
-      repositoryMock.findByUserId.mockResolvedValue(mockProviders as any);
+      repositoryMock.findByUserId.mockResolvedValue(mockProviders as never);
 
       const result = await service.getUserProviders('user-123');
 

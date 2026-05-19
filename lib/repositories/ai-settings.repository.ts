@@ -148,13 +148,13 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
         // PrismaDelegate delete requires Record<string, unknown> which matches deleteMany criteria
         // Note: Generic PrismaDelegate doesn't have deleteMany, but we can cast or add it.
         // For simplicity in this generic layer, we'll use the delegate directly.
-        (delegate as any).deleteMany({
+        (delegate as unknown as { deleteMany: (args: Record<string, unknown>) => Promise<unknown> }).deleteMany({
           where: { userId, feature: toFeatureKey(feature) },
         });
         return;
       }
 
-      (delegate as any).upsert({
+      (delegate as unknown as { upsert: (args: Record<string, unknown>) => Promise<unknown> }).upsert({
         where: { userId_feature: { userId, feature: toFeatureKey(feature) } },
         create: {
           userId,
@@ -193,13 +193,13 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
     // `UserAiPreference.providerId` is required in the new schema.
     // Clearing a preference is represented by deleting the row.
     if (!providerId) {
-      (delegate as any).deleteMany({
+      (delegate as unknown as { deleteMany: (args: Record<string, unknown>) => Promise<unknown> }).deleteMany({
         where: { userId, feature: toFeatureKey(feature) },
       });
       return (await this.findByUserId(userId, tx)) ?? blankSettings(userId);
     }
 
-    (delegate as any).upsert({
+    (delegate as unknown as { upsert: (args: Record<string, unknown>) => Promise<unknown> }).upsert({
       where: { userId_feature: { userId, feature: toFeatureKey(feature) } },
       create: {
         userId,
@@ -221,7 +221,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
    * Get preference for a specific feature
    */
   async getFeaturePreference(userId: string, feature: AIFeatureType, tx?: TransactionClient): Promise<ModelPreference> {
-    const preference = await (this.getDelegate(tx) as any).findUnique({
+    const preference = await (this.getDelegate(tx) as unknown as { findUnique: (args: Record<string, unknown>) => Promise<Record<string, unknown>> }).findUnique({
       where: { userId_feature: { userId, feature: toFeatureKey(feature) } },
       select: {
         providerId: true,
@@ -243,7 +243,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
     const actualTx = typeof tx_or_userId !== 'string' ? tx_or_userId : maybe_tx;
     const actualUserId = typeof tx_or_userId === 'string' ? tx_or_userId : userId;
 
-    await (this.getDelegate(actualTx) as any).deleteMany({ where: { userId: actualUserId } });
+    await (this.getDelegate(actualTx) as unknown as { deleteMany: (args: Record<string, unknown>) => Promise<unknown> }).deleteMany({ where: { userId: actualUserId } });
     // Return blank settings after deletion
     return blankSettings(actualUserId);
   }
@@ -252,7 +252,7 @@ export class UserAISettingsRepository extends GenericUserOwnedRepository<
    * Clear a specific feature's preference (set to null)
    */
   async clearFeaturePreference(userId: string, feature: AIFeatureType, tx?: TransactionClient): Promise<UserAISettingsData | null> {
-    await (this.getDelegate(tx) as any).deleteMany({
+    await (this.getDelegate(tx) as unknown as { deleteMany: (args: Record<string, unknown>) => Promise<unknown> }).deleteMany({
       where: { userId, feature: toFeatureKey(feature) },
     });
     return this.findByUserId(userId, tx);

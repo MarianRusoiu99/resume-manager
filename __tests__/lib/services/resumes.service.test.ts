@@ -12,7 +12,7 @@ describe('ResumeCrudService', () => {
   beforeEach(() => {
     repositoryMock = mockDeep<GeneratedResumeRepository>();
     mockReset(repositoryMock);
-    service = new ResumeCrudService(repositoryMock, {} as any, {} as any);
+    service = new ResumeCrudService(repositoryMock, {} as unknown, {} as unknown);
   });
 
   describe('CRUD Operations', () => {

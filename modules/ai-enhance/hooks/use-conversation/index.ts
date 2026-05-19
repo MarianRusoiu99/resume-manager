@@ -27,12 +27,12 @@ function mergeDeep<T>(target: T, source: DeepPartial<T>): T {
     return source as unknown as T;
   }
   
-  const result = { ...target } as any;
+  const result = { ...target } as Record<string, unknown>;
   
   for (const key in source) {
     if (Object.prototype.hasOwnProperty.call(source, key)) {
       if (source[key] instanceof Object && key in result) {
-        result[key] = mergeDeep(result[key], source[key] as any);
+        result[key] = mergeDeep(result[key], source[key] as Record<string, unknown>);
       } else {
         result[key] = source[key];
       }

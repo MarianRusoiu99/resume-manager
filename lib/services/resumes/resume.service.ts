@@ -41,7 +41,7 @@ export interface IResumeService {
     personalInstructions?: string;
     modelId?: string;
     profileId?: string;
-  }): Promise<ServiceResult<any>>;
+  }): Promise<ServiceResult<never>>;
 
   // CRUD
   create(data: CreateResumeInput): Promise<ServiceResult<RepoGeneratedResumeData>>;
@@ -87,20 +87,20 @@ export class ResumeService
     personalInstructions?: string;
     modelId?: string;
     profileId?: string;
-  }): Promise<ServiceResult<any>> {
+  }): Promise<ServiceResult<never>> {
     return { success: false, error: 'Standalone cover letter generation not implemented in worker build context', code: 'INTERNAL_ERROR' };
   }
 
   async create(data: CreateResumeInput & { userId: string }): Promise<ServiceResult<RepoGeneratedResumeData>> {
     const result = await super.create(data);
     if (result.success) {
-      const jobMetadata = (data.jobMetadata ?? {}) as Record<string, any>;
+      const jobMetadata = (data.jobMetadata ?? {}) as Record<string, unknown>;
       // This is called in background, it emits to SSE hub which should work fine
       this.notificationService.notifyResumeGenerated(
         data.userId,
         result.data.id,
-        jobMetadata?.jobTitle,
-        jobMetadata?.companyName
+        jobMetadata?.jobTitle as string | undefined,
+        jobMetadata?.companyName as string | undefined
       ).catch(err => logger.error('Failed to notify resume generated', { error: err }));
     }
     return result;

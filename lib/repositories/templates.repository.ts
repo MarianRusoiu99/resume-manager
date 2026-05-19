@@ -32,7 +32,7 @@ export class TemplateRepository
       orderBy: [{ name: 'asc' }],
     });
 
-    return (templates as unknown as Array<Prisma.ResumeTemplateGetPayload<{}>>).map((t) => this.mapToTemplate(t));
+    return (templates as unknown as Array<Prisma.ResumeTemplateGetPayload<Record<string, never>>>).map((t) => this.mapToTemplate(t));
   }
 
   /**
@@ -43,7 +43,7 @@ export class TemplateRepository
       where: { id },
     });
 
-    return template ? this.mapToTemplate(template as unknown as Prisma.ResumeTemplateGetPayload<{}>) : null;
+    return template ? this.mapToTemplate(template as unknown as Prisma.ResumeTemplateGetPayload<Record<string, never>>) : null;
   }
 
   /**
@@ -60,7 +60,7 @@ export class TemplateRepository
       },
     });
 
-    return this.mapToTemplate(template as unknown as Prisma.ResumeTemplateGetPayload<{}>);
+    return this.mapToTemplate(template as unknown as Prisma.ResumeTemplateGetPayload<Record<string, never>>);
   }
 
   /**
@@ -85,7 +85,7 @@ export class TemplateRepository
       data: updateData,
     });
 
-    return this.mapToTemplate(template as unknown as Prisma.ResumeTemplateGetPayload<{}>);
+    return this.mapToTemplate(template as unknown as Prisma.ResumeTemplateGetPayload<Record<string, never>>);
   }
 
   /**
@@ -118,7 +118,7 @@ export class TemplateRepository
   /**
    * Map Prisma model to domain model
    */
-  private mapToTemplate(template: Prisma.ResumeTemplateGetPayload<{}>): ResumeTemplate {
+  private mapToTemplate(template: Prisma.ResumeTemplateGetPayload<Record<string, never>>): ResumeTemplate {
     return {
       id: template.id,
       name: template.name,

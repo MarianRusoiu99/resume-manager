@@ -285,8 +285,8 @@ describe('Encryption Module', () => {
     });
 
     it('should return false for failed validation (invalid input)', () => {
-      // validateEncryption will catch the error and return false if input is not properly encrypted data
-      const result = validateEncryption('this-will-fail-decryption-because-it-is-not-formatted-correctly');
+      // validateEncryption will catch the error and return false if input looks like encrypted data but is invalid
+      const result = validateEncryption('invalid:invalid:invalid:invalid');
 
       expect(result).toBe(false);
     });

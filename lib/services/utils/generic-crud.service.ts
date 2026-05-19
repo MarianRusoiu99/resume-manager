@@ -131,7 +131,14 @@ export abstract class GenericUserOwnedCrudService<
     }
   ) {}
 
-  protected getCacheKey(id: string): string {
+  protected getCacheKey(id: string, userId?: string): string {
+    if (!userId) {
+      return `${this.resourceName.toLowerCase()}:${id}`;
+    }
+    return `${this.resourceName.toLowerCase()}:${id}:${userId}`;
+  }
+
+  protected getLegacyCacheKey(id: string): string {
     return `${this.resourceName.toLowerCase()}:${id}`;
   }
 
@@ -142,7 +149,7 @@ export abstract class GenericUserOwnedCrudService<
   async getById(id: string, userId: string): Promise<ServiceResult<T>> {
     return withServiceError(`fetch ${this.resourceName}`, async () => {
       if (this.cache) {
-        const cached = this.cache.get(this.getCacheKey(id));
+        const cached = this.cache.get(this.getCacheKey(id, userId));
         if (cached) return cached as T;
       }
 
@@ -150,7 +157,7 @@ export abstract class GenericUserOwnedCrudService<
       if (!entity) throw new NotFoundError(this.resourceName);
 
       if (this.cache) {
-        this.cache.set(this.getCacheKey(id), entity);
+        this.cache.set(this.getCacheKey(id, userId), entity);
       }
 
       return entity;
@@ -193,7 +200,8 @@ export abstract class GenericUserOwnedCrudService<
       const entity = await this.repository.updateForUser(id, userId, validatedData);
       
       if (this.cache) {
-        this.cache.delete(this.getCacheKey(id));
+        this.cache.delete(this.getCacheKey(id, userId));
+        this.cache.delete(this.getLegacyCacheKey(id));
         this.cache.delete(this.getUserListCacheKey(userId));
       }
       
@@ -205,7 +213,8 @@ export abstract class GenericUserOwnedCrudService<
     return withServiceError(`delete ${this.resourceName}`, async () => {
       await this.repository.deleteForUser(id, userId);
       if (this.cache) {
-        this.cache.delete(this.getCacheKey(id));
+        this.cache.delete(this.getCacheKey(id, userId));
+        this.cache.delete(this.getLegacyCacheKey(id));
         this.cache.delete(this.getUserListCacheKey(userId));
       }
     });

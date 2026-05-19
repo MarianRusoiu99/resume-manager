@@ -6,9 +6,7 @@
  */
 
 import { z } from 'zod';
-import type { LanguageModel } from 'ai';
-import { ValidatedAIRunner } from '@/lib/ai/core/validated-runner';
-import { StreamAIRunner } from '@/lib/ai/core/stream-runner';
+import { generateObject, streamObject, type LanguageModel } from 'ai';
 import { PromptRegistry } from '@/lib/ai/prompts';
 import { logger } from '@/lib/utils/logger';
 import { resumeSchema } from '@/lib/validations/jsonresume/schema';
@@ -45,14 +43,14 @@ export async function optimizeResume(
     resume: JSON.stringify(input.userResume, null, 2),
   });
 
-  return ValidatedAIRunner.run({
+  const result = await generateObject({
     model,
     system,
     prompt,
     schema: resultSchema,
-    userId: input.userId,
-    feature: 'resume-optimization',
   });
+
+  return result.object;
 }
 
 export function streamOptimizeResume(input: OptimizeResumeInput) {
@@ -63,12 +61,10 @@ export function streamOptimizeResume(input: OptimizeResumeInput) {
     resume: JSON.stringify(input.userResume, null, 2),
   });
 
-  return StreamAIRunner.stream({
+  return streamObject({
     model,
     system,
     prompt,
     schema: resultSchema,
-    userId: input.userId,
-    feature: 'resume-optimization',
   });
 }

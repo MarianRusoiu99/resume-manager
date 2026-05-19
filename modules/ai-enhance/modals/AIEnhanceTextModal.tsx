@@ -73,7 +73,7 @@ export function AIEnhanceTextModal({
     onOpenChange(nextOpen);
   }, [modal, onOpenChange]);
 
-  const enhancedContent = (output?.content || (partialOutput as any)?.content) ?? '';
+  const enhancedContent = (output?.content || (partialOutput as { content?: string })?.content) ?? '';
 
   // Handle enhance with attachments from PromptInput
   const handleEnhance = useCallback((inputAttachments?: AttachmentInput[]) => {

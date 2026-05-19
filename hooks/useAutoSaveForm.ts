@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useForm, useWatch, UseFormProps, FieldValues } from 'react-hook-form';
+import { useForm, useWatch, UseFormProps, FieldValues, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ZodType } from 'zod';
+import { ZodType, z } from 'zod';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 
 const logger = createComponentLogger('useAutoSaveForm');
@@ -22,7 +22,8 @@ export function useAutoSaveForm<T extends FieldValues>({
 }: UseAutoSaveFormProps<T>) {
   const form = useForm<T>({
     ...formProps,
-    resolver: zodResolver(schema as any) as any,
+    // @ts-expect-error - zodResolver has strict generic constraints
+    resolver: zodResolver(schema) as unknown as Resolver<T>,
   });
 
   const { reset, formState: { isDirty }, getValues, control } = form;

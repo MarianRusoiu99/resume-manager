@@ -51,9 +51,9 @@ describe.skipIf(shouldSkipDatabaseTests())('ProfileService', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect((result.data as any).name).toBe('My Profile');
-        expect((result.data as any).userId).toBe(testUserId);
-        expect((result.data as any).resume).toEqual(resume);
+        expect((result.data as Record<string, unknown>).name).toBe('My Profile');
+        expect((result.data as Record<string, unknown>).userId).toBe(testUserId);
+        expect((result.data as Record<string, unknown>).resume).toEqual(resume);
       }
     });
 
@@ -74,7 +74,7 @@ describe.skipIf(shouldSkipDatabaseTests())('ProfileService', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect((result.data as any).isDefault).toBe(true);
+        expect((result.data as Record<string, unknown>).isDefault).toBe(true);
       }
     });
 
@@ -162,7 +162,7 @@ describe.skipIf(shouldSkipDatabaseTests())('ProfileService', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect((result.error as any).message).toContain('not found');
+        expect((result.error as Error).message).toContain('not found');
       }
     });
 
@@ -253,7 +253,7 @@ describe.skipIf(shouldSkipDatabaseTests())('ProfileService', () => {
 
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect((result.error as any).message).toContain('last profile');
+        expect((result.error as Error).message).toContain('last profile');
       }
     });
 
@@ -305,7 +305,7 @@ describe.skipIf(shouldSkipDatabaseTests())('ProfileService', () => {
       if (result.success) {
         expect(result.data.name).toBe('Original (Copy)');
         expect(result.data.id).not.toBe(originalProfile.id);
-        expect((result.data as any).resume).toBeDefined();
+        expect((result.data as Record<string, unknown>).resume).toBeDefined();
       }
     });
 

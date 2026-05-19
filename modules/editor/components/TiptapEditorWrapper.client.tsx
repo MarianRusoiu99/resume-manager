@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useImperativeHandle, memo, useEffect } from 'react';
-import { useEditor, EditorContent, type Content, type JSONContent } from '@tiptap/react';
+import { useEditor, EditorContent, type Content, type JSONContent, type Editor } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -50,7 +50,7 @@ interface TiptapEditorWrapperProps {
 }
 
 // Helper to determine if we should show the bubble menu
-const shouldShowBubbleMenu = (props: any) => {
+const shouldShowBubbleMenu = (props: { editor: Editor }) => {
   const { state } = props.editor;
   const { selection } = state;
   const { empty } = selection;
@@ -120,7 +120,7 @@ const TiptapEditorWrapperComponent = forwardRef<TiptapEditorMethods, TiptapEdito
           onJSONChange(JSON.stringify(editor.getJSON()));
         }
         if (onChange) {
-           const storage = (editor.storage as Record<string, any>).markdown as MarkdownStorage | undefined;
+           const storage = (editor.storage as { markdown?: MarkdownStorage }).markdown;
            const markdownOutput = storage?.getMarkdown() || editor.getHTML();
            onChange(markdownOutput);
         }
@@ -131,7 +131,7 @@ const TiptapEditorWrapperComponent = forwardRef<TiptapEditorMethods, TiptapEdito
     useEffect(() => {
       if (editor && markdown !== undefined) {
          // Only update if content is different to avoid cursor jumps or loops
-         const currentMarkdown = (editor.storage as Record<string, any>).markdown?.getMarkdown();
+         const currentMarkdown = (editor.storage as { markdown?: MarkdownStorage }).markdown?.getMarkdown();
          if (currentMarkdown !== markdown) {
              editor.commands.setContent(markdown);
          }
@@ -140,7 +140,7 @@ const TiptapEditorWrapperComponent = forwardRef<TiptapEditorMethods, TiptapEdito
 
     useImperativeHandle(ref, () => ({
       getMarkdown: async () => {
-        const storage = (editor?.storage as Record<string, any>)?.markdown as MarkdownStorage | undefined;
+        const storage = (editor?.storage as { markdown?: MarkdownStorage } | undefined)?.markdown;
         return storage?.getMarkdown() || editor?.getHTML() || '';
       },
       setMarkdown: async (content: string) => {

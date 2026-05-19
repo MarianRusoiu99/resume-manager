@@ -61,7 +61,7 @@ describe('Error Classes', () => {
 
     it('should support field and details', () => {
       const details = [{ field: 'email', message: 'Invalid format' }];
-      const error = new ValidationError('Validation failed', 'email', details as any);
+      const error = new ValidationError('Validation failed', 'email', details as never);
       
       expect(error.field).toBe('email');
       expect(error.details).toEqual(details);

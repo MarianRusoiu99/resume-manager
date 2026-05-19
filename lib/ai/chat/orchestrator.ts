@@ -4,12 +4,11 @@
  * Bridges conversations to the Vercel AI SDK with streaming support
  */
 
-import { generateText, generateObject, streamObject, streamText, type Tool } from 'ai';
-import type { z } from 'zod';
+import { generateText, generateObject, streamObject, streamText, tool as createTool, type Tool } from 'ai';
 import { logger } from '@/lib/utils/logger';
 import { ConversationManager, type Conversation } from './conversation';
 import { hasImageAttachments } from './message';
-import type { AITool } from '../tools/types';
+import type { AITool, ToolContext } from '../tools/types';
 import { getMode, getModeOrThrow } from './orchestrator/registry';
 import { buildMessages, buildMessagesWithVision } from './orchestrator/message-builder';
 import { parseOutput } from './orchestrator/output-parser';
@@ -18,8 +17,6 @@ import type {
   OrchestratorOptions,
   GenerationResult,
   StreamChunk,
-  StreamChunkDelta,
-  StreamChunkText,
 } from './orchestrator/types';
 import type { DeepPartial } from '@/lib/types';
 
@@ -28,8 +25,6 @@ export type {
   OrchestratorOptions,
   GenerationResult,
   StreamChunk,
-  StreamChunkDelta,
-  StreamChunkText,
 } from './orchestrator/types';
 export type { DeepPartial } from '@/lib/types';
 
@@ -106,9 +101,7 @@ export class AIOrchestrator {
         abortSignal: options.abortSignal,
       });
 
-      let fullText = '';
       for await (const delta of textStream) {
-        fullText += delta;
         yield {
           type: 'text',
           text: delta,
@@ -149,7 +142,7 @@ export class AIOrchestrator {
 
     const messages = buildMessages(conversation, mode);
     const systemPrompt = mode.buildSystemPrompt(conversation.context);
-    const tools = this.buildTools(mode.getTools());
+    const tools = this.buildTools(mode.getTools(), { conversation, userId: options.userId || 'system' });
 
     // Use generateObject for structured output if schema is available
     if (mode.useStructuredOutput !== false && mode.outputSchema) {
@@ -195,8 +188,9 @@ export class AIOrchestrator {
       system: systemPrompt,
       messages,
       tools: Object.keys(tools).length > 0 ? tools : undefined,
+      maxSteps: Object.keys(tools).length > 0 ? 5 : 1, // Allow tool calling loops
       abortSignal: options.abortSignal,
-    });
+    } as Parameters<typeof generateText>[0]);
 
     const usage = normalizeUsage(result.usage);
 
@@ -260,19 +254,24 @@ export class AIOrchestrator {
    * Note: Using `unknown` type parameters as AI SDK Tool type uses flexible JSONValue schemas.
    * The actual parameter validation happens via Zod schemas at runtime.
    */
-  private static buildTools(modeTools: AITool[]): Record<string, Tool<unknown, unknown>> {
-    const tools: Record<string, Tool<unknown, unknown>> = {};
+  private static buildTools(modeTools: AITool[], context: ToolContext): Record<string, Tool> {
+    const tools: Record<string, Tool> = {};
 
     for (const tool of modeTools) {
-      tools[tool.name] = {
+      tools[tool.name] = createTool({
         description: tool.description,
-        inputSchema: tool.parameters,
-        execute: async () => {
-          // Note: In actual usage, we'd need to pass the context
-          // For now, tools are primarily for AI guidance
-          return { message: 'Tool execution requires context' };
+        parameters: tool.parameters,
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore - Dynamic tool execution typing
+        execute: async (params: unknown) => {
+          try {
+             return await tool.execute(params, context);
+          } catch (error) {
+             logger.error(`Tool execution failed for ${tool.name}`, error as Error);
+             return { error: String(error) };
+          }
         },
-      };
+      });
     }
 
     return tools;

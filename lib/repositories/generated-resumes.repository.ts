@@ -104,7 +104,7 @@ export class GeneratedResumeRepository
     
     const resumes = await this.getDelegate(tx).findMany({
       where: { ...where, userId },
-      orderBy: orderBy as any || { createdAt: 'desc' },
+      orderBy: (orderBy as Prisma.ResumeOrderByWithRelationInput) || { createdAt: 'desc' },
       take: effectiveLimit,
       skip: effectiveOffset,
       include: {
@@ -204,7 +204,7 @@ export class GeneratedResumeRepository
     if (!resume) {
       throw new RecordNotFoundError('Resume', id, 'updateTemplate');
     }
-    return this.update(id, { templateId: templateId || undefined }, userId, tx);
+    return this.update(id, { templateId: templateId || null }, userId, tx);
   }
 
   /**

@@ -55,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
             <h1 className="text-2xl font-bold">Something went wrong</h1>
             <p className="text-muted-foreground">
-              We're sorry, but something unexpected happened. Please try again.
+              We&apos;re sorry, but something unexpected happened. Please try again.
             </p>
             {isDevelopment && this.state.error && (
               <div className="rounded-md bg-destructive/10 p-4 text-left">

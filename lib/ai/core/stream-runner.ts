@@ -45,12 +45,12 @@ export class StreamAIRunner {
       return streamObject({
         ...baseOptions,
         messages,
-      } as any);
+      } as never);
     }
 
     return streamObject({
       ...baseOptions,
       prompt: prompt ?? '',
-    } as any);
+    } as never);
   }
 }

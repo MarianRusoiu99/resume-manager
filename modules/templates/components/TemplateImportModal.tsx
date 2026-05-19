@@ -250,7 +250,7 @@ export function TemplateImportModal({
             <div className="flex flex-col gap-3">
               {isLoading && (
                 <p className="text-[11px] text-center text-muted-foreground bg-muted/30 py-2 rounded-md border border-dashed">
-                  You can safely close this window. We'll notify you once your template is ready in the library.
+                  You can safely close this window. We&apos;ll notify you once your template is ready in the library.
                 </p>
               )}
               

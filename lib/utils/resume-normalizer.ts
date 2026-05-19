@@ -61,7 +61,7 @@ export function normalizeResume(data: unknown | null | undefined): Resume {
   const resumeData = data as Partial<Resume>;
 
   // Helper to merge objects
-  const mergeObject = (target: any, source: any): any => {
+  const mergeObject = (target: Record<string, unknown>, source: unknown): Record<string, unknown> => {
     if (!source || typeof source !== 'object') {
       return target;
     }
@@ -83,7 +83,7 @@ export function normalizeResume(data: unknown | null | undefined): Resume {
           sourceValue !== null &&
           !Array.isArray(sourceValue)
         ) {
-          result[key] = mergeObject(targetValue, sourceValue);
+          result[key] = mergeObject(targetValue as Record<string, unknown>, sourceValue);
         } else {
           // Otherwise use source value
           result[key] = sourceValue;
@@ -96,7 +96,7 @@ export function normalizeResume(data: unknown | null | undefined): Resume {
   // Merge resume data using spread and fallback
   const normalized: Resume = {
     $schema: resumeData.$schema ?? empty.$schema,
-    basics: resumeData.basics ? (mergeObject(empty.basics, resumeData.basics) as Resume['basics']) : empty.basics,
+    basics: resumeData.basics ? (mergeObject((empty.basics || {}) as Record<string, unknown>, resumeData.basics) as Resume['basics']) : empty.basics,
     work: resumeData.work && resumeData.work.length > 0 ? resumeData.work : empty.work,
     volunteer: resumeData.volunteer && resumeData.volunteer.length > 0 ? resumeData.volunteer : empty.volunteer,
     education: resumeData.education && resumeData.education.length > 0 ? resumeData.education : empty.education,
@@ -108,7 +108,7 @@ export function normalizeResume(data: unknown | null | undefined): Resume {
     interests: resumeData.interests && resumeData.interests.length > 0 ? resumeData.interests : empty.interests,
     references: resumeData.references && resumeData.references.length > 0 ? resumeData.references : empty.references,
     projects: resumeData.projects && resumeData.projects.length > 0 ? resumeData.projects : empty.projects,
-    meta: resumeData.meta ? (mergeObject(empty.meta, resumeData.meta) as Resume['meta']) : empty.meta,
+    meta: resumeData.meta ? (mergeObject((empty.meta || {}) as Record<string, unknown>, resumeData.meta) as Resume['meta']) : empty.meta,
   };
 
   // Validate that the normalized data conforms to schema

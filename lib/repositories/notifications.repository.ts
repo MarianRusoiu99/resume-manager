@@ -110,7 +110,7 @@ export class NotificationRepository
    * Mark all notifications as read for a user
    */
   async markAllAsRead(userId: string, tx?: TransactionClient): Promise<{ count: number }> {
-    const result = await (this.getDelegate(tx) as any).updateMany({
+    const result = await (this.getDelegate(tx) as unknown as { updateMany: (args: unknown) => Promise<{ count: number }> }).updateMany({
       where: { userId, isRead: false },
       data: { isRead: true },
     });
@@ -134,7 +134,7 @@ export class NotificationRepository
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysOld);
 
-    const result = await (this.getDelegate(tx) as any).deleteMany({
+    const result = await (this.getDelegate(tx) as unknown as { deleteMany: (args: unknown) => Promise<{ count: number }> }).deleteMany({
       where: {
         userId,
         isRead: true,

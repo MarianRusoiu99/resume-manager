@@ -89,7 +89,7 @@ export function useResumeFlow(defaultProfileId: string) {
     profileId: selectedProfileId,
   });
 
-  const handleSave = useCallback(async (resume: any, title?: string, company?: string, score?: number | null, sug?: string[]) => {
+  const handleSave = useCallback(async (resume: unknown, title?: string, company?: string, score?: number | null, sug?: string[]) => {
     // Auto-save is now handled on the server (api/v1/ai/chat)
     // This client-side save is only for manual overrides or fallback
     return;

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/index";
 import { hashPassword } from "@/lib/auth/password";
 import { logger } from "@/lib/utils/logger";
@@ -17,9 +18,11 @@ const registerSchema = z.object({
 
 export const POST = createApiHandler(
   async (request, context, session, body) => {
+    const normalizedEmail = body!.email.trim().toLowerCase();
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: body!.email },
+      where: { email: normalizedEmail },
       select: { id: true },
     });
 
@@ -29,18 +32,29 @@ export const POST = createApiHandler(
 
     const passwordHash = await hashPassword(body!.password);
 
-    const user = await prisma.user.create({
-      data: {
-        email: body!.email,
-        passwordHash,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        createdAt: true,
-      },
-    });
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          passwordHash,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          createdAt: true,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new ServiceError("User with this email already exists", "CONFLICT");
+      }
+      throw error;
+    }
 
     logger.info("User registered", { userId: user.id });
 

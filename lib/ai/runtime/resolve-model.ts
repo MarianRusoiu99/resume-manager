@@ -69,7 +69,7 @@ export async function resolveAIModel(input: ResolveAIModelInput): Promise<Servic
 
     const providerResult = await apiProviderService.getProviderInstance(targetModel.providerId, input.userId);
     if (!providerResult.success) {
-      return failure((providerResult as any).error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
+      return failure((providerResult as { error: string }).error || 'Failed to get AI provider configuration', 'INTERNAL_ERROR');
     }
 
     return success({

@@ -46,11 +46,11 @@ export function createPaginatedResult<T>(
  * Common Prisma operation arguments
  */
 export interface PrismaArgs {
-  where?: any;
-  data?: any;
-  include?: any;
-  select?: any;
-  orderBy?: any | any[];
+  where?: Record<string, unknown>;
+  data?: unknown;
+  include?: Record<string, unknown>;
+  select?: Record<string, unknown>;
+  orderBy?: unknown | unknown[];
   take?: number;
   skip?: number;
 }
@@ -59,48 +59,20 @@ export interface PrismaArgs {
  * Prisma delegate type constraint - base interface for type safety
  */
 export interface PrismaDelegate {
-  findUnique(args: {
-    where: any;
-    include?: any;
-    select?: any;
-  }): Promise<unknown>;
-  findFirst(args?: {
-    where?: any;
-    include?: any;
-    select?: any;
-    orderBy?: any | any[];
-    take?: number;
-    skip?: number;
-  }): Promise<unknown>;
-  findMany(args?: {
-    where?: any;
-    include?: any;
-    select?: any;
-    orderBy?: any | any[];
-    take?: number;
-    skip?: number;
-  }): Promise<unknown[]>;
-  create(args: {
-    data: unknown;
-    include?: any;
-    select?: any;
-  }): Promise<unknown>;
-  update(args: {
-    where: any;
-    data: unknown;
-    include?: any;
-    select?: any;
-  }): Promise<unknown>;
-  delete(args: {
-    where: any;
-    include?: any;
-    select?: any;
-  }): Promise<unknown>;
-  count(args?: {
-    where?: any;
-    take?: number;
-    skip?: number;
-  }): Promise<number>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  findUnique(args: any): Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  findFirst(args?: any): Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  findMany(args?: any): Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  create(args: any): Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  update(args: any): Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  delete(args: any): Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  count(args?: any): Promise<number>;
 }
 
 /**
@@ -138,13 +110,13 @@ export abstract class GenericRepository<
   }
 
   async findById(id: string, userId?: string, tx?: TransactionClient): Promise<T | null> {
-    const where: any = { id };
+    const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
     return this.getDelegate(tx).findUnique({ where }) as Promise<T | null>;
   }
 
   async findAll(args?: PrismaArgs, tx?: TransactionClient): Promise<T[]> {
-    return this.getDelegate(tx).findMany(args as any) as Promise<T[]>;
+    return this.getDelegate(tx).findMany(args as Record<string, unknown>) as Promise<T[]>;
   }
 
   async create(data: TCreateInput, tx?: TransactionClient): Promise<T> {
@@ -157,19 +129,19 @@ export abstract class GenericRepository<
     userId?: string,
     tx?: TransactionClient
   ): Promise<T> {
-    const where: any = { id };
+    const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
     return this.getDelegate(tx).update({ where, data: data as unknown }) as Promise<T>;
   }
 
   async delete(id: string, userId?: string, tx?: TransactionClient): Promise<T> {
-    const where: any = { id };
+    const where: Record<string, unknown> = { id };
     if (userId) where.userId = userId;
     return this.getDelegate(tx).delete({ where }) as Promise<T>;
   }
 
   async count(
-    whereOrUserId?: any | string,
+    whereOrUserId?: Record<string, unknown> | string,
     tx?: TransactionClient
   ): Promise<number> {
     const where = typeof whereOrUserId === 'string' ? { userId: whereOrUserId } : whereOrUserId;
@@ -200,7 +172,7 @@ export abstract class GenericUserOwnedRepository<
     return this.findAll(
       {
         ...args,
-        where: { ...args?.where, userId } as any,
+        where: { ...args?.where, userId } as Record<string, unknown>,
       },
       tx
     );

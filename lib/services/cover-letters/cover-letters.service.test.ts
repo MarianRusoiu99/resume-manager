@@ -16,13 +16,13 @@ describe('CoverLetterService', () => {
   describe('createCoverLetter', () => {
     it('should create a new cover letter', async () => {
       const mockCL = { id: 'cl-1', userId: 'u1', content: 'test' };
-      repositoryMock.create.mockResolvedValue(mockCL as any);
+      repositoryMock.create.mockResolvedValue(mockCL as never);
 
       const result = await service.createCoverLetter({
         userId: 'u1',
         content: 'test',
         metadata: {}
-      } as any);
+      } as never);
 
       expect(result.success).toBe(true);
       if (result.success) {
@@ -34,7 +34,7 @@ describe('CoverLetterService', () => {
   describe('getCoverLetter', () => {
     it('should get cover letter by id', async () => {
       const mockCL = { id: 'cl-1', userId: 'u1', content: 'test' };
-      repositoryMock.findByIdForUser.mockResolvedValue(mockCL as any);
+      repositoryMock.findByIdForUser.mockResolvedValue(mockCL as never);
 
       const result = await service.getCoverLetter('cl-1', 'u1');
 
@@ -51,7 +51,7 @@ describe('CoverLetterService', () => {
         coverLetters: [{ id: 'cl-1', userId: 'u1' }],
         total: 1
       };
-      repositoryMock.findAllForUserWithCount.mockResolvedValue(mockData as any);
+      repositoryMock.findAllForUserWithCount.mockResolvedValue(mockData as never);
 
       const result = await service.getUserCoverLetters('u1');
 

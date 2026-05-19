@@ -10,16 +10,13 @@ export class RedisRateLimiter implements RateLimiterBackend {
   
   async checkLimit(identifier: string, limit: number, windowMs: number): Promise<boolean> {
     const key = `rate-limit:${identifier}`;
-    const current = await this.cache.get<string>(key);
-    const count = current ? parseInt(current, 10) : 0;
-    
-    if (count >= limit) return false;
-    
-    await this.cache.incr(key);
-    if (count === 0) {
+    const count = await this.cache.incr(key);
+
+    if (count === 1) {
       await this.cache.expire(key, Math.ceil(windowMs / 1000));
     }
-    return true;
+
+    return count <= limit;
   }
   
   async getCount(identifier: string): Promise<number> {

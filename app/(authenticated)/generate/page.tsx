@@ -12,7 +12,7 @@ async function GenerateDataWrapper() {
   ]);
 
   const profiles = (profilesResult.success ? profilesResult.data : []) as ProfileListItem[];
-  const providers = (providersResult.success ? providersResult.data : []) as any[];
+  const providers = (providersResult.success ? providersResult.data : []) as { isActive?: boolean }[];
   const hasAIProviders = providers.some((p) => p.isActive);
   
   const defaultProfile = profiles.find((p) => p.isDefault) || profiles[0];

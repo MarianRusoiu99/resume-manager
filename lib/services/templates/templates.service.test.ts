@@ -23,7 +23,7 @@ describe('TemplateService', () => {
       delete: vi.fn(),
     };
     
-    vi.spyOn(redisClient, 'getCacheProvider').mockReturnValue(cacheMock as any);
+    vi.spyOn(redisClient, 'getCacheProvider').mockReturnValue(cacheMock as never);
     
     service = new TemplateService(repositoryMock);
   });
@@ -45,7 +45,7 @@ describe('TemplateService', () => {
     it('should fetch from repository if cache is empty', async () => {
       const mockTemplates = [{ id: 't1', name: 'Template 1', htmlTemplate: '<div></div>' }];
       cacheMock.get.mockResolvedValue(null);
-      repositoryMock.findAllPublic.mockResolvedValue(mockTemplates as any);
+      repositoryMock.findAllPublic.mockResolvedValue(mockTemplates as never);
 
       const result = await service.getAllPublicTemplates();
 
@@ -61,7 +61,7 @@ describe('TemplateService', () => {
   describe('getTemplateById', () => {
     it('should return a template by id', async () => {
       const mockTemplate = { id: 't1', name: 'Template 1', htmlTemplate: '<div></div>' };
-      repositoryMock.findById.mockResolvedValue(mockTemplate as any);
+      repositoryMock.findById.mockResolvedValue(mockTemplate as never);
 
       const result = await service.getTemplateById('t1');
 

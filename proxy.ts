@@ -22,13 +22,26 @@ import {
 import { env } from '@/lib/config/env';
 
 const MONACO_CDN = 'https://cdn.jsdelivr.net';
-const GOOGLE_FONTS = 'https://fonts.googleapis.com';
+const GOOGLE_FONTS_STYLES = 'https://fonts.googleapis.com';
+const GOOGLE_FONTS_FONTS = 'https://fonts.gstatic.com';
 
 function formatOrigin(host: string) {
   if (/^https?:\/\//i.test(host)) {
     return host;
   }
   return `https://${host}`;
+}
+
+function normalizeHost(host: string): string {
+  return host.trim().toLowerCase();
+}
+
+function extractHost(originOrHost: string): string {
+  try {
+    return normalizeHost(new URL(formatOrigin(originOrHost)).host);
+  } catch {
+    return normalizeHost(originOrHost);
+  }
 }
 
 function getTrustedOrigins(): string[] {
@@ -38,33 +51,40 @@ function getTrustedOrigins(): string[] {
   return Array.from(new Set(origins));
 }
 
+function getTrustedHostsSet(): Set<string> {
+  const trusted = new Set<string>();
+  for (const host of env.trustedHosts) {
+    const normalizedHost = extractHost(host);
+    trusted.add(normalizedHost);
+    trusted.add(normalizedHost.split(':')[0]);
+  }
+  return trusted;
+}
+
 function buildDirective(parts: (string | null | undefined)[]) {
   return parts.filter(Boolean).join(' ');
 }
 
+function unique(parts: string[]): string[] {
+  return Array.from(new Set(parts));
+}
+
 function buildStrictCsp(isDev: boolean): string {
-  const trustedOrigins = getTrustedOrigins();
-  const scriptSources = ["'self'", GOOGLE_FONTS, MONACO_CDN, ...trustedOrigins, "'unsafe-inline'", 'blob:'];
-  const styleSources = ["'self'", MONACO_CDN, ...trustedOrigins, "'unsafe-inline'", GOOGLE_FONTS];
-  const fontSources = ["'self'", 'https://fonts.gstatic.com', MONACO_CDN, ...trustedOrigins, 'data:'];
-  const connectSources = ["'self'", GOOGLE_FONTS, MONACO_CDN, ...trustedOrigins];
+  const connectSources = ["'self'"];
   if (isDev) {
-    scriptSources.push("'unsafe-eval'");
     connectSources.push('ws:', 'wss:');
   }
-  // Production: unsafe-eval disabled for security hardening
-  const connectDirective = buildDirective(connectSources);
 
   return [
     "default-src 'self'",
-    `script-src ${buildDirective(scriptSources)}`,
-    `style-src ${buildDirective(styleSources)}`,
+    "script-src 'self' 'unsafe-inline'",
+    `style-src 'self' 'unsafe-inline' ${GOOGLE_FONTS_STYLES}`,
     "img-src 'self' data: https:",
-    `font-src ${buildDirective(fontSources)}`,
-    `connect-src ${connectDirective}`,
+    `font-src 'self' data: ${GOOGLE_FONTS_FONTS}`,
+    `connect-src ${buildDirective(connectSources)}`,
     "worker-src 'self' blob:",
-    "frame-src 'self' blob: data: about:",
-    "child-src 'self' blob: data: about:",
+    "frame-src 'self' blob: data:",
+    "child-src 'self' blob: data:",
     "frame-ancestors 'none'",
     "form-action 'self'",
     "base-uri 'self'",
@@ -73,18 +93,91 @@ function buildStrictCsp(isDev: boolean): string {
 }
 
 function buildTemplateEditorCsp(isDev: boolean): string {
-  return buildStrictCsp(isDev);
+  const trustedOrigins = getTrustedOrigins();
+
+  const scriptSources = unique([
+    "'self'",
+    "'unsafe-inline'",
+    "'unsafe-eval'",
+    "'wasm-unsafe-eval'",
+    'blob:',
+    MONACO_CDN,
+    ...trustedOrigins,
+  ]);
+
+  const styleSources = unique([
+    "'self'",
+    "'unsafe-inline'",
+    GOOGLE_FONTS_STYLES,
+    MONACO_CDN,
+    ...trustedOrigins,
+  ]);
+
+  const fontSources = unique([
+    "'self'",
+    'data:',
+    GOOGLE_FONTS_FONTS,
+    MONACO_CDN,
+    ...trustedOrigins,
+  ]);
+
+  const connectSources = unique([
+    "'self'",
+    MONACO_CDN,
+    ...trustedOrigins,
+  ]);
+
+  if (isDev) {
+    connectSources.push('ws:', 'wss:');
+  }
+
+  return [
+    "default-src 'self'",
+    `script-src ${buildDirective(scriptSources)}`,
+    `style-src ${buildDirective(styleSources)}`,
+    "img-src 'self' data: https:",
+    `font-src ${buildDirective(fontSources)}`,
+    `connect-src ${buildDirective(connectSources)}`,
+    "worker-src 'self' blob: data:",
+    "frame-src 'self' blob: data:",
+    "child-src 'self' blob: data:",
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+  ].join('; ');
+}
+
+function isTemplateEditorPath(pathname: string): boolean {
+  return pathname === '/templates/new' || /^\/templates\/[^/]+$/.test(pathname);
 }
 
 function applyCspHeader(request: NextRequest, response: NextResponse): NextResponse {
   const isDev = !env.isProduction;
   const pathname = request.nextUrl.pathname;
-
-  const isTemplateEditorRoute = pathname === '/templates/new' || /^\/templates\/[^/]+$/.test(pathname);
-  const csp = isTemplateEditorRoute ? buildTemplateEditorCsp(isDev) : buildStrictCsp(isDev);
+  const csp = isTemplateEditorPath(pathname)
+    ? buildTemplateEditorCsp(isDev)
+    : buildStrictCsp(isDev);
 
   response.headers.set('Content-Security-Policy', csp);
   return response;
+}
+
+function isRequestHostTrusted(request: NextRequest): boolean {
+  const trustedHosts = env.trustedHosts;
+  if (trustedHosts.length === 0) {
+    return true;
+  }
+
+  const host = request.headers.get('host');
+  if (!host) {
+    return false;
+  }
+
+  const trustedHostsSet = getTrustedHostsSet();
+  const normalizedHost = normalizeHost(host);
+  const hostWithoutPort = normalizedHost.split(':')[0];
+  return trustedHostsSet.has(normalizedHost) || trustedHostsSet.has(hostWithoutPort);
 }
 
 async function hasSessionCookie(): Promise<boolean> {
@@ -102,6 +195,10 @@ async function hasSessionCookie(): Promise<boolean> {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  if (!isRequestHostTrusted(request)) {
+    return new NextResponse('Invalid Host', { status: 400 });
+  }
+
   if (pathname.startsWith('/api/')) {
     return applyCspHeader(request, NextResponse.next());
   }
@@ -112,14 +209,6 @@ export async function proxy(request: NextRequest) {
 
   const hasSession = await hasSessionCookie();
   const isPublic = isPublicPath(pathname);
-
-  const trustedHosts = env.trustedHosts;
-  if (trustedHosts.length > 0) {
-    const host = request.headers.get('host');
-    if (host && !trustedHosts.includes(host)) {
-      return new NextResponse('Invalid Host', { status: 400 });
-    }
-  }
 
   if (!isPublic && !hasSession) {
     const loginUrl = new URL(DEFAULT_AUTH_REDIRECT, request.url);
