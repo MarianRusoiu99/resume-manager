@@ -38,10 +38,6 @@ export function useResumeGeneration() {
   return {
     generate,
     resume: output?.resume ?? null,
-    jobTitle: output?.jobTitle ?? '',
-    companyName: output?.companyName ?? '',
-    matchScore: output?.matchScore ?? null,
-    suggestions: output?.suggestions ?? [],
     isLoading,
     error,
     savedId,

@@ -4,7 +4,7 @@
  * Error classes for authentication and authorization operations.
  */
 
-import type { ServiceErrorCode } from '@/lib/types';
+import type { ErrorCodeType } from '@/lib/types';
 import { AppError } from './base';
 
 /**
@@ -21,7 +21,7 @@ export abstract class AuthenticationError extends AppError {
  * Thrown when authentication is required but not provided or invalid
  */
 export class UnauthorizedError extends AuthenticationError {
-  readonly code = 'UNAUTHORIZED' as ServiceErrorCode;
+  readonly code = 'UNAUTHORIZED' as ErrorCodeType;
   readonly statusCode = 401;
 
   constructor(message: string = 'Authentication required', cause?: unknown) {
@@ -34,7 +34,7 @@ export class UnauthorizedError extends AuthenticationError {
  * Thrown when user is authenticated but doesn't have permission
  */
 export class ForbiddenError extends AuthenticationError {
-  readonly code = 'FORBIDDEN' as ServiceErrorCode;
+  readonly code = 'FORBIDDEN' as ErrorCodeType;
   readonly statusCode = 403;
 
   constructor(message: string = 'Access denied', cause?: unknown) {
@@ -47,7 +47,7 @@ export class ForbiddenError extends AuthenticationError {
  * Thrown when login credentials are incorrect
  */
 export class InvalidCredentialsError extends AuthenticationError {
-  readonly code = 'UNAUTHORIZED' as ServiceErrorCode;
+  readonly code = 'UNAUTHORIZED' as ErrorCodeType;
   readonly statusCode = 401;
 
   constructor(message: string = 'Invalid email or password', cause?: unknown) {
@@ -60,7 +60,7 @@ export class InvalidCredentialsError extends AuthenticationError {
  * Thrown when user session has expired
  */
 export class SessionExpiredError extends AuthenticationError {
-  readonly code = 'UNAUTHORIZED' as ServiceErrorCode;
+  readonly code = 'UNAUTHORIZED' as ErrorCodeType;
   readonly statusCode = 401;
 
   constructor(message: string = 'Session expired. Please log in again.', cause?: unknown) {
@@ -73,7 +73,7 @@ export class SessionExpiredError extends AuthenticationError {
  * Thrown when authentication token is invalid or malformed
  */
 export class InvalidTokenError extends AuthenticationError {
-  readonly code = 'UNAUTHORIZED' as ServiceErrorCode;
+  readonly code = 'UNAUTHORIZED' as ErrorCodeType;
   readonly statusCode = 401;
 
   constructor(message: string = 'Invalid authentication token', cause?: unknown) {
@@ -86,7 +86,7 @@ export class InvalidTokenError extends AuthenticationError {
  * Thrown when user account is locked (e.g., too many failed login attempts)
  */
 export class AccountLockedError extends AuthenticationError {
-  readonly code = 'FORBIDDEN' as ServiceErrorCode;
+  readonly code = 'FORBIDDEN' as ErrorCodeType;
   readonly statusCode = 403;
 
   constructor(

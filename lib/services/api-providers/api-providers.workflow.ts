@@ -194,4 +194,4 @@ export class ApiProviderService
 }
 
 export const apiProviderService = new ApiProviderService();
-export type { AddApiProviderInput, UpdateApiProviderInput } from './types';
+export type { ServiceAddProviderInput as AddApiProviderInput, ServiceUpdateProviderInput as UpdateApiProviderInput } from './types';

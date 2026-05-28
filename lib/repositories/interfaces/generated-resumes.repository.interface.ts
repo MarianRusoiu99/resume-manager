@@ -9,9 +9,9 @@ import type { PrismaArgs } from '../generic.repository';
 import { TransactionClient } from '@/lib/db/transaction';
 
 /**
- * Generated resume data structure
+ * Generated resume entity (database representation)
  */
-export interface GeneratedResumeData {
+export interface GeneratedResumeEntity {
   id: string;
   userId: string;
   jobDescription: string;
@@ -52,32 +52,32 @@ export interface IGeneratedResumeRepository {
   /**
    * Create a new generated resume
    */
-  create(data: CreateResumeInput, tx?: TransactionClient): Promise<GeneratedResumeData>;
+  create(data: CreateResumeInput, tx?: TransactionClient): Promise<GeneratedResumeEntity>;
 
   /**
    * Find all resumes for a user
    */
-  findByUserId(userId: string, tx?: TransactionClient): Promise<GeneratedResumeData[]>;
+  findByUserId(userId: string, tx?: TransactionClient): Promise<GeneratedResumeEntity[]>;
 
   /**
    * Find a resume by ID with optional user ownership check
    */
-  findById(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData | null>;
+  findById(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeEntity | null>;
 
   /**
    * Find all resumes for a user
    */
-  findAllForUser(userId: string, args?: PrismaArgs, tx?: TransactionClient): Promise<GeneratedResumeData[]>;
+  findAllForUser(userId: string, args?: PrismaArgs, tx?: TransactionClient): Promise<GeneratedResumeEntity[]>;
 
   /**
    * Update a resume
    */
-  update(id: string, data: UpdateResumeInput, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData>;
+  update(id: string, data: UpdateResumeInput, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeEntity>;
 
   /**
    * Delete a resume
    */
-  delete(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData>;
+  delete(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeEntity>;
 
   /**
    * Check if resume exists and belongs to user
@@ -93,7 +93,7 @@ export interface IGeneratedResumeRepository {
   /**
    * Update resume template
    */
-  updateTemplate(id: string, userId: string, templateId?: string, tx?: TransactionClient): Promise<GeneratedResumeData>;
+  updateTemplate(id: string, userId: string, templateId?: string, tx?: TransactionClient): Promise<GeneratedResumeEntity>;
 
   /**
    * Update job details
@@ -102,10 +102,15 @@ export interface IGeneratedResumeRepository {
     id: string,
     data: { jobDescription?: string; jobMetadata?: Record<string, unknown> },
     tx?: TransactionClient
-  ): Promise<GeneratedResumeData>;
+  ): Promise<GeneratedResumeEntity>;
 
   /**
    * Link a cover letter to a resume
    */
-  linkCoverLetter(id: string, coverLetterId: string | null, tx?: TransactionClient): Promise<GeneratedResumeData>;
+  linkCoverLetter(id: string, coverLetterId: string | null, tx?: TransactionClient): Promise<GeneratedResumeEntity>;
 }
+
+/**
+ * @deprecated Use GeneratedResumeEntity instead. This alias will be removed in a future version.
+ */
+export type GeneratedResumeData = GeneratedResumeEntity;

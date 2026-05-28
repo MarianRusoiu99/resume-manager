@@ -6,6 +6,22 @@ import { AIProviderNotConfiguredError, ModelNotFoundError } from '@/lib/errors/a
 
 import type { ResolvedAIModel, ResolveAIModelInput } from './types';
 
+/**
+ * Build provider-specific reasoning options based on provider type.
+ */
+function buildReasoningProviderOptions(providerType: string): Record<string, unknown> | undefined {
+  switch (providerType) {
+    case 'openai':
+      return { openai: { reasoningEffort: 'medium' } };
+    case 'anthropic':
+      return { anthropic: { thinking: { type: 'enabled', budgetTokens: 8000 }, sendReasoning: true } };
+    case 'google':
+      return { google: { thinkingConfig: { includeThoughts: true } } };
+    default:
+      return undefined;
+  }
+}
+
 function findModel<T extends { id: string; modelKey: string }>(allModels: T[], modelId: string): T | null {
   return (
     allModels.find((m) => m.id === modelId) ??
@@ -79,6 +95,10 @@ export async function resolveAIModel(input: ResolveAIModelInput): Promise<Servic
       modelId: targetModel.id,
       modelKey: targetModel.modelKey,
       feature: input.feature,
+      reasoning: targetModel.capabilities?.reasoning,
+      ...(targetModel.capabilities?.reasoning
+        ? { providerOptions: buildReasoningProviderOptions(providerResult.data.providerType) }
+        : {}),
     });
   } catch (error) {
     return failure(error instanceof Error ? error.message : 'Failed to resolve AI model', 'INTERNAL_ERROR');
@@ -137,5 +157,9 @@ export async function resolveAIModelOrThrow(input: ResolveAIModelInput): Promise
     modelId: targetModel.id,
     modelKey: targetModel.modelKey,
     feature: input.feature,
+    reasoning: targetModel.capabilities?.reasoning,
+    ...(targetModel.capabilities?.reasoning
+      ? { providerOptions: buildReasoningProviderOptions(providerResult.data.providerType) }
+      : {}),
   };
 }

@@ -24,11 +24,16 @@ export function useFeatureModelPreference(feature?: AIFeatureType) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Reset local state whenever feature changes to avoid leaking stale model/provider
+    setModelId('');
+    setProviderId('');
+
     if (!feature) {
       setIsLoading(false);
       return;
     }
 
+    setIsLoading(true);
     let cancelled = false;
 
     const loadPreference = async () => {
@@ -98,10 +103,14 @@ export function useFeatureModelPreference(feature?: AIFeatureType) {
             setModelId(featurePref.modelId);
             setProviderId(featurePref.providerId);
           } else if (featurePref) {
-            // Preference exists but no modelId - log this unusual case
+            // Preference exists but no modelId - clear local selection
             logger.warn('Preference found but missing modelId', { feature, featurePref });
+            setModelId('');
+            setProviderId('');
           } else {
             logger.info('No saved preference found for feature', { feature });
+            setModelId('');
+            setProviderId('');
             // Leave modelId and providerId empty - UI will show "Select Model"
           }
         } else {
@@ -111,6 +120,8 @@ export function useFeatureModelPreference(feature?: AIFeatureType) {
             error: apiResponse.error,
             rawResponse: apiResponse
           });
+          setModelId('');
+          setProviderId('');
         }
       } catch (error) {
         if (!cancelled) {

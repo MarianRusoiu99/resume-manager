@@ -8,7 +8,7 @@ import { Page } from '@/components/layout/Page';
 import { Button } from '@/components/ui';
 import { ErrorState, LoadingState } from '@/components/core/feedback/states';
 import { ConfirmDialog } from "@/components/core/feedback/ConfirmDialog";
-import { Edit2, Info, Trash2, Download, Copy, Save, Share2 } from 'lucide-react';
+import { Edit2, Info, Trash2, Copy, Save, Share2 } from 'lucide-react';
 import { getResume, updateResumeContent } from '@/app/actions/resume';
 import { ExternalServiceError } from "@/lib/errors";
 import type { Resume } from '@/lib/validations/jsonresume';

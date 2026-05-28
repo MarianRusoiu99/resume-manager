@@ -4,7 +4,7 @@ import { createApiHandler } from '../index';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth/dal';
 import { AppError } from '@/lib/errors/base';
-import { ServiceErrorCode } from '@/lib/types';
+import type { ErrorCodeType } from '@/lib/types';
 
 // Mock dependencies
 vi.mock('@/lib/auth/dal', () => ({
@@ -58,7 +58,7 @@ describe('createApiHandler', () => {
 
   it('should catch AppError and return appropriate response', async () => {
     class TestError extends AppError {
-      code = 'VALIDATION_ERROR' as ServiceErrorCode;
+      code = 'VALIDATION_ERROR' as ErrorCodeType;
       statusCode = 400;
     }
 

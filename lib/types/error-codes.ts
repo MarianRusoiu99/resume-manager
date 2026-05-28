@@ -37,6 +37,11 @@ export const ErrorCode = {
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];
 
+/**
+ * Type alias for error code values (same as ErrorCode, preferred name)
+ */
+export type ErrorCodeType = keyof typeof ErrorCode;
+
 
 /**
  * Map error codes to HTTP status codes
@@ -57,9 +62,16 @@ export const errorCodeToHttpStatus: Record<ErrorCode, number> = {
 };
 
 /**
+ * Convert error code to HTTP status (handles optional code, defaults to 500)
+ */
+export function errorCodeToStatus(code?: ErrorCodeType): number {
+  return errorCodeToHttpStatus[code ?? 'INTERNAL_ERROR'];
+}
+
+/**
  * Get user-friendly error message for error code
  */
-export function getErrorMessage(code: ErrorCode): string {
+export function getErrorCodeMessage(code: ErrorCode): string {
   const messages: Record<ErrorCode, string> = {
     [ErrorCode.NOT_FOUND]: 'The requested resource was not found',
     [ErrorCode.VALIDATION_ERROR]: 'The provided data is invalid',

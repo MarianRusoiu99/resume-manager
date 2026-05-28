@@ -122,7 +122,7 @@ export function hasErrorMessage(error: unknown): error is { message: string } {
 /**
  * Safely extract error message from unknown error
  */
-export function getErrorMessage(error: unknown): string {
+export function extractErrorMessage(error: unknown): string {
   if (hasErrorMessage(error)) {
     return error.message;
   }

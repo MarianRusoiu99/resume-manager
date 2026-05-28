@@ -4,9 +4,9 @@
  * Type definitions for service wrapper utilities.
  */
 
-import { success, failure, type ServiceResult, type ServiceErrorCode } from '../../../types';
+import { success, failure, type ServiceResult, type ErrorCodeType } from '../../../types';
 
-export type { ServiceResult, ServiceErrorCode };
+export type { ServiceResult, ErrorCodeType };
 
 export interface ServiceWrapperOptions {
   errorPrefix?: string;

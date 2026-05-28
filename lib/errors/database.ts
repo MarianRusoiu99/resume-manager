@@ -4,7 +4,7 @@
  * Error classes for database operations including queries, constraints, and transactions.
  */
 
-import type { ServiceErrorCode } from '@/lib/types';
+import type { ErrorCodeType } from '@/lib/types';
 import { AppError } from './base';
 
 /**
@@ -25,7 +25,7 @@ export abstract class DatabaseError extends AppError {
  * Thrown when a database query returns no results
  */
 export class RecordNotFoundError extends DatabaseError {
-  readonly code = 'NOT_FOUND' as ServiceErrorCode;
+  readonly code = 'NOT_FOUND' as ErrorCodeType;
   readonly statusCode = 404;
 
   constructor(
@@ -45,7 +45,7 @@ export class RecordNotFoundError extends DatabaseError {
  * Thrown when trying to insert/update with duplicate unique field
  */
 export class UniqueConstraintError extends DatabaseError {
-  readonly code = 'CONFLICT' as ServiceErrorCode;
+  readonly code = 'CONFLICT' as ErrorCodeType;
   readonly statusCode = 409;
 
   constructor(
@@ -66,7 +66,7 @@ export class UniqueConstraintError extends DatabaseError {
  * Thrown when trying to insert/update with invalid foreign key reference
  */
 export class ForeignKeyConstraintError extends DatabaseError {
-  readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
+  readonly code = 'VALIDATION_ERROR' as ErrorCodeType;
   readonly statusCode = 400;
 
   constructor(
@@ -88,7 +88,7 @@ export class ForeignKeyConstraintError extends DatabaseError {
  * Thrown when unable to connect to database
  */
 export class DatabaseConnectionError extends DatabaseError {
-  readonly code = 'EXTERNAL_SERVICE_ERROR' as ServiceErrorCode;
+  readonly code = 'EXTERNAL_SERVICE_ERROR' as ErrorCodeType;
   readonly statusCode = 503;
 
   constructor(message: string = 'Database connection failed', cause?: unknown) {
@@ -101,7 +101,7 @@ export class DatabaseConnectionError extends DatabaseError {
  * Thrown when a transaction fails or is rolled back
  */
 export class DatabaseTransactionError extends DatabaseError {
-  readonly code = 'INTERNAL_ERROR' as ServiceErrorCode;
+  readonly code = 'INTERNAL_ERROR' as ErrorCodeType;
   readonly statusCode = 500;
 
   constructor(message: string = 'Database transaction failed', cause?: unknown) {
@@ -114,7 +114,7 @@ export class DatabaseTransactionError extends DatabaseError {
  * Generic error for database query failures
  */
 export class DatabaseQueryError extends DatabaseError {
-  readonly code = 'INTERNAL_ERROR' as ServiceErrorCode;
+  readonly code = 'INTERNAL_ERROR' as ErrorCodeType;
   readonly statusCode = 500;
 
   constructor(message: string, operation?: string, cause?: unknown) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { logger } from "@/lib/utils/logger";
-import { type ServiceErrorCode } from "@/lib/types/service-result";
+import type { ErrorCodeType } from "@/lib/types/error-codes";
 
 /**
  * Service error with code for proper HTTP status mapping
@@ -9,7 +9,7 @@ import { type ServiceErrorCode } from "@/lib/types/service-result";
 export class ServiceError extends Error {
     constructor(
         message: string,
-        public readonly code: ServiceErrorCode = 'INTERNAL_ERROR'
+        public readonly code: ErrorCodeType = 'INTERNAL_ERROR'
     ) {
         super(message);
         this.name = 'ServiceError';

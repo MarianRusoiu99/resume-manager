@@ -18,7 +18,7 @@ export const templateGenerationMode = defineMode({
   outputSchema: templateGenerationOutputSchema,
   primaryResultKey: 'htmlTemplate',
 
-  useStructuredOutput: true,
+  useStructuredOutput: false,
   requiresVision: true,
   maxTokens: 12000,
 
@@ -33,15 +33,17 @@ export const templateGenerationMode = defineMode({
       '## YOUR TASK',
       'Analyze the provided resume design image and recreate it as an HTML/CSS template.',
       '',
-      '### STRESS TEST MANDATE',
-      'The template MUST be designed to handle all 12 sections of the JSON Resume schema gracefully. Use the provided MASTER JSON structure as your reference for data coverage and section naming.',
+      '### SIMPLE OUTPUT CONTRACT',
+      '- Return ONLY template code (no JSON wrapper).',
+      '- Include a single <style>...</style> block for CSS.',
+      '- Use Handlebars placeholders for resume data injection (e.g., {{basics.name}}, {{#each work}}...).',
+      '- Do NOT add markdown explanations.',
       '',
       '### REQUIREMENTS',
       '1. Match the visual design as closely as possible.',
-      '2. Use Handlebars syntax for all dynamic content.',
-      '3. EVERY section and optional field MUST be wrapped in Handlebars {{#if}} blocks to prevent empty headers or whitespace when data is missing.',
-      '4. Create print-friendly CSS (A4 page size) with break-inside: avoid for list items.',
-      '5. Use CSS Flexbox or Grid for a flexible layout that handles varying data density.',
+      '2. Use Handlebars syntax for dynamic content.',
+      '3. Keep layout print-friendly for A4.',
+      '4. Use CSS Flexbox or Grid for a flexible layout that handles varying data density.',
       '',
       '### MASTER DATA REFERENCE (FOR SECTION COVERAGE)',
       '```json',
@@ -50,7 +52,7 @@ export const templateGenerationMode = defineMode({
       '',
       TEMPLATE_OUTPUT_INSTRUCTIONS,
       '',
-      'IMPORTANT: Always return a valid JSON object. Do not include any explanations or markdown blocks.',
+      'IMPORTANT: Return only the raw template code with inline <style> and Handlebars placeholders.',
     ];
 
     return parts.join('\n');

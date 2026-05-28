@@ -14,12 +14,12 @@ import {
   ExternalServiceError,
 } from '@/lib/services/utils';
 import type { AIModel } from '@/lib/ai/providers';
-import type { AddApiProviderInput, ProviderInfo } from '../types';
+import type { ServiceAddProviderInput, ProviderInfo } from '../types';
 
 /**
  * Handles adding a new API provider
  */
-export async function addProvider(input: AddApiProviderInput): Promise<ServiceResult<ProviderInfo>> {
+export async function addProvider(input: ServiceAddProviderInput): Promise<ServiceResult<ProviderInfo>> {
   return withServiceError('add provider', async () => {
     if (!isProviderSupported(input.provider)) {
       const supported = getSupportedProviders().join(', ');

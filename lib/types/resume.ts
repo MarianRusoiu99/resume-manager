@@ -54,7 +54,7 @@ export interface ResumeData {
 /**
  * Result of resume generation operation
  */
-export interface GeneratedResumeData {
+export interface GeneratedResumeResult {
   resumeId: string;
   resume: ResumeData;
 }

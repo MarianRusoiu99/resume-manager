@@ -5,7 +5,7 @@ import { createProvider } from '@/lib/ai/providers';
 import { type ServiceResult } from '@/lib/types';
 import { withServiceError } from '@/lib/services/utils';
 import { logger } from '@/lib/utils/logger';
-import type { ProviderWithModels } from '../types';
+import type { ResolvedProviderData } from '../types';
 
 /**
  * Fetches user providers and their available models from the remote API
@@ -13,10 +13,10 @@ import type { ProviderWithModels } from '../types';
 export async function getUserProvidersWithModels(
   userId: string,
   auditContext?: AuditContext
-): Promise<ServiceResult<ProviderWithModels[]>> {
+): Promise<ServiceResult<ResolvedProviderData[]>> {
   return withServiceError('fetch providers with models', async () => {
     const providers = await apiProviderRepository.findByUserId(userId, true);
-    const providersWithModels: ProviderWithModels[] = [];
+    const providersWithModels: ResolvedProviderData[] = [];
 
     for (const provider of providers) {
       if (provider.revokedAt) continue;

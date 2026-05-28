@@ -82,6 +82,8 @@ export class AnthropicProvider extends BaseAIProvider {
    */
   private mapAnthropicModel(model: AnthropicModelResponse['data'][0]): AIModel {
     const isClaude3 = model.id.includes('claude-3');
+    // Reasoning supported on Claude 3.7 Sonnet+, Claude sonnet-4, opus-4, etc.
+    const hasReasoning = /claude-3[.-]7|claude-sonnet-4|claude-opus-4|claude-[4-9]/.test(model.id);
     return {
       id: model.id,
       name: model.display_name,
@@ -91,6 +93,7 @@ export class AnthropicProvider extends BaseAIProvider {
       capabilities: {
         vision: isClaude3, // Claude 3 family supports vision
         structuredOutput: true,
+        ...(hasReasoning ? { reasoning: true } : {}),
       },
     };
   }

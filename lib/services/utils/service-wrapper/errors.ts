@@ -4,7 +4,7 @@
  * Error handling classes and utilities for service operations.
  */
 
-import type { ServiceErrorCode } from '../../../types';
+import type { ErrorCodeType } from '../../../types';
 import { 
   AppError, 
   NotFoundError, 
@@ -33,7 +33,7 @@ export {
 export class ServiceOperationError extends Error {
   constructor(
     message: string,
-    public readonly code: ServiceErrorCode = 'INTERNAL_ERROR',
+    public readonly code: ErrorCodeType = 'INTERNAL_ERROR',
     public readonly cause?: unknown
   ) {
     super(message);
@@ -41,8 +41,8 @@ export class ServiceOperationError extends Error {
   }
 }
 
-export function appErrorToServiceCode(error: AppError): ServiceErrorCode {
-  const codeMap: Record<string, ServiceErrorCode> = {
+export function appErrorToServiceCode(error: AppError): ErrorCodeType {
+  const codeMap: Record<string, ErrorCodeType> = {
     NOT_FOUND: 'NOT_FOUND',
     VALIDATION_ERROR: 'VALIDATION_ERROR',
     UNAUTHORIZED: 'UNAUTHORIZED',

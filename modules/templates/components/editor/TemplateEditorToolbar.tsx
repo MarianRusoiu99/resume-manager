@@ -1,18 +1,17 @@
 'use client';
 
-import { Save, Code, Maximize2, Minimize2 } from 'lucide-react';
+import { Save, Code, Maximize2, Minimize2, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { AIEnhanceButton } from '@/modules/ai-enhance/components/AIEnhanceButton';
 
 interface TemplateEditorToolbarProps {
   readonly htmlTemplate: string;
   readonly isFullscreen: boolean;
   readonly setIsFullscreen: (value: boolean) => void;
-  readonly setTemplateEnhanceModalOpen: (value: boolean) => void;
+  readonly onChatToggle: () => void;
   readonly handleSave: () => void;
   readonly saving: boolean;
 }
@@ -21,7 +20,7 @@ export function TemplateEditorToolbar({
   htmlTemplate,
   isFullscreen,
   setIsFullscreen,
-  setTemplateEnhanceModalOpen,
+  onChatToggle,
   handleSave,
   saving,
 }: TemplateEditorToolbarProps) {
@@ -37,13 +36,16 @@ export function TemplateEditorToolbar({
         </TabsTrigger>
       </TabsList>
       <div className="flex items-center gap-1">
-        <AIEnhanceButton
-          onClick={() => setTemplateEnhanceModalOpen(true)}
-          disabled={!htmlTemplate.trim()}
+        <Button
           variant="ghost"
           size="sm"
+          onClick={onChatToggle}
+          disabled={!htmlTemplate.trim()}
           className="h-8 w-auto px-2 rounded-lg hover:bg-primary/10 hover:text-primary transition-all"
-        />
+        >
+          <Sparkles className="h-4 w-4 mr-1.5" />
+          <span className="text-xs font-bold uppercase tracking-widest">AI Chat</span>
+        </Button>
         <Button
           variant="ghost"
           size="sm"

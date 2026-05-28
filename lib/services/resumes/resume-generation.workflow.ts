@@ -1,6 +1,6 @@
 import type { GeneratedResumeRepository } from '@/lib/repositories/generated-resumes.repository';
 import type { GenerateResumeInput as GenerateResumeServiceInput, GenerateResumeWithProgressInput } from '@/lib/types';
-import type { GeneratedResumeData as RepoGeneratedResumeData } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
+import type { GeneratedResumeEntity as RepoGeneratedResumeEntity } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
 import { CoreAgent } from '@/lib/ai/agent/core-agent';
 import { validateResumeTool, extractJobMetadataTool, submitFinalResumeTool } from '@/lib/ai/tools/implementations/resume-tools';
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime';
@@ -14,7 +14,7 @@ export async function runResumeGenerationWorkflow(
   profileService: IProfileService,
   notificationService: INotificationService,
   input: GenerateResumeServiceInput
-): Promise<ServiceResult<RepoGeneratedResumeData>> {
+): Promise<ServiceResult<RepoGeneratedResumeEntity>> {
   try {
     // Get the user's default profile or a specific profile
     let profileResult;
@@ -101,7 +101,7 @@ export async function runResumeGenerationWorkflowWithProgress(
   profileService: IProfileService,
   notificationService: INotificationService,
   input: GenerateResumeWithProgressInput
-): Promise<ServiceResult<RepoGeneratedResumeData>> {
+): Promise<ServiceResult<RepoGeneratedResumeEntity>> {
     // Basic implementation for now to satisfy types - onProgress is in input but not used yet
     return runResumeGenerationWorkflow(repository, profileService, notificationService, input);
 }

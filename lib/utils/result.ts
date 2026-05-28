@@ -1,4 +1,4 @@
-import type { ServiceErrorCode, ServiceResult } from '@/lib/types';
+import type { ErrorCodeType, ServiceResult } from '@/lib/types';
 import type { ActionResult } from '@/lib/actions/types';
 
 export function isServiceResult<T>(value: unknown): value is ServiceResult<T> {
@@ -15,9 +15,9 @@ export function serviceResultToActionResult<T>(result: ServiceResult<T>): Action
     return { success: true, data: result.data };
   }
 
-  return { success: false, error: (result as { error: string }).error, code: (result as { code?: ServiceErrorCode }).code };
+  return { success: false, error: (result as { error: string }).error, code: (result as { code?: ErrorCodeType }).code };
 }
 
-export function failureActionResult(error: string, code?: ServiceErrorCode): ActionResult<never> {
+export function failureActionResult(error: string, code?: ErrorCodeType): ActionResult<never> {
   return { success: false, error, code };
 }

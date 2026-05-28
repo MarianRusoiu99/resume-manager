@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, memo, useCallback } from 'react';
+import { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import { Cpu, ChevronRight, Sparkles, Box, Zap, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -8,7 +8,6 @@ import { ModelSelectionModal } from './ModelSelectionModal';
 import { createComponentLogger } from '@/lib/utils/client-logger';
 import { getAllAvailableModels } from '@/app/actions/api-provider';
 import type { AIFeatureType } from '@/lib/repositories/interfaces';
-import type { ProviderWithModels } from '@/lib/services/api-providers/types';
 
 const logger = createComponentLogger('ModelSelector');
 
@@ -20,6 +19,7 @@ interface ModelSelectorProps {
     requiresStructuredOutput?: boolean;
     className?: string;
     showProvider?: boolean;
+    compact?: boolean;
 }
 
 const PROVIDER_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -28,25 +28,13 @@ const PROVIDER_ICONS: Record<string, React.ComponentType<{ className?: string }>
     google: Zap,
 };
 
-interface SimplifiedModelInfo {
-    id: string;
-    modelKey: string;
-    name: string;
-    providerId: string;
-    providerName: string;
-    providerType: string;
-    capabilities?: {
-        vision?: boolean;
-        structuredOutput?: boolean;
-    };
-}
-
 export const ModelSelector = memo(function ModelSelector({
     value,
     onValueChange,
     feature,
     className,
     showProvider = true,
+    compact = false,
     isLoading: externalLoading = false,
 }: Readonly<ModelSelectorProps & { isLoading?: boolean }>) {
     const [open, setOpen] = useState(false);
@@ -84,7 +72,7 @@ export const ModelSelector = memo(function ModelSelector({
 
                 // Flatten all models to find the matching one
                 let found = false;
-                for (const p of (result.data.byProvider as ProviderWithModels[])) {
+                for (const p of result.data.byProvider) {
                     const model = p.models?.find((m) => m.id === value);
                     if (model) {
                         logger.info('Model resolved:', {
@@ -131,17 +119,33 @@ export const ModelSelector = memo(function ModelSelector({
         setOpen(false);
     }, [onValueChange, feature]);
 
-    const ProviderIcon = PROVIDER_ICONS[providerId] || Cpu;
+  const hasSelectedModel = !!modelName;
+  const displayModelName = hasSelectedModel ? modelName : 'Select Model';
 
-    return (
+  const buttonTitle = useMemo(() => {
+    if (isLoading) return 'Loading models...';
+    if (hasSelectedModel) {
+      return showProvider && providerName ? `${displayModelName} · ${providerName}` : displayModelName;
+    }
+    return 'Select Model';
+  }, [isLoading, hasSelectedModel, displayModelName, providerName, showProvider]);
+
+  const ProviderIcon = useMemo(() => PROVIDER_ICONS[providerId] || Cpu, [providerId]);
+
+  return (
         <>
             <Button
-                variant="outline"
+                type="button"
+                variant={compact ? 'outline' : 'outline'}
                 size="sm"
                 onClick={() => setOpen(true)}
                 disabled={isLoading}
+                aria-label={buttonTitle}
+                title={buttonTitle}
                 className={cn(
-                    "h-9 gap-2 bg-background/50 border-dashed hover:bg-background hover:border-primary/30 transition-all font-normal",
+                    compact
+                        ? 'h-8 w-8 p-0 rounded-md border border-border/40 bg-background/40 hover:bg-accent/60'
+                        : 'h-9 gap-2 bg-background/50 border-dashed hover:bg-background hover:border-primary/30 transition-all font-normal',
                     className
                 )}
             >
@@ -157,18 +161,22 @@ export const ModelSelector = memo(function ModelSelector({
                     )} />
                 )}
 
-                <div className="flex flex-col items-start text-xs leading-none gap-0.5">
-                    <span className="font-medium text-foreground">
-                        {isLoading ? 'Loading...' : (modelName || 'Select Model')}
-                    </span>
-                    {showProvider && providerName && !isLoading && (
-                        <span className="text-[10px] text-muted-foreground">
-                            {providerName}
+                {!compact && (
+                  <>
+                    <div className={cn('flex flex-col items-start leading-none', 'text-xs gap-0.5')}>
+                        <span className="font-medium text-foreground">
+                            {isLoading ? 'Loading...' : (modelName || 'Select Model')}
                         </span>
-                    )}
-                </div>
+                        {showProvider && providerName && !isLoading && (
+                            <span className="text-[10px] text-muted-foreground">
+                                {providerName}
+                            </span>
+                        )}
+                    </div>
 
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50 ml-1" />
+                    <ChevronRight className={cn('text-muted-foreground/50 ml-1', 'h-3.5 w-3.5')} />
+                  </>
+                )}
             </Button>
 
             <ModelSelectionModal

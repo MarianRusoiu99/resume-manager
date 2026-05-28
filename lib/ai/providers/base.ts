@@ -17,6 +17,8 @@ export interface AIModel {
   capabilities?: {
     vision?: boolean;
     structuredOutput?: boolean;
+    /** Whether the model supports reasoning/thinking output */
+    reasoning?: boolean;
   };
 }
 

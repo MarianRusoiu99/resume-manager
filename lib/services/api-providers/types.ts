@@ -3,6 +3,10 @@
  *
  * Kept in a dedicated module to avoid circular deps
  * and to make the facade (`api-provider.service.ts`) small.
+ *
+ * NOTE: Types here are service-layer specific and intentionally
+ * shadow canonical types in '@/lib/types/'. They are prefixed with
+ * "Service" to distinguish them from canonical domain types.
  */
 
 import type { AIModel } from '@/lib/ai/providers';
@@ -19,7 +23,8 @@ export type ConfiguredModelInfo = Omit<AIModel, 'id'> & {
   modelKey: string;
 };
 
-export interface AddApiProviderInput {
+/** Service-layer input for adding a new API provider (includes raw apiKey, audit context). */
+export interface ServiceAddProviderInput {
   userId: string;
   name: string;
   provider: string;
@@ -27,14 +32,16 @@ export interface AddApiProviderInput {
   auditContext?: AuditContext;
 }
 
-export interface UpdateApiProviderInput {
+/** Service-layer input for updating an API provider (includes raw apiKey, audit context). */
+export interface ServiceUpdateProviderInput {
   name?: string;
   apiKey?: string;
   isActive?: boolean;
   auditContext?: AuditContext;
 }
 
-export interface ProviderWithModels {
+/** Service-layer resolved provider with full model info, dates, and key preview. */
+export interface ResolvedProviderData {
   id: string;
   name: string;
   provider: string;
@@ -74,7 +81,7 @@ export interface ProviderInstanceData {
 }
 
 export interface AvailableModelsData {
-  providers: ProviderWithModels[];
+  providers: ResolvedProviderData[];
   allModels: Array<
     ConfiguredModelInfo & {
       uniqueId: string;

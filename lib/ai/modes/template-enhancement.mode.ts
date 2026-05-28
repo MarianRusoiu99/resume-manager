@@ -18,7 +18,7 @@ export const templateEnhancementMode = defineMode({
   outputSchema: templateEnhancementOutputSchema,
   primaryResultKey: 'htmlTemplate',
 
-  useStructuredOutput: true,
+  useStructuredOutput: false,
   maxTokens: 12000,
 
   buildSystemPrompt(_context: ConversationContext): string {
@@ -47,16 +47,13 @@ export const templateEnhancementMode = defineMode({
       '',
       '### RULES',
       '1. Preserve the overall structure unless asked to change it',
-      '2. Keep all existing Handlebars placeholders intact',
+      '2. Keep existing Handlebars placeholders intact unless user asks otherwise',
       '3. Maintain proper HTML semantics',
-      '4. Ensure print styles remain functional (break-inside: avoid for list items)',
-      '5. List all changes made in the "changes" array',
-      '6. Ensure EVERY field is wrapped in a conditional {{#if}} block',
+      '4. Keep print styles functional',
       '',
       '## OUTPUT FORMAT',
-      'Return a JSON object with:',
-      '- htmlTemplate: The modified HTML template including inline <style> blocks',
-      '- changes: Array of strings describing what was changed',
+      'Return ONLY the modified template code (HTML + inline <style> + Handlebars placeholders).',
+      'Do not wrap in JSON. Do not add explanations.',
     ];
 
     return parts.join('\n');

@@ -13,7 +13,7 @@
  * ```
  */
 
-import type { ServiceErrorCode } from '../types';
+import type { ErrorCodeType } from '../types';
 import { AppError, isAppError } from './base';
 
 // Re-export base error class and type guard
@@ -113,7 +113,7 @@ export function getErrorStatusCode(error: unknown): number {
 /**
  * Get error code from any error
  */
-export function getErrorCode(error: unknown): ServiceErrorCode {
+export function getErrorCode(error: unknown): ErrorCodeType {
   if (isAppError(error)) {
     return error.code;
   }

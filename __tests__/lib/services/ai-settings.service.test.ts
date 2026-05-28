@@ -4,7 +4,8 @@ import type { UserAISettingsRepository } from '@/lib/repositories/ai-settings.re
 import type { ApiProviderService } from '@/lib/services/api-providers';
 import { UserAISettingsService } from '@/lib/services/ai-settings/user-ai-settings.workflow';
 import type { UserAISettingsData, ModelPreference } from '@/lib/repositories/interfaces';
-import type { ProviderWithModels, ConfiguredModelInfo } from '@/lib/services/api-providers';
+import type { ConfiguredModelInfo } from '@/lib/services/api-providers';
+import type { ProviderWithModels } from '@/lib/types/ai-settings';
 import { AI_FEATURES } from '@/lib/services/ai-settings/features';
 
 vi.mock('@/lib/services/api-providers', () => ({

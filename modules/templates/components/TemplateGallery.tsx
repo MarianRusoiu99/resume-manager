@@ -11,6 +11,7 @@ import { TemplateCard } from './TemplateCard';
 import { Gallery } from '@/components/core/data-display/Gallery';
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, ImagePlus } from 'lucide-react';
+import { ROUTES } from '@/lib/constants';
 import { useState } from 'react';
 import { TemplateImportModal } from './TemplateImportModal';
 
@@ -29,7 +30,7 @@ export function TemplateGallery({ templates, showAdminActions = false }: Templat
         <ImagePlus className="mr-2 h-4 w-4" />
         Import from Image
       </Button>
-      <Button onClick={() => router.push('/templates/new')}>
+      <Button onClick={() => router.push(ROUTES.TEMPLATE_NEW)}>
         <Plus className="mr-2 h-4 w-4" />
         Create Template
       </Button>
@@ -48,7 +49,7 @@ export function TemplateGallery({ templates, showAdminActions = false }: Templat
           action: showAdminActions
             ? {
               label: "Create Template",
-              onClick: () => router.push('/templates/new'),
+              onClick: () => router.push(ROUTES.TEMPLATE_NEW),
               icon: <Plus className="h-4 w-4" />,
             }
             : undefined,

@@ -1,8 +1,12 @@
 import type { AIFeatureType, ModelPreference } from '@/lib/repositories/interfaces';
-import type { ProviderWithModels } from '../api-providers';
+import type { ResolvedProviderData } from '../api-providers';
+import type {
+  FeatureModelSelection as CanonicalFeatureModelSelection,
+  ProviderWithModels,
+} from '@/lib/types/ai-settings';
 
 /**
- * Feature configuration with display info.
+ * Feature configuration with display info (service-layer extends canonical).
  */
 export interface AIFeatureConfig {
   id: AIFeatureType;
@@ -12,7 +16,7 @@ export interface AIFeatureConfig {
 }
 
 /**
- * Complete model selection for a feature.
+ * Complete model selection for a feature (service-layer version with AIFeatureConfig).
  */
 export interface FeatureModelSelection {
   feature: AIFeatureConfig;
@@ -23,11 +27,11 @@ export interface FeatureModelSelection {
 }
 
 /**
- * All settings with resolved names.
+ * All settings with resolved names (service-layer version with full provider data).
  */
 export interface ResolvedAISettings {
   features: FeatureModelSelection[];
-  availableProviders: ProviderWithModels[];
+  availableProviders: ResolvedProviderData[];
 }
 
 /**
@@ -40,4 +44,4 @@ export interface UpdateFeaturePreferenceInput {
   modelId: string | null;
 }
 
-export type { AIFeatureType, ModelPreference };
+export type { AIFeatureType, ModelPreference, ProviderWithModels };

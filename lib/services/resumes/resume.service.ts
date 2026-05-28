@@ -15,7 +15,7 @@ import type {
 } from '@/lib/types';
 import type { 
   CreateResumeInput, 
-  GeneratedResumeData as RepoGeneratedResumeData, 
+  GeneratedResumeEntity as RepoGeneratedResumeEntity, 
   UpdateResumeInput 
 } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
 
@@ -33,8 +33,8 @@ import { resumeImportService } from './resume-import.service';
  */
 export interface IResumeService {
   // Generation
-  generateResume(input: GenerateResumeServiceInput): Promise<ServiceResult<RepoGeneratedResumeData>>;
-  generateResumeWithProgress(input: GenerateResumeWithProgressInput): Promise<ServiceResult<RepoGeneratedResumeData>>;
+  generateResume(input: GenerateResumeServiceInput): Promise<ServiceResult<RepoGeneratedResumeEntity>>;
+  generateResumeWithProgress(input: GenerateResumeWithProgressInput): Promise<ServiceResult<RepoGeneratedResumeEntity>>;
   generateStandaloneCoverLetter(input: {
     userId: string;
     jobDescription: string;
@@ -44,7 +44,7 @@ export interface IResumeService {
   }): Promise<ServiceResult<never>>;
 
   // CRUD
-  create(data: CreateResumeInput): Promise<ServiceResult<RepoGeneratedResumeData>>;
+  create(data: CreateResumeInput): Promise<ServiceResult<RepoGeneratedResumeEntity>>;
   listResumes(userId: string): Promise<ServiceResult<ResumeListItem[]>>;
   getUserResumes(userId: string): Promise<ServiceResult<ResumeListItem[]>>;
   getResume(resumeId: string, userId: string): Promise<ServiceResult<ResumeDetails>>;
@@ -60,7 +60,7 @@ export interface IResumeService {
  * Integrated Resume Service
  */
 export class ResumeService 
-  extends GenericUserOwnedCrudService<RepoGeneratedResumeData, CreateResumeInput, UpdateResumeInput, Record<string, unknown>, GeneratedResumeRepository>
+  extends GenericUserOwnedCrudService<RepoGeneratedResumeEntity, CreateResumeInput, UpdateResumeInput, Record<string, unknown>, GeneratedResumeRepository>
   implements IResumeService 
 {
   constructor(
@@ -73,11 +73,11 @@ export class ResumeService
 
   // --- Generation Methods ---
 
-  async generateResume(input: GenerateResumeServiceInput): Promise<ServiceResult<RepoGeneratedResumeData>> {
+  async generateResume(input: GenerateResumeServiceInput): Promise<ServiceResult<RepoGeneratedResumeEntity>> {
     return runResumeGenerationWorkflow(this.repository, this.profileService, this.notificationService, input);
   }
 
-  async generateResumeWithProgress(input: GenerateResumeWithProgressInput): Promise<ServiceResult<RepoGeneratedResumeData>> {
+  async generateResumeWithProgress(input: GenerateResumeWithProgressInput): Promise<ServiceResult<RepoGeneratedResumeEntity>> {
     return runResumeGenerationWorkflowWithProgress(this.repository, this.profileService, this.notificationService, input);
   }
 
@@ -91,7 +91,7 @@ export class ResumeService
     return { success: false, error: 'Standalone cover letter generation not implemented in worker build context', code: 'INTERNAL_ERROR' };
   }
 
-  async create(data: CreateResumeInput & { userId: string }): Promise<ServiceResult<RepoGeneratedResumeData>> {
+  async create(data: CreateResumeInput & { userId: string }): Promise<ServiceResult<RepoGeneratedResumeEntity>> {
     const result = await super.create(data);
     if (result.success) {
       const jobMetadata = (data.jobMetadata ?? {}) as Record<string, unknown>;

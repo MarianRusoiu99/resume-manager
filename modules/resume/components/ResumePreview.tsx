@@ -32,7 +32,7 @@ interface ResumePreviewProps {
   /** Optional callback when template changes */
   onTemplateChange?: (templateId: string | null) => void;
   /** Show template selector */
-  showTemplateSelector?: boolean;
+  showHeader?: boolean;
   /** Show card wrapper */
   showCard?: boolean;
   /** Preview key for forcing refresh */
@@ -56,7 +56,7 @@ export function ResumePreview({
   resumeId,
   profileId,
   onTemplateChange,
-  showTemplateSelector = true,
+  showHeader = true,
   showCard = true,
   previewKey = 0,
   className = '',
@@ -224,7 +224,7 @@ export function ResumePreview({
           </CardHeader>
           <CardContent className="flex-1 min-h-0 p-0">
             <PreviewContent
-              showTemplateSelector={showTemplateSelector}
+              showHeader={showHeader}
               selectedTemplateId={selectedTemplateId}
               onTemplateChange={onTemplateSelect}
               resumeId={resumeId}
@@ -248,7 +248,7 @@ export function ResumePreview({
         </Card>
       ) : (
         <PreviewContent
-          showTemplateSelector={showTemplateSelector}
+          showHeader={showHeader}
           selectedTemplateId={selectedTemplateId}
           onTemplateChange={onTemplateSelect}
           resumeId={resumeId}
@@ -275,7 +275,7 @@ export function ResumePreview({
         <DialogContent showClose={false} className="max-w-[95vw] w-full h-[95vh] p-0 overflow-hidden border-none rounded-[2rem] bg-background shadow-2xl">
           <div className="flex flex-col h-full">
             <PreviewContent
-              showTemplateSelector={showTemplateSelector}
+              showHeader={showHeader}
               selectedTemplateId={selectedTemplateId}
               onTemplateChange={onTemplateSelect}
               resumeId={resumeId}

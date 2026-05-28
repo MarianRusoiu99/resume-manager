@@ -1,5 +1,4 @@
 import { useState, useImperativeHandle, forwardRef } from "react";
-import dynamic from "next/dynamic";
 import { Tabs } from "@/components/ui/tabs";
 import { useEditor } from "@/lib/contexts";
 import { toast } from "sonner";
@@ -10,17 +9,10 @@ import { ShareDialog } from "./modals/ShareDialog";
 import { useShareState } from "@/modules/editor/hooks/useShareState";
 import type { Resume } from "@/lib/validations/jsonresume";
 
-// Dynamically import AI Enhance modal
-const AIEnhanceResumeModal = dynamic(
-  () => import("@/modules/ai-enhance/modals/AIEnhanceResumeModal").then(mod => mod.AIEnhanceResumeModal),
-  { ssr: false }
-);
-
 export interface ResumeEditorRef {
   save: () => Promise<void>;
   setShowShareDialog: (show: boolean) => void;
   updateResume: (resume: Resume) => void;
-  setShowAIEnhance: (show: boolean) => void;
   resume: Resume;
   isDirty: boolean;
   isSaving: boolean;
@@ -45,7 +37,6 @@ export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
 }, ref) => {
   const { resume, save, isDirty, isSaving, lastSavedAt, updateResume } = useEditor();
   const [activeTab, setActiveTab] = useState("basics");
-  const [showAIEnhance, setShowAIEnhance] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   const {
@@ -64,7 +55,6 @@ export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
     save: async () => { await save(); },
     setShowShareDialog,
     updateResume,
-    setShowAIEnhance,
     resume,
     isDirty,
     isSaving,
@@ -109,19 +99,6 @@ export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
         onTogglePublic={handleTogglePublic}
         onCopyLink={handleCopyPublicLink}
         canTogglePublic={!!onTogglePublic}
-      />
-
-      {/* AI Enhance Modal */}
-      <AIEnhanceResumeModal
-        open={showAIEnhance}
-        onOpenChange={setShowAIEnhance}
-        resume={resume}
-        onAccept={(enhancedResume) => {
-          updateResume(enhancedResume);
-          setShowAIEnhance(false);
-          toast.success("Resume enhanced successfully!");
-        }}
-        templateId={selectedTemplateId}
       />
     </div>
   );

@@ -85,11 +85,7 @@ Return a JSON object with this EXACT structure:
     "references": [{ "name": "string", "reference": "string" }],
     "projects": [{ "name": "string", "description": "string", "highlights": [], "startDate": "YYYY-MM", "endDate": "YYYY-MM", "url": "string", "keywords": [] }],
     "meta": { "canonical": "string", "lastModified": "string" }
-  },
-  "jobTitle": "string",
-  "companyName": "string",
-  "matchScore": number,
-  "suggestions": []
+  }
 }
 
 All dates should be in YYYY-MM-DD, YYYY-MM, or YYYY format.

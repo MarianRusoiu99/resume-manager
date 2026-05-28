@@ -49,9 +49,12 @@ export class AIOrchestrator {
       ? buildMessagesWithVision(conversation, mode)
       : buildMessages(conversation, mode);
     const systemPrompt = mode.buildSystemPrompt(conversation.context);
-    
-    // Support structured output streaming
-    if (mode.useStructuredOutput !== false && mode.outputSchema && !needsVision) {
+
+    // When providerOptions are present (reasoning-capable model), use streamText+fullStream
+    // so we can capture reasoning tokens. Otherwise, use streamObject for incremental partials.
+    const useStreamText = Boolean(options.providerOptions);
+
+    if (mode.useStructuredOutput !== false && mode.outputSchema && !needsVision && !useStreamText) {
       try {
         const { partialObjectStream, object, usage: usagePromise } = streamObject({
           model,
@@ -90,33 +93,62 @@ export class AIOrchestrator {
         logger.error('Structured streaming generation failed', { error: errorMessage });
         throw error;
       }
-    } 
+    }
 
-    // Support text streaming (for text-enhancement or vision fallback)
+    // streamText path (reasoning-capable models, text modes, or vision fallback)
     try {
-      const { textStream, text, usage: usagePromise, finishReason } = streamText({
+      const streamOptions: Parameters<typeof streamText>[0] = {
         model,
         system: systemPrompt,
         messages,
         abortSignal: options.abortSignal,
-      });
+      };
 
-      for await (const delta of textStream) {
-        yield {
-          type: 'text',
-          text: delta,
-          timestamp: Date.now()
-        };
+      // Pass providerOptions for reasoning support (Vercel AI SDK handles provider-specific options)
+      if (options.providerOptions) {
+        streamOptions.providerOptions = options.providerOptions;
       }
 
-      const finalOutput = parseOutput<T>(await text, mode);
+      const { fullStream, text, usage: usagePromise, finishReason } = streamText(streamOptions);
+
+      let fullText = '';
+
+      for await (const event of fullStream) {
+        switch (event.type) {
+          case 'reasoning-delta':
+            // Reasoning text delta from the model
+            yield {
+              type: 'reasoning',
+              text: event.text,
+              timestamp: Date.now(),
+            };
+            break;
+
+          case 'text-delta':
+            // Regular text delta
+            fullText += event.text;
+            yield {
+              type: 'text',
+              text: event.text,
+              timestamp: Date.now(),
+            };
+            break;
+
+          // Other event types (tool-call, tool-result, step-finish, reasoning-start/end, etc.)
+          // are ignored for the streaming output; we only care about text and reasoning.
+        }
+      }
+
+      // Use the accumulated full text for output parsing
+      const finalText = await text;
+      const finalOutput = parseOutput<T>(finalText, mode);
       const usageResult = await usagePromise;
       const usage = normalizeUsage(usageResult);
       
       logUsage(options, usage, await finishReason, mode.id);
 
       ConversationManager.setOutput(conversation.id, finalOutput);
-      ConversationManager.addAssistantMessage(conversation.id, await text, finalOutput);
+      ConversationManager.addAssistantMessage(conversation.id, finalText, finalOutput);
 
       yield {
         type: 'complete',

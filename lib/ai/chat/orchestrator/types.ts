@@ -51,6 +51,8 @@ export interface OrchestratorOptions {
   modelId: string;
   /** Optional abort signal */
   abortSignal?: AbortSignal;
+  /** Provider-specific options (e.g. reasoning config) */
+  providerOptions?: Record<string, Record<string, unknown>>;
 }
 
 /**
@@ -87,4 +89,14 @@ export interface StreamChunkText {
   timestamp: number;
 }
 
-export type StreamChunk<T> = StreamChunkDelta<T> | StreamChunkComplete<T> | StreamChunkText;
+export interface StreamChunkReasoning {
+  type: 'reasoning';
+  text: string;
+  timestamp: number;
+}
+
+export type StreamChunk<T> =
+  | StreamChunkDelta<T>
+  | StreamChunkComplete<T>
+  | StreamChunkText
+  | StreamChunkReasoning;

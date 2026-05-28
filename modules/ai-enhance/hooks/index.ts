@@ -18,6 +18,8 @@ export {
   type ConversationAttachment,
   type ConversationMessage,
   type ConversationContext,
+  type ConversationData,
+  type ConversationUIState,
   type ConversationState,
   type SendMessageOptions,
   type UseConversationOptions,

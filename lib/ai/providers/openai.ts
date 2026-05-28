@@ -59,9 +59,9 @@ export class OpenAIProvider extends BaseAIProvider {
 
       const data = await response.json() as OpenAIModelResponse;
 
-      // Filter to only GPT models (text generation)
+      // Filter to GPT, o-series, and gpt-5 models (text generation)
       const gptModels = data.data
-        .filter((model) => model.id.startsWith('gpt-'))
+        .filter((model) => /^(gpt-|o[13]|gpt-5)/.test(model.id))
         .map((model) => this.mapOpenAIModel(model.id))
         .sort((a, b) => {
           // Sort: gpt-4 variants first, then gpt-3.5, then others
@@ -147,13 +147,19 @@ export class OpenAIProvider extends BaseAIProvider {
     
     const metadata = match?.metadata || {};
 
+    // Detect reasoning capability from model ID
+    const hasReasoning = /^(o[13]|gpt-5)/.test(modelId);
+
     return {
       id: modelId,
       name: metadata.name || this.formatModelName(modelId),
       description: metadata.description,
       contextWindow: metadata.contextWindow,
       maxOutputTokens: metadata.maxOutputTokens,
-      capabilities: metadata.capabilities,
+      capabilities: {
+        ...metadata.capabilities,
+        ...(hasReasoning ? { reasoning: true } : {}),
+      },
     };
   }
 

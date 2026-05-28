@@ -5,7 +5,7 @@ import { createProvider } from '@/lib/ai/providers';
 import { type ServiceResult } from '@/lib/types';
 import { withServiceError, ValidationError } from '@/lib/services/utils';
 import { RecordNotFoundError } from '@/lib/errors/database';
-import type { UpdateApiProviderInput } from '../types';
+import type { ServiceUpdateProviderInput } from '../types';
 
 /**
  * Updates an existing API provider
@@ -13,7 +13,7 @@ import type { UpdateApiProviderInput } from '../types';
 export async function updateProvider(
   providerId: string,
   userId: string,
-  input: UpdateApiProviderInput
+  input: ServiceUpdateProviderInput
 ): Promise<ServiceResult<{ message: string }>> {
   return withServiceError('update provider', async () => {
     // We need to fetch the existing provider to get its type if rotated

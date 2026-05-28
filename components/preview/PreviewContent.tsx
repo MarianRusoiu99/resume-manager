@@ -13,6 +13,7 @@ import { PreviewState } from './PreviewState';
 import type { Template } from '@/lib/types';
 
 interface PreviewContentProps {
+  showHeader?: boolean;
   showTemplateSelector: boolean;
   selectedTemplateId: string | null;
   onTemplateChange: (templateId: string | null) => void;
@@ -36,6 +37,7 @@ interface PreviewContentProps {
 
 export const PreviewContent = memo(function PreviewContent(props: Readonly<PreviewContentProps>) {
   const {
+    showHeader = true,
     showTemplateSelector,
     selectedTemplateId,
     onTemplateChange,
@@ -57,19 +59,21 @@ export const PreviewContent = memo(function PreviewContent(props: Readonly<Previ
 
   return (
     <div className="flex flex-col h-full w-full relative group min-h-0">
-      <PreviewHeader
-        showTemplateSelector={showTemplateSelector}
-        selectedTemplateId={selectedTemplateId}
-        onTemplateChange={onTemplateChange}
-        template={template}
-        templateHtml={templateHtml}
-        isExportingPDF={isExportingPDF}
-        onExportPDF={onExportPDF}
-        onToggleFullscreen={onToggleFullscreen}
-        isFullscreen={isFullscreen}
-        actions={headerActions}
-        title={headerTitle}
-      />
+      {showHeader && (
+        <PreviewHeader
+          showTemplateSelector={showTemplateSelector}
+          selectedTemplateId={selectedTemplateId}
+          onTemplateChange={onTemplateChange}
+          template={template}
+          templateHtml={templateHtml}
+          isExportingPDF={isExportingPDF}
+          onExportPDF={onExportPDF}
+          onToggleFullscreen={onToggleFullscreen}
+          isFullscreen={isFullscreen}
+          actions={headerActions}
+          title={headerTitle}
+        />
+      )}
 
       <div className="flex-1 min-h-0 flex flex-col items-center justify-start w-full overflow-hidden bg-muted/30 relative">
         <PreviewState

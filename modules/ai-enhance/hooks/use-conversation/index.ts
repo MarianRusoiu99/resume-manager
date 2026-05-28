@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { apiFetch } from '@/lib/utils/api-client';
 import { ExternalServiceError } from "@/lib/errors";
 import { 
@@ -13,6 +13,22 @@ import {
 } from './types';
 import { generateId } from './utils';
 import type { DeepPartial } from '@/lib/types';
+
+// Re-export types for barrel consumers
+export type {
+  ConversationMode,
+  ConversationAttachment,
+  ConversationMessage,
+  ConversationContext,
+  ConversationData,
+  ConversationUIState,
+  ConversationState,
+  SendMessageOptions,
+  UseConversationOptions,
+  UseConversationReturn,
+} from './types';
+
+const EMPTY_CONTEXT: ConversationContext = {};
 
 // Helper type for deep merging partials
 function mergeDeep<T>(target: T, source: DeepPartial<T>): T {
@@ -46,9 +62,9 @@ function mergeDeep<T>(target: T, source: DeepPartial<T>): T {
  * Hook for managing AI conversations
  */
 export function useConversation<T = unknown>(options: UseConversationOptions<T>): UseConversationReturn<T> {
-  const { mode, initialContext = {}, onComplete, onError } = options;
+  const { mode, initialContext = EMPTY_CONTEXT, persistenceKey, onComplete, onError } = options;
 
-  const [state, setState] = useState<ConversationState<T>>({
+  const createEmptyState = useCallback((): ConversationState<T> => ({
     id: null,
     mode,
     messages: [],
@@ -58,9 +74,74 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
     isLoading: false,
     isStreaming: false,
     error: null,
-  });
+  }), [mode, initialContext]);
+
+  const [state, setState] = useState<ConversationState<T>>(createEmptyState);
 
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const persistenceEnabled = Boolean(persistenceKey);
+  const [hasHydratedPersistence, setHasHydratedPersistence] = useState(!persistenceEnabled);
+
+  useEffect(() => {
+    if (!persistenceEnabled || !persistenceKey) return;
+
+    setState(createEmptyState());
+    setHasHydratedPersistence(false);
+
+    try {
+      const raw = window.localStorage.getItem(persistenceKey);
+      if (!raw) {
+        setHasHydratedPersistence(true);
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as Partial<ConversationState<T>>;
+      const persistedMessages = Array.isArray(parsed?.messages) ? parsed.messages : null;
+      if (!parsed || parsed.mode !== mode || !persistedMessages) {
+        setHasHydratedPersistence(true);
+        return;
+      }
+
+      setState((prev) => ({
+        ...prev,
+        id: parsed.id ?? prev.id,
+        mode,
+        messages: persistedMessages.map((msg) => ({
+          ...msg,
+          timestamp: msg.timestamp ? new Date(msg.timestamp as unknown as string) : new Date(),
+        })),
+        context: parsed.context ?? prev.context,
+        output: parsed.output ?? prev.output,
+        savedId: parsed.savedId ?? prev.savedId,
+        isLoading: false,
+        isStreaming: false,
+        error: null,
+      }));
+      setHasHydratedPersistence(true);
+    } catch {
+      // ignore invalid persisted state
+      setHasHydratedPersistence(true);
+    }
+  }, [mode, persistenceEnabled, persistenceKey, createEmptyState]);
+
+  useEffect(() => {
+    if (!persistenceEnabled || !persistenceKey || !hasHydratedPersistence) return;
+
+    try {
+      const persistable: Partial<ConversationState<T>> = {
+        id: state.id,
+        mode: state.mode,
+        messages: state.messages,
+        context: state.context,
+        output: state.output,
+        savedId: state.savedId,
+      };
+      window.localStorage.setItem(persistenceKey, JSON.stringify(persistable));
+    } catch {
+      // ignore storage write errors (quota/private mode)
+    }
+  }, [persistenceEnabled, persistenceKey, hasHydratedPersistence, state.id, state.mode, state.messages, state.context, state.output, state.savedId]);
 
   /**
    * Helper function to parse streaming response
@@ -69,7 +150,8 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
     response: Response, 
     updateState: (delta: DeepPartial<T>) => void,
     onComplete: (final: T, savedId?: string | null) => void,
-    onError: (error: string) => void
+    onError: (error: string) => void,
+    assistantMessageId: string
   ): Promise<T | null> => {
     if (!response.body) {
       throw new Error('Response body is missing');
@@ -97,6 +179,26 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
               
               if (data.type === 'delta') {
                 updateState(data.partial);
+              } else if (data.type === 'text') {
+                // Accumulate streaming text on the assistant message content
+                setState(prev => ({
+                  ...prev,
+                  messages: prev.messages.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, content: (msg.content || '') + data.text }
+                      : msg
+                  ),
+                }));
+              } else if (data.type === 'reasoning') {
+                // Accumulate reasoning/thinking text on the assistant message
+                setState(prev => ({
+                  ...prev,
+                  messages: prev.messages.map(msg =>
+                    msg.id === assistantMessageId
+                      ? { ...msg, thinking: (msg.thinking || '') + data.text }
+                      : msg
+                  ),
+                }));
               } else if (data.type === 'complete') {
                 finalOutput = data.final;
               } else if (data.type === 'saved') {
@@ -144,18 +246,8 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
    */
   const reset = useCallback(() => {
     abortControllerRef.current?.abort();
-    setState({
-      id: null,
-      mode,
-      messages: [],
-      context: initialContext,
-      output: null,
-      savedId: null,
-      isLoading: false,
-      isStreaming: false,
-      error: null,
-    });
-  }, [mode, initialContext]);
+    setState(createEmptyState());
+  }, [createEmptyState]);
 
   /**
    * Abort current generation
@@ -293,7 +385,8 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
             },
             (error) => {
                throw new Error(error);
-            }
+            },
+            assistantMessageId
           );
           
           return result;

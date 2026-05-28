@@ -7,7 +7,7 @@
  * - Consistent ServiceResult wrapping
  */
 
-export type { ServiceResult, ServiceErrorCode, ServiceWrapperOptions } from './types';
+export type { ServiceResult, ErrorCodeType, ServiceWrapperOptions } from './types';
 export { 
   AppError, 
   NotFoundError, 

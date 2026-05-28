@@ -7,7 +7,7 @@
 import { ZodError } from 'zod';
 import { logger } from '../../../utils/logger';
 import { failure } from '../../../types';
-import type { ServiceErrorCode } from '../../../types';
+import type { ErrorCodeType } from '../../../types';
 import type { ServiceWrapperOptions } from './types';
 import { AppError } from '../../../errors';
 import { appErrorToServiceCode } from './errors';

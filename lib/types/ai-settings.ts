@@ -16,9 +16,10 @@ export interface AISettings {
 }
 
 /**
- * AI feature types
+ * AI feature types (canonical source of truth)
  */
-export type AIFeature = 'resume' | 'coverLetter' | 'enhance' | 'template';
+export const AI_FEATURES = ['resume', 'coverLetter', 'enhance', 'template'] as const;
+export type AIFeature = (typeof AI_FEATURES)[number];
 
 /**
  * Model selection for a feature

@@ -4,14 +4,14 @@
  * Error classes for input validation and schema validation operations.
  */
 
-import type { ServiceErrorCode } from '@/lib/types';
+import type { ErrorCodeType } from '@/lib/types';
 import { AppError } from './base';
 
 /**
  * Base validation error class
  */
 export class ValidationError extends AppError {
-  readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
+  readonly code = 'VALIDATION_ERROR' as ErrorCodeType;
   readonly statusCode = 400;
 
   constructor(

@@ -9,6 +9,19 @@ export type DeepPartial<T> = T extends object ? {
   [P in keyof T]?: DeepPartial<T[P]>;
 } : T;
 
+/** Recursively convert Date -> string for API/action return types */
+export type Serialized<T> = {
+  [K in keyof T]: T[K] extends Date
+    ? string
+    : T[K] extends Date | undefined
+      ? string | undefined
+      : T[K] extends (infer U)[]
+        ? Serialized<U>[]
+        : T[K] extends object
+          ? Serialized<T[K]>
+          : T[K];
+};
+
 /**
  * Safely access nested properties that might be undefined
  * 

@@ -97,8 +97,7 @@ export const RESUME_OPTIMIZATION_USER_PROMPT = `Optimize the following resume fo
 {resume}
 
 ## YOUR TASK:
-1. First, extract the job title and company name from the job description
-2. Optimize the resume by:
+1. Optimize the resume by:
    - Rephrasing content to better match the job requirements
    - Highlighting skills and experience that align with the job
    - Reordering sections to prioritize relevant experience
@@ -114,8 +113,6 @@ export const RESUME_OPTIMIZATION_USER_PROMPT = `Optimize the following resume fo
 ## OUTPUT FORMAT:
 Return a JSON object with this structure:
 {
-  "jobTitle": "extracted job title",
-  "companyName": "extracted company name",
   "resume": {
     // JSON Resume format with: basics, work, education, skills, projects
   }

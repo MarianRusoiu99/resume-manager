@@ -17,13 +17,11 @@ import {
   type ConversationMode,
 } from '@/lib/ai/chat';
 import { ensureModesRegistered } from '@/lib/ai/modes';
-import type { AnyModeOutput, ResumeGenerationOutput, CoverLetterOutput } from '@/lib/ai/modes/types';
+import type { AnyModeOutput } from '@/lib/ai/modes/types';
 import { resolveAIModelOrThrow } from '@/lib/ai/runtime/resolve-model';
 import type { ConversationContext } from '@/lib/ai/chat/context';
 import type { Attachment, AttachmentType } from '@/lib/ai/chat/message';
 import { logger } from '@/lib/utils/logger';
-import { resumeService, coverLetterService } from '@/lib/services';
-import type { Resume } from '@/lib/validations/jsonresume';
 
 // Ensure AI modes are registered
 ensureModesRegistered();
@@ -220,6 +218,7 @@ export const POST = createApiHandler<unknown, ChatRequest>(
         modelKey: resolvedModel.modelKey,
         modelId: resolvedModel.modelId,
         userId,
+        ...(resolvedModel.providerOptions ? { providerOptions: resolvedModel.providerOptions } : {}),
       };
 
       const { stream = false } = body;
@@ -227,89 +226,16 @@ export const POST = createApiHandler<unknown, ChatRequest>(
       if (stream) {
         const stream = new ReadableStream({
           async start(controller) {
-            let finalOutput: AnyModeOutput | null = null;
-            let finalUsage: {
-              promptTokens: number;
-              completionTokens: number;
-              totalTokens: number;
-            } | null = null;
             try {
               const generator = AIOrchestrator.streamGenerate<AnyModeOutput>(conversation, orchestratorOptions);
               
               for await (const chunk of generator) {
-                if (chunk.type === 'complete') {
-                  finalOutput = chunk.final;
-                  finalUsage = chunk.usage;
-                }
                 controller.enqueue(
                   new TextEncoder().encode(`data: ${JSON.stringify(chunk)}\n\n`)
                 );
               }
 
-              // Background processing for resume/cover letter generation
-              if (finalOutput) {
-                let savedId: string | undefined;
-
-                if (mode === 'resume-generation' && 'resume' in finalOutput) {
-                  const resumeOutput = finalOutput as ResumeGenerationOutput;
-                  const jobDesc = conversationContext.job?.description || message;
-                  const jobTitle = resumeOutput.jobTitle || resumeOutput.resume.basics?.label || 'Optimized Resume';
-                  const companyName = resumeOutput.companyName || '';
-                  
-                  try {
-                    const result = await resumeService.create({
-                      userId,
-                      resume: resumeOutput.resume as Resume,
-                      jobDescription: jobDesc,
-                      jobMetadata: { jobTitle, companyName },
-                      metadata: {
-                        matchScore: resumeOutput.matchScore,
-                        suggestions: resumeOutput.suggestions,
-                        modelId: resolvedModel.modelId,
-                        usage: finalUsage ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-                      }
-                    });
-                    if (result.success) {
-                      savedId = result.data.id;
-                      logger.info('Auto-saved streamed resume', { resumeId: savedId, userId });
-                    }
-                  } catch (err) {
-                    logger.error('Failed to auto-save streamed resume', { err, userId });
-                  }
-                } else if (mode === 'cover-letter-generation' && 'content' in finalOutput) {
-                  const coverLetterOutput = finalOutput as CoverLetterOutput;
-                  const jobDesc = conversationContext.job?.description || message;
-                  const jobTitle = coverLetterOutput.jobTitle || '';
-                  const companyName = coverLetterOutput.companyName || '';
-
-                  try {
-                    const result = await coverLetterService.createCoverLetter({
-                      userId,
-                      content: coverLetterOutput.content,
-                      metadata: {
-                        jobDescription: jobDesc,
-                        jobTitle,
-                        companyName,
-                        modelId: resolvedModel.modelId,
-                        usage: finalUsage ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-                      }
-                    });
-                    if (result.success) {
-                      savedId = result.data.id;
-                      logger.info('Auto-saved streamed cover letter', { coverLetterId: savedId, userId });
-                    }
-                  } catch (err) {
-                    logger.error('Failed to auto-save streamed cover letter', { err, userId });
-                  }
-                }
-
-                // If we saved something, send a final notification chunk with the ID
-                if (savedId) {
-                  controller.enqueue(
-                    new TextEncoder().encode(`data: ${JSON.stringify({ type: 'saved', id: savedId })}\n\n`)
-                  );
-                }
-              }
+              // No auto-save in chat route: save is explicit from UI header actions.
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : 'Unknown error';
               logger.error('Streaming error', { error, requestId, userId });
@@ -337,45 +263,6 @@ export const POST = createApiHandler<unknown, ChatRequest>(
         ? await AIOrchestrator.generateWithVision(conversation, orchestratorOptions)
         : await AIOrchestrator.generate(conversation, orchestratorOptions);
 
-      // Auto-save for non-streaming as well
-      let savedId: string | undefined;
-      if (result.output) {
-        const output = result.output as AnyModeOutput;
-        if (mode === 'resume-generation' && 'resume' in output) {
-          const resumeOutput = output as ResumeGenerationOutput;
-          const res = await resumeService.create({
-            userId,
-            resume: resumeOutput.resume as Resume,
-            jobDescription: conversationContext.job?.description || message,
-            jobMetadata: { 
-              jobTitle: resumeOutput.jobTitle || resumeOutput.resume.basics?.label || 'Optimized Resume', 
-              companyName: resumeOutput.companyName || '' 
-            },
-            metadata: {
-              matchScore: resumeOutput.matchScore,
-              suggestions: resumeOutput.suggestions,
-              modelId: resolvedModel.modelId,
-              usage: result.usage,
-            }
-          }).catch(err => logger.error('Failed to auto-save resume', { err, userId }));
-          if (res?.success) savedId = res.data.id;
-        } else if (mode === 'cover-letter-generation' && 'content' in output) {
-          const coverLetterOutput = output as CoverLetterOutput;
-          const res = await coverLetterService.createCoverLetter({
-            userId,
-            content: coverLetterOutput.content,
-            metadata: {
-              jobDescription: conversationContext.job?.description || message,
-              jobTitle: coverLetterOutput.jobTitle || '',
-              companyName: coverLetterOutput.companyName || '',
-              modelId: resolvedModel.modelId,
-              usage: result.usage,
-            }
-          }).catch(err => logger.error('Failed to auto-save cover letter', { err, userId }));
-          if (res?.success) savedId = res.data.id;
-        }
-      }
-
       return Response.json(
         {
           success: true,
@@ -384,7 +271,7 @@ export const POST = createApiHandler<unknown, ChatRequest>(
             text: result.text,
             output: result.output,
             usage: result.usage,
-            savedId,
+            savedId: undefined,
           },
           requestId,
         },

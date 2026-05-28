@@ -1,8 +1,8 @@
 export { ApiProviderService, apiProviderService } from './api-providers.workflow';
 export type {
-  AddApiProviderInput,
-  UpdateApiProviderInput,
-  ProviderWithModels,
+  ServiceAddProviderInput,
+  ServiceUpdateProviderInput,
+  ResolvedProviderData,
   ProviderInfo,
   ConfiguredModelInfo,
   ProviderListItem,

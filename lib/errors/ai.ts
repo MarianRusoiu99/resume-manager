@@ -5,7 +5,7 @@
  * Provides specific error types for better error handling and user messaging.
  */
 
-import type { ServiceErrorCode } from '../types';
+import type { ErrorCodeType } from '../types';
 import { AppError } from './base';
 
 /**
@@ -26,7 +26,7 @@ export abstract class AIError extends AppError {
  * Thrown when user tries to use AI features without configuring a provider
  */
 export class AIProviderNotConfiguredError extends AIError {
-  readonly code = 'NOT_FOUND' as ServiceErrorCode;
+  readonly code = 'NOT_FOUND' as ErrorCodeType;
   readonly statusCode = 400;
 
   constructor() {
@@ -39,7 +39,7 @@ export class AIProviderNotConfiguredError extends AIError {
  * Thrown when there's an issue with the AI provider
  */
 export class AIProviderError extends AIError {
-  readonly code = 'EXTERNAL_SERVICE_ERROR' as ServiceErrorCode;
+  readonly code = 'EXTERNAL_SERVICE_ERROR' as ErrorCodeType;
   readonly statusCode = 502;
 
   constructor(
@@ -57,7 +57,7 @@ export class AIProviderError extends AIError {
  * Thrown when trying to use a provider that isn't implemented
  */
 export class UnsupportedProviderError extends AIError {
-  readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
+  readonly code = 'VALIDATION_ERROR' as ErrorCodeType;
   readonly statusCode = 400;
 
   constructor(provider: string, supportedProviders: string[], cause?: unknown) {
@@ -74,7 +74,7 @@ export class UnsupportedProviderError extends AIError {
  * Thrown when the API key format is invalid or the key is rejected by the provider
  */
 export class InvalidAPIKeyError extends AIError {
-  readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
+  readonly code = 'VALIDATION_ERROR' as ErrorCodeType;
   readonly statusCode = 400;
 
   constructor(provider: string, reason?: string, cause?: unknown) {
@@ -93,7 +93,7 @@ export class InvalidAPIKeyError extends AIError {
  * Thrown when the requested model doesn't exist or isn't available
  */
 export class ModelNotFoundError extends AIError {
-  readonly code = 'NOT_FOUND' as ServiceErrorCode;
+  readonly code = 'NOT_FOUND' as ErrorCodeType;
   readonly statusCode = 404;
 
   constructor(modelId: string, provider?: string, cause?: unknown) {
@@ -112,7 +112,7 @@ export class ModelNotFoundError extends AIError {
  * Thrown when the AI provider rate limit is exceeded
  */
 export class AIRateLimitError extends AIError {
-  readonly code = 'RATE_LIMITED' as ServiceErrorCode;
+  readonly code = 'RATE_LIMITED' as ErrorCodeType;
   readonly statusCode = 429;
 
   constructor(
@@ -135,7 +135,7 @@ export class AIRateLimitError extends AIError {
  * Thrown when the input content is too long for the model
  */
 export class AIContextLengthError extends AIError {
-  readonly code = 'VALIDATION_ERROR' as ServiceErrorCode;
+  readonly code = 'VALIDATION_ERROR' as ErrorCodeType;
   readonly statusCode = 400;
 
   constructor(
@@ -158,7 +158,7 @@ export class AIContextLengthError extends AIError {
  * Thrown when the user's AI quota/credits are exhausted
  */
 export class AIQuotaExceededError extends AIError {
-  readonly code = 'FORBIDDEN' as ServiceErrorCode;
+  readonly code = 'FORBIDDEN' as ErrorCodeType;
   readonly statusCode = 403;
 
   constructor(provider: string, cause?: unknown) {

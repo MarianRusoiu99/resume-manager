@@ -63,6 +63,15 @@ function attemptJSONRepair(jsonString: string): string {
   return fixed;
 }
 
+function extractTemplateCode(text: string): string {
+  const trimmed = text.trim();
+  const fenceMatch = trimmed.match(/```(?:html)?\s*\n?([\s\S]*?)\n?```/i);
+  if (fenceMatch?.[1]) {
+    return fenceMatch[1].trim();
+  }
+  return trimmed;
+}
+
 /**
  * Parses AI output using mode configuration
  */
@@ -80,6 +89,15 @@ export function parseOutput<T>(text: string, mode: AIMode): T {
     } catch {
       return { content: trimmed } as unknown as T;
     }
+  }
+
+  // Template modes should treat output as raw template code (HTML/CSS/Handlebars)
+  // to avoid brittle JSON escaping issues with large templates.
+  if (mode.id === 'template-generation' || mode.id === 'template-enhancement') {
+    const extracted = extractTemplateCode(trimmed);
+    const wrapped = { htmlTemplate: extracted };
+    const validated = mode.outputSchema.parse(wrapped);
+    return (mode.postprocessOutput ? mode.postprocessOutput(validated) : validated) as T;
   }
 
   // Try to extract and parse JSON

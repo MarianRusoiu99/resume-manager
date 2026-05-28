@@ -1,36 +1,16 @@
-import { Suspense } from 'react';
-import { getProfiles } from '@/app/actions/profile';
-import { getApiProviders } from '@/app/actions/api-provider';
-import { GenerateContent } from './components/GenerateContent';
-import { PageSkeleton } from '@/components/core/data-display/skeletons/PageSkeleton';
-import type { ProfileListItem } from '@/lib/actions/types';
+'use client';
 
-async function GenerateDataWrapper() {
-  const [profilesResult, providersResult] = await Promise.all([
-    getProfiles(),
-    getApiProviders(),
-  ]);
-
-  const profiles = (profilesResult.success ? profilesResult.data : []) as ProfileListItem[];
-  const providers = (providersResult.success ? providersResult.data : []) as { isActive?: boolean }[];
-  const hasAIProviders = providers.some((p) => p.isActive);
-  
-  const defaultProfile = profiles.find((p) => p.isDefault) || profiles[0];
-  const defaultProfileId = defaultProfile?.id || '';
-
-  return (
-    <GenerateContent 
-      initialProfiles={profiles}
-      hasAIProviders={hasAIProviders}
-      defaultProfileId={defaultProfileId}
-    />
-  );
-}
+import { useSearchParams } from 'next/navigation';
+import { FullPageChat } from '@/modules/chat-panel/components/FullPageChat';
 
 export default function GeneratePage() {
-  return (
-    <Suspense fallback={<PageSkeleton />}>
-      <GenerateDataWrapper />
-    </Suspense>
-  );
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab');
+  const defaultType = tab === 'cover-letter'
+    ? 'cover-letter' as const
+    : tab === 'template'
+      ? 'template' as const
+      : 'resume' as const;
+
+  return <FullPageChat defaultType={defaultType} />;
 }

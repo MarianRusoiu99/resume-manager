@@ -1,10 +1,10 @@
-import { GeneratedResumeData } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
+import { GeneratedResumeEntity } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
 import { Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Creates a mock Resume object for testing
  */
-export function createMockResume(overrides?: Partial<GeneratedResumeData>): GeneratedResumeData {
+export function createMockResume(overrides?: Partial<GeneratedResumeEntity>): GeneratedResumeEntity {
   return {
     id: 'resume-123',
     userId: 'user-123',
@@ -31,7 +31,7 @@ export function createMockResume(overrides?: Partial<GeneratedResumeData>): Gene
 /**
  * Creates multiple mock resumes
  */
-export function createMockResumes(count: number, userId: string = 'user-123'): GeneratedResumeData[] {
+export function createMockResumes(count: number, userId: string = 'user-123'): GeneratedResumeEntity[] {
   return Array.from({ length: count }, (_, i) => 
     createMockResume({
       id: `resume-${i + 1}`,

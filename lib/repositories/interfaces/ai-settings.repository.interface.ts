@@ -1,7 +1,9 @@
 import { UserOwnedEntity } from '../generic.repository';
 import { TransactionClient } from '@/lib/db/transaction';
+import type { AIFeature } from '@/lib/types/ai-settings';
 
-export type AIFeatureType = 'resume' | 'coverLetter' | 'enhance' | 'template';
+/** @deprecated Use AIFeature from '@/lib/types/ai-settings' instead */
+export type AIFeatureType = AIFeature;
 
 export interface ModelPreference {
   providerId: string | null;

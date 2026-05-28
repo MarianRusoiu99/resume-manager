@@ -5,13 +5,13 @@
  * All error classes should extend from AppError defined here.
  */
 
-import type { ServiceErrorCode } from '../types';
+import type { ErrorCodeType } from '../types';
 
 /**
  * Base application error class
  */
 export abstract class AppError extends Error {
-  abstract readonly code: ServiceErrorCode;
+  abstract readonly code: ErrorCodeType;
   abstract readonly statusCode: number;
 
   constructor(message: string, public readonly cause?: unknown) {

@@ -16,6 +16,8 @@ import { Save, Share2, Edit2, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ChatPanel } from "@/components/chat";
+import type { ConversationContext } from "@/modules/ai-enhance/hooks/useConversation";
 
 const logger = createComponentLogger('ProfileEditor');
 
@@ -37,6 +39,7 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
   const { runWithToast } = useToastAction();
   const [profile, setProfile] = useState<ProfileEditorData | null>(null);
   const editorRef = useRef<ResumeEditorRef>(null);
+  const [chatOpen, setChatOpen] = useState(false);
 
   // State for title rename
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
@@ -108,99 +111,131 @@ export function ProfileEditor({ profileId }: Readonly<ProfileEditorProps>) {
     setProfile((prev) => prev ? { ...prev, name } : null);
   };
 
+  const getConversationContext = (): ConversationContext => ({
+    userProfile: {
+      resume: profile?.resume as Record<string, unknown> ?? undefined,
+      name: profile?.name || undefined,
+    },
+    currentResume: profile?.resume as Record<string, unknown> ?? undefined,
+  });
+
+  const handleChatOutput = useCallback((output: unknown) => {
+    // If the output contains a resume, apply it to the editor
+    if (output && typeof output === 'object' && 'resume' in output) {
+      const resumeData = (output as { resume: Resume }).resume;
+      if (resumeData) {
+        editorRef.current?.updateResume(resumeData);
+        toast.success("Resume updated from chat!");
+      }
+    }
+  }, []);
+
   if (!profile) return null;
 
   return (
-    <Page
-      title={
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-bold uppercase tracking-tight">{profile.name}</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => {
-              setNewName(profile.name);
-              setIsRenameModalOpen(true);
-            }}
-          >
-            <Edit2 className="h-4 w-4" />
-          </Button>
-        </div>
-      }
-      description="Edit your professional profile content"
-      breadcrumbs={[
-        { label: 'Profiles', href: '/profile' },
-        { label: profile.name }
-      ]}
-      maxWidth="full"
-      className="p-0"
-      scrollable={false}
-      actions={
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 font-bold uppercase tracking-widest text-xs"
-            onClick={() => editorRef.current?.setShowAIEnhance(true)}
-          >
-            <Sparkles className="h-3 w-3 mr-2" />
-            AI Enhance
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 font-bold uppercase tracking-widest text-xs"
-            onClick={() => editorRef.current?.setShowShareDialog(true)}
-          >
-            <Share2 className="h-3 w-3 mr-2" />
-            Share
-          </Button>
-          <Button
-            size="sm"
-            className="h-8 font-bold uppercase tracking-widest text-xs"
-            onClick={() => editorRef.current?.save()}
-          >
-            <Save className="h-3 w-3 mr-2" />
-            Save
-          </Button>
-        </div>
-      }
-    >
-      <div className="flex-1 flex flex-col min-h-0 -mx-4 sm:-mx-8">
-        <EditorProvider onLoad={handleLoad} onSave={handleSave}>
-          <ResumeEditor 
-            ref={editorRef}
-            id={profileId}
-            displayName={profile.name}
-            isPublic={profile.isPublic}
-            publicSlug={profile.publicSlug ?? undefined}
-            onDisplayNameChange={onDisplayNameChange}
-          />
-        </EditorProvider>
-      </div>
-
-      <Dialog open={isRenameModalOpen} onOpenChange={setIsRenameModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Profile</DialogTitle>
-            <DialogDescription>Give your profile a clear identification.</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest mb-2 block">Profile Name</Label>
-            <Input
-              id="name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              autoFocus
-            />
+    <>
+      <Page
+        title={
+          <div className="flex items-center gap-2">
+            <span className="text-xl font-bold uppercase tracking-tight">{profile.name}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => {
+                setNewName(profile.name);
+                setIsRenameModalOpen(true);
+              }}
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleProfileNameChange}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Page>
+        }
+        description="Edit your professional profile content"
+        breadcrumbs={[
+          { label: 'Profiles', href: '/profile' },
+          { label: profile.name }
+        ]}
+        maxWidth="full"
+        className="p-0"
+        scrollable={false}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 font-bold uppercase tracking-widest text-xs"
+              onClick={() => setChatOpen(true)}
+            >
+              <Sparkles className="h-3 w-3 mr-2" />
+              AI Chat
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 font-bold uppercase tracking-widest text-xs"
+              onClick={() => editorRef.current?.setShowShareDialog(true)}
+            >
+              <Share2 className="h-3 w-3 mr-2" />
+              Share
+            </Button>
+            <Button
+              size="sm"
+              className="h-8 font-bold uppercase tracking-widest text-xs"
+              onClick={() => editorRef.current?.save()}
+            >
+              <Save className="h-3 w-3 mr-2" />
+              Save
+            </Button>
+          </div>
+        }
+      >
+        <div className="flex-1 flex flex-col min-h-0 -mx-4 sm:-mx-8">
+          <EditorProvider onLoad={handleLoad} onSave={handleSave}>
+            <ResumeEditor 
+              ref={editorRef}
+              id={profileId}
+              displayName={profile.name}
+              isPublic={profile.isPublic}
+              publicSlug={profile.publicSlug ?? undefined}
+              onDisplayNameChange={onDisplayNameChange}
+            />
+          </EditorProvider>
+        </div>
+
+        <Dialog open={isRenameModalOpen} onOpenChange={setIsRenameModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename Profile</DialogTitle>
+              <DialogDescription>Give your profile a clear identification.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              <Label htmlFor="name" className="text-xs font-bold uppercase tracking-widest mb-2 block">Profile Name</Label>
+              <Input
+                id="name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRenameModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleProfileNameChange}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </Page>
+
+      {/* AI Chat Panel */}
+      <ChatPanel
+        mode="resume-enhancement"
+        context={getConversationContext()}
+        isOpen={chatOpen}
+        onOpenChange={setChatOpen}
+        onOutput={handleChatOutput}
+        title="Resume Assistant"
+        placeholder="Ask me to rewrite, improve, or tailor your resume..."
+      />
+    </>
   );
 }

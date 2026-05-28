@@ -49,12 +49,9 @@ You are an expert in creating professional HTML/CSS resume templates.
 
 export const TEMPLATE_OUTPUT_INSTRUCTIONS = `
 ## OUTPUT FORMAT
-Return a valid JSON object with EXACTLY this structure:
-{
-  "htmlTemplate": "string - Complete HTML template with Handlebars placeholders and inline <style> blocks",
-  "name": "string - Suggested template name",
-  "description": "string - Brief description of the template style"
-}`;
+Return ONLY the template code (HTML + inline <style> + Handlebars placeholders).
+Do NOT return JSON wrappers.
+Do NOT include markdown explanations.`;
 
 
 export const HANDLEBARS_REFERENCE = `

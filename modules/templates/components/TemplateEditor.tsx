@@ -29,14 +29,10 @@ import { TemplateEditorToolbar } from './editor/TemplateEditorToolbar';
 import { useTemplatePreviewLegacy as useTemplatePreview } from "@/hooks";
 import { useTemplatePersistence } from './editor/hooks/useTemplatePersistence';
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChatPanel } from '@/components/chat';
+import type { ConversationContext } from '@/modules/ai-enhance/hooks/useConversation';
 
 import type { OnMount } from '@monaco-editor/react';
-
-// Dynamically import AI Enhance modal
-const AIEnhanceTemplateModal = dynamic(
-  () => import('@/modules/ai-enhance/modals/AIEnhanceTemplateModal').then(mod => mod.AIEnhanceTemplateModal),
-  { ssr: false }
-);
 
 // Dynamically import Monaco Editor (client-side only)
 const Editor = dynamic(async () => {
@@ -86,9 +82,9 @@ export const TemplateEditor = memo(function TemplateEditor({ template, isNew = f
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
-  const [templateEnhanceModalOpen, setTemplateEnhanceModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   const {
     profiles,
@@ -171,127 +167,150 @@ export const TemplateEditor = memo(function TemplateEditor({ template, isNew = f
     }, 0);
   }, []);
 
+  const getConversationContext = (): ConversationContext => ({
+    template: {
+      htmlTemplate: formData.htmlTemplate,
+      name: formData.name,
+    },
+  });
+
+  const handleChatOutput = useCallback((output: unknown) => {
+    // If the output contains enhanced HTML, apply it
+    if (output && typeof output === 'object') {
+      if ('html' in output && typeof (output as { html: unknown }).html === 'string') {
+        setFormData(prev => ({ ...prev, htmlTemplate: (output as { html: string }).html }));
+        toast.success("Template updated from chat!");
+      } else if ('htmlTemplate' in output && typeof (output as { htmlTemplate: unknown }).htmlTemplate === 'string') {
+        setFormData(prev => ({ ...prev, htmlTemplate: (output as { htmlTemplate: string }).htmlTemplate }));
+        toast.success("Template updated from chat!");
+      }
+    }
+  }, [setFormData]);
+
   return (
-    <Page
-      title={
-        <div className="flex items-center gap-2">
-          <span>{formData.name || (isNew ? 'New Template' : 'Unnamed Template')}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 shrink-0 hover:bg-muted"
-            onClick={() => setSettingsModalOpen(true)}
-          >
-            <Settings2 className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        </div>
-      }
-      description={formData.description || 'No description provided'}
-      breadcrumbs={[
-        { label: 'Templates', href: '/templates' },
-        { label: isNew ? 'New' : formData.name || 'Edit' }
-      ]}
-      maxWidth="full"
-      className="p-0"
-      scrollable={false}
-      actions={
-        <div className="flex gap-2 shrink-0">
-          {isNew && (
+    <>
+      <Page
+        title={
+          <div className="flex items-center gap-2">
+            <span>{formData.name || (isNew ? 'New Template' : 'Unnamed Template')}</span>
             <Button
-              variant="secondary"
+              variant="ghost"
               size="sm"
-              onClick={() => setImportModalOpen(true)}
-              className="shrink-0 font-semibold"
+              className="h-7 w-7 p-0 shrink-0 hover:bg-muted"
+              onClick={() => setSettingsModalOpen(true)}
             >
-              <ImagePlus className="mr-2 h-4 w-4" />
-              Import
+              <Settings2 className="h-4 w-4 text-muted-foreground" />
             </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="hover:bg-muted"
-          >
-            Cancel
-          </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving} className="font-semibold shadow-sm">
-            <Save className="mr-2 h-4 w-4" />
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
-        </div>
-      }
-    >
-      <div className={`flex-1 min-h-0 flex flex-col md:flex-row bg-transparent gap-4 p-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-background p-0' : ''}`}>
-        {/* Left Panel - Code Editor */}
-        <div className={`flex flex-col min-h-0 w-full md:w-1/2 bg-card rounded-2xl overflow-hidden shadow-sm ${isFullscreen ? 'md:w-full rounded-none' : ''}`}>
-          {/* Code Editors */}
-          <Tabs defaultValue="html" className="flex-1 flex flex-col min-h-0">
-            <TemplateEditorToolbar
-              htmlTemplate={formData.htmlTemplate}
-              isFullscreen={isFullscreen}
-              setIsFullscreen={setIsFullscreen}
-              setTemplateEnhanceModalOpen={setTemplateEnhanceModalOpen}
-              handleSave={handleSave}
-              saving={saving}
-            />
-
-            <TabsContent value="html" className="flex-1 mt-0 relative min-h-0 overflow-hidden">
-              {mounted && (
-                <div className="absolute inset-0">
-                  <Editor
-                    height="100%"
-                    defaultLanguage="html"
-                    language="html"
-                    theme="vs-dark"
-                    value={formData.htmlTemplate}
-                    onMount={handleEditorDidMount}
-                    onChange={(value) => setFormData({ ...formData, htmlTemplate: value || '' })}
-                    options={EDITOR_OPTIONS}
-                  />
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Right Panel - Live Preview */}
-        {!isFullscreen && (
-          <TemplatePreviewFrame
-            isLoadingProfile={isLoadingProfile}
-            previewResume={previewResume}
-            htmlTemplate={formData.htmlTemplate}
-            selectedProfileId={selectedProfileId}
-            setSelectedProfileId={setSelectedProfileId}
-            profiles={profiles}
-          />
-        )}
-      </div>
-
-      {/* Settings Modal */}
-      <TemplateSettingsDialog
-        open={settingsModalOpen}
-        onOpenChange={setSettingsModalOpen}
-        formData={formData}
-        setFormData={(data) => setFormData({ ...formData, ...data })}
-      />
-
-      {/* Import Modal */}
-      <TemplateImportModal
-        open={importModalOpen}
-        onOpenChange={setImportModalOpen}
-        onImportComplete={handleImportComplete}
-      />
-
-      {/* AI Enhancement Modal */}
-      <AIEnhanceTemplateModal
-        open={templateEnhanceModalOpen}
-        onOpenChange={setTemplateEnhanceModalOpen}
-        originalHtml={formData.htmlTemplate}
-        onAccept={(enhancedHtml: string) =>
-          setFormData({ ...formData, htmlTemplate: enhancedHtml })
+          </div>
         }
+        description={formData.description || 'No description provided'}
+        breadcrumbs={[
+          { label: 'Templates', href: '/templates' },
+          { label: isNew ? 'New' : formData.name || 'Edit' }
+        ]}
+        maxWidth="full"
+        className="p-0"
+        scrollable={false}
+        actions={
+          <div className="flex gap-2 shrink-0">
+            {isNew && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setImportModalOpen(true)}
+                className="shrink-0 font-semibold"
+              >
+                <ImagePlus className="mr-2 h-4 w-4" />
+                Import
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.back()}
+              className="hover:bg-muted"
+            >
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleSave} disabled={saving} className="font-semibold shadow-sm">
+              <Save className="mr-2 h-4 w-4" />
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        }
+      >
+        <div className={`flex-1 min-h-0 flex flex-col md:flex-row bg-transparent gap-4 p-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-background p-0' : ''}`}>
+          {/* Left Panel - Code Editor */}
+          <div className={`flex flex-col min-h-0 w-full md:w-1/2 bg-card rounded-2xl overflow-hidden shadow-sm ${isFullscreen ? 'md:w-full rounded-none' : ''}`}>
+            {/* Code Editors */}
+            <Tabs defaultValue="html" className="flex-1 flex flex-col min-h-0">
+              <TemplateEditorToolbar
+                htmlTemplate={formData.htmlTemplate}
+                isFullscreen={isFullscreen}
+                setIsFullscreen={setIsFullscreen}
+                onChatToggle={() => setChatOpen(true)}
+                handleSave={handleSave}
+                saving={saving}
+              />
+
+              <TabsContent value="html" className="flex-1 mt-0 relative min-h-0 overflow-hidden">
+                {mounted && (
+                  <div className="absolute inset-0">
+                    <Editor
+                      height="100%"
+                      defaultLanguage="html"
+                      language="html"
+                      theme="vs-dark"
+                      value={formData.htmlTemplate}
+                      onMount={handleEditorDidMount}
+                      onChange={(value) => setFormData({ ...formData, htmlTemplate: value || '' })}
+                      options={EDITOR_OPTIONS}
+                    />
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Right Panel - Live Preview */}
+          {!isFullscreen && (
+            <TemplatePreviewFrame
+              isLoadingProfile={isLoadingProfile}
+              previewResume={previewResume}
+              htmlTemplate={formData.htmlTemplate}
+              selectedProfileId={selectedProfileId}
+              setSelectedProfileId={setSelectedProfileId}
+              profiles={profiles}
+            />
+          )}
+        </div>
+
+        {/* Settings Modal */}
+        <TemplateSettingsDialog
+          open={settingsModalOpen}
+          onOpenChange={setSettingsModalOpen}
+          formData={formData}
+          setFormData={(data) => setFormData({ ...formData, ...data })}
+        />
+
+        {/* Import Modal */}
+        <TemplateImportModal
+          open={importModalOpen}
+          onOpenChange={setImportModalOpen}
+          onImportComplete={handleImportComplete}
+        />
+      </Page>
+
+      {/* AI Chat Panel */}
+      <ChatPanel
+        mode="template-enhancement"
+        context={getConversationContext()}
+        isOpen={chatOpen}
+        onOpenChange={setChatOpen}
+        onOutput={handleChatOutput}
+        title="Template Assistant"
+        placeholder="Ask me to improve your template styling, layout, or structure..."
       />
-    </Page>
+    </>
   );
 });

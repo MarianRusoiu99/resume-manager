@@ -12,10 +12,6 @@ import { resumeSchema } from '@/lib/validations/jsonresume';
  */
 export const resumeGenerationOutputSchema = z.object({
   resume: resumeSchema,
-  jobTitle: z.string().describe('The job title extracted from the job description'),
-  companyName: z.string().describe('The company name extracted from the job description'),
-  matchScore: z.number().min(0).max(100).optional().describe('How well the resume matches the job requirements (0-100)'),
-  suggestions: z.array(z.string()).optional().describe('Suggestions for further improving the resume'),
 });
 
 export type ResumeGenerationOutput = z.infer<typeof resumeGenerationOutputSchema>;

@@ -1,13 +1,8 @@
 /**
- * Conversation mode
+ * Conversation mode - imported from canonical source for local use and re-exported
  */
-export type ConversationMode =
-  | 'resume-generation'
-  | 'resume-enhancement'
-  | 'cover-letter-generation'
-  | 'template-generation'
-  | 'template-enhancement'
-  | 'text-enhancement';
+import type { ConversationMode } from '@/lib/ai/chat/conversation/types';
+export type { ConversationMode };
 
 /**
  * Attachment for sending to the API
@@ -30,6 +25,8 @@ export interface ConversationMessage {
   attachments?: ConversationAttachment[];
   /** Structured output from assistant (if available) */
   output?: unknown;
+  /** Accumulated reasoning/thinking text from the AI (for reasoning-capable models) */
+  thinking?: string;
 }
 
 /**
@@ -55,19 +52,42 @@ export interface ConversationContext {
 }
 
 /**
- * Conversation state
+ * Domain data for a conversation — the actual business/semantic content.
+ * These fields represent "what the conversation IS", independent of any
+ * UI rendering concerns such as loading spinners or error toasts.
  */
-export interface ConversationState<T = unknown> {
+export interface ConversationData<T = unknown> {
   id: string | null;
   mode: ConversationMode;
   messages: ConversationMessage[];
   context: ConversationContext;
   output: T | null;
   savedId: string | null;
+}
+
+/**
+ * UI state for a conversation — transient rendering concerns only.
+ * These fields drive UI indicators (spinners, error banners, streaming dots)
+ * and have no meaning outside the presentation layer.
+ */
+export interface ConversationUIState {
   isLoading: boolean;
   isStreaming: boolean;
   error: string | null;
 }
+
+/**
+ * Full conversation state — combines domain data with UI state.
+ *
+ * @example Splitting for pure-logic consumers:
+ * ```ts
+ * function processConversation(data: ConversationData) { ... }  // no UI coupling
+ * function renderChat(state: ConversationState) { ... }         // full state
+ * ```
+ */
+export interface ConversationState<T = unknown>
+  extends ConversationData<T>,
+    ConversationUIState {}
 
 /**
  * Options for sending a message
@@ -89,6 +109,8 @@ export interface SendMessageOptions {
 export interface UseConversationOptions<T = unknown> {
   mode: ConversationMode;
   initialContext?: ConversationContext;
+  /** Optional localStorage key for persisting conversation between refreshes */
+  persistenceKey?: string;
   /** Called when generation completes */
   onComplete?: (output: T, savedId?: string | null) => void;
   /** Called on error */

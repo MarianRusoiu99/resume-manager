@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { type ServiceResult, errorCodeToStatus } from "@/lib/types/service-result";
+import { type ServiceResult } from "@/lib/types/service-result";
+import { errorCodeToStatus } from "@/lib/types/error-codes";
 
 /**
  * Type guard to check if a value is a ServiceResult

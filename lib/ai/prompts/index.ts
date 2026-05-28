@@ -55,8 +55,7 @@ Remember: Authenticity builds trust. A well-crafted truthful resume is far more 
 {{resume}}
 
 ## YOUR TASK:
-1. First, extract the job title and company name from the job description
-2. Optimize the resume by:
+1. Optimize the resume by:
    - Rephrasing content to better match the job requirements
    - Highlighting skills and experience that align with the job
    - Reordering sections to prioritize relevant experience
@@ -72,8 +71,6 @@ Remember: Authenticity builds trust. A well-crafted truthful resume is far more 
 ## OUTPUT FORMAT:
 Return a JSON object with this structure:
 {
-  "jobTitle": "extracted job title",
-  "companyName": "extracted company name",
   "resume": {
     // JSON Resume format with: basics, work, education, skills, projects
   }

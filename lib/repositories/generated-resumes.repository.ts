@@ -4,7 +4,7 @@ import type { Resume as JsonResume } from '@/lib/validations/jsonresume';
 import { GenericUserOwnedRepository, PrismaArgs } from './generic.repository';
 import { RecordNotFoundError } from '@/lib/errors/database';
 import { TransactionClient } from '@/lib/db/transaction';
-import type { IGeneratedResumeRepository, GeneratedResumeData, CreateResumeInput, UpdateResumeInput } from './interfaces/generated-resumes.repository.interface';
+import type { IGeneratedResumeRepository, GeneratedResumeEntity, CreateResumeInput, UpdateResumeInput } from './interfaces/generated-resumes.repository.interface';
 import { mapResumeToGeneratedData, ResumeWithIncludes } from './generated-resumes/mappers/resume.mapper';
 
 /**
@@ -12,7 +12,7 @@ import { mapResumeToGeneratedData, ResumeWithIncludes } from './generated-resume
  */
 export class GeneratedResumeRepository 
   extends GenericUserOwnedRepository<
-    GeneratedResumeData, 
+    GeneratedResumeEntity, 
     CreateResumeInput, 
     UpdateResumeInput, 
     'resume', 
@@ -43,7 +43,7 @@ export class GeneratedResumeRepository
   /**
    * Create a new generated resume
    */
-  override async create(data: CreateResumeInput, tx?: TransactionClient): Promise<GeneratedResumeData> {
+  override async create(data: CreateResumeInput, tx?: TransactionClient): Promise<GeneratedResumeEntity> {
     const companyName =
       typeof data.jobMetadata?.companyName === 'string' ? data.jobMetadata.companyName : undefined;
     const jobTitle = typeof data.jobMetadata?.jobTitle === 'string' ? data.jobMetadata.jobTitle : null;
@@ -95,7 +95,7 @@ export class GeneratedResumeRepository
     userId: string, 
     args?: PrismaArgs & { limit?: number; offset?: number },
     tx?: TransactionClient
-  ): Promise<GeneratedResumeData[]> {
+  ): Promise<GeneratedResumeEntity[]> {
     const { where, orderBy, take, skip, limit, offset } = args || {};
     
     // Apply default limit if not specified
@@ -120,14 +120,14 @@ export class GeneratedResumeRepository
   /**
    * Find all resumes for a user
    */
-  async findByUserId(userId: string, tx?: TransactionClient): Promise<GeneratedResumeData[]> {
+  async findByUserId(userId: string, tx?: TransactionClient): Promise<GeneratedResumeEntity[]> {
     return this.findAllForUser(userId, undefined, tx);
   }
 
   /**
    * Find a resume by ID
    */
-  override async findById(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData | null> {
+  override async findById(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeEntity | null> {
     const resume = await this.getDelegate(tx).findFirst({
       where: { id, ...(userId ? { userId } : {}) },
       include: {
@@ -143,7 +143,7 @@ export class GeneratedResumeRepository
   /**
    * Update resume content
    */
-  override async update(id: string, data: UpdateResumeInput, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData> {
+  override async update(id: string, data: UpdateResumeInput, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeEntity> {
     const resume = data.resume;
     
     const updated = await this.getDelegate(tx).update({
@@ -179,7 +179,7 @@ export class GeneratedResumeRepository
   /**
    * Delete a resume
    */
-  override async delete(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeData> {
+  override async delete(id: string, userId?: string, tx?: TransactionClient): Promise<GeneratedResumeEntity> {
     const resume = await this.findById(id, userId, tx);
     if (!resume) {
       throw new RecordNotFoundError('Resume', id, 'delete');
@@ -199,7 +199,7 @@ export class GeneratedResumeRepository
   /**
    * Update resume template
    */
-  async updateTemplate(id: string, userId: string, templateId?: string, tx?: TransactionClient): Promise<GeneratedResumeData> {
+  async updateTemplate(id: string, userId: string, templateId?: string, tx?: TransactionClient): Promise<GeneratedResumeEntity> {
     const resume = await this.findById(id, userId, tx);
     if (!resume) {
       throw new RecordNotFoundError('Resume', id, 'updateTemplate');
@@ -214,7 +214,7 @@ export class GeneratedResumeRepository
     id: string,
     data: { jobDescription?: string; jobMetadata?: Record<string, unknown> },
     tx?: TransactionClient
-  ): Promise<GeneratedResumeData> {
+  ): Promise<GeneratedResumeEntity> {
     const client = tx || (this.db as TransactionClient);
     const resume = await client.resume.findUnique({
       where: { id },
@@ -254,7 +254,7 @@ export class GeneratedResumeRepository
   /**
    * Link a cover letter to a resume
    */
-  async linkCoverLetter(id: string, coverLetterId: string | null, tx?: TransactionClient): Promise<GeneratedResumeData> {
+  async linkCoverLetter(id: string, coverLetterId: string | null, tx?: TransactionClient): Promise<GeneratedResumeEntity> {
     const client = tx || (this.db as TransactionClient);
     const updated = await client.resume.update({
       where: { id },

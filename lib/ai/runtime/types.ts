@@ -1,7 +1,8 @@
 import type { AIProvider } from '@/lib/ai/providers';
-import type { AIFeatureType } from '@/lib/services/ai-settings';
+import type { AIFeature } from '@/lib/types/ai-settings';
 
-export type AIModelFeature = AIFeatureType;
+/** @deprecated Use AIFeature from '@/lib/types/ai-settings' instead */
+export type AIModelFeature = AIFeature;
 
 export type ResolvedAIModel = {
   provider: AIProvider;
@@ -13,6 +14,10 @@ export type ResolvedAIModel = {
   modelKey: string;
   /** Feature used for resolution */
   feature: AIModelFeature;
+  /** Whether the resolved model supports reasoning/thinking */
+  reasoning?: boolean;
+  /** Provider-specific options (e.g. reasoning config) */
+  providerOptions?: Record<string, Record<string, unknown>>;
 };
 
 export type ResolveAIModelInput = {

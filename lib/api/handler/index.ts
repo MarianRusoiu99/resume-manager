@@ -2,7 +2,7 @@ import { getSession, getVerifiedSession } from "@/lib/auth/dal";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
 import { ZodError } from "zod";
-import { errorCodeToStatus } from "@/lib/types/service-result";
+import { errorCodeToStatus } from "@/lib/types/error-codes";
 import { applyRateLimit, getClientIdentifier, addRateLimitHeaders, RateLimitConfigs } from "@/lib/middleware/rate-limit";
 import { isAppError, wrapError } from "@/lib/errors";
 import { startRequestTelemetry } from "@/lib/telemetry";

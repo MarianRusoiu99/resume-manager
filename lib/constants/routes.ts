@@ -15,24 +15,26 @@ export const ROUTES = {
   // Dashboard
   DASHBOARD: '/dashboard',
 
-  // Profiles
-  PROFILES: '/profile',
-  PROFILE: (id: string) => `/profile/${id}` as const,
+  // Source resumes (formerly profiles)
+  PROFILES: '/profile', // legacy alias route
+  PROFILE: (id: string) => `/profile/${id}` as const, // legacy alias route
   PROFILE_PUBLIC: (slug: string) => `/public/${slug}` as const,
+  SOURCE_RESUMES: '/resumes',
+  SOURCE_RESUME: (id: string) => `/resumes/${id}` as const,
 
-  // Resumes
-  RESUMES: '/resumes',
+  // Generated artifacts (formerly split across resumes/cover-letters/templates)
+  RESUMES: '/resumes', // legacy generated resumes list route (redirect target)
   RESUME: (id: string) => `/resumes/${id}` as const,
   RESUME_EDIT: (id: string) => `/resumes/${id}/edit` as const,
-
-  // Cover Letters
-  COVER_LETTERS: '/cover-letters',
+  COVER_LETTERS: '/cover-letters', // legacy list route (redirect target)
   COVER_LETTER: (id: string) => `/cover-letters/${id}` as const,
-
-  // Templates
-  TEMPLATES: '/templates',
+  TEMPLATES: '/templates', // legacy list route (redirect target)
   TEMPLATE: (id: string) => `/templates/${id}` as const,
   TEMPLATE_NEW: '/templates/new',
+  ARTIFACTS: '/artifacts',
+  ARTIFACTS_GENERATED: '/artifacts?tab=generated-resumes',
+  ARTIFACTS_COVER_LETTERS: '/artifacts?tab=cover-letters',
+  ARTIFACTS_TEMPLATES: '/artifacts?tab=templates',
 
   // Generation
   GENERATE: '/generate',

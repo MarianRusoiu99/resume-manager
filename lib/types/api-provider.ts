@@ -68,17 +68,4 @@ export interface UpdateApiProviderInput {
   lastUsedIp?: string;
 }
 
-/**
- * Repository interface for API providers
- */
-export interface IApiProviderRepository {
-  create(data: CreateApiProviderInput): Promise<ApiProviderWithModels>;
-  findByUserId(userId: string, includeInactive?: boolean): Promise<ApiProviderWithModels[]>;
-  findById(id: string, userId?: string): Promise<ApiProviderWithModels | null>;
-  findByProviderType(userId: string, provider: ProviderType): Promise<ApiProviderWithModels[]>;
-  update(id: string, data: UpdateApiProviderInput, userId?: string): Promise<ApiProviderWithModels>;
-  updateLastUsed(id: string, ipAddress?: string): Promise<ApiProviderWithModels>;
-  incrementUsage(id: string, ipAddress?: string): Promise<ApiProviderWithModels>;
-  delete(id: string, userId?: string): Promise<ApiProviderWithModels>;
-  toggleActive(id: string, userId: string, isActive: boolean): Promise<ApiProviderWithModels>;
-}
+

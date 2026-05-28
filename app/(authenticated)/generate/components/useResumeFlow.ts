@@ -1,17 +1,15 @@
 'use client';
 
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { useResumeGeneration } from '@/modules/ai-enhance/hooks/useResumeGeneration';
 import { deleteResume } from '@/app/actions/resume';
 import { getProfile } from '@/app/actions/profile';
-import { useTemplateSelection } from '@/components/preview/useTemplateSelection';
 import { useFeatureModelPreference } from "@/hooks";
 
 export function useResumeFlow(defaultProfileId: string) {
   const [selectedProfileId, setSelectedProfileId] = useState(defaultProfileId);
   const [jobDescription, setJobDescription] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
 
   const { modelId, providerId, isLoading: isModelLoading, updatePreference } = useFeatureModelPreference('resume');
 
@@ -29,10 +27,6 @@ export function useResumeFlow(defaultProfileId: string) {
   const {
     generate,
     resume: generatedResume,
-    jobTitle: aiJobTitle,
-    companyName: aiCompanyName,
-    matchScore,
-    suggestions,
     isLoading: isGenerating,
     error,
     savedId,
@@ -85,28 +79,11 @@ export function useResumeFlow(defaultProfileId: string) {
     });
   }, [generate, jobDescription, modelId, selectedProfileId, savedId]);
 
-  const { selectedTemplateId } = useTemplateSelection({
-    profileId: selectedProfileId,
-  });
-
-  const handleSave = useCallback(async (resume: unknown, title?: string, company?: string, score?: number | null, sug?: string[]) => {
-    // Auto-save is now handled on the server (api/v1/ai/chat)
-    // This client-side save is only for manual overrides or fallback
-    return;
-  }, []);
-
-  // Handle auto-save when generation completes
-  useEffect(() => {
-    // Server handles auto-save for both streaming and non-streaming
-    // No need for client-side effect to trigger save
-  }, []);
-
   return {
     selectedProfileId,
     setSelectedProfileId,
     jobDescription,
     setJobDescription,
-    isSaving,
     modelId,
     providerId,
     isModelLoading,
@@ -114,11 +91,8 @@ export function useResumeFlow(defaultProfileId: string) {
     generatedResume,
     isGenerating,
     error,
-    matchScore,
-    suggestions,
     handleGenerate,
     handleDiscard,
-    handleSave,
     savedId,
   };
 }

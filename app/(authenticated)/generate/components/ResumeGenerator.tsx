@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Sparkles, Save, FileSearch, Trash2, AlertTriangle } from 'lucide-react';
+import { Sparkles, FileSearch, Trash2, AlertTriangle } from 'lucide-react';
 import { Card, Button } from '@/components/ui';
 import { BaseDialog } from '@/components/core/feedback/dialogs/BaseDialog';
 import { Callout } from '@/components/core/feedback/Callout';
-import { Spinner } from '@/components/core/feedback/Spinner';
 import { EmptyState } from '@/components/core/feedback/states/EmptyState';
 import { ResumePreview } from '@/modules/resume/components/ResumePreview';
 import Link from 'next/link';
@@ -31,18 +30,14 @@ export function ResumeGenerator({
     setSelectedProfileId,
     jobDescription,
     setJobDescription,
-    isSaving,
     modelId,
     isModelLoading,
     handleModelChange,
     generatedResume,
     isGenerating,
     error,
-    matchScore,
-    suggestions,
     handleGenerate,
     handleDiscard,
-    handleSave,
     savedId,
   } = useResumeFlow(defaultProfileId);
 
@@ -83,42 +78,24 @@ export function ResumeGenerator({
               _hasAIProviders={hasAIProviders}
             />
 
-          <GenerationSettings
-            profiles={profiles}
-            selectedProfileId={selectedProfileId}
-            onProfileChange={setSelectedProfileId}
-            modelId={modelId}
-            onModelChange={handleModelChange}
-            isModelLoading={isModelLoading}
-          />
+            <GenerationSettings
+              profiles={profiles}
+              selectedProfileId={selectedProfileId}
+              onProfileChange={setSelectedProfileId}
+              modelId={modelId}
+              onModelChange={handleModelChange}
+              isModelLoading={isModelLoading}
+            />
 
-          {!hasAIProviders && !isLoadingMetadata && (
-            <Callout variant="warning" className="rounded-xl border-none bg-amber-500/10 text-amber-700">
-              No AI providers configured. Go to <Link href={ROUTES.SETTINGS_API_KEYS} className="underline font-bold">Settings</Link> to add your API keys.
-            </Callout>
-          )}
-
-          {error && <Callout variant="danger" className="rounded-xl border-none">{error}</Callout>}
-        </div>
-
-        {matchScore !== null && (
-          <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Match Score</span>
-              <span className="text-3xl font-black text-primary">{matchScore}%</span>
-            </div>
-            {suggestions && suggestions.length > 0 && (
-              <ul className="text-xs space-y-2.5 ml-1">
-                {suggestions.slice(0, 3).map((s: string) => (
-                  <li key={s} className="flex gap-2.5 items-start text-muted-foreground">
-                    <span className="text-primary font-bold">/</span>{s}
-                  </li>
-                ))}
-              </ul>
+            {!hasAIProviders && !isLoadingMetadata && (
+              <Callout variant="warning" className="rounded-xl border-none bg-amber-500/10 text-amber-700">
+                No AI providers configured. Go to <Link href={ROUTES.SETTINGS_API_KEYS} className="underline font-bold">Settings</Link> to add your API keys.
+              </Callout>
             )}
+
+            {error && <Callout variant="danger" className="rounded-xl border-none">{error}</Callout>}
           </div>
-        )}
-      </Card>
+        </Card>
 
       <div className="bg-card rounded-2xl overflow-hidden shadow-sm flex flex-col h-[800px] min-h-[600px] border-none">
         {generatedResume ? (

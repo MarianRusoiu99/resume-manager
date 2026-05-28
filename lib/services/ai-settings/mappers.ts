@@ -1,5 +1,4 @@
 import type { UserAISettingsData } from '@/lib/repositories/interfaces';
-import type { ProviderWithModels } from '../api-providers';
 import type { AIFeatureType, ModelPreference } from './types';
 
 export function extractPreference(
@@ -38,7 +37,7 @@ export function extractPreference(
 
 export function resolveNames(
   preference: ModelPreference,
-  providers: ProviderWithModels[]
+  providers: readonly { id: string; name: string; models: readonly { id: string; modelKey: string; name: string }[] }[]
 ): { providerName: string | null; modelName: string | null } {
   if (!preference.providerId) {
     return { providerName: null, modelName: null };

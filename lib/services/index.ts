@@ -58,9 +58,9 @@ export { NotificationService } from './notifications/notifications.service';
 export { AIService } from './ai';
 export { ApiProviderService } from './api-providers/api-providers.workflow';
 export type {
-  AddApiProviderInput,
-  UpdateApiProviderInput as ApiProviderUpdateInput,
-  ProviderWithModels,
+  ServiceAddProviderInput as AddApiProviderInput,
+  ServiceUpdateProviderInput as ApiProviderUpdateInput,
+  ResolvedProviderData as ResolvedProviderData,
   ProviderInfo,
   ProviderListItem,
   ProviderInstanceData,

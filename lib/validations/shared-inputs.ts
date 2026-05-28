@@ -1,29 +1,24 @@
 /**
  * Shared Input Schemas (prisma-free)
  *
- * Zod schemas/types intended to be imported by both server and client.
- * Do NOT import Prisma types here.
+ * Re-exports from the canonical split modules for backward compatibility.
+ * New code should import directly from:
+ *   - ./ai-providers  for provider schemas
+ *   - ./ai-enhancement for enhancement / feature schemas
  */
 
-import { z } from 'zod';
+// Provider schema — canonical definition lives in ai-providers.ts
+export {
+  aiProviderSchema,
+  addApiProviderInputSchema,
+  type AIProviderType,
+  type AddApiProviderInput,
+} from './ai-providers';
 
-export const aiProviderSchema = z.enum(['openai', 'google', 'anthropic']);
-export type AIProviderType = z.infer<typeof aiProviderSchema>;
-
-export const addApiProviderInputSchema = z.object({
-  name: z.string().min(1).max(100),
-  provider: aiProviderSchema,
-  apiKey: z.string().min(10).max(500),
-});
-export type AddApiProviderInput = z.infer<typeof addApiProviderInputSchema>;
-
-export const aiFeatureSchema = z.enum(['resume', 'coverLetter', 'enhance', 'template']);
-export type AIFeature = z.infer<typeof aiFeatureSchema>;
-
-export const updateAIPreferenceInputSchema = z.object({
-  feature: aiFeatureSchema,
-  providerId: z.string().cuid().nullable(),
-  modelId: z.string().nullable(),
-});
-export type UpdateAIPreferenceInput = z.infer<typeof updateAIPreferenceInputSchema>;
-
+// Feature / preference schemas — canonical definition lives in ai-enhancement.ts
+export {
+  aiFeatureSchema,
+  updateAIPreferenceInputSchema,
+  type AIFeature,
+  type UpdateAIPreferenceInput,
+} from './ai-enhancement';

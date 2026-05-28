@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { GeneratedResumeData } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
+import { GeneratedResumeEntity } from '@/lib/repositories/interfaces/generated-resumes.repository.interface';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 export type ResumeWithIncludes = Prisma.ResumeGetPayload<{
@@ -10,7 +10,7 @@ export type ResumeWithIncludes = Prisma.ResumeGetPayload<{
   };
 }>;
 
-export function mapResumeToGeneratedData(resume: ResumeWithIncludes): GeneratedResumeData {
+export function mapResumeToGeneratedData(resume: ResumeWithIncludes): GeneratedResumeEntity {
   const metadata = resume.metadata as unknown;
   const metadataRecord =
     metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>) : {};

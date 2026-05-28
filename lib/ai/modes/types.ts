@@ -106,10 +106,6 @@ export function defineMode<TOutput>(mode: AIMode<TOutput>): AIMode<TOutput> {
  */
 export interface ResumeGenerationOutput {
   resume: import('@/lib/validations/jsonresume').Resume;
-  jobTitle: string;
-  companyName: string;
-  matchScore?: number;
-  suggestions?: string[];
 }
 
 /**

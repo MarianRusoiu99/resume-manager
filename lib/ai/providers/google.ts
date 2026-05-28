@@ -99,6 +99,8 @@ export class GoogleProvider extends BaseAIProvider {
     // Extract model ID from full name (e.g., "models/gemini-pro" -> "gemini-pro")
     const modelId = model.name.replace('models/', '');
     const isGemini = modelId.includes('gemini');
+    // Use the API's thinking flag, or detect from model ID for Gemini 2.5+/3
+    const hasReasoning = model.thinking === true || /^gemini-(2\.[5-9]|[3-9])/.test(modelId);
 
     return {
       id: modelId,
@@ -109,6 +111,7 @@ export class GoogleProvider extends BaseAIProvider {
       capabilities: {
         vision: isGemini, // All Gemini models support vision
         structuredOutput: isGemini,
+        ...(hasReasoning ? { reasoning: true } : {}),
       },
     };
   }
