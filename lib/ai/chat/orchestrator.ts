@@ -106,7 +106,7 @@ export class AIOrchestrator {
 
       // Pass providerOptions for reasoning support (Vercel AI SDK handles provider-specific options)
       if (options.providerOptions) {
-        streamOptions.providerOptions = options.providerOptions;
+        streamOptions.providerOptions = options.providerOptions as Record<string, Record<string, import('ai').JSONValue>>;
       }
 
       const { fullStream, text, usage: usagePromise, finishReason } = streamText(streamOptions);

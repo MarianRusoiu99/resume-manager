@@ -27,6 +27,42 @@ export const SESSION_HISTORY_KEY = 'fullpage-chat:history:v1';
 export const SESSION_ACTIVE_KEY = 'fullpage-chat:active:v1';
 export const SESSION_COLLAPSED_KEY = 'fullpage-chat:history-collapsed:v1';
 
+// ─── Model selection ─────────────────────────────────────────────────────────
+export const MODEL_KEY = 'fullpage-chat:model:v1';
+export type ModelByType = Record<GenerationType, string | null>;
+
+// ─── Agent Skills ────────────────────────────────────────────────────────────
+export const SKILLS_KEY = 'fullpage-chat:skills:v1';
+
+export interface AgentSkill {
+  id: string;               // uuid
+  title: string;            // e.g. "Senior Backend Engineer"
+  content: string;          // free text injected into system prompt
+  createdAt: number;        // Date.now()
+}
+
+export type SkillsByType = Record<GenerationType, AgentSkill[]>;
+
+export function createSkill(title: string, content: string): AgentSkill {
+  return { id: createSessionId(), title, content, createdAt: Date.now() };
+}
+
+export function getSkillsByType(): SkillsByType {
+  try {
+    const raw = window.localStorage.getItem(SKILLS_KEY);
+    if (!raw) return { resume: [], 'cover-letter': [], template: [] };
+    return JSON.parse(raw) as SkillsByType;
+  } catch {
+    return { resume: [], 'cover-letter': [], template: [] };
+  }
+}
+
+export function saveSkillsByType(skills: SkillsByType): void {
+  try {
+    window.localStorage.setItem(SKILLS_KEY, JSON.stringify(skills));
+  } catch { /* ignore */ }
+}
+
 export const RESUME_ACTIONS: QuickAction[] = [
   { label: 'Tailor my resume for a job', prompt: 'I have a resume I want to tailor for a specific job posting. I\'ll share my current resume and the job description.' },
   { label: 'Create a resume from scratch', prompt: 'Help me create a professional resume from scratch. Ask me about my experience, skills, and education.' },
@@ -130,7 +166,6 @@ export function truncateTitle(text: string): string {
 
 export interface UseSessionManagerOptions {
   generationType: GenerationType;
-  messages: ConversationMessage[];
   mode: ConversationMode;
 }
 
@@ -142,17 +177,22 @@ export interface UseSessionManagerReturn {
   activeSessionId: string;
   setIsHistoryCollapsed: (v: boolean | ((prev: boolean) => boolean)) => void;
   setActiveByType: React.Dispatch<React.SetStateAction<ActiveSessionByType>>;
+  setHistoryByType: React.Dispatch<React.SetStateAction<SessionHistoryByType>>;
   handleCreateSession: (type: GenerationType) => void;
   handleDeleteSession: (type: GenerationType, sessionId: string) => void;
+  modelByType: Record<GenerationType, string | null>;
+  setModelForType: (type: GenerationType, modelId: string | null) => void;
 }
 
 export function useSessionManager(options: UseSessionManagerOptions): UseSessionManagerReturn {
-  const { generationType, messages, mode } = options;
+  const { generationType, mode } = options;
 
   const [historyByType, setHistoryByType] = useState<SessionHistoryByType>(() => getInitialSessionState().history);
   const [activeByType, setActiveByType] = useState<ActiveSessionByType>(() => getInitialSessionState().active);
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
   const [isClientHydrated, setIsClientHydrated] = useState(false);
+  const [modelByType, setModelByType] = useState<ModelByType>({ resume: null, 'cover-letter': null, template: null });
+  const [skillsByType, setSkillsByType] = useState<SkillsByType>({ resume: [], 'cover-letter': [], template: [] });
 
   // ── localStorage hydration ──────────────────────────────────────────────
   useEffect(() => {
@@ -184,6 +224,12 @@ export function useSessionManager(options: UseSessionManagerOptions): UseSession
       setHistoryByType(mergedHistory);
       setActiveByType(mergedActive);
       setIsHistoryCollapsed(rawCollapsed === 'true');
+      // Model selection
+      const rawModel = window.localStorage.getItem(MODEL_KEY);
+      if (rawModel) setModelByType(JSON.parse(rawModel) as ModelByType);
+      // Skills
+      const rawSkills = window.localStorage.getItem(SKILLS_KEY);
+      if (rawSkills) setSkillsByType(JSON.parse(rawSkills) as SkillsByType);
     } catch {
       // use defaults
     } finally {
@@ -198,37 +244,20 @@ export function useSessionManager(options: UseSessionManagerOptions): UseSession
       window.localStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(historyByType));
       window.localStorage.setItem(SESSION_ACTIVE_KEY, JSON.stringify(activeByType));
       window.localStorage.setItem(SESSION_COLLAPSED_KEY, String(isHistoryCollapsed));
+      window.localStorage.setItem(MODEL_KEY, JSON.stringify(modelByType));
+      window.localStorage.setItem(SKILLS_KEY, JSON.stringify(skillsByType));
     } catch {
       // ignore storage errors
     }
-  }, [historyByType, activeByType, isHistoryCollapsed, isClientHydrated]);
+  }, [historyByType, activeByType, isHistoryCollapsed, isClientHydrated, modelByType, skillsByType]);
 
   // ── Derived ─────────────────────────────────────────────────────────────
   const activeSessionId = activeByType[generationType];
 
-  // ── Title update from messages ──────────────────────────────────────────
-  useEffect(() => {
-    const firstUserMessage = messages.find((m) => m.role === 'user' && m.content.trim().length > 0);
-    const nextTitle = firstUserMessage ? truncateTitle(firstUserMessage.content) : (generationType === 'resume' ? 'New resume chat' : generationType === 'cover-letter' ? 'New cover letter chat' : 'New template chat');
-
-    setHistoryByType((prev) => {
-      const current = prev[generationType];
-      const idx = current.findIndex((s) => s.id === activeSessionId);
-      if (idx === -1) return prev;
-
-      const updatedSession: SessionMeta = {
-        ...current[idx],
-        title: nextTitle,
-        updatedAt: Date.now(),
-      };
-
-      const reordered = [updatedSession, ...current.filter((s) => s.id !== activeSessionId)];
-      return {
-        ...prev,
-        [generationType]: reordered,
-      };
-    });
-  }, [messages, generationType, activeSessionId]);
+  // ── Model selection ─────────────────────────────────────────────────────
+  const setModelForType = useCallback((type: GenerationType, modelId: string | null) => {
+    setModelByType((prev) => ({ ...prev, [type]: modelId }));
+  }, []);
 
   // ── Create session ──────────────────────────────────────────────────────
   const handleCreateSession = useCallback((type: GenerationType) => {
@@ -281,7 +310,10 @@ export function useSessionManager(options: UseSessionManagerOptions): UseSession
     activeSessionId,
     setIsHistoryCollapsed,
     setActiveByType,
+    setHistoryByType,
     handleCreateSession,
     handleDeleteSession,
+    modelByType,
+    setModelForType,
   };
 }

@@ -101,6 +101,8 @@ export interface SendMessageOptions {
   contextOverride?: Partial<ConversationContext>;
   /** Enable streaming response */
   stream?: boolean;
+  /** Session-scoped memory text to inject into system prompt */
+  agentMemory?: string;
 }
 
 /**

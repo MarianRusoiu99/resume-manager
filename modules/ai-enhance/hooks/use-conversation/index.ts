@@ -265,7 +265,7 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
    * Send a message
    */
   const sendMessage = useCallback(
-    async ({ message, attachments, modelId, contextOverride, stream = false }: SendMessageOptions): Promise<T | null> => {
+    async ({ message, attachments, modelId, contextOverride, stream = false, agentMemory, agentSkills }: SendMessageOptions): Promise<T | null> => {
       // Abort any existing request
       abortControllerRef.current?.abort();
       abortControllerRef.current = new AbortController();
@@ -308,6 +308,8 @@ export function useConversation<T = unknown>(options: UseConversationOptions<T>)
             // Only include modelId if it's a non-empty string
             ...(modelId && { modelId }),
             stream,
+            ...(agentMemory && { agentMemory }),
+            ...(agentSkills && { agentSkills }),
           }),
           signal: abortControllerRef.current.signal,
         });

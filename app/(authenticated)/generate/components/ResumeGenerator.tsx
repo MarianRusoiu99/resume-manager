@@ -116,7 +116,6 @@ export function ResumeGenerator({
             </div>
             <ResumePreview
               resumeData={generatedResume}
-              showTemplateSelector={true}
               showCard={false}
               className="w-full flex-1"
               disableScaling={false}

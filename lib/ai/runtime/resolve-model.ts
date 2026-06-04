@@ -9,14 +9,14 @@ import type { ResolvedAIModel, ResolveAIModelInput } from './types';
 /**
  * Build provider-specific reasoning options based on provider type.
  */
-function buildReasoningProviderOptions(providerType: string): Record<string, unknown> | undefined {
+function buildReasoningProviderOptions(providerType: string): Record<string, Record<string, unknown>> | undefined {
   switch (providerType) {
     case 'openai':
-      return { openai: { reasoningEffort: 'medium' } };
+      return { openai: { reasoningEffort: 'medium' } } as Record<string, Record<string, unknown>>;
     case 'anthropic':
-      return { anthropic: { thinking: { type: 'enabled', budgetTokens: 8000 }, sendReasoning: true } };
+      return { anthropic: { thinking: { type: 'enabled', budgetTokens: 8000 }, sendReasoning: true } } as Record<string, Record<string, unknown>>;
     case 'google':
-      return { google: { thinkingConfig: { includeThoughts: true } } };
+      return { google: { thinkingConfig: { includeThoughts: true } } } as Record<string, Record<string, unknown>>;
     default:
       return undefined;
   }

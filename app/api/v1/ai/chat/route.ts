@@ -52,14 +52,17 @@ const chatRequestSchema = z.object({
     name: z.string(),
     content: z.string(),
     mimeType: z.string(),
-  })).max(3, 'Maximum 3 attachments allowed').optional(),
+  })).max(5, 'Maximum 5 attachments allowed').optional(),
   
   /** Conversation context - loosely typed to allow frontend flexibility */
   context: z.record(z.string(), z.unknown()).optional(),
   
   /** Override model ID */
   modelId: z.string().optional(),
-  
+
+  /** Agent memory text for the current session (injected into system prompt) */
+  agentMemory: z.string().optional(),
+
   /** Enable streaming response */
   stream: z.boolean().optional().default(false),
 });
@@ -175,7 +178,7 @@ export const POST = createApiHandler<unknown, ChatRequest>(
       );
     }
 
-    const { conversationId, mode, message, attachments, context, modelId } = body;
+    const { conversationId, mode, message, attachments, context, modelId, agentMemory } = body;
     const userId = session.user.id;
 
     logger.info('AI chat request', {
@@ -198,6 +201,14 @@ export const POST = createApiHandler<unknown, ChatRequest>(
 
       // Build conversation context from request
       const conversationContext = normalizeContext(context, internalAttachments);
+
+      // Inject session memory into personalInstructions
+      if (agentMemory?.trim()) {
+        const injected = `## Session Memory\n${agentMemory.trim()}`;
+        conversationContext.personalInstructions = conversationContext.personalInstructions
+          ? `${injected}\n\n## Personal Instructions\n${conversationContext.personalInstructions}`
+          : injected;
+      }
 
       // Get or create conversation
       const conversation = ConversationManager.getOrCreate(conversationId, {

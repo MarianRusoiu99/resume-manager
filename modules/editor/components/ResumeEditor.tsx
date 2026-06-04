@@ -82,7 +82,6 @@ export const ResumeEditor = forwardRef<ResumeEditorRef, ResumeEditorProps>(({
         <ResumePreview
           resumeData={resume}
           profileId={id}
-          showTemplateSelector
           showCard={false}
           className="h-full"
           onTemplateChange={setSelectedTemplateId}

@@ -115,6 +115,7 @@ model User {
   auditLogs     AuditLog[]
   aiPreferences UserAiPreference[]
   jobPostings   JobPosting[]
+  agentMemories AgentMemory[]
 
   @@index([email])
   @@index([createdAt])
@@ -454,4 +455,21 @@ model AuditLog {
   @@index([action, timestamp(sort: Desc)])
   @@index([resourceType, resourceId])
   @@index([timestamp(sort: Desc)])
+}
+
+// -----------------------------------------------------------------------------
+// Agent Memory — persisted per-user per-mode memory snippets for the AI agent
+// -----------------------------------------------------------------------------
+
+model AgentMemory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mode      String   // resume | cover-letter | template | global
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, mode])
+  @@index([userId])
 }

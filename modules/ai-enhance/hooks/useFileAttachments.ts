@@ -11,7 +11,7 @@ import { useState, useCallback } from 'react';
 import type { FileAttachment } from '../components/types';
 
 /** Maximum number of files that can be attached */
-const MAX_FILES = 3;
+const MAX_FILES = 5;
 
 /** Maximum file size in bytes (10MB for PDFs, 5MB for others) */
 const MAX_FILE_SIZE_DEFAULT = 5 * 1024 * 1024;

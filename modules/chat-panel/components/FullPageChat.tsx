@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileText, Mail, Palette, Plus, Loader2, ExternalLink, MessageSquare, Trash2, PanelLeftClose, PanelLeftOpen, Code2, Eye, Save } from 'lucide-react';
+import { FileText, Mail, Palette, Plus, MessageSquare, Trash2, PanelLeftClose, PanelLeftOpen, BrainCircuit, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { renderTemplateServerSide } from '@/components/core/data-display/rendering/client-renderer';
 import { sampleResume } from '@/lib/templates/constants/sample-resume';
@@ -12,6 +13,14 @@ import { getResume, getResumes } from '@/app/actions/resume';
 import { getTemplate, getTemplates } from '@/app/actions/template';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { ReasoningBlock } from '@/components/chat/ReasoningBlock';
+import {
+  GenerationOutputCard,
+  SaveButton,
+  ViewButton,
+  PreviewCodeToggle,
+  IframePreview,
+  CodeBlock,
+} from './GenerationOutputCard';
 import { PreviewTemplateSelector } from '@/modules/templates/components/PreviewTemplateSelector';
 import { ResumePreview } from '@/modules/resume/components/ResumePreview';
 import { MarkdownPreview } from '@/modules/editor/components/MarkdownPreview';
@@ -26,31 +35,24 @@ import {
   getMode,
   getFeature,
   getEmptyState,
+  truncateTitle,
+  RESUME_ACTIONS,
+  COVER_LETTER_ACTIONS,
+  TEMPLATE_ACTIONS,
   type GenerationType,
   type SessionMeta,
-  type ArtifactReference,
 } from '../hooks/useSessionManager';
+import { ArtifactSelectorModal } from './ArtifactSelectorModal';
+import { MemoryDrawer } from './MemoryDrawer';
+import { ModelSelector } from './ModelSelector';
 import {
   useGenerationSave,
   type ResumePreviewState,
   type CoverLetterPreviewState,
 } from '../hooks/useGenerationSave';
 
-type GenerationType = 'resume' | 'cover-letter' | 'template';
-
 interface FullPageChatProps {
   defaultType?: GenerationType;
-}
-
-interface QuickAction {
-  label: string;
-  prompt: string;
-}
-
-interface SessionMeta {
-  id: string;
-  title: string;
-  updatedAt: number;
 }
 
 interface ArtifactReference {
@@ -59,132 +61,10 @@ interface ArtifactReference {
   type: 'profile' | 'resume' | 'cover-letter' | 'template';
 }
 
-type SessionHistoryByType = Record<GenerationType, SessionMeta[]>;
-type ActiveSessionByType = Record<GenerationType, string>;
-
-interface ResumePreviewState {
-  resumeData: Resume;
-  selectedTemplateId: string | null;
-  savedResumeId?: string;
-}
-
-interface CoverLetterPreviewState {
-  content: string;
-  jobDescription: string;
-  jobTitle?: string;
-  companyName?: string;
-  savedCoverLetterId?: string;
-}
-
-const SESSION_HISTORY_KEY = 'fullpage-chat:history:v1';
-const SESSION_ACTIVE_KEY = 'fullpage-chat:active:v1';
-const SESSION_COLLAPSED_KEY = 'fullpage-chat:history-collapsed:v1';
-
-const RESUME_ACTIONS: QuickAction[] = [
-  { label: 'Tailor my resume for a job', prompt: 'I have a resume I want to tailor for a specific job posting. I\'ll share my current resume and the job description.' },
-  { label: 'Create a resume from scratch', prompt: 'Help me create a professional resume from scratch. Ask me about my experience, skills, and education.' },
-  { label: 'Optimize my resume for ATS', prompt: 'I want to optimize my resume to pass Applicant Tracking Systems. Help me improve keyword matching and formatting.' },
-];
-
-const COVER_LETTER_ACTIONS: QuickAction[] = [
-  { label: 'Write a cover letter for a job', prompt: 'Help me write a compelling cover letter for a specific job posting. I\'ll share the job details.' },
-  { label: 'Create from my resume', prompt: 'Generate a cover letter based on my existing resume and a job description I\'ll provide.' },
-  { label: 'Improve an existing draft', prompt: 'I have a draft cover letter I\'d like to improve. Help me make it more compelling and professional.' },
-];
-
-const TEMPLATE_ACTIONS: QuickAction[] = [
-  { label: 'Create a template from scratch', prompt: 'Help me create a modern ATS-friendly resume template from scratch. Propose layout sections, typography, and HTML/CSS structure.' },
-  { label: 'Generate based on style preference', prompt: 'Generate a professional resume template with a clean style. I prefer strong visual hierarchy and print-friendly spacing.' },
-  { label: 'Create a variant template', prompt: 'I want a second template variation from my existing style: one minimal and one creative. Generate both options as template code.' },
-];
-
-function createSessionId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function createSessionMeta(type: GenerationType): SessionMeta {
-  return {
-    id: createSessionId(),
-    title: type === 'resume' ? 'New resume chat' : type === 'cover-letter' ? 'New cover letter chat' : 'New template chat',
-    updatedAt: Date.now(),
-  };
-}
-
-function getMode(type: GenerationType): ConversationMode {
-  if (type === 'cover-letter') return 'cover-letter-generation';
-  if (type === 'template') return 'template-generation';
-  return 'resume-generation';
-}
-
-function getFeature(type: GenerationType): 'resume' | 'coverLetter' | 'template' {
-  if (type === 'cover-letter') return 'coverLetter';
-  if (type === 'template') return 'template';
-  return 'resume';
-}
-
-function getEmptyState(type: GenerationType): { title: string; description: string } {
-  if (type === 'cover-letter') {
-    return {
-      title: 'AI Cover Letter Writer',
-      description: 'Write compelling cover letters tailored to specific positions. Share the job details and your background.',
-    };
-  }
-  if (type === 'template') {
-    return {
-      title: 'AI Template Builder',
-      description: 'Generate and iterate on resume templates through conversation. Ask for layout, styling, or full HTML/CSS templates.',
-    };
-  }
-  return {
-    title: 'AI Resume Builder',
-    description: 'Create tailored, ATS-optimized resumes through conversation. Share your experience and job details.',
-  };
-}
-
-function getDefaultHistory(): SessionHistoryByType {
-  return {
-    resume: [createSessionMeta('resume')],
-    'cover-letter': [createSessionMeta('cover-letter')],
-    template: [createSessionMeta('template')],
-  };
-}
-
-function getDefaultActive(history: SessionHistoryByType): ActiveSessionByType {
-  return {
-    resume: history.resume[0].id,
-    'cover-letter': history['cover-letter'][0].id,
-    template: history.template[0].id,
-  };
-}
-
-function getInitialSessionState(): {
-  history: SessionHistoryByType;
-  active: ActiveSessionByType;
-} {
-  const history = getDefaultHistory();
-  return {
-    history,
-    active: getDefaultActive(history),
-  };
-}
-
-function truncateTitle(text: string): string {
-  const trimmed = text.trim().replace(/\s+/g, ' ');
-  if (!trimmed) return 'New chat';
-  return trimmed.length > 60 ? `${trimmed.slice(0, 57)}...` : trimmed;
-}
-
 export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [generationType, setGenerationType] = useState<GenerationType>(defaultType);
-  const [historyByType, setHistoryByType] = useState<SessionHistoryByType>(() => getInitialSessionState().history);
-  const [activeByType, setActiveByType] = useState<ActiveSessionByType>(() => getInitialSessionState().active);
-  const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false);
-  const [isClientHydrated, setIsClientHydrated] = useState(false);
   const [templatePreviewByMessage, setTemplatePreviewByMessage] = useState<Record<string, { html: string; showCode: boolean }>>({});
   const [resumePreviewByMessage, setResumePreviewByMessage] = useState<Record<string, ResumePreviewState>>({});
   const [coverLetterPreviewByMessage, setCoverLetterPreviewByMessage] = useState<Record<string, CoverLetterPreviewState>>({});
@@ -192,65 +72,57 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
   const [resumeTemplateByMessage, setResumeTemplateByMessage] = useState<Record<string, { templateId: string; htmlTemplate: string }>>({});
   const [templatePreviewHeightByMessage, setTemplatePreviewHeightByMessage] = useState<Record<string, number>>({});
   const [templatePreviewWidthByMessage, setTemplatePreviewWidthByMessage] = useState<Record<string, number>>({});
-  const [isSavingTemplateByMessage, setIsSavingTemplateByMessage] = useState<Record<string, boolean>>({});
-  const [isSavingResumeByMessage, setIsSavingResumeByMessage] = useState<Record<string, boolean>>({});
-  const [isSavingCoverLetterByMessage, setIsSavingCoverLetterByMessage] = useState<Record<string, boolean>>({});
   const [templatePreviewResume, setTemplatePreviewResume] = useState<Resume>(sampleResume as Resume);
+  const [coverLetterShowCodeByMessage, setCoverLetterShowCodeByMessage] = useState<Record<string, boolean>>({});
   const [artifactOptions, setArtifactOptions] = useState<ArtifactReference[]>([]);
   const [selectedArtifactRefs, setSelectedArtifactRefs] = useState<string[]>([]);
   const [isLoadingArtifacts, setIsLoadingArtifacts] = useState(false);
+  // Track whether we've loaded refs for the current session (avoid overwrite on first render)
+  const refsHydratedForSession = useRef<string | null>(null);
   const [hydratedResumeRefs, setHydratedResumeRefs] = useState<Record<string, Resume>>({});
   const [hydratedProfileRefs, setHydratedProfileRefs] = useState<Record<string, Resume>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // ── Drawers & modals ────────────────────────────────────────────────────
+  const [isArtifactModalOpen, setIsArtifactModalOpen] = useState(false);
+  const [isMemoryDrawerOpen, setIsMemoryDrawerOpen] = useState(false);
+
+  // ── Memory — session-scoped, resets on session switch ────────────────────
+  const [sessionMemory, setSessionMemory] = useState<string>('');
+
+  const mode = getMode(generationType);
+
+  // ── Session management ─────────────────────────────────────────────────
+  const {
+    historyByType,
+    activeByType,
+    isHistoryCollapsed,
+    isClientHydrated,
+    activeSessionId,
+    setIsHistoryCollapsed,
+    setActiveByType,
+    setHistoryByType,
+    handleCreateSession: _handleCreateSession,
+    handleDeleteSession,
+    modelByType,
+    setModelForType,
+  } = useSessionManager({ generationType, mode });
+
+  // Title update needs state.messages which comes from useConversation below
+
+  const handleCreateSession = useCallback((type: GenerationType) => {
+    _handleCreateSession(type);
+    setSelectedArtifactRefs([]);
+  }, [_handleCreateSession]);
+
+  const handleDeleteSessionWithRefs = useCallback((type: GenerationType, sessionId: string) => {
+    handleDeleteSession(type, sessionId);
     try {
-      const rawHistory = window.localStorage.getItem(SESSION_HISTORY_KEY);
-      const rawActive = window.localStorage.getItem(SESSION_ACTIVE_KEY);
-      const rawCollapsed = window.localStorage.getItem(SESSION_COLLAPSED_KEY);
-
-      const parsedHistory = rawHistory ? JSON.parse(rawHistory) as Partial<SessionHistoryByType> : null;
-      const mergedHistory: SessionHistoryByType = {
-        resume: Array.isArray(parsedHistory?.resume) && parsedHistory.resume.length ? parsedHistory.resume : [createSessionMeta('resume')],
-        'cover-letter': Array.isArray(parsedHistory?.['cover-letter']) && parsedHistory['cover-letter'].length ? parsedHistory['cover-letter'] : [createSessionMeta('cover-letter')],
-        template: Array.isArray(parsedHistory?.template) && parsedHistory.template.length ? parsedHistory.template : [createSessionMeta('template')],
-      };
-
-      const parsedActive = rawActive ? JSON.parse(rawActive) as Partial<ActiveSessionByType> : null;
-      const mergedActive: ActiveSessionByType = {
-        resume: parsedActive?.resume && mergedHistory.resume.some((s) => s.id === parsedActive.resume)
-          ? parsedActive.resume
-          : mergedHistory.resume[0].id,
-        'cover-letter': parsedActive?.['cover-letter'] && mergedHistory['cover-letter'].some((s) => s.id === parsedActive['cover-letter'])
-          ? parsedActive['cover-letter']
-          : mergedHistory['cover-letter'][0].id,
-        template: parsedActive?.template && mergedHistory.template.some((s) => s.id === parsedActive.template)
-          ? parsedActive.template
-          : mergedHistory.template[0].id,
-      };
-
-      setHistoryByType(mergedHistory);
-      setActiveByType(mergedActive);
-      setIsHistoryCollapsed(rawCollapsed === 'true');
+      window.localStorage.removeItem(`fullpage-chat:refs:${sessionId}`);
     } catch {
-      // use defaults
-    } finally {
-      setIsClientHydrated(true);
+      // ignore
     }
-  }, []);
-
-  useEffect(() => {
-    if (!isClientHydrated) return;
-    try {
-      window.localStorage.setItem(SESSION_HISTORY_KEY, JSON.stringify(historyByType));
-      window.localStorage.setItem(SESSION_ACTIVE_KEY, JSON.stringify(activeByType));
-      window.localStorage.setItem(SESSION_COLLAPSED_KEY, String(isHistoryCollapsed));
-    } catch {
-      // ignore storage errors
-    }
-  }, [historyByType, activeByType, isHistoryCollapsed, isClientHydrated]);
-
-  const mode: ConversationMode = getMode(generationType);
+  }, [handleDeleteSession]);
 
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -263,11 +135,35 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
     }
   }, [searchParams, defaultType]);
 
-  const activeSessionId = activeByType[generationType];
   const persistenceKey = useMemo(
     () => `fullpage-chat:${mode}:${activeSessionId}`,
     [mode, activeSessionId]
   );
+
+  // ── Persist and restore selectedArtifactRefs per session ──────────────
+  const sessionRefsKey = `fullpage-chat:refs:${activeSessionId}`;
+
+  // Restore refs when the active session changes
+  useEffect(() => {
+    if (refsHydratedForSession.current === activeSessionId) return;
+    refsHydratedForSession.current = activeSessionId;
+    try {
+      const raw = window.localStorage.getItem(sessionRefsKey);
+      setSelectedArtifactRefs(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      setSelectedArtifactRefs([]);
+    }
+  }, [activeSessionId, sessionRefsKey]);
+
+  // Write refs whenever they change (after hydration)
+  useEffect(() => {
+    if (refsHydratedForSession.current !== activeSessionId) return;
+    try {
+      window.localStorage.setItem(sessionRefsKey, JSON.stringify(selectedArtifactRefs));
+    } catch {
+      // ignore quota / private-mode errors
+    }
+  }, [selectedArtifactRefs, activeSessionId, sessionRefsKey]);
 
   const { state, sendMessage, abort, isGenerating, updateContext } = useConversation({
     mode,
@@ -287,6 +183,7 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
     }
   }, [state.messages, state.isStreaming]);
 
+  // ── Title update from first user message ────────────────────────────────
   useEffect(() => {
     const firstUserMessage = state.messages.find((m) => m.role === 'user' && m.content.trim().length > 0);
     const nextTitle = firstUserMessage ? truncateTitle(firstUserMessage.content) : (generationType === 'resume' ? 'New resume chat' : generationType === 'cover-letter' ? 'New cover letter chat' : 'New template chat');
@@ -308,49 +205,7 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
         [generationType]: reordered,
       };
     });
-  }, [state.messages, generationType, activeSessionId]);
-
-  const handleCreateSession = useCallback((type: GenerationType) => {
-    const next = createSessionMeta(type);
-    setHistoryByType((prev) => ({
-      ...prev,
-      [type]: [next, ...prev[type]],
-    }));
-    setActiveByType((prev) => ({
-      ...prev,
-      [type]: next.id,
-    }));
-    setSelectedArtifactRefs([]);
-  }, []);
-
-  const handleDeleteSession = useCallback((type: GenerationType, sessionId: string) => {
-    const modeForType = getMode(type);
-
-    setHistoryByType((prevHistory) => {
-      const filtered = prevHistory[type].filter((s) => s.id !== sessionId);
-      const fallback = createSessionMeta(type);
-      const normalized = filtered.length > 0 ? filtered : [fallback];
-
-      setActiveByType((prevActive) => {
-        if (prevActive[type] !== sessionId) return prevActive;
-        return {
-          ...prevActive,
-          [type]: normalized[0].id,
-        };
-      });
-
-      return {
-        ...prevHistory,
-        [type]: normalized,
-      };
-    });
-
-    try {
-      window.localStorage.removeItem(`fullpage-chat:${modeForType}:${sessionId}`);
-    } catch {
-      // ignore
-    }
-  }, []);
+  }, [state.messages, generationType, activeSessionId, setHistoryByType]);
 
   const hasMessages = state.messages.length > 0;
   const activeResumePreview = generationType === 'resume'
@@ -361,9 +216,6 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
   const activeSavedResumeId = activeResumePreview
     ? resumePreviewByMessage[activeResumePreview.id]?.savedResumeId
     : undefined;
-  const hasSavedId = generationType === 'resume'
-    ? Boolean(activeSavedResumeId)
-    : Boolean(state.savedId);
   const emptyState = getEmptyState(generationType);
   const actions = generationType === 'resume' ? RESUME_ACTIONS : generationType === 'cover-letter' ? COVER_LETTER_ACTIONS : TEMPLATE_ACTIONS;
 
@@ -763,9 +615,43 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
     });
   }, [resumeDefaultTemplateId]);
 
+  // ── Load template HTML whenever a resume message's selectedTemplateId changes ─
+  useEffect(() => {
+    if (generationType !== 'resume') return;
+
+    const entries = Object.entries(resumePreviewByMessage);
+    const missing = entries.filter(([messageId, preview]) => {
+      if (!preview.selectedTemplateId) return false;
+      const cached = resumeTemplateByMessage[messageId];
+      return !cached || cached.templateId !== preview.selectedTemplateId;
+    });
+    if (missing.length === 0) return;
+
+    let cancelled = false;
+    const fetchMissing = async () => {
+      for (const [messageId, preview] of missing) {
+        if (!preview.selectedTemplateId) continue;
+        const result = await getTemplate(preview.selectedTemplateId);
+        if (cancelled) return;
+        if (!result.success || !result.data?.htmlTemplate) continue;
+        setResumeTemplateByMessage((prev) => ({
+          ...prev,
+          [messageId]: {
+            templateId: preview.selectedTemplateId!,
+            htmlTemplate: result.data.htmlTemplate,
+          },
+        }));
+      }
+    };
+
+    void fetchMissing();
+    return () => { cancelled = true; };
+  }, [generationType, resumePreviewByMessage, resumeTemplateByMessage]);
+
   useEffect(() => {
     if (generationType !== 'cover-letter') {
       setCoverLetterPreviewByMessage((prev) => (Object.keys(prev).length > 0 ? {} : prev));
+      setCoverLetterShowCodeByMessage((prev) => (Object.keys(prev).length > 0 ? {} : prev));
       return;
     }
 
@@ -903,7 +789,7 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
   const handleSend = useCallback(async ({
     message,
     attachments,
-    modelId,
+    modelId: messageModelId,
   }: {
     message: string;
     attachments?: ConversationAttachment[];
@@ -911,146 +797,67 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
   }) => {
     const trimmed = message.trim();
     if (!trimmed && (!attachments || attachments.length === 0)) return;
-    await sendMessage({ message: trimmed, attachments, modelId, contextOverride: artifactContextOverride, stream: true });
-  }, [sendMessage, artifactContextOverride]);
+    const resolvedModelId = messageModelId ?? modelByType[generationType] ?? undefined;
+    await sendMessage({
+      message: trimmed,
+      attachments,
+      modelId: resolvedModelId,
+      contextOverride: artifactContextOverride,
+      stream: true,
+      agentMemory: sessionMemory || undefined,
+    });
+  }, [sendMessage, artifactContextOverride, modelByType, generationType, sessionMemory]);
 
   const handleQuickAction = useCallback(async (prompt: string) => {
     await sendMessage({ message: prompt, contextOverride: artifactContextOverride, stream: true });
   }, [sendMessage, artifactContextOverride]);
 
-  const handleSaveTemplateMessage = useCallback(async (message: ConversationMessage) => {
-    const htmlTemplate = extractTemplateHtml(message);
-    if (!htmlTemplate) {
-      toast.error('No template code found in this message.');
-      return;
-    }
+  // ── Memory handlers (session-scoped only) ──────────────────────────────
+  const handleMemorySave = useCallback((_mode: string, content: string) => {
+    setSessionMemory(content);
+  }, []);
 
-    setIsSavingTemplateByMessage((prev) => ({ ...prev, [message.id]: true }));
+  const handleMemoryDelete = useCallback((_mode: string) => {
+    setSessionMemory('');
+  }, []);
 
-    try {
-      const defaultName = `AI Template ${new Date().toLocaleDateString()}`;
-      const result = await createTemplate({
-        name: defaultName,
-        description: 'Saved from template generation chat',
-        htmlTemplate,
-        isPublic: false,
-      });
+  // Reset memory when session switches
+  useEffect(() => {
+    setSessionMemory('');
+  }, [activeSessionId]);
 
-      if (!result.success || !result.data) {
-        toast.error('Failed to save template');
-        return;
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsArtifactModalOpen(true);
       }
-
-      toast.success('Template saved');
-      router.push(`/templates/${result.data.id}`);
-    } catch {
-      toast.error('Failed to save template');
-    } finally {
-      setIsSavingTemplateByMessage((prev) => ({ ...prev, [message.id]: false }));
-    }
-  }, [router]);
-
-  const handleSaveResumeMessage = useCallback(async (messageId: string) => {
-    const preview = resumePreviewByMessage[messageId];
-    if (!preview) {
-      toast.error('No resume data found for this message.');
-      return;
-    }
-
-    if (preview.savedResumeId) {
-      router.push(`/resumes/${preview.savedResumeId}`);
-      return;
-    }
-
-    setIsSavingResumeByMessage((prev) => ({ ...prev, [messageId]: true }));
-
-    try {
-      const result = await saveGeneratedResume({
-        resume: preview.resumeData,
-        jobDescription: 'Generated from chat session',
-        templateId: preview.selectedTemplateId ?? undefined,
-        metadata: {
-          source: 'generate-chat',
-          generationType: 'resume',
-        },
-      });
-
-      if (!result.success || !result.data?.id) {
-        toast.error('Failed to save resume');
-        return;
+      if ((e.metaKey || e.ctrlKey) && e.key === 'm') {
+        e.preventDefault();
+        setIsMemoryDrawerOpen(true);
       }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
-      setResumePreviewByMessage((prev) => {
-        const current = prev[messageId];
-        if (!current) return prev;
-        return {
-          ...prev,
-          [messageId]: {
-            ...current,
-            savedResumeId: result.data.id,
-          },
-        };
-      });
-
-      toast.success('Resume saved');
-    } catch {
-      toast.error('Failed to save resume');
-    } finally {
-      setIsSavingResumeByMessage((prev) => ({ ...prev, [messageId]: false }));
-    }
-  }, [resumePreviewByMessage, router]);
-
-  const handleSaveCoverLetterMessage = useCallback(async (messageId: string) => {
-    const preview = coverLetterPreviewByMessage[messageId];
-    if (!preview) {
-      toast.error('No cover letter found for this message.');
-      return;
-    }
-
-    if (preview.savedCoverLetterId) {
-      router.push(`/cover-letters/${preview.savedCoverLetterId}`);
-      return;
-    }
-
-    setIsSavingCoverLetterByMessage((prev) => ({ ...prev, [messageId]: true }));
-
-    try {
-      const result = await createCoverLetter(
-        preview.content,
-        preview.jobDescription || 'Generated from chat session',
-        preview.jobTitle,
-        preview.companyName,
-        {
-          jobDescription: preview.jobDescription || 'Generated from chat session',
-          jobTitle: preview.jobTitle,
-          companyName: preview.companyName,
-        }
-      );
-
-      if (!result.success || !result.data?.id) {
-        toast.error('Failed to save cover letter');
-        return;
-      }
-
-      setCoverLetterPreviewByMessage((prev) => {
-        const current = prev[messageId];
-        if (!current) return prev;
-        return {
-          ...prev,
-          [messageId]: {
-            ...current,
-            savedCoverLetterId: result.data.id,
-          },
-        };
-      });
-
-      toast.success('Cover letter saved');
-    } catch {
-      toast.error('Failed to save cover letter');
-    } finally {
-      setIsSavingCoverLetterByMessage((prev) => ({ ...prev, [messageId]: false }));
-    }
-  }, [coverLetterPreviewByMessage, router]);
+  // ── Save management ────────────────────────────────────────────────────
+  const {
+    isSavingTemplateByMessage,
+    isSavingResumeByMessage,
+    isSavingCoverLetterByMessage,
+    templateSavedIdByMessage,
+    handleSaveTemplateMessage,
+    handleSaveResumeMessage,
+    handleSaveCoverLetterMessage,
+  } = useGenerationSave({
+    resumePreviewByMessage,
+    setResumePreviewByMessage,
+    coverLetterPreviewByMessage,
+    setCoverLetterPreviewByMessage,
+    router,
+  });
 
   return (
     <div className="flex h-screen bg-background">
@@ -1141,7 +948,7 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
                     variant="ghost"
                     size="icon-sm"
                     className="h-7 w-7 opacity-0 group-hover:opacity-100"
-                    onClick={() => handleDeleteSession(generationType, session.id)}
+                    onClick={() => handleDeleteSessionWithRefs(generationType, session.id)}
                     aria-label="Delete session"
                   >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -1254,6 +1061,23 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
                         )}
 
                         <div className={cn('w-full space-y-2', isUser && 'max-w-[95%] flex flex-col items-end')}>
+                          {/* ── User attachment chips ──────────────────────────────────────── */}
+                          {isUser && message.attachments && message.attachments.length > 0 && (
+                            <div className="flex flex-wrap justify-end gap-1.5">
+                              {message.attachments.map((att, i) => (
+                                <span
+                                  key={i}
+                                  className="inline-flex items-center gap-1 rounded-md border border-border/50 bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground"
+                                  title={att.name}
+                                >
+                                  <span className="size-2.5 shrink-0">
+                                    {att.type === 'image' ? '🖼' : '📄'}
+                                  </span>
+                                  <span className="max-w-[160px] truncate">{att.name}</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           {!shouldHideTemplateRawMessage && !shouldHideResumeRawMessage && !shouldHideCoverLetterRawMessage && (
                             <div
                               className={cn(
@@ -1280,26 +1104,18 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
                           )}
 
                           {!isUser && message.output != null && (
-                            <div
-                              className={cn(
-                                'rounded-xl border border-border/50 bg-card overflow-hidden',
-                                isTemplatePreviewActive ? 'w-fit max-w-full' : 'w-full'
-                              )}
-                            >
-                              <div
-                                className={cn(
-                                  'flex items-center justify-between px-3 py-2 bg-muted/30 border-b border-border/30',
-                                  isTemplatePreviewActive && 'w-fit min-w-full'
-                                )}
-                              >
-                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                                  {generationType === 'resume'
-                                    ? 'Generated Resume'
-                                    : generationType === 'cover-letter'
-                                      ? 'Generated Cover Letter'
-                                      : 'Generated Template'}
-                                </span>
-                                <div className="flex items-center gap-2">
+                            <GenerationOutputCard
+                              label={
+                                generationType === 'resume'
+                                  ? 'Generated Resume'
+                                  : generationType === 'cover-letter'
+                                    ? 'Generated Cover Letter'
+                                    : 'Generated Template'
+                              }
+                              wide={isTemplatePreviewActive}
+                              headerActions={
+                                <>
+                                  {/* Resume: template selector + save/view */}
                                   {generationType === 'resume' && resumePreview && (
                                     <>
                                       <PreviewTemplateSelector
@@ -1323,133 +1139,69 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
                                         className="h-6 w-6 p-0 shrink-0"
                                       />
                                       {!resumePreview.savedResumeId ? (
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-6 text-xs text-primary hover:text-primary shrink-0"
+                                        <SaveButton
                                           onClick={() => void handleSaveResumeMessage(message.id)}
                                           disabled={!!isSavingResumeByMessage[message.id]}
-                                        >
-                                          {isSavingResumeByMessage[message.id] ? (
-                                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                          ) : (
-                                            <Save className="h-3 w-3 mr-1" />
-                                          )}
-                                          Save
-                                        </Button>
+                                          loading={!!isSavingResumeByMessage[message.id]}
+                                        />
                                       ) : (
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-6 text-xs text-primary hover:text-primary shrink-0"
-                                          onClick={() => router.push(`/resumes/${resumePreview.savedResumeId}`)}
-                                        >
-                                          <ExternalLink className="h-3 w-3 mr-1" />
-                                          View
-                                        </Button>
+                                        <ViewButton onClick={() => router.push(`/resumes/${resumePreview.savedResumeId}`)} />
                                       )}
                                     </>
                                   )}
+
+                                  {/* Cover letter: preview/code toggle + save/view */}
                                   {generationType === 'cover-letter' && coverLetterPreview && (
-                                    !coverLetterPreview.savedCoverLetterId ? (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 text-xs text-primary hover:text-primary shrink-0"
-                                        onClick={() => void handleSaveCoverLetterMessage(message.id)}
-                                        disabled={!!isSavingCoverLetterByMessage[message.id]}
-                                      >
-                                        {isSavingCoverLetterByMessage[message.id] ? (
-                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                        ) : (
-                                          <Save className="h-3 w-3 mr-1" />
-                                        )}
-                                        Save
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 text-xs text-primary hover:text-primary shrink-0"
-                                        onClick={() => router.push(`/cover-letters/${coverLetterPreview.savedCoverLetterId}`)}
-                                      >
-                                        <ExternalLink className="h-3 w-3 mr-1" />
-                                        View
-                                      </Button>
-                                    )
-                                  )}
-                                  {generationType === 'template' && templatePreviewByMessage[message.id] && (
                                     <>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className={cn('h-6 text-xs shrink-0', !templatePreviewByMessage[message.id].showCode && 'text-primary')}
-                                        onClick={() => setTemplatePreviewByMessage((prev) => ({
+                                      <PreviewCodeToggle
+                                        showCode={!!coverLetterShowCodeByMessage[message.id]}
+                                        onToggle={(showCode) => setCoverLetterShowCodeByMessage((prev) => ({
                                           ...prev,
-                                          [message.id]: {
-                                            ...prev[message.id],
-                                            showCode: false,
-                                          },
+                                          [message.id]: showCode,
                                         }))}
-                                      >
-                                        <Eye className="h-3 w-3 mr-1" />
-                                        Preview
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className={cn('h-6 text-xs shrink-0', templatePreviewByMessage[message.id].showCode && 'text-primary')}
-                                        onClick={() => setTemplatePreviewByMessage((prev) => ({
-                                          ...prev,
-                                          [message.id]: {
-                                            ...prev[message.id],
-                                            showCode: true,
-                                          },
-                                        }))}
-                                      >
-                                        <Code2 className="h-3 w-3 mr-1" />
-                                        Code
-                                      </Button>
-                                      <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 text-xs text-primary hover:text-primary shrink-0"
-                                        onClick={() => void handleSaveTemplateMessage(message)}
-                                        disabled={!!isSavingTemplateByMessage[message.id]}
-                                      >
-                                        {isSavingTemplateByMessage[message.id] ? (
-                                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                                        ) : (
-                                          <Save className="h-3 w-3 mr-1" />
-                                        )}
-                                        Save
-                                      </Button>
+                                      />
+                                      {!coverLetterPreview.savedCoverLetterId ? (
+                                        <SaveButton
+                                          onClick={() => void handleSaveCoverLetterMessage(message.id)}
+                                          disabled={!!isSavingCoverLetterByMessage[message.id]}
+                                          loading={!!isSavingCoverLetterByMessage[message.id]}
+                                        />
+                                      ) : (
+                                        <ViewButton onClick={() => router.push(`/cover-letters/${coverLetterPreview.savedCoverLetterId}`)} />
+                                      )}
                                     </>
                                   )}
-                                  {hasSavedId && generationType === 'template' && (
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-6 text-xs text-primary hover:text-primary shrink-0"
-                                      onClick={openSavedResource}
-                                    >
-                                      <ExternalLink className="h-3 w-3 mr-1" />
-                                      View
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
 
+                                  {/* Template: preview/code toggle + save + view */}
+                                  {generationType === 'template' && templatePreviewByMessage[message.id] && (
+                                    <>
+                                      <PreviewCodeToggle
+                                        showCode={templatePreviewByMessage[message.id].showCode}
+                                        onToggle={(showCode) => setTemplatePreviewByMessage((prev) => ({
+                                          ...prev,
+                                          [message.id]: {
+                                            ...prev[message.id],
+                                            showCode,
+                                          },
+                                        }))}
+                                      />
+                                      {templateSavedIdByMessage[message.id] ? (
+                                        <ViewButton onClick={() => router.push(`/templates/${templateSavedIdByMessage[message.id]}`)} />
+                                      ) : (
+                                        <SaveButton
+                                          onClick={() => void handleSaveTemplateMessage(message)}
+                                          disabled={!!isSavingTemplateByMessage[message.id]}
+                                          loading={!!isSavingTemplateByMessage[message.id]}
+                                        />
+                                      )}
+                                    </>
+                                  )}
+                                </>
+                              }
+                            >
+                              {/* ── Resume preview ───────────────────────────── */}
                               {generationType === 'resume' && resumePreview ? (
-                                <div className="p-2">
+                                <div className="p-3">
                                   <div className="h-[720px] w-full rounded-lg overflow-hidden bg-muted/20">
                                     <ResumePreview
                                       resumeData={resumePreview.resumeData}
@@ -1465,87 +1217,59 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
                                     />
                                   </div>
                                 </div>
-                              ) : generationType === 'cover-letter' && coverLetterPreview ? (
-                                <div className="p-4">
-                                  <div className="rounded-lg border border-border/40 bg-background p-4">
-                                    <MarkdownPreview content={coverLetterPreview.content} />
-                                  </div>
+                              ) : null}
+
+                              {/* ── Cover letter preview ────────────────────── */}
+                              {generationType === 'cover-letter' && coverLetterPreview ? (
+                                <div className="p-3">
+                                  {coverLetterShowCodeByMessage[message.id] ? (
+                                    <CodeBlock>{coverLetterPreview.content}</CodeBlock>
+                                  ) : (
+                                    <div className="h-[720px] w-full rounded-lg overflow-auto bg-muted/20 p-6">
+                                      <MarkdownPreview content={coverLetterPreview.content} />
+                                    </div>
+                                  )}
                                 </div>
-                              ) : generationType === 'template' && templatePreviewByMessage[message.id] ? (
+                              ) : null}
+
+                              {/* ── Template preview ────────────────────────── */}
+                              {generationType === 'template' && templatePreviewByMessage[message.id] ? (
                                 !templatePreviewByMessage[message.id].showCode && templatePreviewByMessage[message.id].html ? (
-                                  <div className="p-0 overflow-x-auto">
-                                    <div className="w-fit min-w-0">
-                                      <iframe
-                                        title="Template preview"
-                                        className="border-0 block"
-                                        style={{
-                                          width: `${Math.max(320, templatePreviewWidthByMessage[message.id] ?? 320)}px`,
-                                          height: `${Math.max(320, templatePreviewHeightByMessage[message.id] ?? 320)}px`,
-                                        }}
-                                      sandbox="allow-same-origin"
-                                      srcDoc={templatePreviewByMessage[message.id].html}
-                                      onLoad={(event) => {
-                                        const iframe = event.currentTarget;
-                                        try {
-                                          const doc = iframe.contentDocument;
-                                          if (!doc) return;
-                                          const nextHeight = Math.ceil(
-                                            Math.max(
-                                              doc.documentElement?.scrollHeight ?? 0,
-                                              doc.body?.scrollHeight ?? 0,
-                                              320
-                                            )
-                                          );
-                                          const bodyRectWidth = Math.ceil(doc.body?.scrollWidth ?? 0);
-                                          const docRectWidth = Math.ceil(doc.documentElement?.scrollWidth ?? 0);
-
-                                          const allElements = Array.from(doc.body?.querySelectorAll('*') ?? []);
-                                          const contentBounds = allElements.reduce(
-                                            (acc, el) => {
-                                              const rect = (el as HTMLElement).getBoundingClientRect();
-                                              if (rect.width <= 0 || rect.height <= 0) return acc;
-                                              return {
-                                                minLeft: Math.min(acc.minLeft, rect.left),
-                                                maxRight: Math.max(acc.maxRight, rect.right),
-                                              };
-                                            },
-                                            { minLeft: Number.POSITIVE_INFINITY, maxRight: 0 }
-                                          );
-
-                                          const visualContentWidth =
-                                            Number.isFinite(contentBounds.minLeft) && contentBounds.maxRight > 0
-                                              ? Math.ceil(contentBounds.maxRight - contentBounds.minLeft)
-                                              : 0;
-
-                                          const nextWidth = Math.max(visualContentWidth, bodyRectWidth, docRectWidth, 320);
-
-                                          setTemplatePreviewHeightByMessage((prev) => {
-                                            if (prev[message.id] === nextHeight) return prev;
-                                            return { ...prev, [message.id]: nextHeight };
-                                          });
-
+                                  <div className="p-3">
+                                    <div className="h-[720px] w-full rounded-lg overflow-hidden bg-muted/20">
+                                      <IframePreview
+                                        srcDoc={templatePreviewByMessage[message.id].html}
+                                        width={templatePreviewWidthByMessage[message.id]}
+                                        height={templatePreviewHeightByMessage[message.id]}
+                                        onSizeChange={(size) => {
                                           setTemplatePreviewWidthByMessage((prev) => {
-                                            if (prev[message.id] === nextWidth) return prev;
-                                            return { ...prev, [message.id]: nextWidth };
+                                            if (prev[message.id] === size.width) return prev;
+                                            return { ...prev, [message.id]: size.width };
                                           });
-                                        } catch {
-                                          // Ignore cross-origin/sandbox access errors
-                                        }
-                                      }}
-                                    />
+                                          setTemplatePreviewHeightByMessage((prev) => {
+                                            if (prev[message.id] === size.height) return prev;
+                                            return { ...prev, [message.id]: size.height };
+                                          });
+                                        }}
+                                      />
                                     </div>
                                   </div>
                                 ) : (
-                                  <pre className="p-3 text-xs text-foreground overflow-auto max-h-80 whitespace-pre-wrap">
-                                    {templateHtmlForMessage ?? String(typeof message.output === 'string' ? message.output : JSON.stringify(message.output, null, 2))}
-                                  </pre>
+                                  <div className="p-3">
+                                    <CodeBlock>
+                                      {templateHtmlForMessage ?? String(typeof message.output === 'string' ? message.output : JSON.stringify(message.output, null, 2))}
+                                    </CodeBlock>
+                                  </div>
                                 )
-                              ) : (
-                                <pre className="p-3 text-xs text-foreground overflow-auto max-h-60">
+                              ) : null}
+
+                              {/* ── Fallback for no preview ─────────────────── */}
+                              {!resumePreview && !coverLetterPreview && !(generationType === 'template' && templatePreviewByMessage[message.id]) && (
+                                <CodeBlock>
                                   {String(typeof message.output === 'string' ? message.output : JSON.stringify(message.output, null, 2))}
-                                </pre>
+                                </CodeBlock>
                               )}
-                            </div>
+                            </GenerationOutputCard>
                           )}
 
                           <span className="px-1 text-[10px] text-muted-foreground/50">
@@ -1558,10 +1282,16 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
                     );
                   })}
 
-                  {isGenerating && !state.isStreaming && (
-                    <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Generating...
+                  {isGenerating && state.messages[state.messages.length - 1]?.role === 'user' && (
+                    <div className="w-full flex gap-4 justify-start">
+                      <div className="shrink-0 h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center mt-0.5">
+                        <span className="text-xs font-bold text-primary">AI</span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-2xl rounded-bl-md bg-muted px-4 py-3">
+                        <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]" />
+                        <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:150ms]" />
+                        <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:300ms]" />
+                      </div>
                     </div>
                   )}
 
@@ -1583,25 +1313,43 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
           <div className="max-w-6xl mx-auto px-4 py-4 space-y-3">
             <div className="lg:hidden hidden" aria-hidden="true" />
 
-            {hasSavedId && generationType === 'template' && (
-              <div className="flex items-center gap-2 mb-3 px-1 text-xs">
-                <span className="text-muted-foreground">
-                  Template saved!
-                </span>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="sm"
-                  className="h-auto p-0 text-xs text-primary"
-                  onClick={openSavedResource}
-                >
-                  View it here
-                  <ExternalLink className="h-3 w-3 ml-1" />
-                </Button>
+            {/* Toolbar row: artifact picker, memory, skills, model selector */}
+            <div className="flex items-center gap-1 px-1 pb-1 flex-wrap">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                onClick={() => setIsArtifactModalOpen(true)}
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                {selectedArtifactRefs.length > 0 ? `${selectedArtifactRefs.length} reference${selectedArtifactRefs.length > 1 ? 's' : ''}` : 'References'}
+                <kbd className="ml-1 text-[10px] text-muted-foreground/60">⌘K</kbd>
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                onClick={() => setIsMemoryDrawerOpen(true)}
+              >
+                <BrainCircuit className="h-3.5 w-3.5" />
+                Memory
+                {sessionMemory && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                )}
+              </Button>
+              <div className="ml-auto">
+                <ModelSelector
+                  modelId={modelByType[generationType]}
+                  onChange={(id) => setModelForType(generationType, id)}
+                  generationType={generationType}
+                />
               </div>
-            )}
+            </div>
 
             <ChatInput
+              key={`${generationType}:${activeSessionId}`}
               onSend={handleSend}
               disabled={isGenerating}
               placeholder={
@@ -1629,6 +1377,24 @@ export function FullPageChat({ defaultType = 'resume' }: FullPageChatProps) {
           </div>
         </div>
       </div>
+
+      <ArtifactSelectorModal
+        open={isArtifactModalOpen}
+        onOpenChange={setIsArtifactModalOpen}
+        generationType={generationType}
+        artifactOptions={artifactOptions.map(o => ({ ...o, id: `${o.type}:${o.id}` }))}
+        selectedArtifactRefs={selectedArtifactRefs}
+        onSelectionChange={setSelectedArtifactRefs}
+        isLoading={isLoadingArtifacts}
+      />
+      <MemoryDrawer
+        open={isMemoryDrawerOpen}
+        onOpenChange={setIsMemoryDrawerOpen}
+        generationType={generationType}
+        memoryContent={sessionMemory}
+        onSave={(_mode, content) => setSessionMemory(content)}
+        onDelete={() => setSessionMemory('')}
+      />
     </div>
   );
 }

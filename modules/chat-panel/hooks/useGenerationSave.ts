@@ -36,6 +36,7 @@ export interface UseGenerationSaveReturn {
   isSavingTemplateByMessage: Record<string, boolean>;
   isSavingResumeByMessage: Record<string, boolean>;
   isSavingCoverLetterByMessage: Record<string, boolean>;
+  templateSavedIdByMessage: Record<string, string>;
   handleSaveTemplateMessage: (message: ConversationMessage) => Promise<void>;
   handleSaveResumeMessage: (messageId: string) => Promise<void>;
   handleSaveCoverLetterMessage: (messageId: string) => Promise<void>;
@@ -53,15 +54,24 @@ export function useGenerationSave(options: UseGenerationSaveOptions): UseGenerat
   const [isSavingTemplateByMessage, setIsSavingTemplateByMessage] = useState<Record<string, boolean>>({});
   const [isSavingResumeByMessage, setIsSavingResumeByMessage] = useState<Record<string, boolean>>({});
   const [isSavingCoverLetterByMessage, setIsSavingCoverLetterByMessage] = useState<Record<string, boolean>>({});
+  const [templateSavedIdByMessage, setTemplateSavedIdByMessage] = useState<Record<string, string>>({});
 
   const handleSaveTemplateMessage = useCallback(async (message: ConversationMessage) => {
+    const messageId = message.id;
+
+    // If already saved, navigate to it (View behaviour)
+    if (templateSavedIdByMessage[messageId]) {
+      router.push(`/templates/${templateSavedIdByMessage[messageId]}`);
+      return;
+    }
+
     const htmlTemplate = extractTemplateHtml(message);
     if (!htmlTemplate) {
       toast.error('No template code found in this message.');
       return;
     }
 
-    setIsSavingTemplateByMessage((prev) => ({ ...prev, [message.id]: true }));
+    setIsSavingTemplateByMessage((prev) => ({ ...prev, [messageId]: true }));
 
     try {
       const defaultName = `AI Template ${new Date().toLocaleDateString()}`;
@@ -77,14 +87,14 @@ export function useGenerationSave(options: UseGenerationSaveOptions): UseGenerat
         return;
       }
 
+      setTemplateSavedIdByMessage((prev) => ({ ...prev, [messageId]: result.data.id }));
       toast.success('Template saved');
-      router.push(`/templates/${result.data.id}`);
     } catch {
       toast.error('Failed to save template');
     } finally {
-      setIsSavingTemplateByMessage((prev) => ({ ...prev, [message.id]: false }));
+      setIsSavingTemplateByMessage((prev) => ({ ...prev, [messageId]: false }));
     }
-  }, [router]);
+  }, [router, templateSavedIdByMessage]);
 
   const handleSaveResumeMessage = useCallback(async (messageId: string) => {
     const preview = resumePreviewByMessage[messageId];
@@ -192,6 +202,7 @@ export function useGenerationSave(options: UseGenerationSaveOptions): UseGenerat
     isSavingTemplateByMessage,
     isSavingResumeByMessage,
     isSavingCoverLetterByMessage,
+    templateSavedIdByMessage,
     handleSaveTemplateMessage,
     handleSaveResumeMessage,
     handleSaveCoverLetterMessage,
