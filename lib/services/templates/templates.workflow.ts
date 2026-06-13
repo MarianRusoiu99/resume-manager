@@ -8,6 +8,8 @@ import type { CreateTemplateInput, UpdateTemplateInput } from '@/lib/validations
 import { validateCreateTemplateInput, validateUpdateTemplateInput } from './validation';
 import { validateHandlebarsTemplateSyntax } from './syntax';
 import { sanitizeTemplate } from '@/lib/templates/utils/sanitizer';
+import { renderCompleteDocument } from '@/lib/templates/renderer';
+import type { Resume } from '@/lib/validations/jsonresume';
 import { GenericCrudService } from '../utils/generic-crud.service';
 import { getCacheProvider } from '@/lib/redis/client';
 
@@ -46,6 +48,7 @@ export interface ITemplateService {
   updateTemplate(id: string, input: UpdateTemplateServiceInput): Promise<ServiceResult<ResumeTemplate>>;
   deleteTemplate(id: string): Promise<ServiceResult<void>>;
   duplicateTemplate(id: string): Promise<ServiceResult<ResumeTemplate>>;
+  renderTemplate(htmlTemplate: string, resumeData: Resume): Promise<ServiceResult<string>>;
 }
 
 /**
@@ -193,6 +196,10 @@ export class TemplateService
         previewUrl: existing.previewUrl ?? undefined,
       });
     });
+  }
+
+  async renderTemplate(htmlTemplate: string, resumeData: Resume): Promise<ServiceResult<string>> {
+    return withServiceError('render template', async () => renderCompleteDocument(htmlTemplate, resumeData));
   }
 
   /**

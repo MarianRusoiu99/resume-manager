@@ -3,7 +3,6 @@
 import { templateService } from '@/lib/services';
 import { withServerAction } from '@/lib/actions/with-server-action';
 import type { CreateTemplateServiceInput, UpdateTemplateServiceInput } from '@/lib/services/types';
-import { renderCompleteDocument } from '@/lib/templates/renderer';
 import type { Resume } from '@/lib/validations/jsonresume';
 
 /**
@@ -96,7 +95,7 @@ export const duplicateTemplate = withServerAction(
 export const renderTemplate = withServerAction(
     'renderTemplate',
     async (_session, htmlTemplate: string, resumeData: Resume) => {
-        return renderCompleteDocument(htmlTemplate, resumeData);
+        return templateService.renderTemplate(htmlTemplate, resumeData);
     },
     { resourceType: 'template' }
 );
