@@ -2,7 +2,7 @@
 
 import { profileService } from '@/lib/services';
 import { withServerAction } from '@/lib/actions/with-server-action';
-import { type Resume } from '@/lib/validations/jsonresume';
+import { parseResumeOrThrow, type Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Get all profiles for the current user
@@ -28,10 +28,11 @@ export const getProfile = withServerAction(
 export const createProfile = withServerAction(
     'createProfile',
     async (session, name: string, resume: Resume, isDefault: boolean = false) => {
+        const validatedResume = parseResumeOrThrow(resume, 'strict');
         return profileService.createProfile(
             session.user.id,
             name,
-            resume,
+            validatedResume,
             isDefault
         );
     },
@@ -59,7 +60,10 @@ export const updateProfile = withServerAction(
             selectedTemplateId: string | null;
         }>
     ) => {
-        return profileService.updateProfile(profileId, session.user.id, data);
+        const payload = data.resume
+            ? { ...data, resume: parseResumeOrThrow(data.resume, 'strict') }
+            : data;
+        return profileService.updateProfile(profileId, session.user.id, payload);
     },
     {
         auditAction: 'PROFILE_UPDATE',

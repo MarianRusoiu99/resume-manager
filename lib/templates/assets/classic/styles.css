@@ -43,6 +43,17 @@ header a {
   text-decoration: none;
 }
 
+/* Profile photo */
+.profile-photo {
+  float: right;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-left: 10px;
+  margin-bottom: 4px;
+}
+
 /* Section headings */
 section > h3 {
   font-size: 11px;

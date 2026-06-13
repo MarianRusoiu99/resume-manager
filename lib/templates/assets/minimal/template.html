@@ -1,11 +1,13 @@
 <main>
 <header>
+  {{#safeIf basics.image}}<img class="profile-photo" src="{{basics.image}}" alt="{{basics.name}}">{{/safeIf}}
   <h1>{{basics.name}}</h1>
   {{#safeIf basics.label}}<p class="label">{{basics.label}}</p>{{/safeIf}}
   <div class="contact">
     {{#safeIf basics.email}}<a href="mailto:{{basics.email}}">{{basics.email}}</a>{{/safeIf}}
     {{#safeIf basics.phone}}<span>{{basics.phone}}</span>{{/safeIf}}
     {{#safeIf basics.url}}<a href="{{basics.url}}">Portfolio</a>{{/safeIf}}
+    {{#safeIf basics.location}}{{#safeIf (formatLocation basics.location)}}<span>{{formatLocation basics.location}}</span>{{/safeIf}}{{/safeIf}}
     {{#safeIf basics.profiles}}
       {{#safeEach basics.profiles}}<a href="{{url}}">{{network}}</a>{{/safeEach}}
     {{/safeIf}}
@@ -26,11 +28,13 @@
     <div class="row">
       <div class="left">
         <strong>{{position}}</strong>
-        <span class="org">{{name}}</span>
+        <span class="org">{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</span>
       </div>
       {{#safeIf startDate}}<time>{{startDate}} — {{#safeIf endDate}}{{endDate}}{{else}}Present{{/safeIf}}</time>{{/safeIf}}
     </div>
+    {{#safeIf location}}{{#safeIf (formatLocation location)}}<p class="small">{{formatLocation location}}</p>{{/safeIf}}{{/safeIf}}
     {{#safeIf summary}}<p>{{markdown summary}}</p>{{/safeIf}}
+    {{#safeIf description}}<p>{{markdown description}}</p>{{/safeIf}}
     {{#safeIf highlights}}
       <ul>
         {{#safeEach highlights}}<li>{{markdown this}}</li>{{/safeEach}}
@@ -49,7 +53,7 @@
     <div class="row">
       <div class="left">
         <strong>{{position}}</strong>
-        <span class="org">{{organization}}</span>
+        <span class="org">{{#safeIf url}}<a href="{{url}}">{{organization}}</a>{{else}}{{organization}}{{/safeIf}}</span>
       </div>
       {{#safeIf startDate}}<time>{{startDate}} — {{#safeIf endDate}}{{endDate}}{{else}}Present{{/safeIf}}</time>{{/safeIf}}
     </div>
@@ -71,9 +75,14 @@
       <strong>{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</strong>
       {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} — {{endDate}}{{/safeIf}}</time>{{/safeIf}}
     </div>
+    {{#safeIf roles}}<p class="small">{{#safeEach roles}}{{this}}{{#unless @last}}, {{/unless}}{{/safeEach}}</p>{{/safeIf}}
+    {{#safeIf entity}}{{#safeIf type}}<p class="small">{{entity}} · {{type}}</p>{{else}}<p class="small">{{entity}}</p>{{/safeIf}}{{else}}{{#safeIf type}}<p class="small">{{type}}</p>{{/safeIf}}{{/safeIf}}
     {{#safeIf description}}<p>{{markdown description}}</p>{{/safeIf}}
     {{#safeIf highlights}}
       <ul>{{#safeEach highlights}}<li>{{markdown this}}</li>{{/safeEach}}</ul>
+    {{/safeIf}}
+    {{#safeIf keywords}}
+      <div class="tags">{{#safeEach keywords}}<span class="tag">{{this}}</span>{{/safeEach}}</div>
     {{/safeIf}}
   </article>
   {{/safeEach}}
@@ -88,7 +97,7 @@
     <div class="row">
       <div class="left">
         <strong>{{studyType}}{{#safeIf area}}, {{area}}{{/safeIf}}</strong>
-        <span class="org">{{institution}}</span>
+        <span class="org">{{#safeIf url}}<a href="{{url}}">{{institution}}</a>{{else}}{{institution}}{{/safeIf}}</span>
       </div>
       {{#safeIf startDate}}<time>{{startDate}} — {{#safeIf endDate}}{{endDate}}{{else}}Present{{/safeIf}}</time>{{/safeIf}}
     </div>
@@ -127,7 +136,7 @@
 <section>
   <h3>Interests</h3>
   <div class="tags">
-    {{#safeEach interests}}<span class="tag">{{name}}</span>{{/safeEach}}
+    {{#safeEach interests}}<span class="tag">{{name}}{{#safeIf keywords}} ({{#safeEach keywords}}{{this}}{{#unless @last}}, {{/unless}}{{/safeEach}}){{/safeIf}}</span>{{/safeEach}}
   </div>
 </section>
 {{/safeIf}}
@@ -172,6 +181,7 @@
       {{#safeIf releaseDate}}<time>{{releaseDate}}</time>{{/safeIf}}
     </div>
     {{#safeIf publisher}}<p class="small">{{publisher}}</p>{{/safeIf}}
+    {{#safeIf summary}}<p>{{markdown summary}}</p>{{/safeIf}}
   </article>
   {{/safeEach}}
 </section>

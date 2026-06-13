@@ -100,3 +100,13 @@ export {
   getValidationSummary,
   type ValidationError,
 } from './jsonresume/strict';
+
+// Canonical JSON Resume contract helpers
+export {
+  safeParseResume,
+  parseResumeOrThrow,
+  isValidResume,
+  type ResumeValidationIssue,
+  type ResumeValidationMode,
+  type ResumeValidationResult,
+} from './jsonresume/contract';

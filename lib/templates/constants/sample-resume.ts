@@ -38,6 +38,8 @@ export const sampleResume: Resume = {
     {
       name: 'Tech Corp Inc.',
       position: 'Senior Software Engineer',
+      location: 'San Francisco, CA',
+      description: 'Enterprise cloud infrastructure company serving Fortune 500 clients.',
       url: 'https://techcorp.com',
       startDate: '2020-01-15',
       summary:
@@ -51,6 +53,8 @@ export const sampleResume: Resume = {
     {
       name: 'StartupXYZ',
       position: 'Full Stack Developer',
+      location: 'New York, NY',
+      description: 'Series B startup building real-time collaboration tools.',
       url: 'https://startupxyz.com',
       startDate: '2017-06-01',
       endDate: '2019-12-31',
@@ -177,6 +181,10 @@ export const sampleResume: Resume = {
         'Featured in JavaScript Weekly newsletter',
       ],
       url: 'https://github.com/johndoe/cms',
+      keywords: ['Next.js', 'PostgreSQL', 'TypeScript', 'GraphQL'],
+      roles: ['Lead Developer', 'Maintainer'],
+      entity: 'Open Source Community',
+      type: 'application',
     },
   ],
 };

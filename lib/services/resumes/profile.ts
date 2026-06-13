@@ -1,5 +1,5 @@
 import { profileRepository } from '@/lib/repositories';
-import { resumeSchema } from '@/lib/validations/jsonresume';
+import { safeParseResume } from '@/lib/validations/jsonresume';
 import type { Resume } from '@/lib/validations/jsonresume';
 import { logger } from '@/lib/utils/logger';
 import { failure, success, type ServiceResult } from '@/lib/types';
@@ -36,11 +36,13 @@ export async function fetchAndValidateUserResume(
     return success(profileData.resume as Resume);
   }
 
-  try {
-    const userResume = resumeSchema.parse(profileData.resume);
-    return success(userResume);
-  } catch (error) {
-    logger.error('Profile resume validation failed', error);
+  const parsedResume = safeParseResume(profileData.resume, 'strict');
+  if (!parsedResume.success) {
+    logger.error('Profile resume validation failed', {
+      issues: parsedResume.issues,
+    });
     return failure('Invalid profile data format. Please update your profile.', 'VALIDATION_ERROR');
   }
+
+  return success(parsedResume.data);
 }

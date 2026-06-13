@@ -107,13 +107,13 @@ const strictPublicationSchema = z.object({
 
 const strictSkillSchema = z.object({
   name: z.string().min(1, 'Skill name is required'),
-  level: z.enum(['Beginner', 'Intermediate', 'Advanced', 'Expert']).optional(),
+  level: z.enum(['None', 'Beginner', 'Intermediate', 'Advanced', 'Expert', 'Master']).optional(),
   keywords: z.array(z.string().min(1)).optional(),
 });
 
 const strictLanguageSchema = z.object({
   language: z.string().min(1, 'Language name is required'),
-  fluency: z.enum(['Elementary', 'Limited Working', 'Professional Working', 'Full Professional', 'Native']).optional(),
+  fluency: z.string().min(1).optional(),
 });
 
 const strictInterestSchema = z.object({

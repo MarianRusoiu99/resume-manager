@@ -17,3 +17,12 @@ export type {
   Project,
   Meta
 } from './schema';
+
+export {
+  safeParseResume,
+  parseResumeOrThrow,
+  isValidResume,
+  type ResumeValidationIssue,
+  type ResumeValidationMode,
+  type ResumeValidationResult,
+} from './contract';

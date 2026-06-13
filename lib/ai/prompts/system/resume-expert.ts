@@ -77,7 +77,7 @@ Return a JSON object with this EXACT structure:
     "languages": [{ "language": "string", "fluency": "string" }],
     "interests": [{ "name": "string", "keywords": [] }],
     "references": [{ "name": "string", "reference": "string" }],
-    "projects": [{ "name": "string", "description": "string", "highlights": [], "startDate": "YYYY-MM", "endDate": "YYYY-MM", "url": "string", "keywords": [] }],
+    "projects": [{ "name": "string", "description": "string", "highlights": [], "startDate": "YYYY-MM", "endDate": "YYYY-MM", "url": "string", "keywords": [], "roles": ["string"], "entity": "string", "type": "string" }],
     "meta": { "canonical": "string", "lastModified": "string" }
   }
 }

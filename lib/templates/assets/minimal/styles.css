@@ -25,6 +25,14 @@ header {
   text-align: center;
 }
 
+.profile-photo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 8px;
+}
+
 header h1 {
   font-size: 28px;
   margin: 0 0 4px 0;

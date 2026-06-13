@@ -1,14 +1,18 @@
 <main>
 <header>
-  <h1>{{basics.name}}</h1>
-  {{#safeIf basics.label}}<h2>{{basics.label}}</h2>{{/safeIf}}
-  <div class="contact">
-    {{#safeIf basics.phone}}<span class="contact-item">{{basics.phone}}</span>{{/safeIf}}
-    {{#safeIf basics.email}}<span class="contact-item"><a href="mailto:{{basics.email}}">{{basics.email}}</a></span>{{/safeIf}}
-    {{#safeIf basics.url}}<span class="contact-item"><a href="{{basics.url}}">{{basics.url}}</a></span>{{/safeIf}}
-    {{#safeIf basics.profiles}}
-      {{#safeEach basics.profiles}}<span class="contact-item"><a href="{{url}}">{{network}}{{#safeIf username}} ({{username}}){{/safeIf}}</a></span>{{/safeEach}}
-    {{/safeIf}}
+  {{#safeIf basics.image}}<img class="profile-photo" src="{{basics.image}}" alt="{{basics.name}}">{{/safeIf}}
+  <div class="header-text">
+    <h1>{{basics.name}}</h1>
+    {{#safeIf basics.label}}<h2>{{basics.label}}</h2>{{/safeIf}}
+    <div class="contact">
+      {{#safeIf basics.phone}}<span class="contact-item">{{basics.phone}}</span>{{/safeIf}}
+      {{#safeIf basics.email}}<span class="contact-item"><a href="mailto:{{basics.email}}">{{basics.email}}</a></span>{{/safeIf}}
+      {{#safeIf basics.url}}<span class="contact-item"><a href="{{basics.url}}">{{basics.url}}</a></span>{{/safeIf}}
+      {{#safeIf basics.location}}<span class="contact-item">{{formatLocation basics.location}}</span>{{/safeIf}}
+      {{#safeIf basics.profiles}}
+        {{#safeEach basics.profiles}}<span class="contact-item"><a href="{{url}}">{{network}}{{#safeIf username}} ({{username}}){{/safeIf}}</a></span>{{/safeEach}}
+      {{/safeIf}}
+    </div>
   </div>
 </header>
 
@@ -29,12 +33,14 @@
     <div class="article-header">
       <div class="title-company">
         <strong>{{position}}</strong>
-        <span class="company">{{name}}</span>
+        <span class="company">{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</span>
       </div>
       {{#safeIf startDate}}
         <time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{else}} – Present{{/safeIf}}</time>
       {{/safeIf}}
     </div>
+    {{#safeIf location}}<div class="meta">{{location}}</div>{{/safeIf}}
+    {{#safeIf description}}<p>{{markdown description}}</p>{{/safeIf}}
     {{#safeIf summary}}<p>{{markdown summary}}</p>{{/safeIf}}
     {{#safeIf highlights}}
       <ul>
@@ -54,7 +60,7 @@
     <div class="article-header">
       <div class="title-company">
         <strong>{{position}}</strong>
-        <span class="company">{{organization}}</span>
+        <span class="company">{{#safeIf url}}<a href="{{url}}">{{organization}}</a>{{else}}{{organization}}{{/safeIf}}</span>
       </div>
       {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{else}} – Present{{/safeIf}}</time>{{/safeIf}}
     </div>
@@ -76,9 +82,16 @@
       <strong>{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</strong>
       {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{/safeIf}}</time>{{/safeIf}}
     </div>
+    {{#safeIf roles}}<div class="meta">{{join roles ", "}}</div>{{/safeIf}}
+    {{#safeIf entity}}{{#safeIf type}}<div class="meta">{{entity}} · {{type}}</div>{{else}}<div class="meta">{{entity}}</div>{{/safeIf}}{{/safeIf}}
     {{#safeIf description}}<p>{{markdown description}}</p>{{/safeIf}}
     {{#safeIf highlights}}
       <ul>{{#safeEach highlights}}<li>{{markdown this}}</li>{{/safeEach}}</ul>
+    {{/safeIf}}
+    {{#safeIf keywords}}
+      <div class="keywords">
+        {{#safeEach keywords}}<span class="keyword">{{this}}</span>{{/safeEach}}
+      </div>
     {{/safeIf}}
   </article>
   {{/safeEach}}
@@ -93,7 +106,7 @@
     <div class="article-header">
       <div class="title-company">
         <strong>{{studyType}}{{#safeIf area}} in {{area}}{{/safeIf}}</strong>
-        <span class="company">{{institution}}</span>
+        <span class="company">{{#safeIf url}}<a href="{{url}}">{{institution}}</a>{{else}}{{institution}}{{/safeIf}}</span>
       </div>
       {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{/safeIf}}</time>{{/safeIf}}
     </div>
@@ -140,7 +153,7 @@
   <h3>Interests</h3>
   <article>
     <div class="inline-list">
-      {{#safeEach interests}}<span class="inline-item">{{name}}</span>{{/safeEach}}
+      {{#safeEach interests}}<span class="inline-item">{{name}}{{#safeIf keywords}}: {{join keywords ", "}}{{/safeIf}}</span>{{/safeEach}}
     </div>
   </article>
 </section>
@@ -187,6 +200,7 @@
       {{#safeIf releaseDate}}<time>{{releaseDate}}</time>{{/safeIf}}
     </div>
     {{#safeIf publisher}}<div class="meta">{{publisher}}</div>{{/safeIf}}
+    {{#safeIf summary}}<p>{{markdown summary}}</p>{{/safeIf}}
   </article>
   {{/safeEach}}
 </section>

@@ -1,5 +1,6 @@
 <main>
 <header>
+  {{#safeIf basics.image}}<img src="{{basics.image}}" alt="{{basics.name}}" class="profile-photo">{{/safeIf}}
   <h1>{{basics.name}}</h1>
   {{#safeIf basics.label}}<h2>{{basics.label}}</h2>{{/safeIf}}
   <p class="contact">
@@ -9,6 +10,7 @@
     {{#safeIf basics.profiles}}
       {{#safeEach basics.profiles}} · <a href="{{url}}">{{network}}{{#safeIf username}} ({{username}}){{/safeIf}}</a>{{/safeEach}}
     {{/safeIf}}
+    {{#safeIf basics.location}} · {{formatLocation basics.location}}{{/safeIf}}
   </p>
 </header>
 
@@ -26,10 +28,12 @@
   <h3>EXPERIENCE</h3>
   {{#safeEach work}}
   <article>
-    <strong>{{position}}</strong> — <span>{{name}}</span>
+    <strong>{{position}}</strong> — {{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}<span>{{name}}</span>{{/safeIf}}
     {{#safeIf startDate}}
-      <time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{/safeIf}}</time>
+      <time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{/safeIf}}{{#safeIf location}} · {{location}}{{/safeIf}}</time>
+    {{else}}{{#safeIf location}}<time>{{location}}</time>{{/safeIf}}
     {{/safeIf}}
+    {{#safeIf description}}<div class="meta">{{description}}</div>{{/safeIf}}
     {{#safeIf summary}}<p>{{markdown summary}}</p>{{/safeIf}}
     {{#safeIf highlights}}
       <ul>
@@ -46,7 +50,7 @@
   <h3>VOLUNTEER</h3>
   {{#safeEach volunteer}}
   <article>
-    <strong>{{position}}</strong> — <span>{{organization}}</span>
+    <strong>{{position}}</strong> — {{#safeIf url}}<a href="{{url}}">{{organization}}</a>{{else}}<span>{{organization}}</span>{{/safeIf}}
     {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{/safeIf}}</time>{{/safeIf}}
     {{#safeIf summary}}<p>{{markdown summary}}</p>{{/safeIf}}
     {{#safeIf highlights}}
@@ -62,11 +66,16 @@
   <h3>PROJECTS</h3>
   {{#safeEach projects}}
   <article>
-    <strong><a href="{{url}}">{{name}}</a></strong>
+    <strong>{{#safeIf url}}<a href="{{url}}">{{name}}</a>{{else}}{{name}}{{/safeIf}}</strong>
+    {{#safeIf entity}}<span class="meta"> · {{entity}}</span>{{/safeIf}}{{#safeIf type}}<span class="meta"> · {{type}}</span>{{/safeIf}}
+    {{#safeIf roles}}<div class="meta">{{#safeEach roles}}{{this}}{{#unless @last}}, {{/unless}}{{/safeEach}}</div>{{/safeIf}}
     {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{/safeIf}}</time>{{/safeIf}}
     {{#safeIf description}}<p>{{markdown description}}</p>{{/safeIf}}
     {{#safeIf highlights}}
       <ul>{{#safeEach highlights}}<li>{{markdown this}}</li>{{/safeEach}}</ul>
+    {{/safeIf}}
+    {{#safeIf keywords}}
+      <div>{{#safeEach keywords}}<span class="keyword">{{this}}</span>{{/safeEach}}</div>
     {{/safeIf}}
   </article>
   {{/safeEach}}
@@ -79,7 +88,7 @@
   {{#safeEach education}}
   <article>
     <strong>{{studyType}} {{#safeIf area}}— {{area}}{{/safeIf}}</strong>
-    <div>{{institution}}</div>
+    <div>{{#safeIf url}}<a href="{{url}}">{{institution}}</a>{{else}}{{institution}}{{/safeIf}}</div>
     {{#safeIf startDate}}<time>{{startDate}}{{#safeIf endDate}} – {{endDate}}{{/safeIf}}</time>{{/safeIf}}
     {{#safeIf score}}<div class="meta">Score: {{score}}</div>{{/safeIf}}
     {{#safeIf courses}}
@@ -148,7 +157,7 @@
 <section>
   <h3>PUBLICATIONS</h3>
   <article>
-    <ul>{{#safeEach publications}}<li><strong>{{name}}</strong> — {{publisher}} {{#safeIf releaseDate}}• {{releaseDate}}{{/safeIf}} {{#safeIf url}}• <a href="{{url}}">link</a>{{/safeIf}}</li>{{/safeEach}}</ul>
+    <ul>{{#safeEach publications}}<li><strong>{{name}}</strong> — {{publisher}} {{#safeIf releaseDate}}• {{releaseDate}}{{/safeIf}} {{#safeIf url}}• <a href="{{url}}">link</a>{{/safeIf}}{{#safeIf summary}} — {{summary}}{{/safeIf}}</li>{{/safeEach}}</ul>
   </article>
 </section>
 {{/safeIf}}
