@@ -52,6 +52,16 @@ export interface IResumeService {
   updateResumeContent(resumeId: string, userId: string, resumeData: Resume): Promise<ServiceResult<UpdatedResumeData>>;
   updateResumeTemplate(resumeId: string, userId: string, templateId: string | null): Promise<ServiceResult<UpdatedResumeData>>;
   updateResumeJobDetails(resumeId: string, userId: string, input: { jobTitle?: string; companyName?: string; jobDescription?: string }): Promise<ServiceResult<UpdatedResumeData>>;
+  updateResumeMetadata(
+    resumeId: string,
+    userId: string,
+    data: {
+      jobTitle?: string;
+      companyName?: string;
+      templateId?: string | null;
+      isPublic?: boolean;
+    }
+  ): Promise<ServiceResult<null>>;
   duplicateResume(resumeId: string, userId: string): Promise<ServiceResult<ResumeDetails>>;
   importResume(userId: string, formData: FormData): Promise<ServiceResult<{ resume: unknown }>>;
 }
@@ -219,6 +229,32 @@ export class ResumeService
         updatedAt: updatedResume.updatedAt,
       };
     });
+  }
+
+  async updateResumeMetadata(
+    resumeId: string,
+    userId: string,
+    data: {
+      jobTitle?: string;
+      companyName?: string;
+      templateId?: string | null;
+      isPublic?: boolean;
+    }
+  ): Promise<ServiceResult<null>> {
+    if (data.templateId !== undefined) {
+      const templateResult = await this.updateResumeTemplate(resumeId, userId, data.templateId);
+      if (!templateResult.success) return templateResult;
+    }
+
+    if (data.jobTitle !== undefined || data.companyName !== undefined) {
+      const jobResult = await this.updateResumeJobDetails(resumeId, userId, {
+        jobTitle: data.jobTitle,
+        companyName: data.companyName,
+      });
+      if (!jobResult.success) return jobResult;
+    }
+
+    return { success: true, data: null };
   }
 
   async duplicateResume(resumeId: string, userId: string): Promise<ServiceResult<ResumeDetails>> {

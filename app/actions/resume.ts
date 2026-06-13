@@ -3,7 +3,7 @@
 import { resumeService } from '@/lib/services';
 import { withServerAction } from '@/lib/actions/with-server-action';
 import type { GenerateResumeInput as GenerateResumeServiceInput } from '@/lib/types';
-import type { Resume } from '@/lib/validations/jsonresume';
+import { parseResumeOrThrow, type Resume } from '@/lib/validations/jsonresume';
 
 /**
  * Import a resume from a file
@@ -61,7 +61,7 @@ export const duplicateResume = withServerAction(
 export const updateResumeContent = withServerAction(
     'updateResumeContent',
     async (session, resumeId: string, content: Resume) =>
-        resumeService.updateResumeContent(resumeId, session.user.id, content),
+        resumeService.updateResumeContent(resumeId, session.user.id, parseResumeOrThrow(content, 'strict')),
     {
         auditAction: 'RESUME_UPDATE',
         resourceType: 'resume',
@@ -84,26 +84,7 @@ export const updateResumeMetadata = withServerAction(
             isPublic?: boolean;
         }
     ) => {
-        // Handle template update if provided
-        if (data.templateId !== undefined) {
-            const templateResult = await resumeService.updateResumeTemplate(
-                resumeId,
-                session.user.id,
-                data.templateId
-            );
-            if (!templateResult.success) return templateResult;
-        }
-
-        // Handle job details update if provided
-        if (data.jobTitle !== undefined || data.companyName !== undefined) {
-            const jobResult = await resumeService.updateResumeJobDetails(resumeId, session.user.id, {
-                jobTitle: data.jobTitle,
-                companyName: data.companyName,
-            });
-            if (!jobResult.success) return jobResult;
-        }
-
-        return { success: true, data: null };
+        return resumeService.updateResumeMetadata(resumeId, session.user.id, data);
     },
     {
         auditAction: 'RESUME_UPDATE',
@@ -130,7 +111,7 @@ export const saveGeneratedResume = withServerAction(
     ) => {
         return resumeService.create({
             userId: session.user.id,
-            resume: data.resume,
+            resume: parseResumeOrThrow(data.resume, 'strict'),
             jobDescription: data.jobDescription,
             jobMetadata: {
                 jobTitle: data.jobTitle || 'Optimized Resume',
